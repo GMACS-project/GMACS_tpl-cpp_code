@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.24)
 project(
     gmacs
     LANGUAGES CXX
-    VERSION 2.01.M.08
+    VERSION 2.01.08
     DESCRIPTION "CMake script to build GMACS"
 )
 
