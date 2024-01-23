@@ -63,7 +63,8 @@ include_directories(
     "${PROJECT_BINARY_DIR}"         #--for gmacs.htp
     "${ADMB_HOME}/include"
     "${ADMB_HOME}/include/contrib"
-    "${GMACS_INCLUDE}"
+    #"${GMACS_INCLUDE}"
+    "${PROJECT_SOURCE_DIR}"
 )
 
 #--add target to create gmacs.tpl 
