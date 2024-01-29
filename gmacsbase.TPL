@@ -72,7 +72,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader =  adstring("## GMACS Verison 2.01.M.08; Compiled 2024-01-16");
+ !! TheHeader =  adstring("## GMACS Verison 2.01.M.08; Compiled 2024-01-29");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -3154,10 +3154,10 @@ PARAMETER_SECTION
   number rho;                                              ///> autocorrelation coefficient in recruitment
   matrix logN0(1,n_grp,1,nclass);                          ///> initial numbers at length
 
-  vector   alpha(1,nsex);                                  ///> intercept for linear growth increment model
-  vector    beta(1,nsex);                                  ///> slope for the linear growth increment model
-  matrix rec_sdd(1,nsex,1,nclass);                         ///> recruitment size_density_distribution
+  matrix alpha(1,nsex,1,maxSizeIncVaries);                 ///> intercept for linear growth increment model
+  matrix beta(1,nsex,1,maxSizeIncVaries);                  ///> slope for the linear growth increment model
   matrix gscale(1,nsex,1,maxSizeIncVaries);                ///> scale parameter for the gamma distribution
+  matrix rec_sdd(1,nsex,1,nclass);                         ///> recruitment size_density_distribution
   matrix molt_mu(1,nsex,1,nMoltVaries);                    ///> 50% probability of molting at length each year
   matrix molt_cv(1,nsex,1,nMoltVaries);                    ///> CV in molting probabilility
   matrix Linf(1,nsex,1,maxSizeIncVaries);                  ///> Mean Linf
@@ -3447,10 +3447,11 @@ PRELIMINARY_CALCS_SECTION
   calc_growth_increments();                 if ( verbose >= 3 ) cout << "Ok after calc_growth_increments in Prelim ..." << endl;
   calc_molting_probability();               if ( verbose >= 3 ) cout << "Ok after calc_molting_probability in Prelim ..." << endl;
   for ( int h = 1; h <= nsex; h++ )
-   for ( int l = 1; l <= nclass; l++ )
-    if (molt_increment(h,1,l) < 0)
+   for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
+    for ( int l = 1; l <= nclass; l++ )
+     if (molt_increment(h,igrow,l) < 0)
      {
-       cout << "Error: Initial value of the growth increment for sex " << h << " and size-class " << l << " is negative: " << molt_increment(h,1,l) << "; STOPPING" << endl;
+       cout << "Error: Initial value of the growth increment for matrix " << igrow << " and sex " << h << " and size-class " << l << " is negative: " << molt_increment(h,igrow,l) << "; STOPPING" << endl;
        exit(1);
      }
   calc_growth_transition();                 if ( verbose >= 3 ) cout << "Ok after calc_growth_transition in Prelim ..." << endl;
@@ -3692,8 +3693,8 @@ FUNCTION initialize_model_parameters
     {
      if (bUseGrowthIncrementModel==LINEAR_GROWTHMODEL)
       {
-       alpha(h)   = Grwth(icnt);
-       beta(h)    = Grwth(icnt+1);
+       alpha(h,igrow)   = Grwth(icnt);
+       beta(h,igrow)    = Grwth(icnt+1);
        gscale(h,igrow)  = Grwth(icnt+2);
        icnt += 3;
        parname1(PPnt+1) = "Alpha_"+sexes(h)+"_period_"+str(igrow);
@@ -4702,7 +4703,7 @@ FUNCTION calc_molting_probability
    * @return dvar_vector of predicted growth increments
   **/
 
-FUNCTION dvar_vector calc_growth_increments(const dvector vSizes, const ivector iSex)
+FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ivector iSex, int igrow)
   {
    if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
@@ -4713,8 +4714,9 @@ FUNCTION dvar_vector calc_growth_increments(const dvector vSizes, const ivector 
     for ( i = 1; i <= nGrowthObs; i++ )
      {
       h = iSex(i);
-      pMoltInc(i) = alpha(h) - beta(h) * vSizes(i);
+      pMoltInc(i) = alpha(h,igrow) - beta(h,igrow) * vSizes(i);
      }
+     
     RETURN_ARRAYS_DECREMENT();
     return pMoltInc;
   }
@@ -4735,9 +4737,21 @@ FUNCTION dvar_vector calc_growth_increments(const dvector vSizes, const ivector 
 FUNCTION calc_growth_increments
 
   if (bUseGrowthIncrementModel==LINEAR_GROWTHMODEL)
-   for ( int h = 1; h <= nsex; h++ )
-    for ( int l = 1; l <= nclass; l++ )
-     molt_increment(h,1,l) = alpha(h) - beta(h) * mid_points(l);
+   {
+    for ( int h = 1; h <= nsex; h++ )
+     for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
+      {
+       for ( int l = 1; l <= nclass; l++ )
+        molt_increment(h,igrow,l) = alpha(h,igrow) - beta(h,igrow) * mid_points(l);
+       if (NfunCall==0 || NfunCall==1)
+        if (molt_increment(h,igrow,int(nclass/2)) < 0)
+         {
+         // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
+          for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
+         }
+       } // - for h     
+  } // -- if
+
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -6631,7 +6645,8 @@ FUNCTION recruitment_likelihood
   // 5) Likelihood for growth increment data #1
   if (bUseGrowthIncrementModel==LINEAR_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
     {
-    dvar_vector MoltIncPred = calc_growth_increments(dPreMoltSize, iMoltIncSex);
+    // Predictions are for matrix 1
+    dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
     nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
    }
   if ( verbose >= 3 ) cout << "Ok after increment likelihood 1 ..." << endl;
@@ -9744,9 +9759,9 @@ FUNCTION WriteFiles
    for (int j=1;j<=nSizeCompRows_in(i);j++)
     {
      for (int k=-7;k<=0;k++) OutInpFile1 << d3_SizeComps_in(i,j,k) << "\t ";
-     for (int k=1;k<=nclass;k++) OutInpFile1 << d3_pre_size_comps_out(i,j,k) << "\t ";
+     for (int k=1;k<=nSizeCompCols_in(i);k++) OutInpFile1 << d3_pre_size_comps_out(i,j,k) << "\t ";
      OutInpFile1 << "\t # ";
-     for (int k=1;k<=nclass;k++)OutInpFile1 << d3_SizeComps_in(i,j,k) << "\t ";
+     for (int k=1;k<=nSizeCompCols_in(i);k++)OutInpFile1 << d3_SizeComps_in(i,j,k) << "\t ";
      OutInpFile1 << endl;
     }
 
@@ -10693,12 +10708,12 @@ FINAL_SECTION
 // - 2. Add the developped code by ** AEP ** to incorporate potential random walk in the selectivity parameters. Modify the initial code to
 // make it more flexible. Need to be updated to allow environmental impacts not being dependent upon time period of random walk.
 // ================================================ //
-// 2023-03-23 ** MV ** (Upgrade GMACS to version 2.01.M.01) - 1. Fixed a bug in the checking section of the inputs for the growth maxtrix and growth
-// increment model
+// 2023-03-23 ** MV ** (Upgrade GMACS to version 2.01.M.01) - 1. Fixed a bug in the checking section of the inputs for the growth maxtrix and growth increment model
 // 2023-05-30 ** AEP. (Upgrade GMACS to version 2.01.M.02) Added labels for model output and GMACSALL.STD, mature abundance (SSBA) and fixed some bugs in the calculaton of Francis weights.
 // 2024-01-08 ** AEP. (Updated GMACS to version 2.01.M.03) (a) Corrected a bug with labels for selectivity; (b) Tag emphasis can be real; (c) merged Cody changes wrt time-varying molt probability and functional maturity;
 // 2024-01-09 ** AEP. (Updated GMACS to version 2.01.M.04) (a) added output for the weight units, (b) moved where last functional call, last phase and calculate reference points occurs
 // 2024-01-09 ** AEP. (Updated GMACS to version 2.01.M.05) (a) fixed indexing for matrix-based weight-at-length; (b) maturity-specific length-weight, (c) formatted output for gmacsall.out, (d) added OFLs by fleet to gmacsall.out
 // 2024-01-10 ** AEP. (Updated GMACS to version 2.01.M.06) (a) modified to output projected catches, (b) calculated historical mortality for projections
 // 2024-01-11 ** AEP. (Updated GMACS to version 2.01.M.07) (a) updated the _in files to match the latest version of GMACS. (b) producted inputs files with estimated parameters and expected data
+// 2024-01-29 ** AEP. (Updated GMACS to version 2.01.M.08) Fixed time-varying growth increment and added a trap for negative growth increments in fn calls 0 and 1
 

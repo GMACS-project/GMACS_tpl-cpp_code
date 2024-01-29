@@ -1,0 +1,29 @@
+#datafile
+tanner.dat
+#controlfile
+tanner.ctl
+#projectionfile
+tanner.prj
+#weightunit
+1000_mt
+#StockName
+Tanner_crab
+## Jitter specs (1=yes; SD)
+0	# Is Jittered?
+0.1	# sd Jitter
+# Output variances of (1=Yes)
+1   	# Reference points
+1   	# Recruits
+1   	# SSB
+1   	# Fbar
+1   	# OutDynB0
+## Retrospective (Number of years to drop)
+0
+# Other controls
+   10      # Maximum phase (stop the estimation after this phase).                                          
+   -1      # Maximum number of function calls, if 1, stop at fn1 call; if -1 run as long as it takes
+   1       # Calculate reference points (0=no)
+   1        # use pin file (1) or normal run (0)
+   0       # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)
+# EOF
+9999
