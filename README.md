@@ -23,6 +23,8 @@ To compile the GMACS executable, open a command prompt (Windows) or terminal win
 
 The first command creates the `_build` subfolder and the Makefile appropriate for the given platform ("Unix Makefiles" appears to be an appropriate value for the -G option when compiling with RTools under either OSX or Windows). The second command builds the project by running the Makefile and (if successful) copies the gmacsbase and personal tpl files to `_build`, concatenates them as gmacs.tpl, calls tpl2cpp on gmacs.tpl to create the associated .cpp and .htp files, and finally compiles the source and header files to create the gmacs executble in the `_build` folder (`gmacs` on Mac OSX and `gmacs.exe` on Windows).
 
+Changes to the tpl or c++ files can be recompiled using "cmake --build _build", which will only update the compilation process for files changed since the last build (i.e., not recompiling everything). To "start from scratch", you can either delete the _build folder and run the two commands above again or run "cmake --build _build --target clean" (which deletes the gmacs executable, gmacs.tpl, gmacs.cpp, gmacs.htp and all the object files under the `_build` folder, but not the CMake-associated files) followed by "cmake --build _build".
+
 ## Testing
 
 The `testing/input_files` folder contains subfolders with suitable input files to test the compiled GMACS executable. The `testing/runs` folder contains two R files which can be used to test the models in the `testing/input_files` subfolders. To run the tests: 
@@ -31,9 +33,9 @@ The `testing/input_files` folder contains subfolders with suitable input files t
     3. source the "runTests.r" file
     4. run the function "runTests" for the models of interest 
         a. set the `tests` input vector to the names of the subfolders containing the models you want to test
-        b. set the top-level directory for running the tests (the default is ".", i.e. the `testing/rnus` folder)
-        c. set the "compareWithPin" and cleanup flags as desired.
-The function will run the models specified (copying the input files from relevant `testing/inut_files` subfolders). The output is a list with an element for each model tested. Each element indicates whether the test passed or, if not, where "substantial" differences (abs(new-old)>10^{-5}) occurred between the new par file and an old par file ("gmacs.par_old") or the pin file ("gmacs.pin") used to initialize the model.
+        b. set the top-level directory for running the tests (the default is ".", i.e. the `testing/runs` folder)
+        c. set the `compareWithPin`, `verbose`, and `cleanup` flags as desired (`verbose` functionality is not yet implemented).
+The function will run the models specified (copying the input files from relevant `testing/inut_files` subfolders). The output is a list with an element for each model tested. Each element indicates whether the test passed or, if not, where "substantial" differences (abs(new-old)>$10^{-5}$) occurred between the new par file and an old par file ("gmacs.par_old") or the pin file ("gmacs.pin") used to initialize the model.
 
 ## Which tools are available for working with GMACS?
 
