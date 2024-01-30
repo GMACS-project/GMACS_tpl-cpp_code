@@ -71,7 +71,7 @@ runTests<-function(tests=c("TannerCrab_MalesOnlyA",
         } else {
           lns = readLines(file.path(scriptsPath,scr));
           xtr = "";
-          if (usePin) xtr = "-pin gmacs.pin -phase 10";
+          if (usePin) xtr = " -phase 10 -pin gmacs.pin ";
           lns = gsub("&&extra",xtr,lns,fixed=TRUE);
           writeLines(lns,con=file.path(tst,scr))
         }
@@ -135,7 +135,7 @@ runTests<-function(tests=c("TannerCrab_MalesOnlyA",
 }
 
 ##--run all
-#results = runTests(cleanup=FALSE,usePin=FALSE,compareWithPin=TRUE,printPathInfo=TRUE);
+#results = runTests(cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE,printPathInfo=TRUE);
 
 ##--run individual tests with various options (testing)
 #results = runTests("TannerCrab_MalesOnlyA",usePin=TRUE,compareWithPin=TRUE,cleanup=FALSE);
