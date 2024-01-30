@@ -1,5 +1,6 @@
 
 include/.DS_Store
 .DS_Store
+/.vscode/
 /_build/
-/testing/runs/
+/testing/runs/*

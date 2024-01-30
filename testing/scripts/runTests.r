@@ -134,8 +134,12 @@ runTests<-function(tests=c("TannerCrab_MalesOnlyA",
     return(results);
 }
 
-#runTests("AIGKC_202401",cleanup=FALSE,compareWithPin=TRUE);
-#runTests("BBRKC_202401",cleanup=FALSE,compareWithPin=TRUE);
-#results = runTests(cleanup=TRUE,usePin=FALSE,compareWithPin=TRUE);
+##--run all
+#results = runTests(cleanup=FALSE,usePin=FALSE,compareWithPin=TRUE,printPathInfo=TRUE);
+
+##--run individual tests with various options (testing)
+#results = runTests("TannerCrab_MalesOnlyA",usePin=TRUE,compareWithPin=TRUE,cleanup=FALSE);
+#results = runTests("AIGKC_202401",cleanup=FALSE,compareWithPin=TRUE);
+#results = runTests("BBRKC_202401",cleanup=FALSE,compareWithPin=TRUE);
 #results = runTests("TannerCrab_MalesOnlyA",testdir="../runs_test",usePin=TRUE,compareWithPin=FALSE);
 

@@ -34,6 +34,15 @@
 //  TO ECHO INPUT
 //    checkfile.rep       All of data read in
 //
+//  COMMANDLINE OPTIONS
+//    The following specify using an ascii pin file fnPin to set parameter values, 
+//    and set usepinfile=1 regardless of the value in gmacs.dat. Pinfile usage can 
+//    also be turned "on" in the gmacs.dat file (in which case the commandline options 
+//    are only usful for specifying a non-default pinfile name). 
+//    If fnPin not given, then fnPin = "gmacs.pin" (the ADMB default).
+//    -pin fnPin          
+//    -ainp fnPin
+//    -apin fnPin
 // ==================================================================================== //
 
 
@@ -88,11 +97,6 @@ DATA_SECTION
     if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-testing",opt))>-1 )
      {
       testingflag = 1;
-     }
-    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-apin",opt))>-1 )
-     {
-      usepinfile = 1;
-      cout << "using pin file" << endl;
      }
     if (testingflag==1){
        //Testing alternative dat file reader
@@ -291,6 +295,39 @@ DATA_SECTION
   init_int usepinfile                                       ///> Read in a special file (0=normal;1=pin file)
   init_int verbose;                                         ///> Flag to print to screen
 
+  //check for commandline overide of pinfile use (if set, overrides value from gmacs.dat)
+  LOCAL_CALCS
+    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-ainp",opt))>-1 ){
+      usepinfile = 1;
+      adstring fnPin = ad_comm::argv[on+1];
+      if (std::fstream(fnPin)){
+          ad_comm::change_pinfile_name(fnPin);
+          cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
+      } else {
+          cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
+      }
+    }
+    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-apin",opt))>-1 ){
+      usepinfile = 1;
+      adstring fnPin = ad_comm::argv[on+1];
+      if (std::fstream(fnPin)){
+          ad_comm::change_pinfile_name(fnPin);
+          cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
+      } else {
+          cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
+      }
+    }
+    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-pin",opt))>-1 ){
+      usepinfile = 1;
+      adstring fnPin = ad_comm::argv[on+1];
+      if (std::fstream(fnPin)){
+          ad_comm::change_pinfile_name(fnPin);
+          cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
+      } else {
+          cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
+      }
+    }
+  END_CALCS
   !!gmacs_files << TurnOffPhase << " # Maximum phase (stop the estimation after this phase)" << endl;
   !!gmacs_files << StopAfterFnCall << " # Maximum number of function calls" << endl;
   !!gmacs_files << CalcRefPoints << " # Calculate reference points (0=no)" << endl;
