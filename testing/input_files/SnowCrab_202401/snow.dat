@@ -309,6 +309,8 @@ NMFS_Trawl_1982 NMFS_Trawl_1989
 4	2021	1		4		1		1	62.2462	0.134	1		0
 4	2022	1		4		1		1	37.4956	0.149	1		0
 4	2023	1		4		1		1	24.2107	0.127	1		0
+
+0 #--input format for size comps (0:old format; 1: new format)
 ## Number of length frequency matrices	 																													
 13																														
 ## Number of rows in each matrix																														

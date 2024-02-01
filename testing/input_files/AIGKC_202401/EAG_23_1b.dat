@@ -303,6 +303,7 @@ Pot_Fishery Trawl_Bycatch
 3   1997    3   1   1   0   1.0681  0.0864  2   0.5
 3   1998    3   1   1   0   0.9823  0.099   2   0.5
 
+0 #--input format for size comps (0:old format; 1: new format)
 ###  Number  of  length  frequency matrices
 2
 ##  Number  of  rows  in  each  matrix

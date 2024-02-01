@@ -160,7 +160,8 @@ NMFS
 1  2021  1  2  1  0  31.5641   0.1094423  1  0
 1  2022  1  2  1  0  29.63251  0.1107957  1  0
 1  2023  1  2  1  0  34.51571  0.08175952 1  0
-#----------------------------------SIZE FREQUENCY DATA-----------------------------                                                    
+#----------------------------------SIZE FREQUENCY DATA-----------------------------
+0  #--size comps format flag (NEW 202402)
 ## Number of size frequency matrices	 																													
 3																														
 ## Number of rows in each matrix																														

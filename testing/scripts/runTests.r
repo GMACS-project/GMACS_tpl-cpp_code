@@ -34,12 +34,13 @@
 #' @importFrom dplyr 
 #' @export
 #' 
-runTests<-function(tests=c("TannerCrab_MalesOnlyA",
-                           "AIGKC_202401",
+runTests<-function(tests=c("AIGKC_202401",
                            "BBRKC_202401",
                            "NSRKC_202401",
                            "SMBKC_202401",
-                           "SnowCrab_202401"),
+                           "SnowCrab_202401",
+                           "TannerCrab_MalesOnlyA",
+                           "TannerCrab_MalesOnlyANew"),
                    testdir=".",
                    scriptsPath="../scripts",
                    inputsPath="../input_files",
@@ -135,11 +136,9 @@ runTests<-function(tests=c("TannerCrab_MalesOnlyA",
 }
 
 ##--run all
-#results = runTests(cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE,printPathInfo=TRUE);
+#results = runTests(cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE);
 
 ##--run individual tests with various options (testing)
 #results = runTests("TannerCrab_MalesOnlyA",usePin=TRUE,compareWithPin=TRUE,cleanup=FALSE);
-#results = runTests("AIGKC_202401",cleanup=FALSE,compareWithPin=TRUE);
-#results = runTests("BBRKC_202401",cleanup=FALSE,compareWithPin=TRUE);
-#results = runTests("TannerCrab_MalesOnlyA",testdir="../runs_test",usePin=TRUE,compareWithPin=FALSE);
+#results = runTests("TannerCrab_MalesOnlyANew",usePin=TRUE,compareWithPin=TRUE,cleanup=FALSE);
 

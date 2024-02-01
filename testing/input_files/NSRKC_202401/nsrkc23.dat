@@ -383,6 +383,7 @@ NMFS_Trawl ADFG_Trawl NBS_Trawl Winter_Pot
 6	2023	3	3	1	0	2.13	0.07	2	0.5
 
 									
+0 #--input format for size comps (0:old format; 1: new format)
 ##  Number  of  length  frequency matrices
 16
 ##  Number  of  rows  in  each  matrix

@@ -508,6 +508,7 @@ NMFS_Trawl BSFRF
 2	2015	1	6	2	0	35244	0.161	1  0
 2	2016	1	6	2	0	43399	0.22	1  0
 
+0 #--input format for size comps (0:old format; 1: new format)
 ## Number of length frequency matrices																																					
 13																																										
 ## Number of rows in each matrix																																				

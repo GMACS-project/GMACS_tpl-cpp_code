@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader =  adstring("## GMACS Verison 2.01.M.08; Compiled 2024-01-29");
+ !! TheHeader =  adstring("## GMACS Verison 2.01.M.09; Completed 2024-02-01");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -753,10 +753,132 @@ DATA_SECTION
   // | SIZE COMPOSITION DATA |
   // |-----------------------|
   !! cout << " * Size composition data" << endl;
-  init_int nSizeComps_in;                                            ///> Number of series of size-comp data
-  init_ivector nSizeCompRows_in(1,nSizeComps_in);                    ///> Rows of data for each series
-  init_ivector nSizeCompCols_in(1,nSizeComps_in);                    ///> Number of size-class bins
-  init_3darray d3_SizeComps_in(1,nSizeComps_in,1,nSizeCompRows_in,-7,nSizeCompCols_in);
+ LOCAL_CALCS
+  //class to provide substitutions from/to strings/integers
+  class Subst{
+    public:
+    int fleetID(adstring& flt,adstring_array& fleetname){
+      int id = 0;
+      for (int f=fleetname.indexmin();f<=fleetname.indexmax();f++)
+        if (flt==fleetname[f]) id = f;
+      return id;
+      cout<<"Problem assigning fleetID to "<< flt << endl;
+      exit(-1);
+    }
+    int catchTypeID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="retained")  return(RETAINED);
+      if (strp=="discard")   return(DISCARDED);
+      if (strp=="discarded") return(DISCARDED);
+      if (strp=="total")     return(TOTALCATCH);
+      cout<<"Problem assigning catchTypeID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int sexID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="males")        return(MALESANDCOMBINED);
+      if (strp=="females")      return(FEMALES);
+      if (strp=="male")         return(MALESANDCOMBINED);
+      if (strp=="female")       return(FEMALES);
+      if (strp=="undetermined") return(BOTHSEX);
+      return(id);
+      cout<<"Problem assigning sexID to "<< str << endl;
+      exit(-1);
+    }
+    int matID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="immature")     return(IMMATURE);
+      if (strp=="mature")       return(MATURE);
+      if (strp=="undetermined") return(BOTHMATURE);
+      cout<<"Problem assigning matID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int shellID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="new shell")    return(NEW_SHELL);
+      if (strp=="old shell")    return(OLD_SHELL);
+      if (strp=="undetermined") return(UNDET_SHELL);
+      cout<<"Problem assigning shellID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+  };
+  Subst substStuff;
+ END_CALCS
+  init_int fmtZCs_in;                                           ///> size composition format flag (0=old style, 1=new style)
+  !!WRITEDAT(fmtZCs_in)
+  init_int nSizeComps_in;                                       ///> Number of series of size-comp data
+  //NEW 202402: WTS--startmod
+  ivector nSizeCompRows_in(1,nSizeComps_in);                    ///> Rows of data for each series
+  ivector nSizeCompCols_in(1,nSizeComps_in);                    ///> Number of size-class bins
+  3darray d3_SizeComps_in(1,nSizeComps_in);//--other dimension are allocated below
+ LOCAL_CALCS
+  {
+    cifstream* pGD = ad_comm::global_datafile;
+    if (fmtZCs_in==0){
+      (*pGD) >> nSizeCompRows_in;
+      (*pGD) >> nSizeCompCols_in;
+      //--allocate remaining dimensions
+      for (int iZC=1;iZC<=nSizeComps_in;iZC++)
+        d3_SizeComps_in(iZC).allocate(1,nSizeCompRows_in(iZC),-7,nSizeCompCols_in(iZC));
+      d3_SizeComps_in.initialize();//--set elements to 0
+    }
+  }
+ END_CALCS
+ LOCAL_CALCS
+  {
+    cifstream* pGD = ad_comm::global_datafile;
+    if (fmtZCs_in==0){
+      (*pGD) >> d3_SizeComps_in;
+    } else if (fmtZCs_in==1) {
+      cout << "reading size compositions using new format" << endl;
+      adstring ct_, flt_, x_, m_, s_; 
+      int      ict_,iflt_,ix_,im_,is_;
+      for (int iZC=1;iZC<=nSizeComps_in;iZC++){
+        cout << "iZC = " << iZC << endl;
+        (*pGD) >> ct_;            //--catch type as string
+        (*pGD) >> flt_;           //--fleet as string
+        (*pGD) >> x_;             //--sex as string
+        (*pGD) >> m_;             //--maturity as string
+        (*pGD) >> s_;             //--shell condition as string
+        (*pGD) >> nSizeCompRows_in(iZC);
+        (*pGD) >> nSizeCompCols_in(iZC);
+        cout << "nSizeCompRows_in(iZC) = " << nSizeCompRows_in(iZC) << endl;
+        cout << "nSizeCompCols_in(iZC) = " << nSizeCompCols_in(iZC) << endl;
+        cout << ct_ << " " << flt_ << " " << x_ << " " << m_ << " " << s_ << endl;
+        ict_  = substStuff.catchTypeID(ct_);
+        iflt_ = substStuff.fleetID(flt_,fleetname);
+        ix_   = substStuff.sexID(x_);
+        im_   = substStuff.matID(m_);
+        is_   = substStuff.shellID(s_);
+        d3_SizeComps_in(iZC).allocate(1,nSizeCompRows_in(iZC),-7,nSizeCompCols_in(iZC));
+        for (int rw=1;rw<=nSizeCompRows_in(iZC);rw++){
+          //cout << "rw = " << rw << endl;
+          (*pGD) >> d3_SizeComps_in(iZC,rw)(-7,-6);                   //--year, season
+          //cout << d3_SizeComps_in(iZC,rw)(-7,-6) <<" ";
+          d3_SizeComps_in(iZC,rw)(-5) = iflt_;
+          d3_SizeComps_in(iZC,rw)(-4) = ix_;
+          d3_SizeComps_in(iZC,rw)(-3) = ict_;
+          d3_SizeComps_in(iZC,rw)(-2) = is_;
+          d3_SizeComps_in(iZC,rw)(-1) = im_;
+          //cout<< "*" << d3_SizeComps_in(iZC,rw)(-5,-1) << "*" << endl;//fleet,sex,catch type,shell,maturity
+          (*pGD) >> d3_SizeComps_in(iZC,rw)(0,nSizeCompCols_in(iZC)); //--the remainder
+          cout << d3_SizeComps_in(iZC,rw) << endl;
+        }//--rw
+      } //--iZC
+      cout <<"finished reading new format size comps" << endl;
+    } else {
+      cout<<"Error in data file: fmtZCs_in should be 0 or 1, not "<<fmtZCs_in<<endl;
+    }
+  }
+ END_CALCS
+  //NEW 202402: WTS--endmod
 
   3darray d3_obs_size_comps_in(1,nSizeComps_in,1,nSizeCompRows_in,1,nSizeCompCols_in);
   matrix size_comp_sample_size_in(1,nSizeComps_in,1,nSizeCompRows_in);
@@ -10753,4 +10875,4 @@ FINAL_SECTION
 // 2024-01-10 ** AEP. (Updated GMACS to version 2.01.M.06) (a) modified to output projected catches, (b) calculated historical mortality for projections
 // 2024-01-11 ** AEP. (Updated GMACS to version 2.01.M.07) (a) updated the _in files to match the latest version of GMACS. (b) producted inputs files with estimated parameters and expected data
 // 2024-01-29 ** AEP. (Updated GMACS to version 2.01.M.08) Fixed time-varying growth increment and added a trap for negative growth increments in fn calls 0 and 1
-
+// 2024-02-01 ** WTS. (Updated GMACS to version 2.01.M.09) Added alternative format for inputting size comps data.
