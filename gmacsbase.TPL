@@ -733,12 +733,12 @@ DATA_SECTION
      gmacs_data << (int) dSurveyData(irow,8) << " ";//data type
      gmacs_data << dSurveyData(irow,9) << " ";//CPUE time
      anystring = "# " + fleetname(dSurveyData(irow,3));
-     if (dSurveyData(irow,4)==BOTHSEX)          anystring = anystring +"_male+female";
-     if (dSurveyData(irow,4)==MALESANDCOMBINED) anystring = anystring +"_male";
+     if (dSurveyData(irow,4)==UNDET_SEX)        anystring = anystring +"_male+female";
+     if (dSurveyData(irow,4)==MALES)            anystring = anystring +"_male";
      if (dSurveyData(irow,4)==FEMALES)          anystring = anystring +"_female";
-     if (dSurveyData(irow,5)==BOTHMATURE) anystring = anystring +"_immature+mature";
-     if (dSurveyData(irow,5)==IMMATURE)   anystring = anystring +"_immature";
-     if (dSurveyData(irow,5)==MATURE)     anystring = anystring +"_mature";
+     if (dSurveyData(irow,5)==UNDET_MATURE) anystring = anystring +"_immature+mature";
+     if (dSurveyData(irow,5)==IMMATURE)     anystring = anystring +"_immature";
+     if (dSurveyData(irow,5)==MATURE)       anystring = anystring +"_mature";
      gmacs_data << anystring << " ";
      
      SDlogD = sqrt(log(1.0 + square(dSurveyData(irow,7))));
@@ -779,11 +779,11 @@ DATA_SECTION
     int sexID(adstring& str){
       int id = -1;
       adstring strp = to_lower(str);
-      if (strp=="males")        return(MALESANDCOMBINED);
+      if (strp=="males")        return(MALES);
       if (strp=="females")      return(FEMALES);
-      if (strp=="male")         return(MALESANDCOMBINED);
+      if (strp=="male")         return(MALES);
       if (strp=="female")       return(FEMALES);
-      if (strp=="undetermined") return(BOTHSEX);
+      if (strp=="undetermined") return(UNDET_SEX);
       return(id);
       cout<<"Problem assigning sexID to "<< str << endl;
       exit(-1);
@@ -793,7 +793,7 @@ DATA_SECTION
       adstring strp = to_lower(str);
       if (strp=="immature")     return(IMMATURE);
       if (strp=="mature")       return(MATURE);
-      if (strp=="undetermined") return(BOTHMATURE);
+      if (strp=="undetermined") return(UNDET_MATURE);
       cout<<"Problem assigning matID to "<< str << endl;
       exit(-1);
       return(id);
@@ -928,8 +928,8 @@ DATA_SECTION
         exit(1);
        }
 
-	  if (d3_SizeComps_in(irow,jrow,-4)==BOTHSEX)          anystring = anystring +"_male+female";
-      if (d3_SizeComps_in(irow,jrow,-4)==MALESANDCOMBINED) anystring = anystring +"_male";
+	    if (d3_SizeComps_in(irow,jrow,-4)==UNDET_SEX)        anystring = anystring +"_male+female";
+      if (d3_SizeComps_in(irow,jrow,-4)==MALES)            anystring = anystring +"_male";
       if (d3_SizeComps_in(irow,jrow,-4)==FEMALES)          anystring = anystring +"_female";
       if (d3_SizeComps_in(irow,jrow,-3)==TOTALCATCH)       anystring = anystring +"_total";
       if (d3_SizeComps_in(irow,jrow,-3)==RETAINED)         anystring = anystring +"_retained";
@@ -937,7 +937,7 @@ DATA_SECTION
       if (d3_SizeComps_in(irow,jrow,-2)==UNDET_SHELL)      anystring = anystring +"_all_shell";
       if (d3_SizeComps_in(irow,jrow,-2)==NEW_SHELL)        anystring = anystring +"_newshell";
       if (d3_SizeComps_in(irow,jrow,-2)==OLD_SHELL)        anystring = anystring +"_oldshell";
-      if (d3_SizeComps_in(irow,jrow,-1)==BOTHMATURE)       anystring = anystring +"_immature+mature";
+      if (d3_SizeComps_in(irow,jrow,-1)==UNDET_MATURE)     anystring = anystring +"_immature+mature";
       if (d3_SizeComps_in(irow,jrow,-1)==IMMATURE)         anystring = anystring +"_immature";
       if (d3_SizeComps_in(irow,jrow,-1)==MATURE)           anystring = anystring +"_mature";
       gmacs_data << anystring << endl;
@@ -2238,8 +2238,8 @@ DATA_SECTION
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
-    if (d3_SizeComps_in(kk,1,-4)==BOTHSEX)          anystring = anystring +" male+female";
-    if (d3_SizeComps_in(kk,1,-4)==MALESANDCOMBINED) anystring = anystring +" male";
+    if (d3_SizeComps_in(kk,1,-4)==UNDET_SEX)        anystring = anystring +" male+female";
+    if (d3_SizeComps_in(kk,1,-4)==MALES)            anystring = anystring +" male";
     if (d3_SizeComps_in(kk,1,-4)==FEMALES)          anystring = anystring +" female";
    }
   gmacs_ctl << anystring << endl;
@@ -2262,7 +2262,7 @@ DATA_SECTION
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
-    if (d3_SizeComps_in(kk,1,-1)==BOTHMATURE)       anystring = anystring +" immature+mature";
+    if (d3_SizeComps_in(kk,1,-1)==UNDET_MATURE)       anystring = anystring +" immature+mature";
     if (d3_SizeComps_in(kk,1,-1)==IMMATURE)         anystring = anystring +" immature";
     if (d3_SizeComps_in(kk,1,-1)==MATURE)           anystring = anystring +" mature";
    }
@@ -4150,457 +4150,310 @@ FUNCTION calc_selectivities
 
   // Specify non-mirrored selectivity
   int j = 1; int ee = 1; sd = 1;
-  for ( int k = 1; k <= nslx; k++ )
-   if (slx_type(k) < 0){
-    pSLX=0; 
-    j++;
-  } else {
-     if (verbose>3) cout<<"retrieving selex for k = "<<k<<endl;
-    dvar_vector temp_slx2(1,slx_extra(k));
-    dvar_vector knots(1,slx_extra(k));
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_type(k) < 0){
+      pSLX=0; 
+      j++;
+    } else {
+      if (verbose>3) cout<<"retrieving selex for k = "<<k<<endl;
+      dvar_vector temp_slx2(1,slx_extra(k));
+      dvar_vector knots(1,slx_extra(k));
 
-    // Save parameter points we will need then
-    jstore = j; estore = ee;
-    // initialize SelDevs (Cumulative (Env + Random walk) deviations for selectivity)
-     SelDevs.initialize();
+      // Save parameter points we will need then
+      jstore = j; estore = ee;
+      // initialize SelDevs (Cumulative (Env + Random walk) deviations for selectivity)
+      SelDevs.initialize();
+      //int h1 = 1;
+      //int h2 = nsex;
+      //if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
+      //if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
+      //for ( h = h1; h <= h2; h++ ) {
+      h = slx_isex(k); 
+      {
+        // Set the time-varying dev for this fleet x sex
+        if (slx_timeVar(k)==1) {
+          for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
+            j = jstore; ee= estore; 
+            switch ( slx_type(k) ) {
+              case SELEX_PARAMETRIC:                               ///> parametric
+                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
+                for (int i = 1; i <= nclass; i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
+                break;
+              case SELEX_COEFFICIENTS:                             ///> coefficients
+                if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+                break;
+              case SELEX_STANLOGISTIC:                             ///> logistic
+                if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_5095LOGISTIC:                             ///> logistic95
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
+                if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
+                if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                j++;
+                break;
+              case SELEX_DECLLOGISTIC:                             ///> declining logistic
+                if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_DOUBLENORM:                               ///> double normal
+                for (int i=1;i<=3;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_DOUBLENORM4:                               ///> double normal4
+                if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
+                for (int i=1;i<=4;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_UNIFORM1: // uniform 1
+                break;
+              case SELEX_UNIFORM0: // uniform 0
+                break;
+              case SELEX_CUBIC_SPLINE:                             ///> coefficients
+                if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+            } // switch
+          } // iy
+        }
+        if (verbose>3)  cout << "Done stage 1: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
 
-//   switch ( slx_type(k) )
-//    {
-//     case SELEX_PARAMETRIC:                               ///> parametric
-//         if (verbose>3) cout<<"SELEX_PARAMETRIC"<<endl;
-//      for (i = 1; i <= nclass; i++) { temp_slx1(i) = log_slx_pars(j); j++; }
-//      ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[k-1])->SetSelparms(temp_slx1);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_COEFFICIENTS:                             ///> coefficients
-//         if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
-//      for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-//      ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[k-1])->SetSelCoeffs(temp_slx2);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_STANLOGISTIC:                             ///> logistic
-//         if (verbose>3) cout<<"SELEX_LOGISTIC"<<endl;
-//      p1 = mfexp(log_slx_pars(j));
-//      j++;
-//      p2 = mfexp(log_slx_pars(j));
-//      j++;
-//      ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_5095LOGISTIC:                             ///> logistic95
-//         if (verbose>3) cout<<"SELEX_LOGISTIC95"<<endl;
-//       p1 = mfexp(log_slx_pars(j));
-//       j++;
-//       p2 = mfexp(log_slx_pars(j));
-//       j++;
-//      ((gsm::LogisticCurve95<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
-//      pSLX = ppSLX[k-1];
-//     break;
-//     case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
-//       if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
-//       p1 = mfexp(log_slx_pars(j));
-//       j++;
-//      ((gsm::LogisticCurveOne<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1);
-//      pSLX = ppSLX[k-1];
-//     break;
-//     case SELEX_DECLLOGISTIC:                             ///> declining logistic
-//         if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
-//       p1 = mfexp(log_slx_pars(j));
-//       j++;
-//       p2 = mfexp(log_slx_pars(j));
-//       j++;
-//       for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-//      ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[k-1])->SetParams(p1,p2,temp_slx2);
-//      pSLX = ppSLX[k-1];
-//     break;
-//     case SELEX_DOUBLENORM:                               ///> double normal
-//         if (verbose>3) cout<<"SELEX_DOUBLENORM"<<endl;
-//      p1 = mfexp(log_slx_pars(j));
-//      j++;
-//      p2 = mfexp(log_slx_pars(j));
-//      j++;
-//      p3 = mfexp(log_slx_pars(j));
-//      j++;
-//      ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_DOUBLENORM4:                               ///> double normal4
-//         if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
-//      p1 = mfexp(log_slx_pars(j));
-//      j++;
-//      p2 = mfexp(log_slx_pars(j));
-//      j++;
-//      p3 = mfexp(log_slx_pars(j));
-//      j++;
-//      p4 = mfexp(log_slx_pars(j));
-//      j++;
-//      ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3,p4);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_UNIFORM1: // uniform 1
-//      j++;
-//         if (verbose>3) cout<<"SELEX_UNIFORM1"<<endl;
-//      pSLX = ppSLX[k-1];//gsm::UniformCurve<dvar_vector>
-//      break;
-//     case SELEX_UNIFORM0: // uniform 0
-//      j++;
-//         if (verbose>3) cout<<"SELEX_UNIFORM0"<<endl;
-//      pSLX = ppSLX[k-1];//gsm::Uniform0Curve<dvar_vector>
-//      break;
-//     case SELEX_CUBIC_SPLINE:                             ///> coefficients
-//      if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
-//      for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
-//      for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-//      // Buck
-//      //need to set y_vals and x_vals below appropriately
-//      //y_vals are values at knots (a dvar_vector)
-//      //x_vals are knots           (a dvar_vector)
-//      ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[k-1])->initSpline(temp_slx2,knots);
-//      pSLX = ppSLX[k-1];//gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
-//      //break;
-//    } // switch
-//    if (verbose>3) cout<<"done selecting SLX"<<endl;
-//     
-//   int h1 = 1;
-//   int h2 = nsex;
-//   if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
-//   if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
-//   for ( h = h1; h <= h2; h++ )
-//    {
-//     for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
-//      {
-//       int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
-//       if ( slx_gear(k) > 0 )                                            ///> capture selectivity
-//        {
-//         log_slx_capture(kk,h,i) = pSLX->logSelectivity(dvar_mid_points);
-//         if (slx_type(k)==SELEX_PARAMETRIC || slx_type(k)==SELEX_COEFFICIENTS || slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
-//      if( slx_max_at_1(k) == 1)
-//        log_slx_capture(kk,h,i) -= log_slx_capture(kk,h,i,nclass);
-//         //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_capture(kk,h,i) << " " << exp(log_slx_capture(kk,h,i)) << endl;
-//        }
-//       else                                                              ///> discard (because the gear is NEGATIVE)
-//        {
-//         log_slx_retaind(kk,h,i) = pSLX->logSelectivity(dvar_mid_points);
-//         if (slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
-//          log_slx_retaind(kk,h,i) -= log_slx_retaind(kk,h,i,nclass);
-//         log_slx_retaind(kk,h,i) += log_high_grade(kk,h,i);
-//         log_slx_discard(kk,h,i) = log(1.0 - exp(log_slx_retaind(kk,h,i)) + TINY);
-//         //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_retaind(kk,h,i) << endl;
-//        }
-//      }
-//    }
-//   //do NOT "delete pSLX;"
-//  } // k
+        // Now the actual deal
+        for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
+          if (iy==slx_styr(k) || slx_timeVar(k)==1) {
+            j = jstore; /// ee= estore; 
+            switch ( slx_type(k) ) {
+              case SELEX_PARAMETRIC:                               ///> parametric
+                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
+                for (int i = 1; i <= nclass; i++) { 
+                  temp_slx1(i) = log_slx_pars(j); 
+                  if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx1(i) += SelDevs(j,iy); }
+                  j++; 
+                }
+                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
+                ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[k-1])->SetSelparms(temp_slx1);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_COEFFICIENTS:                             ///> coefficients
+                if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  temp_slx2(i) = log_slx_pars(j); 
+                  if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx2(i) += SelDevs(j,iy); }
+                  j++; 
+                }
+                ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[k-1])->SetSelCoeffs(temp_slx2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_STANLOGISTIC:                             ///> logistic
+                if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_5095LOGISTIC:                             ///> logistic95
+                if (verbose>3) cout<<"SELEX_LOGISTIC95"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurve95<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
+                if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurveOne<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DECLLOGISTIC:                             ///> declining logistic
+                if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+                ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[k-1])->SetParams(p1,p2,temp_slx2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DOUBLENORM:                               ///> double normal
+                if (verbose>3) cout<<"SELEX_DOUBLENORM"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                j++;
+                p3 = mfexp(log_slx_pars(j));
+                j++;
+                ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DOUBLENORM4:                               ///> double normal4
+                if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                j++;
+                p3 = mfexp(log_slx_pars(j));
+                j++;
+                p4 = mfexp(log_slx_pars(j));
+                j++;
+                ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3,p4);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_UNIFORM1: // uniform 1
+                j++;
+                if (verbose>3) cout<<"SELEX_UNIFORM1"<<endl;
+                pSLX = ppSLX[k-1];//gsm::UniformCurve<dvar_vector>
+                break;
+              case SELEX_UNIFORM0: // uniform 0
+                j++;
+                if (verbose>3) cout<<"SELEX_UNIFORM0"<<endl;
+                pSLX = ppSLX[k-1];//gsm::Uniform0Curve<dvar_vector>
+                break;
+              case SELEX_CUBIC_SPLINE:                             ///> coefficients
+                if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
+                for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+                // Buck
+                //need to set y_vals and x_vals below appropriately
+                //y_vals are values at knots (a dvar_vector)
+                //x_vals are knots           (a dvar_vector)
+                ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[k-1])->initSpline(temp_slx2,knots);
+                pSLX = ppSLX[k-1];//gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
+                //break;
+            } //--switch
+          } //--if (iy==slx_styr(k) || slx_timeVar(k)==1) 
 
-    int h1 = 1;
-    int h2 = nsex;
-    if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
-    if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
-    for ( h = h1; h <= h2; h++ )
-     {
-      // Set the time-varying dev for this fleet x sex
-      if (slx_timeVar(k)==1)
-       for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ )
-        {
-
-          j = jstore; ee= estore; 
-
-
-         switch ( slx_type(k) )
-          {
-           case SELEX_PARAMETRIC:                               ///> parametric
-            if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
-            for (int i = 1; i <= nclass; i++) 
-             { 
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             }
-            if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
-            break;
-           case SELEX_COEFFICIENTS:                             ///> coefficients
-            if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
-            for (int i = 1; i <= slx_extra(k); i++) 
-             { 
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             }
-            break;
-           case SELEX_STANLOGISTIC:                             ///> logistic
-            if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
-            for (int i=1;i<=2;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_5095LOGISTIC:                             ///> logistic95
-            for (int i=1;i<=2;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
-            if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
-            if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-            if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-            if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-            j++;
-            break;
-           case SELEX_DECLLOGISTIC:                             ///> declining logistic
-            if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
-            for (int i=1;i<=2;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_DOUBLENORM:                               ///> double normal
-            for (int i=1;i<=3;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_DOUBLENORM4:                               ///> double normal4
-            if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
-            for (int i=1;i<=4;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_UNIFORM1: // uniform 1
-            break;
-           case SELEX_UNIFORM0: // uniform 0
-            break;
-           case SELEX_CUBIC_SPLINE:                             ///> coefficients
-            if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
-            for (int i = 1; i <= slx_extra(k); i++) 
-             { 
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             }
-          } // switch
-
-
-          //if (h != h2 || iy != slx_edyr(k)) { j = jstore; ee= estore; }
-
-        } // iy
-       if (verbose>3)  cout << "Done stage 1: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
-
-      // Now the actual deal
-      for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ )
-       {
-        if (iy==slx_styr(k) || slx_timeVar(k)==1)
-         {
-
-          j = jstore; /// ee= estore; 
-
-
-          switch ( slx_type(k) )
-          {
-           case SELEX_PARAMETRIC:                               ///> parametric
-            if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
-            for (int i = 1; i <= nclass; i++) 
-             { 
-              temp_slx1(i) = log_slx_pars(j); 
-              if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx1(i) += SelDevs(j,iy); }
-              j++; 
-             }
-            if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
-            ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[k-1])->SetSelparms(temp_slx1);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_COEFFICIENTS:                             ///> coefficients
-            if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
-            for (int i = 1; i <= slx_extra(k); i++) 
-              { 
-               temp_slx2(i) = log_slx_pars(j); 
-               if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx2(i) += SelDevs(j,iy); }
-               j++; 
-               }
-            ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[k-1])->SetSelCoeffs(temp_slx2);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_STANLOGISTIC:                             ///> logistic
-            if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
-            p1 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
-            j++;
-            ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_5095LOGISTIC:                             ///> logistic95
-            if (verbose>3) cout<<"SELEX_LOGISTIC95"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
-            j++;
-            ((gsm::LogisticCurve95<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
-            if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
-            j++;
-            ((gsm::LogisticCurveOne<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_DECLLOGISTIC:                             ///> declining logistic
-            if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
-            j++;
-            for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-            ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[k-1])->SetParams(p1,p2,temp_slx2);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_DOUBLENORM:                               ///> double normal
-            if (verbose>3) cout<<"SELEX_DOUBLENORM"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            j++;
-            p3 = mfexp(log_slx_pars(j));
-            j++;
-            ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_DOUBLENORM4:                               ///> double normal4
-            if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            j++;
-            p3 = mfexp(log_slx_pars(j));
-            j++;
-            p4 = mfexp(log_slx_pars(j));
-            j++;
-            ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3,p4);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_UNIFORM1: // uniform 1
-            j++;
-            if (verbose>3) cout<<"SELEX_UNIFORM1"<<endl;
-            pSLX = ppSLX[k-1];//gsm::UniformCurve<dvar_vector>
-            break;
-           case SELEX_UNIFORM0: // uniform 0
-            j++;
-            if (verbose>3) cout<<"SELEX_UNIFORM0"<<endl;
-            pSLX = ppSLX[k-1];//gsm::Uniform0Curve<dvar_vector>
-            break;
-           case SELEX_CUBIC_SPLINE:                             ///> coefficients
-            if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
-            for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
-            for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-            // Buck
-            //need to set y_vals and x_vals below appropriately
-            //y_vals are values at knots (a dvar_vector)
-            //x_vals are knots           (a dvar_vector)
-            ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[k-1])->initSpline(temp_slx2,knots);
-            pSLX = ppSLX[k-1];//gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
-            //break;
-          } // switch
-
-          // if (h != h2 || iy != slx_edyr(k)) { j = jstore;}
-          
-         } //  if 
-
-        int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
-        if ( slx_gear(k) > 0 )                                            ///> capture selectivity
-         {
-          log_slx_capture(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
-          if (slx_type(k)==SELEX_PARAMETRIC || slx_type(k)==SELEX_COEFFICIENTS || slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
-    if( slx_max_at_1(k) == 1)
-      log_slx_capture(kk,h,iy) -= log_slx_capture(kk,h,iy,nclass);
-          //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_capture(kk,h,i) << " " << exp(log_slx_capture(kk,h,i)) << endl;
-         }
-        else                                                              ///> discard (because the gear is NEGATIVE)
-         {
-          log_slx_retaind(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
-          if (slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
-           log_slx_retaind(kk,h,iy) -= log_slx_retaind(kk,h,iy,nclass);
-          log_slx_retaind(kk,h,iy) += log_high_grade(kk,h,iy);
-          log_slx_discard(kk,h,iy) = log(1.0 - exp(log_slx_retaind(kk,h,iy)) + TINY);
-          //cout << kk << " " << h << " " << iy << " " << slx_type(k) << " " << log_slx_retaind(kk,h,iy) << endl;
-         }
-        } // iy
+          int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
+          if ( slx_gear(k) > 0 ) {                                           ///> capture selectivity
+            log_slx_capture(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
+            if (slx_type(k)==SELEX_PARAMETRIC || slx_type(k)==SELEX_COEFFICIENTS || slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
+              if( slx_max_at_1(k) == 1)
+                log_slx_capture(kk,h,iy) -= log_slx_capture(kk,h,iy,nclass);
+            //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_capture(kk,h,i) << " " << exp(log_slx_capture(kk,h,i)) << endl;
+          } else {                                                              ///> discard (because the gear is NEGATIVE)
+            log_slx_retaind(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
+            if (slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
+              log_slx_retaind(kk,h,iy) -= log_slx_retaind(kk,h,iy,nclass);
+            log_slx_retaind(kk,h,iy) += log_high_grade(kk,h,iy);
+            log_slx_discard(kk,h,iy) = log(1.0 - exp(log_slx_retaind(kk,h,iy)) + TINY);
+            //cout << kk << " " << h << " " << iy << " " << slx_type(k) << " " << log_slx_retaind(kk,h,iy) << endl;
+          }
+        } //--iy loop
         if (verbose>3) cout << "Done stage 2: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
-       }
-    if (verbose>3) cout<<"done selecting SLX"<<endl;
-    //do NOT "delete pSLX;"
-   } // k
+      } //--h loop
+      if (verbose>3) cout<<"done selecting SLX"<<endl;
+      //do NOT "delete pSLX;"
+    }//--if (slx_type(k) < 0)
    //exit(1);
+  }//--k loop
 
   // Mirror mirrow in the file
-  for ( int k = 1; k <= nslx; k++ )
-   if (slx_type(k) < 0)
-    {
-     int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
-     int h1 = 1;
-     int h2 = nsex;
-     if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
-     if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
-     if ( slx_gear(k) > 0 )                                              ///> capture selectivity
-      {
-       for ( i = syr; i <= nyrRetro; i++ )
-        for ( h = h1; h <= h2; h++ )
-         log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
-      }
-     else
-      {
-       for ( i = syr; i <= nyrRetro; i++ )
-        for ( h = h1; h <= h2; h++ )
-         {
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_type(k) < 0) {
+      int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
+      //int h1 = 1;
+      //int h2 = nsex;
+      //if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
+      //if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
+      //if ( slx_gear(k) > 0 ) {
+      //  for ( i = syr; i <= nyrRetro; i++ )
+      //  for ( h = h1; h <= h2; h++ )
+      //  log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
+      //} else {
+      //  for ( i = syr; i <= nyrRetro; i++ )
+      //  for ( h = h1; h <= h2; h++ ){
+      //  log_slx_retaind(kk,h,i) = log_slx_retaind(-slx_type(k),h,i);
+      //  log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
+      //  }
+      //}
+      h = slx_isex(k);
+      if ( slx_gear(k) > 0 ) {
+        for ( i = syr; i <= nyrRetro; i++ )
+          log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
+      } else {
+        for ( i = syr; i <= nyrRetro; i++ ) {
           log_slx_retaind(kk,h,i) = log_slx_retaind(-slx_type(k),h,i);
           log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
-         }
-     }
-    }
+        }//--i loop
+      }//--if ( slx_gear(k) > 0 )
+    }//--if (slx_type(k) < 0)
+  }//--k loop
 
 	// Sometimes one selectivity pattern is embedded in another
-  for ( int k = 1; k <= nslx; k++ )
-   if (slx_incl(k) > 0 && slx_gear(k) > 0)                                 ///> only for capture selectivity
-    {
-     int h1 = 1;
-     int h2 = nsex;
-     if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }    ///> males (and combined) only
-     if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                      ///> females only
-     for ( h = h1; h <= h2; h++ )
-      {
-       int kk = abs(slx_gear(k));                                         ///> pointer to the fleet
-       k2 = slx_incl(k);                                                  ///> pointer to the fleet within within which this fleet falls
-       for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_incl(k) > 0 && slx_gear(k) > 0){                                 ///> only for capture selectivity
+      //int h1 = 1;
+      //int h2 = nsex;
+      //if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }    ///> males (and combined) only
+      // if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                      ///> females only
+      //for ( h = h1; h <= h2; h++ ) {
+      //    int kk = abs(slx_gear(k));                                         ///> pointer to the fleet
+      //    k2 = slx_incl(k);                                                  ///> pointer to the fleet within within which this fleet falls
+      //    for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
+      //      for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
+      //}//--h loop
+      h = slx_isex(k);
+      int kk = abs(slx_gear(k));
+      k2 = slx_incl(k);
+      for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
         for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
-      }
-    }
-	
+    }//--if
+  }//--k loop
+//--end of function
 	
 // --------------------------------------------------------------------------------------------------
 
@@ -5360,7 +5213,7 @@ FUNCTION calc_initial_numbers_at_length
          d4_N(ig)(syr)(1) = mfexp(logN0(ig));
         }
      break;
-    case FREEPARSSCALED:                                 ///> Free parameters (revised
+    case FREEPARSSCALED:                                 ///> Free parameters (revised)
      scale = sum(exp(logN0));
      for ( int h = 1; h <= nsex; h++ )
       for ( int m = 1; m <= nmature; m++ )
@@ -5397,112 +5250,97 @@ FUNCTION update_population_numbers_at_length
   dvar_vector  z(1,nclass);
 
   // this is what should be used because recruitment is not always during the first season (i.e. during the initial conditions)
-  for ( i = syr; i <= nyrRetro; i++ )
-   for ( h = 1; h <= nsex; h++ )
-    {
-     if ( bInitializeUnfished == UNFISHEDEQN )
-      recruits(h,i) = mfexp(logR0)*float(nsex);
-     else
-      recruits(h,i) = mfexp(logRbar)*float(nsex);
-     // This splits recruitment out proportionately into males and females
-     if (nsex == 1) recruits(h)(i) *= mfexp(rec_dev(i));
-     if (nsex == 2 && h == MALESANDCOMBINED) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
-     // if (h == MALESANDCOMBINED) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
-	 if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
-    }
+  for ( i = syr; i <= nyrRetro; i++ ){
+      for ( h = 1; h <= nsex; h++ ){
+      if ( bInitializeUnfished == UNFISHEDEQN )
+        recruits(h,i) = mfexp(logR0)*float(nsex);
+      else
+        recruits(h,i) = mfexp(logRbar)*float(nsex);
+      // This splits recruitment out proportionately into males and females
+      if (nsex == 1) recruits(h)(i) *= mfexp(rec_dev(i));
+      if (nsex == 2 && h == MALES) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
+      if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
+    }//--h
+  }//--i
 
-  for ( i = syr; i <= nyrRetro; i++ )
-   for ( int j = 1; j <= nseason; j++ )
-    {
-     for ( ig = 1; ig <= n_grp; ig++ )
-      {
-       h = isex(ig);
-       isizeTrans = iYrIncChanges(h,i);
-       m = imature(ig);
-       o = ishell(ig);
+  for ( i = syr; i <= nyrRetro; i++ ){
+    for ( int j = 1; j <= nseason; j++ ){
+      for ( ig = 1; ig <= n_grp; ig++ ){
+        h = isex(ig);
+        isizeTrans = iYrIncChanges(h,i);
+        m = imature(ig);
+        o = ishell(ig);
 
-       x = d4_N(ig)(i)(j);
-       // Mortality (natural and fishing)
-       x = x * S(h,m)(i)(j);
-       if ( nshell == 1 )
-        {
-		if(nmature == 1)
-		 {
-		 // Molting and growth
-         if (j == season_growth)
-           {
-            y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
-            x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
-            x = x + y;
-           }
-         // Recruitment
-         if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-         if (j == nseason) d4_N(ig)(i+1)(1) = x;  else  d4_N(ig)(i)(j+1) = x;
-		 }
-        if(nmature == 2)
-		 {
-		  if ( m == 1 ) // mature
-          {
-           //No molting, growth, or recruitment for mature animals
-           if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
-          }
-          if ( m == 2 ) // immature
-          {
-          // Molting and growth
-           z.initialize();
-           if (j == season_growth)
-            {
-             //z = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); 		// molted to maturity
-             //x = elem_prod(x, 1 - molt_probability(h)(i)) * growth_transition(h,isizeTrans);    // molted, but immature
-			 z = elem_prod(x * growth_transition(h,isizeTrans), molt_probability(h)(i)) ; 		// molted to maturity
-             x = elem_prod(x * growth_transition(h,isizeTrans), 1 - molt_probability(h)(i)) ;    // molted, but immature
+        x = d4_N(ig)(i)(j);
+        // Mortality (natural and fishing)
+        x = x * S(h,m)(i)(j);
+        if (nshell == 1 ) {
+          if(nmature == 1) {
+            // Molting and growth
+            if (j == season_growth) {
+              y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
+              x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
+              x = x + y;
             }
-		   if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-           if (j == nseason)
-            { d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; }
-            else
-            { d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; }
-          }	 
-		 }
-        }
-       else
-        {
-         if ( o == 1 ) // newshell
-          {
-		   // Molting and growth
-           if (j == season_growth)
-            {
-             y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
-             x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
+            // Recruitment
+            if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+            if (j == nseason) d4_N(ig)(i+1)(1) = x;  else  d4_N(ig)(i)(j+1) = x;
+          } //nmature==1
+          if(nmature == 2) {
+            if ( m == MATURE ) {// mature
+            //No molting, growth, or recruitment for mature animals
+              if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
             }
-           // Recruitment
-           if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-           if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
-          }
-         if ( o == 2 ) // oldshell
-          {
-		  // Molting and growth
-           z.initialize();
-           if (j == season_growth)
-            {
-             z = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
-             x = elem_prod(x, 1 - molt_probability(h)(i)) + y; // did not molt, remain oldshell and add the newshell that become oldshell
+            if ( m == IMMATURE ) {// immature
+              // Molting and growth
+              z.initialize();
+              if (j == season_growth) {
+                z = elem_prod(x * growth_transition(h,isizeTrans), molt_probability(h)(i)) ; 		// molted to maturity
+                x = elem_prod(x * growth_transition(h,isizeTrans), 1 - molt_probability(h)(i)) ;    // molted, but immature
+              }
+              if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+              if (j == nseason){ 
+                d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; 
+              } else { 
+                d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; 
+              }
+            }	 
+          }//nmature==2
+        } else { //nshell>1
+          if ( o == NEW_SHELL ) {// newshell
+            // Molting and growth
+            if (j == season_growth){
+              y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
+              x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
             }
-           if (j == nseason)
-            { d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; }
-            else
-            { d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; }
-          }
-        }
+            // Recruitment
+            if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+            if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
+          }//-- o == NEW_SHELL
+          if ( o == OLD_SHELL ){ // oldshell
+            // Molting and growth
+            z.initialize();
+            if (j == season_growth) {
+              z = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
+              x = elem_prod(x, 1 - molt_probability(h)(i)) + y; // did not molt, remain oldshell and add the newshell that become oldshell
+            }
+            if (j == nseason){ 
+              d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; 
+            } else { 
+              d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; 
+            }
+          }//-- o == OLD_SHELL
+        }//--if nshell
 
-       if ( o == 1 && m == 2 ) // terminal molt to new shell.
-        {
+        if ( o == NEW_SHELL && m == IMMATURE ) {
+          // terminal molt to new shell.
         }
-       if ( o == 2 && m == 2 ) // terminal molt newshell to oldshell.
-        {
+        if ( o == OLD_SHELL && m == IMMATURE ) {
+          // terminal molt newshell to oldshell.
         }
-	   } // ig
-  } // i and j
+      } //--ig
+    }//--j
+  }//--i
 
 // =================================================================================================================================================
 
@@ -5548,7 +5386,7 @@ FUNCTION calc_predicted_catch
          int type = int(dCatchData(kk,jj,7));                         ///> Type of catch (total= 0, retained = 1, discard = 2)
          int unit = int(dCatchData(kk,jj,8));                         ///> Units of catch equation (1 = biomass, 2 = numbers)
 		 
-         if ( h != BOTHSEX )                                          ///> sex specific
+         if ( h != UNDET_SEX )                                          ///> sex specific
           {
            log_q_catch(kk) += log(ft(k,h,i,j) / effort);
            nhit += 1;
@@ -5619,7 +5457,7 @@ FUNCTION calc_predicted_catch
        effort   =     dCatchData(kk,jj,10);                           ///> Effort data
        cobs     =        obs_catch(kk,jj);                            ///> catch data
 
-       if ( h!=BOTHSEX ) // sex specific
+       if ( h!=UNDET_SEX ) // sex specific
         {
          sel = log_slx_capture(k,h,i);                                ///> Capture selectivity
          //ret = log_slx_retaind(k,h,i);                                ///> Retention probability
@@ -5836,7 +5674,7 @@ FUNCTION calc_predicted_catch_out
       int type = int(dCatchData_out(kk,i,7));                        ///> Type of catch (total= 0, retained = 1, discard = 2)
       int unit = int(dCatchData_out(kk,i,8));                        ///> Units of catch equation (1 = biomass, 2 = numbers)
 
-      if ( h != BOTHSEX )                                            ///> sex specific
+      if ( h != UNDET_SEX )                                            ///> sex specific
        {
         sel = log_slx_capture(k,h,i);
         switch ( type )
@@ -5961,9 +5799,9 @@ FUNCTION calc_relative_abundance
 
           // ANDRES original code
           // for (int h = 1; h <= nsex; h++ )                               ///> Select sex
-            // if (h==h1 || h== BOTHSEX)
+            // if (h==h1 || h== UNDET_SEX)
               // for (int m = 1; m <= nmature; m++ )                          ///> Select maturity
-              // if (m==m1 || m1 == BOTHMATURE)
+              // if (m==m1 || m1 == UNDET_MATURE)
               // {
                 // sel = mfexp(log_slx_capture(g)(h)(i));
                 // for ( int o = 1; o <= nshell; o++ )
@@ -5981,7 +5819,7 @@ FUNCTION calc_relative_abundance
             //=========maturity state is summed over in index============
             if (m1 == 0){
               for (int h = 1; h <= nsex; h++ ){                               ///> Select sex
-                if (h==h1 || h== BOTHSEX) {
+                if (h==h1 || h== UNDET_SEX) {
                 sel = mfexp(log_slx_capture(g)(h)(i));
                 ret = mfexp(log_slx_retaind(g)(h)(i));
                 for ( int m = 1; m <= nmature; m++ ){        //this doesn't really need to be here
@@ -6007,7 +5845,7 @@ FUNCTION calc_relative_abundance
                   if (SurveyType(k)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                   cout << "not coded yet" << endl; exit(1);
                 }
-                } /// end if(h==h1 || h== BOTHSEX)
+                } /// end if(h==h1 || h== UNDET_SEX)
               }//--h loop
             }// m1==0
 
@@ -6016,7 +5854,7 @@ FUNCTION calc_relative_abundance
               //=========index is only MATURE crab============
               //===this uses an input maturity at size vector 
               for (int h = 1; h <= nsex; h++ ){                             
-                if (h==h1 || h== BOTHSEX) {
+                if (h==h1 || h== UNDET_SEX) {
                   sel = mfexp(log_slx_capture(g)(h)(i));
                   ret = mfexp(log_slx_retaind(g)(h)(i));
                   for ( int m = 1; m <= nmature; m++ ){        //this doesn't really need to be here
@@ -6042,7 +5880,7 @@ FUNCTION calc_relative_abundance
                     if (SurveyType(k)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                     cout << "not coded yet" << endl; exit(1);
                   }
-                } /// end if(h==h1 || h== BOTHSEX)
+                } /// end if(h==h1 || h== UNDET_SEX)
               }//--h loop
             }// m1 == 1
 
@@ -6059,7 +5897,7 @@ FUNCTION calc_relative_abundance
             if (m1 == 0){
               //=========maturity state is summed over in index============
               for (int h = 1; h <= nsex; h++ ){                               
-                if (h==h1 || h== BOTHSEX) {
+                if (h==h1 || h== UNDET_SEX) {
                   sel = mfexp(log_slx_capture(g)(h)(i));
                   ret = mfexp(log_slx_retaind(g)(h)(i));
                   for ( int m = 1; m <= nmature; m++ ){
@@ -6085,7 +5923,7 @@ FUNCTION calc_relative_abundance
                     if (SurveyType(k)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                     cout << "not coded yet" << endl; exit(1);
                   }
-                } /// end if(h==h1 || h== BOTHSEX)
+                } /// end if(h==h1 || h== UNDET_SEX)
               }//--h loop
             }// m1==0
 
@@ -6094,7 +5932,7 @@ FUNCTION calc_relative_abundance
               //==this uses the separate arrays for immature and mature crab
               //==to calculate mature biomass--this is different than above
               for (int h = 1; h <= nsex; h++ ) {                               
-                if (h==h1 || h== BOTHSEX) {
+                if (h==h1 || h== UNDET_SEX) {
                   sel = mfexp(log_slx_capture(g)(h)(i));
                   ret = mfexp(log_slx_retaind(g)(h)(i));
                   for ( int m = 1; m <= 1; m++ ){
@@ -6120,7 +5958,7 @@ FUNCTION calc_relative_abundance
                     if (SurveyType(k)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                     cout << "not coded yet" << endl; exit(1);
                   }            
-                } /// end if(h==h1 || h== BOTHSEX)
+                } /// end if(h==h1 || h== UNDET_SEX)
               }//--h loop
             }// m1==1
 
@@ -6236,7 +6074,7 @@ FUNCTION calc_predicted_composition
         int shell   = d3_SizeComps_in(ii)(jj,-2);                     ///> shell condition
         int bmature = d3_SizeComps_in(ii)(jj,-1);                     ///> boolean for maturity
 
-        if ( h != BOTHSEX )                                           ///> sex specific
+        if ( h != UNDET_SEX )                                           ///> sex specific
          {
           dvar_vector sel = mfexp(log_slx_capture(k,h,i));
           dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
@@ -7416,12 +7254,12 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
 	  }
         if(nmature == 2)
 		 {
-		  if ( m == 1 ) // mature
+		  if ( m == MATURE ) // mature
           {
            //No molting, growth, or recruitment for mature animals
            if (j == nseason) d4_N_init(ig)(i+1)(1) = x; else  d4_N_init(ig)(i)(j+1) = x;
           }
-          if ( m == 2 ) // immature
+          if ( m == IMMATURE ) // immature
           {
           // Molting and growth
            z.initialize();
@@ -7442,7 +7280,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
         }
        else
         {
-         if ( o == 1 ) // newshell
+         if ( o == NEW_SHELL ) // newshell
           {
            // Molting and growth
            if (j == season_growth)
@@ -7457,7 +7295,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
            else
             d4_N_init(ig)(i)(j+1) = x;
           }
-         if ( o == 2 ) // oldshell
+         if ( o == OLD_SHELL ) // oldshell
           {
            // Molting and growth
            z.initialize();
@@ -7830,7 +7668,7 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
 	  
       if(nmature == 2)
 		{
-		  if ( m == 1 ) // mature
+		  if ( m == MATURE ) // mature
           {
            //No molting, growth, or recruitment for mature animals
           if (j == nseason)
@@ -7840,7 +7678,7 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
            else
             numbers_proj_gytl(ig,1,j+1) = x;
           }
-          if ( m == 2 ) // immature
+          if ( m == IMMATURE ) // immature
           {
           // Molting and growth
            z.initialize();
@@ -7867,7 +7705,7 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
        }
       else
        {
-        if ( o == 1 ) // newshell
+        if ( o == NEW_SHELL ) // newshell
          {
           // Molting and growth
           if (j == season_growth)
@@ -7889,7 +7727,7 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
           else
            numbers_proj_gytl(ig,1,j+1) = x;
          }
-        if ( o == 2 ) // oldshell
+        if ( o == OLD_SHELL ) // oldshell
          {
           // Molting and growth
           if (j == season_growth)
@@ -8206,7 +8044,7 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
 	  
       if(nmature == 2)
 		{
-		  if ( m == 1 ) // mature
+		  if ( m == MATURE ) // mature
           {
            //No molting, growth, or recruitment for mature animals
           if (j == nseason)
@@ -8216,7 +8054,7 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
           else
            numbers_proj_gytl(ig)(i)(j+1) = x;
           }
-          if ( m == 2 ) // immature
+          if ( m == IMMATURE ) // immature
           {
           // Molting and growth
            z.initialize();
@@ -8239,7 +8077,7 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
         }
        else
         {
-         if ( o == 1 ) // newshell
+         if ( o == NEW_SHELL ) // newshell
           {
            // Molting and growth
            if (j == season_growth)
@@ -8257,7 +8095,7 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
            else
             numbers_proj_gytl(ig)(i)(j+1) = x;
           }
-         if ( o == 2 ) // oldshell
+         if ( o == OLD_SHELL ) // oldshell
           {
            // Molting and growth
            z.initialize();
@@ -9963,7 +9801,7 @@ FUNCTION WriteFiles
   for ( int h = 1; h <= nsex; h++ )
    for ( int m = 1; m <= nmature; m++)
     for ( int i = syr; i <= nyrRetro+1; i++ )
-  OutInpFile1 << mean_wt(h,m,i) << endl;
+      OutInpFile1 << mean_wt(h,m,i) << endl;
   OutInpFile1 << "# Proportion mature by sex" << endl;
   OutInpFile1 << maturity << endl;
   OutInpFile1 << "# Proportion legal by sex" << endl;
@@ -10461,12 +10299,12 @@ GLOBALS_SECTION
   #undef LW_MATRIX
   #define LW_MATRIX 3
 
-  #undef MALESANDCOMBINED
-  #define MALESANDCOMBINED 1
+  #undef MALES
+  #define MALES 1
   #undef FEMALES
   #define FEMALES 2
-  #undef BOTHSEX
-  #define BOTHSEX 0
+  #undef UNDET_SEX
+  #define UNDET_SEX 0
 
   #undef UNDET_SHELL
   #define UNDET_SHELL 0
@@ -10479,8 +10317,8 @@ GLOBALS_SECTION
   #define IMMATURE 2
   #undef MATURE
   #define MATURE 1
-  #undef BOTHMATURE
-  #define BOTHMATURE 0
+  #undef UNDET_MATURE
+  #define UNDET_MATURE 0
 
   #undef TOTALCATCH
   #define TOTALCATCH 0
@@ -10876,3 +10714,7 @@ FINAL_SECTION
 // 2024-01-11 ** AEP. (Updated GMACS to version 2.01.M.07) (a) updated the _in files to match the latest version of GMACS. (b) producted inputs files with estimated parameters and expected data
 // 2024-01-29 ** AEP. (Updated GMACS to version 2.01.M.08) Fixed time-varying growth increment and added a trap for negative growth increments in fn calls 0 and 1
 // 2024-02-01 ** WTS. (Updated GMACS to version 2.01.M.09) Added alternative format for inputting size comps data.
+// 2024-02-02 ** WTS. (Updated GMACS to version 2.01.M.09) Renamed BOTHSEX, BOTHMATURE to UNDET_SEX, UNDET_MATURE. Added MALES(=1) macro. Need to refactor MALESANDCOMBINED functionality.
+//                    Removed MALESANDCOMBINED (duplicated MALES). Refactored selectivity assignments and recruitment (no need to loop over h, so cleaner not to). 
+//                    Reformatted some code to add parentheses, replace tabs with spaces, and correctly indent blocks.
+//                    Replaced o == 1/2 with o == NEW_SHELL/OLD_SHELL, similar for m.
