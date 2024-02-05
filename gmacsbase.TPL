@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader =  adstring("## GMACS Verison 2.01.M.09; Completed 2024-02-01");
+ !! TheHeader =  adstring("## GMACS Version 2.01.M.09; Completed 2024-02-01");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -297,6 +297,10 @@ DATA_SECTION
 
   //check for commandline overide of pinfile use (if set, overrides value from gmacs.dat)
   LOCAL_CALCS
+    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-verbose",opt))>-1 ){
+      verbose = atoi(ad_comm::argv[on+1]);
+      cout<<"#--verbose level set to: "<<verbose<<endl;
+    }
     if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-ainp",opt))>-1 ){
       usepinfile = 1;
       adstring fnPin = ad_comm::argv[on+1];
@@ -478,59 +482,180 @@ DATA_SECTION
   !! gmacs_data << "#Season type: Set to 1 for continuous F and 0 for instantanous F" << endl;
   !! gmacs_data << season_type << endl;
 
+  // |---------------|
+  // |--CLASS Subst--|
+  // |---------------|
+ LOCAL_CALCS
+  //class to provide substitutions from/to strings/integers
+  class Subst{
+    public:
+    int fleetID(adstring& flt,adstring_array& fleetname){
+      int id = 0;
+      for (int f=fleetname.indexmin();f<=fleetname.indexmax();f++)
+        if (flt==fleetname[f]) id = f;
+      return id;
+      cout<<"Problem assigning fleetID to "<< flt << endl;
+      exit(-1);
+    }
+    int catchTypeID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="retained")  return(RETAINED);
+      if (strp=="discard")   return(DISCARDED);
+      if (strp=="discarded") return(DISCARDED);
+      if (strp=="total")     return(TOTALCATCH);
+      cout<<"Problem assigning catchTypeID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int unitsTypeID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="abundance")  return(ABUNDANCE);
+      if (strp=="biomass")   return(BIOMASS);
+      cout<<"Problem assigning unitsTypeID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int sexID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="males")        return(MALES);
+      if (strp=="females")      return(FEMALES);
+      if (strp=="male")         return(MALES);
+      if (strp=="female")       return(FEMALES);
+      if (strp=="undetermined") return(UNDET_SEX);
+      return(id);
+      cout<<"Problem assigning sexID to "<< str << endl;
+      exit(-1);
+    }
+    int matID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="immature")     return(IMMATURE);
+      if (strp=="mature")       return(MATURE);
+      if (strp=="undetermined") return(UNDET_MATURE);
+      cout<<"Problem assigning matID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int shellID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="new shell")    return(NEW_SHELL);
+      if (strp=="old shell")    return(OLD_SHELL);
+      if (strp=="undetermined") return(UNDET_SHELL);
+      cout<<"Problem assigning shellID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+  };
+  Subst substStuff;
+ END_CALCS
+
+
   // |--------------|
   // | CATCH SERIES |
   // |--------------|
   !! cout << " * Catch data" << endl;
   !! gmacs_data << "#\n\n#--CATCH DATA----"<<endl;
+  !! gmacs_data << "# input catch data format (0: old format, 1: new format)" << endl;
+  init_int fmtCDS_in;
+  !!WRITEDAT(fmtCDS_in)
   init_int nCatchDF;
   !! gmacs_data << "# Number of catch data frames" << endl;
   !! gmacs_data << nCatchDF << endl;
-  init_ivector nCatchRows(1,nCatchDF);
-  !! gmacs_data << "# Number of lines for each dataframe (this is not correct for retrospective analyses)" << endl;
-  !! gmacs_data << nCatchRows << endl;
-  init_3darray dCatchData(1,nCatchDF,1,nCatchRows,1,11); // array of catch data
 
-  !! float TempW;
-  !! float SDlogD;
-  !! gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
-  !! gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
-  !! gmacs_data << "## Units of catch: 1 = biomass, 2 = numbers" << endl;
-  !! gmacs_data << "## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
-  !! gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
-  !! for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++)
-  !!  for (int irow=1;irow<=nCatchRows(iCatOut); irow++)
-  !!   {
-  !!    if (dCatchData(iCatOut,irow,1) <= nyrRetro)
-  !!     {
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(1) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(2) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(3) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(4) << " ";
-  !!      gmacs_data << dCatchData(iCatOut,irow)(5,6) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(7) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(8) << " ";
-  !!      gmacs_data << dCatchData(iCatOut,irow)(9,11) << " ";
-  !!      anystring = "# " + fleetname(dCatchData(iCatOut,irow,3));
-  !!      if (dCatchData(iCatOut,irow,4)==1) anystring = anystring +"_male";
-  !!      if (dCatchData(iCatOut,irow,4)==2) anystring = anystring +"_female";
-  !!      if (dCatchData(iCatOut,irow,7)==0) anystring = anystring +"_total";
-  !!      if (dCatchData(iCatOut,irow,7)==1) anystring = anystring +"_retained";
-  !!      if (dCatchData(iCatOut,irow,7)==2) anystring = anystring +"_discard";
-  !!      if (dCatchData(iCatOut,irow,8)==1) anystring = anystring +"_biomass";
-  !!      if (dCatchData(iCatOut,irow,8)==2) anystring = anystring +"_numbers";
-  !!      if (dCatchData(iCatOut,irow,6) <= 0)
-  !!       {
-  !!        cout << "Error: CV of catch is zero (or less) for group " << iCatOut << " row " << irow << endl;
-  !!        exit(1);
-  !!       }
-  !!      gmacs_data << anystring << " ";
-  !!      SDlogD = sqrt(log(1.0 + square(dCatchData(iCatOut,irow,6))));
-  !!      TempW = 0.5/(SDlogD*SDlogD);
-  !!      gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
-  !!      gmacs_data << endl;
-  !!     }
-  !!   }
+
+  ivector nCatchRows(1,nCatchDF);
+  3darray dCatchData(1,nCatchDF,1,nCatchRows,1,11); // array of catch data
+  !!float TempW;
+  !!float SDlogD;
+ LOCAL_CALCS
+    {
+      cifstream* pGD = ad_comm::global_datafile;
+      if (fmtCDS_in==0){
+        //--read in using old format
+        (*pGD) >> nCatchRows;
+        gmacs_data << "# Number of lines for each dataframe (this is not correct for retrospective analyses)" << endl;
+        gmacs_data << nCatchRows << endl;
+        for (int idf=1;idf<=nCatchDF;idf++) dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
+        (*pGD) >> dCatchData;
+
+        gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
+        gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
+        gmacs_data << "## Units of catch: 1 = biomass, 2 = numbers" << endl;
+        gmacs_data << "## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
+        gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
+        for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++){
+          for (int irow=1;irow<=nCatchRows(iCatOut); irow++) {
+            if (dCatchData(iCatOut,irow,1) <= nyrRetro) {
+              gmacs_data << (int) dCatchData(iCatOut,irow)(1) << " ";
+              gmacs_data << (int) dCatchData(iCatOut,irow)(2) << " ";
+              gmacs_data << (int) dCatchData(iCatOut,irow)(3) << " ";
+              gmacs_data << (int) dCatchData(iCatOut,irow)(4) << " ";
+              gmacs_data << dCatchData(iCatOut,irow)(5,6) << " ";
+              gmacs_data << (int) dCatchData(iCatOut,irow)(7) << " ";
+              gmacs_data << (int) dCatchData(iCatOut,irow)(8) << " ";
+              gmacs_data << dCatchData(iCatOut,irow)(9,11) << " ";
+              anystring = "# " + fleetname(dCatchData(iCatOut,irow,3));
+              if (dCatchData(iCatOut,irow,4)==MALES)      anystring = anystring +"_male";
+              if (dCatchData(iCatOut,irow,4)==FEMALES)    anystring = anystring +"_female";
+              if (dCatchData(iCatOut,irow,7)==TOTALCATCH) anystring = anystring +"_total";
+              if (dCatchData(iCatOut,irow,7)==RETAINED)   anystring = anystring +"_retained";
+              if (dCatchData(iCatOut,irow,7)==DISCARDED)  anystring = anystring +"_discard";
+              if (dCatchData(iCatOut,irow,8)==BIOMASS)    anystring = anystring +"_biomass";
+              if (dCatchData(iCatOut,irow,8)==ABUNDANCE)  anystring = anystring +"_numbers";
+              if (dCatchData(iCatOut,irow,6) <= 0) {
+                cout << "Error: CV of catch is zero (or less) for group " << iCatOut << " row " << irow << endl;
+                exit(1);
+              }
+              gmacs_data << anystring << " ";
+              SDlogD = sqrt(log(1.0 + square(dCatchData(iCatOut,irow,6))));
+              TempW = 0.5/(SDlogD*SDlogD);
+              gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
+              gmacs_data << endl;
+            }//--dCatchData(iCatOut,irow,1) <= nyrRetro
+          }//--irow
+        }//--iCatOut
+      } else {
+        //--read in using new format
+        adstring unitsType,catchType,fleet,sex,maturity, shell_condition;
+        int iUT,iCT,iF,iX,iM,iS;
+        for (int idf=1;idf<=nCatchDF;idf++) {
+          (*pGD) >> unitsType;        iUT = substStuff.unitsTypeID(unitsType);
+          (*pGD) >> catchType;        iCT = substStuff.catchTypeID(catchType);
+          (*pGD) >> fleet;            iF  = substStuff.fleetID(fleet,fleetname);
+          (*pGD) >> sex;              iX  = substStuff.sexID(sex);
+          (*pGD) >> maturity;         iM  = substStuff.matID(maturity);
+          (*pGD) >> shell_condition;  iS  = substStuff.shellID(shell_condition);
+          (*pGD) >> nCatchRows(idf);
+          dmatrix inpCatchData(1,nCatchRows(idf),1,7);
+          dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
+          (*pGD) >> inpCatchData;
+          for (int irw=1;irw<=nCatchRows(idf);irw++){
+            dCatchData(idf,irw, 1) = (int) inpCatchData(irw,1);
+            dCatchData(idf,irw, 2) = (int) inpCatchData(irw,2);
+            dCatchData(idf,irw, 3) = iF;
+            dCatchData(idf,irw, 4) = iX;
+            dCatchData(idf,irw, 5) = inpCatchData(irw,3);
+            dCatchData(idf,irw, 6) = inpCatchData(irw,4);
+            dCatchData(idf,irw, 7) = iCT;
+            dCatchData(idf,irw, 8) = iUT;
+            dCatchData(idf,irw, 9) = inpCatchData(irw,5);
+            dCatchData(idf,irw,10) = inpCatchData(irw,6);
+            dCatchData(idf,irw,11) = inpCatchData(irw,7);
+          }//--irw
+          gmacs_data << inpCatchData << endl;
+        }//--idf
+        gmacs_data << "#--old format:"<<endl;
+        gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
+        for (int idf=1;idf<=nCatchDF;idf++)
+          for (int irw=1;irw<=nCatchRows(idf);irw++)
+            gmacs_data << "# " << dCatchData(idf,irw) << endl;
+      }//--end reading new format
+    }
+ END_CALCS
 
   matrix obs_catch(1,nCatchDF,1,nCatchRows);
   matrix obs_effort(1,nCatchDF,1,nCatchRows);
@@ -753,71 +878,13 @@ DATA_SECTION
   // | SIZE COMPOSITION DATA |
   // |-----------------------|
   !! cout << " * Size composition data" << endl;
- LOCAL_CALCS
-  //class to provide substitutions from/to strings/integers
-  class Subst{
-    public:
-    int fleetID(adstring& flt,adstring_array& fleetname){
-      int id = 0;
-      for (int f=fleetname.indexmin();f<=fleetname.indexmax();f++)
-        if (flt==fleetname[f]) id = f;
-      return id;
-      cout<<"Problem assigning fleetID to "<< flt << endl;
-      exit(-1);
-    }
-    int catchTypeID(adstring& str){
-      int id = -1;
-      adstring strp = to_lower(str);
-      if (strp=="retained")  return(RETAINED);
-      if (strp=="discard")   return(DISCARDED);
-      if (strp=="discarded") return(DISCARDED);
-      if (strp=="total")     return(TOTALCATCH);
-      cout<<"Problem assigning catchTypeID to "<< str << endl;
-      exit(-1);
-      return(id);
-    }
-    int sexID(adstring& str){
-      int id = -1;
-      adstring strp = to_lower(str);
-      if (strp=="males")        return(MALES);
-      if (strp=="females")      return(FEMALES);
-      if (strp=="male")         return(MALES);
-      if (strp=="female")       return(FEMALES);
-      if (strp=="undetermined") return(UNDET_SEX);
-      return(id);
-      cout<<"Problem assigning sexID to "<< str << endl;
-      exit(-1);
-    }
-    int matID(adstring& str){
-      int id = -1;
-      adstring strp = to_lower(str);
-      if (strp=="immature")     return(IMMATURE);
-      if (strp=="mature")       return(MATURE);
-      if (strp=="undetermined") return(UNDET_MATURE);
-      cout<<"Problem assigning matID to "<< str << endl;
-      exit(-1);
-      return(id);
-    }
-    int shellID(adstring& str){
-      int id = -1;
-      adstring strp = to_lower(str);
-      if (strp=="new shell")    return(NEW_SHELL);
-      if (strp=="old shell")    return(OLD_SHELL);
-      if (strp=="undetermined") return(UNDET_SHELL);
-      cout<<"Problem assigning shellID to "<< str << endl;
-      exit(-1);
-      return(id);
-    }
-  };
-  Subst substStuff;
- END_CALCS
-  init_int fmtZCs_in;                                           ///> size composition format flag (0=old style, 1=new style)
+   init_int fmtZCs_in;                                           ///> size composition format flag (0=old style, 1=new style)
   !!WRITEDAT(fmtZCs_in)
   init_int nSizeComps_in;                                       ///> Number of series of size-comp data
   //NEW 202402: WTS--startmod
-  ivector nSizeCompRows_in(1,nSizeComps_in);                    ///> Rows of data for each series
-  ivector nSizeCompCols_in(1,nSizeComps_in);                    ///> Number of size-class bins
-  3darray d3_SizeComps_in(1,nSizeComps_in);//--other dimension are allocated below
+  ivector nSizeCompRows_in(1,nSizeComps_in);                    ///> Rows of data for each series (was init_ivector)
+  ivector nSizeCompCols_in(1,nSizeComps_in);                    ///> Number of size-class bins    (was init_ivector)
+  3darray d3_SizeComps_in(1,nSizeComps_in); //--other dimension are allocated below (was init_3darray)
  LOCAL_CALCS
   {
     cifstream* pGD = ad_comm::global_datafile;
@@ -3750,6 +3817,8 @@ PROCEDURE_SECTION
 FUNCTION initialize_model_parameters
   int Ipnt, Jpnt, Ihmo;
 
+  if (verbose>=3) cout<<"starting initialize_model_parameters";
+
   // Get parameters from theta control matrix:
   M0(1)      = theta(1);
   parname1(1) = "M-base";
@@ -3797,6 +3866,7 @@ FUNCTION initialize_model_parameters
     rec_dev(i) = rec_dev_est(i);
     logit_rec_prop(i) = logit_rec_prop_est(i);
    }
+   if (verbose>=3) cout<<"--finished setting rec_dev()"<<endl;
 
   // Estimate initial numbers as absolute
   if ( bInitializeUnfished == FREEPARS )
@@ -4126,6 +4196,7 @@ FUNCTION init_selectivities
    * Need to deprecate the abstract class for selectivity, 7X slower.
   **/
 FUNCTION calc_selectivities
+  if (verbose>=3) cout<<"starting calc_selectivities"<<endl;
   int h,i,k, k2;
   int jstore, estore, sd;
   dvar_vector pv;
@@ -4149,6 +4220,7 @@ FUNCTION calc_selectivities
   //cout << slx_dev_sigma<< endl;
 
   // Specify non-mirrored selectivity
+  if (verbose>=3) cout<<"evaluating non-mirrored selectivities"<<endl;
   int j = 1; int ee = 1; sd = 1;
   for ( int k = 1; k <= nslx; k++ ){
     if (slx_type(k) < 0){
@@ -4163,13 +4235,12 @@ FUNCTION calc_selectivities
       jstore = j; estore = ee;
       // initialize SelDevs (Cumulative (Env + Random walk) deviations for selectivity)
       SelDevs.initialize();
-      //int h1 = 1;
-      //int h2 = nsex;
-      //if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
-      //if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
-      //for ( h = h1; h <= h2; h++ ) {
-      h = slx_isex(k); 
-      {
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }     ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; } ///> females only
+      for ( h = h1; h <= h2; h++ ) {
+        if (verbose>3) cout<<"h = "<<h<<" for slx_isex(k)"<<endl;
         // Set the time-varying dev for this fleet x sex
         if (slx_timeVar(k)==1) {
           for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
@@ -4198,8 +4269,11 @@ FUNCTION calc_selectivities
                 if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
                 for (int i=1;i<=2;i++) {
                   if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (verbose>3) cout<<"--1"<<j<<endl;
                   if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (verbose>3) cout<<"--2"<<j<<endl;
                   if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  if (verbose>3) cout<<"--3"<<j<<endl;
                   j++;
                 } 
                 break;
@@ -4262,6 +4336,7 @@ FUNCTION calc_selectivities
         if (verbose>3)  cout << "Done stage 1: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
 
         // Now the actual deal
+        if (verbose>=3) cout<<"starting calc_selectivities"<<endl;
         for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
           if (iy==slx_styr(k) || slx_timeVar(k)==1) {
             j = jstore; /// ee= estore; 
@@ -4405,10 +4480,10 @@ FUNCTION calc_selectivities
   for ( int k = 1; k <= nslx; k++ ){
     if (slx_type(k) < 0) {
       int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
-      //int h1 = 1;
-      //int h2 = nsex;
-      //if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
-      //if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }     ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; } ///> females only
       //if ( slx_gear(k) > 0 ) {
       //  for ( i = syr; i <= nyrRetro; i++ )
       //  for ( h = h1; h <= h2; h++ )
@@ -4420,14 +4495,17 @@ FUNCTION calc_selectivities
       //  log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
       //  }
       //}
-      h = slx_isex(k);
       if ( slx_gear(k) > 0 ) {
         for ( i = syr; i <= nyrRetro; i++ )
-          log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
+          for ( h = h1; h <= h2; h++ )
+            log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
       } else {
+        //slx_gear(k) < 0
         for ( i = syr; i <= nyrRetro; i++ ) {
-          log_slx_retaind(kk,h,i) = log_slx_retaind(-slx_type(k),h,i);
-          log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
+          for ( h = h1; h <= h2; h++ ){
+            log_slx_retaind(kk,h,i) = log_slx_retaind(-slx_type(k),h,i);
+            log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
+          }//--h loop
         }//--i loop
       }//--if ( slx_gear(k) > 0 )
     }//--if (slx_type(k) < 0)
@@ -4436,21 +4514,22 @@ FUNCTION calc_selectivities
 	// Sometimes one selectivity pattern is embedded in another
   for ( int k = 1; k <= nslx; k++ ){
     if (slx_incl(k) > 0 && slx_gear(k) > 0){                                 ///> only for capture selectivity
-      //int h1 = 1;
-      //int h2 = nsex;
-      //if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }    ///> males (and combined) only
-      // if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                      ///> females only
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }    ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }///> females only
       //for ( h = h1; h <= h2; h++ ) {
       //    int kk = abs(slx_gear(k));                                         ///> pointer to the fleet
       //    k2 = slx_incl(k);                                                  ///> pointer to the fleet within within which this fleet falls
       //    for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
       //      for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
       //}//--h loop
-      h = slx_isex(k);
-      int kk = abs(slx_gear(k));
-      k2 = slx_incl(k);
-      for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
-        for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
+      for ( h = h1; h <= h2; h++ ) {
+        int kk = abs(slx_gear(k));
+        k2 = slx_incl(k);
+        for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
+          for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
+      }//--h loop
     }//--if
   }//--k loop
 //--end of function
@@ -10298,6 +10377,11 @@ GLOBALS_SECTION
   #define LW_VECTOR 2
   #undef LW_MATRIX
   #define LW_MATRIX 3
+
+  #undef BIOMASS
+  #define BIOMASS 1
+  #undef ABUNDANCE
+  #define ABUNDANCE 2
 
   #undef MALES
   #define MALES 1

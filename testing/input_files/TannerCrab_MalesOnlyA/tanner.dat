@@ -37,6 +37,7 @@ NMFS
 # Are the seasons instantaneous (0) or continuous (1)																														
 1 1 1  
 #----------------------------------FISHERY CATCH DATA-----------------------------																										
+0 #--input format for catch data (0:old format; 1: new format)
 # Number of catch data frames																														
 2	#--TCF (retained catch bio + total catch bio[males])																							
 # Number of rows in each data frame		

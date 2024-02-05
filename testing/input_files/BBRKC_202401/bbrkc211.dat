@@ -84,6 +84,8 @@ NMFS_Trawl BSFRF
 # Are the seasons instantaneous (0) or continuous (1)
 1 1 1 1 1 1 1
 #1 1 1 1 1 1 1
+##  CATCH  DATA                                                        
+0 #--input format for catch data (0:old format; 1: new format)
 # Number of catch data frames																																					
 7																																										
 # Number of rows in each data frame

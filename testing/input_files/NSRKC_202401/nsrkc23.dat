@@ -95,6 +95,8 @@ Winter_Com Subsistence Summer_Com
 NMFS_Trawl ADFG_Trawl NBS_Trawl Winter_Pot
 # Are the seasons instantaneous (0) or continuous (1)
 1 1 1 1 1 
+##  CATCH  DATA                                                        
+0 #--input format for catch data (0:old format; 1: new format)
 # Number  of  catch data  frames
  4
 # Number  of  rows  in  each  data  frame

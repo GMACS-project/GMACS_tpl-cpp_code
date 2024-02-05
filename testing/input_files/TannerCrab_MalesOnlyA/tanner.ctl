@@ -227,33 +227,35 @@
 # ##   9: Cubic-spline (specified with knots and values at knots)
 # ##  10: One parameter logistic selectivity (inflection point and slope)
 # ## Extra (type 1): number of selectivity parameters to estimated
+##     gear index: use +ve for selectivity, -ve for retention                             ##
+##     sex dep: 0 for sex-independent, 1 for sex-dependent                                ##
 ##--selectivity
 ## Gear-1	Gear-2	
-## TCF_ret	NMFS	
-1	1		 # selectivity periods
-0	0		 # sex specific selectivity
-2   2		 # male selectivity type (slx_type_in, to mirror, make negative and equal to the fleet to be mirrored)
-#6	6		 # female selectivity type
-0	0		 # within another gear
-0	0		 # extra parameters for each pattern by fleet (males)
-#0	0		 # extra parameters for each pattern by fleet (females)
+## TCF_ret  NMFS	
+    1        1       # selectivity periods
+    0        0       # sex specific selectivity
+    2        2       # male selectivity type (slx_type_in, to mirror, make negative and equal to the fleet to be mirrored)
+#    6        6       # female selectivity type
+    0        0       # within another gear
+    0        0       # extra parameters for each pattern by fleet (males)
+#    0        0       # extra parameters for each pattern by fleet (females)
 ##--retention
 ## Gear-1	Gear-2	
-## TCF_ret	NMFS	
-1	1		 # retention periods
-0	0		 # sex specific retention
-2	5		 # male   retention type
-#6	6		 # female retention type
-1	0		 # male   retention flag (0 = no, 1 = yes)
-#0	0		 # female retention flag (0 = no, 1 = yes)
-0	0		 # extra parameters for each pattern by fleet (males)
-#0	0		 # extra parameters for each pattern by fleet (females)
+## TCF_ret  NMFS	
+      1      1       # retention periods
+      0      0       # sex specific retention
+      2      5       # male retention type
+#      6      6       # female retention type
+      1      0       # male retention flag (0 = no, 1 = yes)
+#      0      0       # female retention flag (0 = no, 1 = yes)
+      0      0       # extra parameters for each pattern by fleet (males)
+#      0      0       # extra parameters for each pattern by fleet (females)
 #--options
 1	1		 # determines if maximum selectivity at size is forced to equal 1 or not
 ## ———————————————————————————————————————————————————————————-------———————————————————————— ##																					
 ## Selectivity                                                                                ##																					
 ## gear  par   sel                                                         start  end         ##																					
-## index index par sex  ival  		lb    ub     prior   p1   p2     phz   period period      ##																					
+## index index par sex  ival  		lb    ub     prior   p1   p2     phz   period period        ##																					
 ## ————————————————————————————————————————————————————————————————————————————————————------ ##																					
 # Selectivity parameters
 ## Fleet: The index of the fleet  (positive for capture selectivity; negative for retention)
@@ -279,7 +281,7 @@
 # Gear-1																					
 # Fleet Index Param_no Sex Init_val  Lwr_bnd Upr_bnd Prior_type Prior_1 Prior_2 Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW
    1      1       1     1  110.7114    5    	 186       0         1     999      4      1982       2022			0			0				0				0					0        0
-   1      2       2     1    4.997241  0.01    20       0         1     999      4      1982       2022			0			0				0				0					0	      0
+   1      2       2     1    4.997241  0.01     20       0         1     999      4      1982       2022			0			0				0				0					0	      0
 # Gear-2- NMFS                                                                     																		
 # Fleet Index Param_no Sex Init_val  Lwr_bnd Upr_bnd Prior_type Prior_1 Prior_2 Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW
    2      3      1      1  42.19018    5    	300          0       1       999     4    1982         2023			0			0				0				0					0        0
@@ -287,12 +289,12 @@
 ## ————————————————————————————————————————————————————————————————————————————————————---- ##																					
 ## Retained                                                                                 ##																					
 ## gear  par   sel                                                         start  end       ##																					
-## index index par sex  ival  		lb    ub     prior   p1   p2     phz   period period    ##																					
+## index index par sex  ival  		lb    ub     prior   p1   p2     phz   period period      ##																					
 ## ————————————————————————————————————————————————————————————————————————————————————---- ##																					
 # Gear-1																					
 # Fleet Index Param_no Sex Init_val  Lwr_bnd Upr_bnd Prior_type Prior_1 Prior_2 Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW
   -1     5       1      1   96.03919    1   	  190        1     125       10     4     1982  		2022			0			0				0				0					0        0
-  -1     6       2      1    2.197131   0.001   20        0       1      999     4     1982  		2022			0			0				0				0					0        0																					
+  -1     6       2      1    2.197131   0.001    20        0       1      999     4     1982  		2022			0			0				0				0					0        0																					
 # Gear-2                                                                   																					
 # Fleet Index Param_no Sex Init_val  Lwr_bnd Upr_bnd Prior_type Prior_1 Prior_2 Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW
   -2      7      1      1     0    		 -1   	  1      0         0      999    -3     1982       2023			0			0				0				0					0        0						

@@ -112,6 +112,8 @@ Pot_Fishery Trawl_Bycatch
 
 # Are the seasons discrete-instantaneous (0) or continuous (1)
 1 1 1 1 1 1 
+##  CATCH  DATA                                                        
+0 #--input format for catch data (0:old format; 1: new format)
 # Number  of  catch data  frames
 3
 # Number  of  rows  in  each  data  frame

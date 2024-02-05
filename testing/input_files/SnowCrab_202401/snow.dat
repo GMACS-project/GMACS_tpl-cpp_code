@@ -36,12 +36,13 @@ NMFS_Trawl_1982 NMFS_Trawl_1989
 # Are the seasons instantaneous (0) or continuous (1)																														
 1 1 1																														
 #1 1 1 1 1 1 1																														
+##  CATCH  DATA                                                        
+0 #--input format for catch data (0:old format; 1: new format)
 # Number of catch data frames																														
 4																														
 # Number of rows in each data frame																														
 40	40	40	41																											
 ##		##																												
-##	CATCH	DATA																												
 ##	Type of	"catch: 1 = retained, 2"	"= discard, 0 ="	total																										
 ##	Units of catch:	"1 = biomass, 2 = numbers"																												
 ##	for snow Units	are in 1000 mt	for landed & discards.																											
