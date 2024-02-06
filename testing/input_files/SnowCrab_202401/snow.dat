@@ -217,6 +217,7 @@ NMFS_Trawl_1982 NMFS_Trawl_1989
 2021	2	2	0	0.056034	0.10	2	1	1	0	1
 2022	2	2	0	0.0457174	0.10	2	1	1	0	1##																														
 ##	RELATIVE	ABUNDANCE	DATA																											
+0 #--input format for relative abundance data (0:old format; 1: new format)
 ##	Number	of	relative	abundance	indicies																									
 4
 # Index Type  (1=Selecivity; 2=retention)

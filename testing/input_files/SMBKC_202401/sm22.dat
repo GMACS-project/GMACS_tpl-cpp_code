@@ -212,6 +212,7 @@ NMFS_Trawl ADFG_Pot
 ##  RELATIVE  ABUNDANCE DATA
 ##  Units of abundance: 1 = biomass, 2 = numbers
 ##  for SMBKC pot survey Units are in  crabs for Abundance.
+0 #--input format for relative abundance data (0:old format; 1: new format)
 ##  Number  of  relative  abundance indicies
 2
 # Index Type  (1=Selecivity; 2=retention)

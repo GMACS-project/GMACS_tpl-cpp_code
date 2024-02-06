@@ -302,6 +302,7 @@ NMFS_Trawl ADFG_Trawl NBS_Trawl Winter_Pot
 
 ##  RELATIVE  ABUNDANCE DATA
 ##  Units of abundance: 1 = biomass, 2 = numbers
+0 #--input format for relative abundance data (0:old format; 1: new format)
 ##  Number  of  relative  abundance indicies
 6
 # Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame

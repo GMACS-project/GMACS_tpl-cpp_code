@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader =  adstring("## GMACS Version 2.01.M.09; Completed 2024-02-01");
+ !! TheHeader =  adstring("## GMACS Version 2.01.M.09; Completed 2024-02-06");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -817,19 +817,35 @@ DATA_SECTION
   // |----------------------------|
   !! cout << " * Abundance data" << endl;
   !! gmacs_data << "#\n\n#--RELATIVE ABUNDANCE DATA----"<<endl;
+  init_int fmtRAD; ///> Format type (0: old format, 1: new format)
+  !!gmacs_data << fmtRAD << "  #--input format type (0: old format, 1: new format)" << endl;
   !! gmacs_data << "# Number of relative abundance (survey) data frames" << endl;
   init_int nSurveys;                                                 ///> Number of survey series
   !! gmacs_data << nSurveys << endl; //TODO: change name to nSurveyDFs
-  !!gmacs_data << "# Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame" << endl;
-  init_ivector SurveyType(1,nSurveys);                               ///> Type of survey
-  !!gmacs_data << SurveyType << endl;
-  !!gmacs_data << "# Number of data rows, by data frame" << endl;
-  init_int nSurveyRows;
-  !!gmacs_data << "#   NOTE: this is not correct for retrospective analyses" << endl;
-  !!gmacs_data << nSurveyRows << endl;;
-  init_matrix dSurveyData(1,nSurveyRows,0,9);
-  !!gmacs_data << "# Survey data:"<<endl;
-  !!gmacs_data << dSurveyData <<endl;
+  ivector SurveyType(1,nSurveys);                               ///> Type of survey
+  int nSurveyRows;                                              ///> total number of rows in survey dataframes
+  matrix dSurveyData;                                           ///> survey data
+ LOCAL_CALCS
+  {
+    cifstream* pGD = ad_comm::global_datafile;
+    if (fmtRAD==0){
+      //old format
+      gmacs_data << "# Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame" << endl;
+      (*pGD) >> SurveyType;
+      gmacs_data << SurveyType << endl;
+      gmacs_data << "# Number of data rows, by data frame" << endl;
+      (*pGD) >> nSurveyRows;
+      gmacs_data << "#   NOTE: this is not correct for retrospective analyses" << endl;
+      gmacs_data << nSurveyRows << endl;;
+      dSurveyData.allocate(1,nSurveyRows,0,9);
+      (*pGD) >> dSurveyData;
+      gmacs_data << "# Survey data:"<<endl;
+      gmacs_data << dSurveyData <<endl;
+    } else {
+      //new format
+    }//--if (fmtRAD)
+  }
+ END_CALCS
   vector obs_cpue(1,nSurveyRows);
   vector cpue_cv(1,nSurveyRows);
   vector cpue_sd(1,nSurveyRows);
@@ -10798,7 +10814,8 @@ FINAL_SECTION
 // 2024-01-11 ** AEP. (Updated GMACS to version 2.01.M.07) (a) updated the _in files to match the latest version of GMACS. (b) producted inputs files with estimated parameters and expected data
 // 2024-01-29 ** AEP. (Updated GMACS to version 2.01.M.08) Fixed time-varying growth increment and added a trap for negative growth increments in fn calls 0 and 1
 // 2024-02-01 ** WTS. (Updated GMACS to version 2.01.M.09) Added alternative format for inputting size comps data.
-// 2024-02-02 ** WTS. (Updated GMACS to version 2.01.M.09) Renamed BOTHSEX, BOTHMATURE to UNDET_SEX, UNDET_MATURE. Added MALES(=1) macro. Need to refactor MALESANDCOMBINED functionality.
+// 2024-02-02 ** WTS. Renamed BOTHSEX, BOTHMATURE to UNDET_SEX, UNDET_MATURE. Added MALES(=1) macro. Need to refactor MALESANDCOMBINED functionality.
 //                    Removed MALESANDCOMBINED (duplicated MALES). Refactored selectivity assignments and recruitment (no need to loop over h, so cleaner not to). 
 //                    Reformatted some code to add parentheses, replace tabs with spaces, and correctly indent blocks.
 //                    Replaced o == 1/2 with o == NEW_SHELL/OLD_SHELL, similar for m.
+// 2024-02-05 ** WTS. Reverted selectivity assignaments--needed to loop over h if slx_isex(k) was 0. Added alternative input format for fishery catch data.

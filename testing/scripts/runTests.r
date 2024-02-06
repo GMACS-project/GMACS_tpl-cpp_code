@@ -140,9 +140,11 @@ runTests<-function(tests=c("AIGKC_202401",
 
 ##--run all
 #results = runTests(cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE);
+
 #--run old format
 #tests_old=c("AIGKC_202401","BBRKC_202401","NSRKC_202401","SMBKC_202401","SnowCrab_202401","TannerCrab_MalesOnlyA");
 #results = runTests(tests=tests_old,cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE);
+
 #--run new format
-#results = runTests("TannerCrab_MalesOnlyANew",usePin=TRUE,compareWithPin=TRUE,cleanup=FALSE);
+#results = runTests("TannerCrab_MalesOnlyANew",usePin=TRUE,compareWithPin=TRUE,cleanup=FALSE,verbose=100);
 

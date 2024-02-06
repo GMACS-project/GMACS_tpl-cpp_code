@@ -242,6 +242,7 @@ Pot_Fishery Trawl_Bycatch
 2022 3 2 1 7.2313 1.3108 2 1 1.538461538 0 0.65
 #
 ##  RELATIVE  ABUNDANCE DATA
+0 #--input format for relative abundance data (0:old format; 1: new format)
 ##  Units of abundance: 1 = biomass, 2 = numbers
 ##  Number  of  relative  abundance indicies
 ## sex:1=male;2=female; 0=both
