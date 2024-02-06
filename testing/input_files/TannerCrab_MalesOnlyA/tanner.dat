@@ -37,6 +37,7 @@ NMFS
 # Are the seasons instantaneous (0) or continuous (1)																														
 1 1 1  
 #----------------------------------FISHERY CATCH DATA-----------------------------																										
+0 #--input format for catch data (0:old format; 1: new format)
 # Number of catch data frames																														
 2	#--TCF (retained catch bio + total catch bio[males])																							
 # Number of rows in each data frame		
@@ -101,9 +102,10 @@ NMFS
 2022  2  1  1  3.242678  0.2000  0  1  0.4536  0  0.321
 #----------------------------------SURVEY CATCH DATA-----------------------------																										
 ##	RELATIVE	ABUNDANCE	DATA																											
+0 #--input format for relative abundance data (0:old format; 1: new format)
 ##	Number	of	relative	abundance	indices																									
 1
-# Index Type  (1=Selecivity; 2=retention)
+# Index Type  (1=selecivity; 2=selectivity+retention)
 1 
 ##	Number	of	rows of index data																											
 41																														
@@ -160,7 +162,8 @@ NMFS
 1  2021  1  2  1  0  31.5641   0.1094423  1  0
 1  2022  1  2  1  0  29.63251  0.1107957  1  0
 1  2023  1  2  1  0  34.51571  0.08175952 1  0
-#----------------------------------SIZE FREQUENCY DATA-----------------------------                                                    
+#----------------------------------SIZE FREQUENCY DATA-----------------------------
+0  #--size comps format flag (NEW 202402)
 ## Number of size frequency matrices	 																													
 3																														
 ## Number of rows in each matrix																														

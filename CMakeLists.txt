@@ -38,6 +38,13 @@ endif()
 
 message(" --Concatenate command: '${CAT}'")
 
+#--add directory-wide compile options (all compiler languages)
+add_compile_options(
+   -Wall
+   -Wno-unused-variable 
+   -Wno-unused-but-set-variable
+)
+
 #--add external executables; set associated locations
 add_executable(tpl2cpp IMPORTED)
 set_property(
@@ -93,8 +100,9 @@ target_compile_definitions(${TPL}
 )
 #--add compiler flags
 target_compile_options(${TPL} 
-    PUBLIC -Wall
     PUBLIC -O3
+    PUBLIC -Wno-unused-variable 
+    PUBLIC -Wno-unused-but-set-variable
 )
 #--add compiler features
 target_compile_features(${TPL} PUBLIC cxx_std_17)

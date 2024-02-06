@@ -81,6 +81,8 @@ Pot_Fishery Trawl_Bycatch Fixed_bycatch
 NMFS_Trawl ADFG_Pot
 # Are the fleets instantaneous (0) or continuous (1)
 1 1 1 1 1
+##  CATCH  DATA                                                        
+0 #--input format for catch data (0:old format; 1: new format)
 # Number  of  catch data  frames
 4
 # Number  of  rows  in  each  data  frame
@@ -210,6 +212,7 @@ NMFS_Trawl ADFG_Pot
 ##  RELATIVE  ABUNDANCE DATA
 ##  Units of abundance: 1 = biomass, 2 = numbers
 ##  for SMBKC pot survey Units are in  crabs for Abundance.
+0 #--input format for relative abundance data (0:old format; 1: new format)
 ##  Number  of  relative  abundance indicies
 2
 # Index Type  (1=Selecivity; 2=retention)
@@ -275,6 +278,8 @@ NMFS_Trawl ADFG_Pot
 2	2017	1	5	1	0	1689	0.25	2 0 							
 2	2018	1	5	1	0	745	0.14	2	 0 #	no	smbkc	pot	survey	in	2019, 2020, 2021
 #2 2022 1 5 1 0 # will be 2022 survey but not until after assessment
+
+0 #--input format for size comps (0:old format; 1: new format)
 ##  Number  of  length  frequency matrices
 3
 ##  Number  of  rows  in  each  matrix

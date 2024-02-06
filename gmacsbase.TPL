@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader =  adstring("## GMACS Verison 2.01.M.08; Compiled 2024-01-29");
+ !! TheHeader =  adstring("## GMACS Version 2.01.M.09; Completed 2024-02-06");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -297,6 +297,10 @@ DATA_SECTION
 
   //check for commandline overide of pinfile use (if set, overrides value from gmacs.dat)
   LOCAL_CALCS
+    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-verbose",opt))>-1 ){
+      verbose = atoi(ad_comm::argv[on+1]);
+      cout<<"#--verbose level set to: "<<verbose<<endl;
+    }
     if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-ainp",opt))>-1 ){
       usepinfile = 1;
       adstring fnPin = ad_comm::argv[on+1];
@@ -478,59 +482,196 @@ DATA_SECTION
   !! gmacs_data << "#Season type: Set to 1 for continuous F and 0 for instantanous F" << endl;
   !! gmacs_data << season_type << endl;
 
+  // |---------------|
+  // |--CLASS Subst--|
+  // |---------------|
+ LOCAL_CALCS
+  //class to provide substitutions from/to strings/integers
+  class Subst{
+    public:
+    int fleetID(adstring& flt,adstring_array& fleetname){
+      int id = 0;
+      for (int f=fleetname.indexmin();f<=fleetname.indexmax();f++)
+        if (flt==fleetname[f]) id = f;
+      return id;
+      cout<<"Problem assigning fleetID to "<< flt << endl;
+      exit(-1);
+    }
+    int catchTypeID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="retained")  return(RETAINED);
+      if (strp=="discard")   return(DISCARDED);
+      if (strp=="discarded") return(DISCARDED);
+      if (strp=="total")     return(TOTALCATCH);
+      cout<<"Problem assigning catchTypeID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int unitsTypeID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="abundance")  return(ABUNDANCE);
+      if (strp=="biomass")   return(BIOMASS);
+      cout<<"Problem assigning unitsTypeID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int indexTypeID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="sel")     return(1);
+      if (strp=="sel+ret") return(2);
+      cout<<"Problem assigning indexTypeID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int sexID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="males")        return(MALES);
+      if (strp=="females")      return(FEMALES);
+      if (strp=="male")         return(MALES);
+      if (strp=="female")       return(FEMALES);
+      if (strp=="undetermined") return(UNDET_SEX);
+      return(id);
+      cout<<"Problem assigning sexID to "<< str << endl;
+      exit(-1);
+    }
+    int matID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="immature")     return(IMMATURE);
+      if (strp=="mature")       return(MATURE);
+      if (strp=="undetermined") return(UNDET_MATURE);
+      cout<<"Problem assigning matID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+    int shellID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="new shell")    return(NEW_SHELL);
+      if (strp=="old shell")    return(OLD_SHELL);
+      if (strp=="undetermined") return(UNDET_SHELL);
+      cout<<"Problem assigning shellID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
+  };
+  Subst substStuff;
+ END_CALCS
+
+
   // |--------------|
   // | CATCH SERIES |
   // |--------------|
   !! cout << " * Catch data" << endl;
-  !! gmacs_data << "#\n\n#--CATCH DATA----"<<endl;
+  !! gmacs_data << "\n"<<endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+  !! gmacs_data << "##--CATCH DATA------------------------------------------------" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+  init_int fmtCDS_in;
+  !! gmacs_data << fmtCDS_in << " #--input catch data format (0: old format, 1: new format)" << endl;
   init_int nCatchDF;
-  !! gmacs_data << "# Number of catch data frames" << endl;
-  !! gmacs_data << nCatchDF << endl;
-  init_ivector nCatchRows(1,nCatchDF);
-  !! gmacs_data << "# Number of lines for each dataframe (this is not correct for retrospective analyses)" << endl;
-  !! gmacs_data << nCatchRows << endl;
-  init_3darray dCatchData(1,nCatchDF,1,nCatchRows,1,11); // array of catch data
+  !! gmacs_data << nCatchDF << "  #--Number of catch data frames" << endl;
 
-  !! float TempW;
-  !! float SDlogD;
-  !! gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
-  !! gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
-  !! gmacs_data << "## Units of catch: 1 = biomass, 2 = numbers" << endl;
-  !! gmacs_data << "## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
-  !! gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
-  !! for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++)
-  !!  for (int irow=1;irow<=nCatchRows(iCatOut); irow++)
-  !!   {
-  !!    if (dCatchData(iCatOut,irow,1) <= nyrRetro)
-  !!     {
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(1) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(2) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(3) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(4) << " ";
-  !!      gmacs_data << dCatchData(iCatOut,irow)(5,6) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(7) << " ";
-  !!      gmacs_data << (int) dCatchData(iCatOut,irow)(8) << " ";
-  !!      gmacs_data << dCatchData(iCatOut,irow)(9,11) << " ";
-  !!      anystring = "# " + fleetname(dCatchData(iCatOut,irow,3));
-  !!      if (dCatchData(iCatOut,irow,4)==1) anystring = anystring +"_male";
-  !!      if (dCatchData(iCatOut,irow,4)==2) anystring = anystring +"_female";
-  !!      if (dCatchData(iCatOut,irow,7)==0) anystring = anystring +"_total";
-  !!      if (dCatchData(iCatOut,irow,7)==1) anystring = anystring +"_retained";
-  !!      if (dCatchData(iCatOut,irow,7)==2) anystring = anystring +"_discard";
-  !!      if (dCatchData(iCatOut,irow,8)==1) anystring = anystring +"_biomass";
-  !!      if (dCatchData(iCatOut,irow,8)==2) anystring = anystring +"_numbers";
-  !!      if (dCatchData(iCatOut,irow,6) <= 0)
-  !!       {
-  !!        cout << "Error: CV of catch is zero (or less) for group " << iCatOut << " row " << irow << endl;
-  !!        exit(1);
-  !!       }
-  !!      gmacs_data << anystring << " ";
-  !!      SDlogD = sqrt(log(1.0 + square(dCatchData(iCatOut,irow,6))));
-  !!      TempW = 0.5/(SDlogD*SDlogD);
-  !!      gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
-  !!      gmacs_data << endl;
-  !!     }
-  !!   }
+  ivector nCatchRows(1,nCatchDF);
+  3darray dCatchData(1,nCatchDF,1,nCatchRows,1,11); // array of catch data
+  !!float TempW;
+  !!float SDlogD;
+ LOCAL_CALCS
+    {
+      cifstream* pGD = ad_comm::global_datafile;
+      if (fmtCDS_in==0){
+        //--read in using old format
+        (*pGD) >> nCatchRows;
+        gmacs_data << "# Number of lines for each dataframe (this is not correct for retrospective analyses)" << endl;
+        gmacs_data << nCatchRows << endl;
+        for (int idf=1;idf<=nCatchDF;idf++) dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
+        (*pGD) >> dCatchData;
+      } else {
+        //--read in using new format
+        adstring unitsType,catchType,fleet,sex,maturity, shell;
+        int iUT,iCT,iF,iX,iM,iS;
+        for (int idf=1;idf<=nCatchDF;idf++) {
+          gmacs_data << "#----------------" << endl;
+          gmacs_data << "# catch dataframe number " << idf << endl;
+          (*pGD) >> unitsType;        iUT = substStuff.unitsTypeID(unitsType);
+          (*pGD) >> catchType;        iCT = substStuff.catchTypeID(catchType);
+          (*pGD) >> fleet;            iF  = substStuff.fleetID(fleet,fleetname);
+          (*pGD) >> sex;              iX  = substStuff.sexID(sex);
+          (*pGD) >> maturity;         iM  = substStuff.matID(maturity);
+          (*pGD) >> shell;            iS  = substStuff.shellID(shell);
+          (*pGD) >> nCatchRows(idf);
+          gmacs_data << unitsType << "   #--units type" << endl;
+          gmacs_data << catchType << "   #--catch type (retained, discard(ed), total)" << endl;
+          gmacs_data << fleet     << "   #--fleet name" << endl;
+          gmacs_data << sex       << "   #--sex (male(s), female(s), undetermined)" << endl;
+          gmacs_data << maturity  << "   #--maturity (immature, mature, undetermined)" << endl;
+          gmacs_data << shell     << "   #--shell condition (new shell, old shell, undetermined)" << endl;
+          gmacs_data << nCatchRows(idf) << "   #--number of rows in dataframe" << endl;
+          dmatrix inpCatchData(1,nCatchRows(idf),1,7);
+          dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
+          (*pGD) >> inpCatchData;
+          gmacs_data << "#year season value cv multiplier effort discard_mortality" << endl;
+          gmacs_data << inpCatchData << endl;
+          for (int irw=1;irw<=nCatchRows(idf);irw++){
+            dCatchData(idf,irw, 1) = (int) inpCatchData(irw,1);
+            dCatchData(idf,irw, 2) = (int) inpCatchData(irw,2);
+            dCatchData(idf,irw, 3) = iF;
+            dCatchData(idf,irw, 4) = iX;
+            dCatchData(idf,irw, 5) = inpCatchData(irw,3);
+            dCatchData(idf,irw, 6) = inpCatchData(irw,4);
+            dCatchData(idf,irw, 7) = iCT;
+            dCatchData(idf,irw, 8) = iUT;
+            dCatchData(idf,irw, 9) = inpCatchData(irw,5);
+            dCatchData(idf,irw,10) = inpCatchData(irw,6);
+            dCatchData(idf,irw,11) = inpCatchData(irw,7);
+          }//--irw
+        }//--idf
+        gmacs_data << "#--old format:"<<endl;
+      }//--end reading new format
+
+      gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
+      gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
+      gmacs_data << "## Units of catch: 1 = biomass, 2 = numbers" << endl;
+      gmacs_data << "## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
+      gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
+      for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++){
+        for (int irow=1;irow<=nCatchRows(iCatOut); irow++) {
+          if (dCatchData(iCatOut,irow,1) <= nyrRetro) {
+            if (fmtCDS_in>0) gmacs_data << "# ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(1) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(2) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(3) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(4) << " ";
+            gmacs_data << dCatchData(iCatOut,irow)(5,6) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(7) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(8) << " ";
+            gmacs_data << dCatchData(iCatOut,irow)(9,11) << " ";
+            anystring = "# " + fleetname(dCatchData(iCatOut,irow,3));
+            if (dCatchData(iCatOut,irow,4)==MALES)      anystring = anystring +"_male";
+            if (dCatchData(iCatOut,irow,4)==FEMALES)    anystring = anystring +"_female";
+            if (dCatchData(iCatOut,irow,7)==TOTALCATCH) anystring = anystring +"_total";
+            if (dCatchData(iCatOut,irow,7)==RETAINED)   anystring = anystring +"_retained";
+            if (dCatchData(iCatOut,irow,7)==DISCARDED)  anystring = anystring +"_discard";
+            if (dCatchData(iCatOut,irow,8)==BIOMASS)    anystring = anystring +"_biomass";
+            if (dCatchData(iCatOut,irow,8)==ABUNDANCE)  anystring = anystring +"_numbers";
+            if (dCatchData(iCatOut,irow,6) <= 0) {
+              cout << "Error: CV of catch is zero (or less) for group " << iCatOut << " row " << irow << endl;
+              exit(1);
+            }
+            gmacs_data << anystring << " ";
+            SDlogD = sqrt(log(1.0 + square(dCatchData(iCatOut,irow,6))));
+            TempW = 0.5/(SDlogD*SDlogD);
+            gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
+            gmacs_data << endl;
+          }//--dCatchData(iCatOut,irow,1) <= nyrRetro
+        }//--irow
+      }//--iCatOut
+    }
+ END_CALCS
 
   matrix obs_catch(1,nCatchDF,1,nCatchRows);
   matrix obs_effort(1,nCatchDF,1,nCatchRows);
@@ -691,20 +832,82 @@ DATA_SECTION
   // | RELATIVE ABUNDANCE INDICES |
   // |----------------------------|
   !! cout << " * Abundance data" << endl;
-  !! gmacs_data << "#\n\n#--RELATIVE ABUNDANCE DATA----"<<endl;
-  !! gmacs_data << "# Number of relative abundance (survey) data frames" << endl;
+  !! gmacs_data << "\n" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+  !! gmacs_data << "##--RELATIVE ABUNDANCE DATA-----------------------------------" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+  init_int fmtRAD; ///> Format type (0: old format, 1: new format)
+  !!gmacs_data << fmtRAD    << "  #--input format type (0: old format, 1: new format)" << endl;
   init_int nSurveys;                                                 ///> Number of survey series
-  !! gmacs_data << nSurveys << endl; //TODO: change name to nSurveyDFs
-  !!gmacs_data << "# Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame" << endl;
-  init_ivector SurveyType(1,nSurveys);                               ///> Type of survey
-  !!gmacs_data << SurveyType << endl;
-  !!gmacs_data << "# Number of data rows, by data frame" << endl;
-  init_int nSurveyRows;
-  !!gmacs_data << "#   NOTE: this is not correct for retrospective analyses" << endl;
-  !!gmacs_data << nSurveyRows << endl;;
-  init_matrix dSurveyData(1,nSurveyRows,0,9);
-  !!gmacs_data << "# Survey data:"<<endl;
-  !!gmacs_data << dSurveyData <<endl;
+  !! gmacs_data << nSurveys << "  #--Number of dataframes" << endl; //TODO: change name to nSurveyDFs
+  ivector SurveyType(1,nSurveys);                               ///> Type of survey
+  int nSurveyRows;                                              ///> total number of rows in survey dataframes
+  matrix dSurveyData;                                           ///> survey data
+ LOCAL_CALCS
+  {
+    cifstream* pGD = ad_comm::global_datafile;
+    if (fmtRAD==0){
+      //old format
+      gmacs_data << "# Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame" << endl;
+      (*pGD) >> SurveyType;
+      gmacs_data << SurveyType << endl;
+      gmacs_data << "# Number of data rows, by data frame" << endl;
+      (*pGD) >> nSurveyRows;
+      gmacs_data << "#   NOTE: this is not correct for retrospective analyses" << endl;
+      gmacs_data << nSurveyRows << endl;;
+      dSurveyData.allocate(1,nSurveyRows,0,9);
+      (*pGD) >> dSurveyData;
+      gmacs_data << "# Survey data:"<<endl;
+      gmacs_data << dSurveyData <<endl;
+    } else {
+      //new format
+      adstring indexType, unitsType, fleet, sexType, matType, shlType;
+      ivector nrows(1,nSurveys), idIndex(1,nSurveys),idUnits(1,nSurveys);
+      ivector idFlt(1,nSurveys),idSex(1,nSurveys),idMat(1,nSurveys),idShl(1,nSurveys);
+      d3_array inpDFs(1,nSurveys);
+      for (int idf = 1;idf<=nSurveys;idf++){
+        gmacs_data << "#----------------" << endl;
+        gmacs_data << "# relative abundance dataframe number " << idf << endl;
+        (*pGD) >> indexType;  idIndex(idf) = substStuff.indexTypeID(indexType);
+        (*pGD) >> unitsType;  idUnits(idf) = substStuff.unitsTypeID(unitsType);
+        (*pGD) >> fleet;      idFlt(idf) = substStuff.fleetID(fleet,fleetname);
+        (*pGD) >> sexType;    idSex(idf) = substStuff.sexID(sexType);
+        (*pGD) >> matType;    idMat(idf) = substStuff.matID(matType);
+        (*pGD) >> shlType;    idShl(idf) = substStuff.shellID(shlType);
+        (*pGD) >> nrows(idf);
+        gmacs_data << indexType << "  #--abundance index type ('sel' or 'sel+ret')" << endl;
+        gmacs_data << unitsType << "  #--units type ('abundance' or 'biomass')" << endl;
+        gmacs_data << fleet     << "  #--fleet name" << endl;
+        gmacs_data << sexType   << "  #--sex             (male(s), female(s), undetermined)" << endl;
+        gmacs_data << matType   << "  #--maturity        (immature, mature, undetermined)" << endl;
+        gmacs_data << shlType   << "  #--shell condition (new_shell, old_shell, undetermined)" << endl;
+        inpDFs(idf).allocate(1,nrows(idf),1,7);//--allocate dataframe
+        (*pGD) >> inpDFs(idf);
+        gmacs_data << "# q_index year season value cv multiplier CPUE_timing " <<endl;
+        gmacs_data << inpDFs(idf) <<endl;
+      }//--idf
+      nSurveyRows = sum(nrows);
+      dSurveyData.allocate(1,nSurveyRows,0,9);
+      int jrw = 1;
+      for (int idf = 1;idf<=nSurveys;idf++){
+        SurveyType(idf) = idIndex(idf);
+        for (int irw = 1;irw<=nrows(idf);irw++){
+          dSurveyData(jrw, 0) = inpDFs(idf,irw,1); //--q_index
+          dSurveyData(jrw, 1) = inpDFs(idf,irw,2); //--year
+          dSurveyData(jrw, 2) = inpDFs(idf,irw,3); //--season
+          dSurveyData(jrw, 3) = idFlt(idf);        //--fleet
+          dSurveyData(jrw, 4) = idSex(idf);        //--sex
+          dSurveyData(jrw, 5) = idMat(idf);        //--maturity
+          dSurveyData(jrw, 6) = inpDFs(idf,irw,4); //--observed value
+          dSurveyData(jrw, 7) = inpDFs(idf,irw,5); //--cv
+          dSurveyData(jrw, 8) = inpDFs(idf,irw,6); //--units scaling
+          dSurveyData(jrw, 9) = inpDFs(idf,irw,7); //--cpue timing
+          jrw++;
+        }//--irw
+      }//--idf
+     }//--if (fmtRAD)
+  }
+ END_CALCS
   vector obs_cpue(1,nSurveyRows);
   vector cpue_cv(1,nSurveyRows);
   vector cpue_sd(1,nSurveyRows);
@@ -715,6 +918,7 @@ DATA_SECTION
   cpue_cv  = column(dSurveyData,7);
   cpue_sd  = sqrt(log(1.0 + square(cpue_cv)));
   cpue_time  = column(dSurveyData,9);
+  if (fmtRAD) gmacs_data << "# old format:" << endl;
   gmacs_data << "## Index: One q is estimated for each index (the number of index values should match nSurveys" << endl;
   gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
   gmacs_data << "## Maturity: 1 = mature, 2 = immature, 0 = both" << endl;
@@ -733,12 +937,12 @@ DATA_SECTION
      gmacs_data << (int) dSurveyData(irow,8) << " ";//data type
      gmacs_data << dSurveyData(irow,9) << " ";//CPUE time
      anystring = "# " + fleetname(dSurveyData(irow,3));
-     if (dSurveyData(irow,4)==BOTHSEX)          anystring = anystring +"_male+female";
-     if (dSurveyData(irow,4)==MALESANDCOMBINED) anystring = anystring +"_male";
+     if (dSurveyData(irow,4)==UNDET_SEX)        anystring = anystring +"_male+female";
+     if (dSurveyData(irow,4)==MALES)            anystring = anystring +"_male";
      if (dSurveyData(irow,4)==FEMALES)          anystring = anystring +"_female";
-     if (dSurveyData(irow,5)==BOTHMATURE) anystring = anystring +"_immature+mature";
-     if (dSurveyData(irow,5)==IMMATURE)   anystring = anystring +"_immature";
-     if (dSurveyData(irow,5)==MATURE)     anystring = anystring +"_mature";
+     if (dSurveyData(irow,5)==UNDET_MATURE) anystring = anystring +"_immature+mature";
+     if (dSurveyData(irow,5)==IMMATURE)     anystring = anystring +"_immature";
+     if (dSurveyData(irow,5)==MATURE)       anystring = anystring +"_mature";
      gmacs_data << anystring << " ";
      
      SDlogD = sqrt(log(1.0 + square(dSurveyData(irow,7))));
@@ -753,10 +957,85 @@ DATA_SECTION
   // | SIZE COMPOSITION DATA |
   // |-----------------------|
   !! cout << " * Size composition data" << endl;
-  init_int nSizeComps_in;                                            ///> Number of series of size-comp data
-  init_ivector nSizeCompRows_in(1,nSizeComps_in);                    ///> Rows of data for each series
-  init_ivector nSizeCompCols_in(1,nSizeComps_in);                    ///> Number of size-class bins
-  init_3darray d3_SizeComps_in(1,nSizeComps_in,1,nSizeCompRows_in,-7,nSizeCompCols_in);
+  !! gmacs_data << "\n" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+  !! gmacs_data << "##--SIZE COMPOSITION DATA-------------------------------------" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+   init_int fmtZCs_in;                                           ///> size composition format flag (0=old style, 1=new style)
+  !! gmacs_data << fmtZCs_in     << "   #--format flag (0=old style, 1=new style)" << endl;
+  init_int nSizeComps_in;                                       ///> Number of series of size-comp data
+  !! gmacs_data << nSizeComps_in << "   #--number of dataframes" << endl;
+  ivector nSizeCompRows_in(1,nSizeComps_in);                    ///> Rows of data for each series (was init_ivector)
+  ivector nSizeCompCols_in(1,nSizeComps_in);                    ///> Number of size-class bins    (was init_ivector)
+  3darray d3_SizeComps_in(1,nSizeComps_in); //--other dimensions are allocated below (was init_3darray)
+ LOCAL_CALCS
+  {
+    cifstream* pGD = ad_comm::global_datafile;
+    if (fmtZCs_in==0){
+      (*pGD) >> nSizeCompRows_in;
+      (*pGD) >> nSizeCompCols_in;
+      //--allocate remaining dimensions
+      for (int iZC=1;iZC<=nSizeComps_in;iZC++)
+        d3_SizeComps_in(iZC).allocate(1,nSizeCompRows_in(iZC),-7,nSizeCompCols_in(iZC));
+      d3_SizeComps_in.initialize();//--set elements to 0
+    }
+  }
+ END_CALCS
+ LOCAL_CALCS
+  {
+    cifstream* pGD = ad_comm::global_datafile;
+    if (fmtZCs_in==0){
+      (*pGD) >> d3_SizeComps_in;
+    } else if (fmtZCs_in==1) {
+      cout << "reading size compositions using new format" << endl;
+      adstring ct_, flt_, x_, m_, s_; 
+      int      ict_,iflt_,ix_,im_,is_;
+      for (int iZC=1;iZC<=nSizeComps_in;iZC++){
+        cout << "iZC = " << iZC << endl;
+        gmacs_data << "#----------------" << endl;
+        gmacs_data << "#--size composition dataframe number " << iZC << endl;
+        (*pGD) >> ct_;            //--catch type as string
+        (*pGD) >> flt_;           //--fleet as string
+        (*pGD) >> x_;             //--sex as string
+        (*pGD) >> m_;             //--maturity as string
+        (*pGD) >> s_;             //--shell condition as string
+        gmacs_data << ct_  << "   #--catch type (retained, discard(ed), total)" << endl;
+        gmacs_data << flt_ << "   #--fleet name" << endl;
+        gmacs_data << x_   << "   #--sex type (male(s), female(s), undetermined)" << endl;
+        gmacs_data << m_   << "   #--maturity type (immature, mature, undetermined)" << endl;
+        gmacs_data << s_   << "   #--shell condition (new_shell, old_shell, undetermined)" << endl;
+        (*pGD) >> nSizeCompRows_in(iZC);
+        (*pGD) >> nSizeCompCols_in(iZC);
+        gmacs_data << nSizeCompRows_in(iZC) << "   #--number of rows in dataframe" << endl;
+        gmacs_data << nSizeCompCols_in(iZC) << "   #--number of columns in dataframe" << endl;
+        cout << ct_ << " " << flt_ << " " << x_ << " " << m_ << " " << s_ << endl;
+        ict_  = substStuff.catchTypeID(ct_);
+        iflt_ = substStuff.fleetID(flt_,fleetname);
+        ix_   = substStuff.sexID(x_);
+        im_   = substStuff.matID(m_);
+        is_   = substStuff.shellID(s_);
+        d3_SizeComps_in(iZC).allocate(1,nSizeCompRows_in(iZC),-7,nSizeCompCols_in(iZC));
+        gmacs_data << "#Year  Season  Stage1_EffN  DataVec" << endl;
+        for (int rw=1;rw<=nSizeCompRows_in(iZC);rw++){
+          //cout << "rw = " << rw << endl;
+          (*pGD) >> d3_SizeComps_in(iZC,rw)(-7,-6);                   //--year, season
+          gmacs_data << d3_SizeComps_in(iZC,rw)(-7,-6) <<" ";
+          d3_SizeComps_in(iZC,rw)(-5) = iflt_;
+          d3_SizeComps_in(iZC,rw)(-4) = ix_;
+          d3_SizeComps_in(iZC,rw)(-3) = ict_;
+          d3_SizeComps_in(iZC,rw)(-2) = is_;
+          d3_SizeComps_in(iZC,rw)(-1) = im_;
+          //cout<< "*" << d3_SizeComps_in(iZC,rw)(-5,-1) << "*" << endl;//fleet,sex,catch type,shell,maturity
+          (*pGD) >> d3_SizeComps_in(iZC,rw)(0,nSizeCompCols_in(iZC)); //--the remainder
+          gmacs_data << d3_SizeComps_in(iZC,rw)(0,nSizeCompCols_in(iZC)) << endl;
+        }//--rw
+      } //--iZC
+      cout <<"finished reading new format size comps" << endl;
+    } else {
+      cout<<"Error in data file: fmtZCs_in should be 0 or 1, not "<<fmtZCs_in<<endl;
+    }
+  }
+ END_CALCS
 
   3darray d3_obs_size_comps_in(1,nSizeComps_in,1,nSizeCompRows_in,1,nSizeCompCols_in);
   matrix size_comp_sample_size_in(1,nSizeComps_in,1,nSizeCompRows_in);
@@ -764,15 +1043,17 @@ DATA_SECTION
   matrix size_comp_season_in(1,nSizeComps_in,1,nSizeCompRows_in);
 
  LOC_CALCS
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
     dmatrix tmp = trans(d3_SizeComps_in(kk)).sub(1,nSizeCompCols_in(kk));
     d3_obs_size_comps_in(kk) = trans(tmp);
     size_comp_sample_size_in(kk) = column(d3_SizeComps_in(kk),0);
     size_comp_year_in(kk) = column(d3_SizeComps_in(kk),-7);
     size_comp_season_in(kk) = column(d3_SizeComps_in(kk),-6);
-   }
-  WRITEDAT(nSizeComps_in); WRITEDAT(nSizeCompRows_in); WRITEDAT(nSizeCompCols_in);
+  }
+  if (fmtZCs_in>0) gmacs_data << "# old format:" << endl;
+  if (fmtZCs_in==0){
+    ECHO(nSizeComps_in); WRITEDAT(nSizeCompRows_in); WRITEDAT(nSizeCompCols_in);
+  }
   gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
   gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
   gmacs_data << "## Shell: 1 = newshell, 2 = oldshell, 0 = both" << endl;
@@ -785,6 +1066,7 @@ DATA_SECTION
     if ( ((d3_SizeComps_in(irow,jrow,-7) <= nyrRetro) || (d3_SizeComps_in(irow,jrow,-7) == nyrRetro+1 && d3_SizeComps_in(irow,jrow,-6) == 1)) 
            && d3_SizeComps_in(irow,jrow,-7) >= syr)
      {
+      if (fmtZCs_in>0) gmacs_data << "# ";
       gmacs_data << d3_SizeComps_in(irow,jrow) << " ";
       anystring = "# " + fleetname(d3_SizeComps_in(irow,jrow,-5));
       testtotal = 0;
@@ -806,8 +1088,8 @@ DATA_SECTION
         exit(1);
        }
 
-	  if (d3_SizeComps_in(irow,jrow,-4)==BOTHSEX)          anystring = anystring +"_male+female";
-      if (d3_SizeComps_in(irow,jrow,-4)==MALESANDCOMBINED) anystring = anystring +"_male";
+	    if (d3_SizeComps_in(irow,jrow,-4)==UNDET_SEX)        anystring = anystring +"_male+female";
+      if (d3_SizeComps_in(irow,jrow,-4)==MALES)            anystring = anystring +"_male";
       if (d3_SizeComps_in(irow,jrow,-4)==FEMALES)          anystring = anystring +"_female";
       if (d3_SizeComps_in(irow,jrow,-3)==TOTALCATCH)       anystring = anystring +"_total";
       if (d3_SizeComps_in(irow,jrow,-3)==RETAINED)         anystring = anystring +"_retained";
@@ -815,7 +1097,7 @@ DATA_SECTION
       if (d3_SizeComps_in(irow,jrow,-2)==UNDET_SHELL)      anystring = anystring +"_all_shell";
       if (d3_SizeComps_in(irow,jrow,-2)==NEW_SHELL)        anystring = anystring +"_newshell";
       if (d3_SizeComps_in(irow,jrow,-2)==OLD_SHELL)        anystring = anystring +"_oldshell";
-      if (d3_SizeComps_in(irow,jrow,-1)==BOTHMATURE)       anystring = anystring +"_immature+mature";
+      if (d3_SizeComps_in(irow,jrow,-1)==UNDET_MATURE)     anystring = anystring +"_immature+mature";
       if (d3_SizeComps_in(irow,jrow,-1)==IMMATURE)         anystring = anystring +"_immature";
       if (d3_SizeComps_in(irow,jrow,-1)==MATURE)           anystring = anystring +"_mature";
       gmacs_data << anystring << endl;
@@ -2116,8 +2398,8 @@ DATA_SECTION
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
-    if (d3_SizeComps_in(kk,1,-4)==BOTHSEX)          anystring = anystring +" male+female";
-    if (d3_SizeComps_in(kk,1,-4)==MALESANDCOMBINED) anystring = anystring +" male";
+    if (d3_SizeComps_in(kk,1,-4)==UNDET_SEX)        anystring = anystring +" male+female";
+    if (d3_SizeComps_in(kk,1,-4)==MALES)            anystring = anystring +" male";
     if (d3_SizeComps_in(kk,1,-4)==FEMALES)          anystring = anystring +" female";
    }
   gmacs_ctl << anystring << endl;
@@ -2140,7 +2422,7 @@ DATA_SECTION
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
-    if (d3_SizeComps_in(kk,1,-1)==BOTHMATURE)       anystring = anystring +" immature+mature";
+    if (d3_SizeComps_in(kk,1,-1)==UNDET_MATURE)       anystring = anystring +" immature+mature";
     if (d3_SizeComps_in(kk,1,-1)==IMMATURE)         anystring = anystring +" immature";
     if (d3_SizeComps_in(kk,1,-1)==MATURE)           anystring = anystring +" mature";
    }
@@ -3628,6 +3910,8 @@ PROCEDURE_SECTION
 FUNCTION initialize_model_parameters
   int Ipnt, Jpnt, Ihmo;
 
+  if (verbose>=3) cout<<"starting initialize_model_parameters";
+
   // Get parameters from theta control matrix:
   M0(1)      = theta(1);
   parname1(1) = "M-base";
@@ -3675,6 +3959,7 @@ FUNCTION initialize_model_parameters
     rec_dev(i) = rec_dev_est(i);
     logit_rec_prop(i) = logit_rec_prop_est(i);
    }
+   if (verbose>=3) cout<<"--finished setting rec_dev()"<<endl;
 
   // Estimate initial numbers as absolute
   if ( bInitializeUnfished == FREEPARS )
@@ -4004,6 +4289,7 @@ FUNCTION init_selectivities
    * Need to deprecate the abstract class for selectivity, 7X slower.
   **/
 FUNCTION calc_selectivities
+  if (verbose>=3) cout<<"starting calc_selectivities"<<endl;
   int h,i,k, k2;
   int jstore, estore, sd;
   dvar_vector pv;
@@ -4027,458 +4313,319 @@ FUNCTION calc_selectivities
   //cout << slx_dev_sigma<< endl;
 
   // Specify non-mirrored selectivity
+  if (verbose>=3) cout<<"evaluating non-mirrored selectivities"<<endl;
   int j = 1; int ee = 1; sd = 1;
-  for ( int k = 1; k <= nslx; k++ )
-   if (slx_type(k) < 0){
-    pSLX=0; 
-    j++;
-  } else {
-     if (verbose>3) cout<<"retrieving selex for k = "<<k<<endl;
-    dvar_vector temp_slx2(1,slx_extra(k));
-    dvar_vector knots(1,slx_extra(k));
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_type(k) < 0){
+      pSLX=0; 
+      j++;
+    } else {
+      if (verbose>3) cout<<"retrieving selex for k = "<<k<<endl;
+      dvar_vector temp_slx2(1,slx_extra(k));
+      dvar_vector knots(1,slx_extra(k));
 
-    // Save parameter points we will need then
-    jstore = j; estore = ee;
-    // initialize SelDevs (Cumulative (Env + Random walk) deviations for selectivity)
-     SelDevs.initialize();
+      // Save parameter points we will need then
+      jstore = j; estore = ee;
+      // initialize SelDevs (Cumulative (Env + Random walk) deviations for selectivity)
+      SelDevs.initialize();
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }     ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; } ///> females only
+      for ( h = h1; h <= h2; h++ ) {
+        if (verbose>3) cout<<"h = "<<h<<" for slx_isex(k)"<<endl;
+        // Set the time-varying dev for this fleet x sex
+        if (slx_timeVar(k)==1) {
+          for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
+            j = jstore; ee= estore; 
+            switch ( slx_type(k) ) {
+              case SELEX_PARAMETRIC:                               ///> parametric
+                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
+                for (int i = 1; i <= nclass; i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
+                break;
+              case SELEX_COEFFICIENTS:                             ///> coefficients
+                if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+                break;
+              case SELEX_STANLOGISTIC:                             ///> logistic
+                if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (verbose>3) cout<<"--1"<<j<<endl;
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (verbose>3) cout<<"--2"<<j<<endl;
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  if (verbose>3) cout<<"--3"<<j<<endl;
+                  j++;
+                } 
+                break;
+              case SELEX_5095LOGISTIC:                             ///> logistic95
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
+                if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
+                if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                j++;
+                break;
+              case SELEX_DECLLOGISTIC:                             ///> declining logistic
+                if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_DOUBLENORM:                               ///> double normal
+                for (int i=1;i<=3;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_DOUBLENORM4:                               ///> double normal4
+                if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
+                for (int i=1;i<=4;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_UNIFORM1: // uniform 1
+                break;
+              case SELEX_UNIFORM0: // uniform 0
+                break;
+              case SELEX_CUBIC_SPLINE:                             ///> coefficients
+                if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+            } // switch
+          } // iy
+        }
+        if (verbose>3)  cout << "Done stage 1: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
 
-//   switch ( slx_type(k) )
-//    {
-//     case SELEX_PARAMETRIC:                               ///> parametric
-//         if (verbose>3) cout<<"SELEX_PARAMETRIC"<<endl;
-//      for (i = 1; i <= nclass; i++) { temp_slx1(i) = log_slx_pars(j); j++; }
-//      ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[k-1])->SetSelparms(temp_slx1);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_COEFFICIENTS:                             ///> coefficients
-//         if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
-//      for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-//      ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[k-1])->SetSelCoeffs(temp_slx2);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_STANLOGISTIC:                             ///> logistic
-//         if (verbose>3) cout<<"SELEX_LOGISTIC"<<endl;
-//      p1 = mfexp(log_slx_pars(j));
-//      j++;
-//      p2 = mfexp(log_slx_pars(j));
-//      j++;
-//      ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_5095LOGISTIC:                             ///> logistic95
-//         if (verbose>3) cout<<"SELEX_LOGISTIC95"<<endl;
-//       p1 = mfexp(log_slx_pars(j));
-//       j++;
-//       p2 = mfexp(log_slx_pars(j));
-//       j++;
-//      ((gsm::LogisticCurve95<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
-//      pSLX = ppSLX[k-1];
-//     break;
-//     case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
-//       if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
-//       p1 = mfexp(log_slx_pars(j));
-//       j++;
-//      ((gsm::LogisticCurveOne<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1);
-//      pSLX = ppSLX[k-1];
-//     break;
-//     case SELEX_DECLLOGISTIC:                             ///> declining logistic
-//         if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
-//       p1 = mfexp(log_slx_pars(j));
-//       j++;
-//       p2 = mfexp(log_slx_pars(j));
-//       j++;
-//       for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-//      ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[k-1])->SetParams(p1,p2,temp_slx2);
-//      pSLX = ppSLX[k-1];
-//     break;
-//     case SELEX_DOUBLENORM:                               ///> double normal
-//         if (verbose>3) cout<<"SELEX_DOUBLENORM"<<endl;
-//      p1 = mfexp(log_slx_pars(j));
-//      j++;
-//      p2 = mfexp(log_slx_pars(j));
-//      j++;
-//      p3 = mfexp(log_slx_pars(j));
-//      j++;
-//      ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_DOUBLENORM4:                               ///> double normal4
-//         if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
-//      p1 = mfexp(log_slx_pars(j));
-//      j++;
-//      p2 = mfexp(log_slx_pars(j));
-//      j++;
-//      p3 = mfexp(log_slx_pars(j));
-//      j++;
-//      p4 = mfexp(log_slx_pars(j));
-//      j++;
-//      ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3,p4);
-//      pSLX = ppSLX[k-1];
-//      break;
-//     case SELEX_UNIFORM1: // uniform 1
-//      j++;
-//         if (verbose>3) cout<<"SELEX_UNIFORM1"<<endl;
-//      pSLX = ppSLX[k-1];//gsm::UniformCurve<dvar_vector>
-//      break;
-//     case SELEX_UNIFORM0: // uniform 0
-//      j++;
-//         if (verbose>3) cout<<"SELEX_UNIFORM0"<<endl;
-//      pSLX = ppSLX[k-1];//gsm::Uniform0Curve<dvar_vector>
-//      break;
-//     case SELEX_CUBIC_SPLINE:                             ///> coefficients
-//      if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
-//      for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
-//      for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-//      // Buck
-//      //need to set y_vals and x_vals below appropriately
-//      //y_vals are values at knots (a dvar_vector)
-//      //x_vals are knots           (a dvar_vector)
-//      ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[k-1])->initSpline(temp_slx2,knots);
-//      pSLX = ppSLX[k-1];//gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
-//      //break;
-//    } // switch
-//    if (verbose>3) cout<<"done selecting SLX"<<endl;
-//     
-//   int h1 = 1;
-//   int h2 = nsex;
-//   if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
-//   if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
-//   for ( h = h1; h <= h2; h++ )
-//    {
-//     for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
-//      {
-//       int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
-//       if ( slx_gear(k) > 0 )                                            ///> capture selectivity
-//        {
-//         log_slx_capture(kk,h,i) = pSLX->logSelectivity(dvar_mid_points);
-//         if (slx_type(k)==SELEX_PARAMETRIC || slx_type(k)==SELEX_COEFFICIENTS || slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
-//      if( slx_max_at_1(k) == 1)
-//        log_slx_capture(kk,h,i) -= log_slx_capture(kk,h,i,nclass);
-//         //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_capture(kk,h,i) << " " << exp(log_slx_capture(kk,h,i)) << endl;
-//        }
-//       else                                                              ///> discard (because the gear is NEGATIVE)
-//        {
-//         log_slx_retaind(kk,h,i) = pSLX->logSelectivity(dvar_mid_points);
-//         if (slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
-//          log_slx_retaind(kk,h,i) -= log_slx_retaind(kk,h,i,nclass);
-//         log_slx_retaind(kk,h,i) += log_high_grade(kk,h,i);
-//         log_slx_discard(kk,h,i) = log(1.0 - exp(log_slx_retaind(kk,h,i)) + TINY);
-//         //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_retaind(kk,h,i) << endl;
-//        }
-//      }
-//    }
-//   //do NOT "delete pSLX;"
-//  } // k
+        // Now the actual deal
+        if (verbose>=3) cout<<"starting calc_selectivities"<<endl;
+        for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
+          if (iy==slx_styr(k) || slx_timeVar(k)==1) {
+            j = jstore; /// ee= estore; 
+            switch ( slx_type(k) ) {
+              case SELEX_PARAMETRIC:                               ///> parametric
+                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
+                for (int i = 1; i <= nclass; i++) { 
+                  temp_slx1(i) = log_slx_pars(j); 
+                  if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx1(i) += SelDevs(j,iy); }
+                  j++; 
+                }
+                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
+                ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[k-1])->SetSelparms(temp_slx1);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_COEFFICIENTS:                             ///> coefficients
+                if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  temp_slx2(i) = log_slx_pars(j); 
+                  if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx2(i) += SelDevs(j,iy); }
+                  j++; 
+                }
+                ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[k-1])->SetSelCoeffs(temp_slx2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_STANLOGISTIC:                             ///> logistic
+                if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_5095LOGISTIC:                             ///> logistic95
+                if (verbose>3) cout<<"SELEX_LOGISTIC95"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurve95<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
+                if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurveOne<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DECLLOGISTIC:                             ///> declining logistic
+                if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+                ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[k-1])->SetParams(p1,p2,temp_slx2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DOUBLENORM:                               ///> double normal
+                if (verbose>3) cout<<"SELEX_DOUBLENORM"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                j++;
+                p3 = mfexp(log_slx_pars(j));
+                j++;
+                ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DOUBLENORM4:                               ///> double normal4
+                if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                j++;
+                p3 = mfexp(log_slx_pars(j));
+                j++;
+                p4 = mfexp(log_slx_pars(j));
+                j++;
+                ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3,p4);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_UNIFORM1: // uniform 1
+                j++;
+                if (verbose>3) cout<<"SELEX_UNIFORM1"<<endl;
+                pSLX = ppSLX[k-1];//gsm::UniformCurve<dvar_vector>
+                break;
+              case SELEX_UNIFORM0: // uniform 0
+                j++;
+                if (verbose>3) cout<<"SELEX_UNIFORM0"<<endl;
+                pSLX = ppSLX[k-1];//gsm::Uniform0Curve<dvar_vector>
+                break;
+              case SELEX_CUBIC_SPLINE:                             ///> coefficients
+                if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
+                for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+                // Buck
+                //need to set y_vals and x_vals below appropriately
+                //y_vals are values at knots (a dvar_vector)
+                //x_vals are knots           (a dvar_vector)
+                ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[k-1])->initSpline(temp_slx2,knots);
+                pSLX = ppSLX[k-1];//gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
+                //break;
+            } //--switch
+          } //--if (iy==slx_styr(k) || slx_timeVar(k)==1) 
 
-    int h1 = 1;
-    int h2 = nsex;
-    if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
-    if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
-    for ( h = h1; h <= h2; h++ )
-     {
-      // Set the time-varying dev for this fleet x sex
-      if (slx_timeVar(k)==1)
-       for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ )
-        {
-
-          j = jstore; ee= estore; 
-
-
-         switch ( slx_type(k) )
-          {
-           case SELEX_PARAMETRIC:                               ///> parametric
-            if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
-            for (int i = 1; i <= nclass; i++) 
-             { 
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             }
-            if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
-            break;
-           case SELEX_COEFFICIENTS:                             ///> coefficients
-            if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
-            for (int i = 1; i <= slx_extra(k); i++) 
-             { 
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             }
-            break;
-           case SELEX_STANLOGISTIC:                             ///> logistic
-            if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
-            for (int i=1;i<=2;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_5095LOGISTIC:                             ///> logistic95
-            for (int i=1;i<=2;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
-            if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
-            if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-            if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-            if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-            j++;
-            break;
-           case SELEX_DECLLOGISTIC:                             ///> declining logistic
-            if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
-            for (int i=1;i<=2;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_DOUBLENORM:                               ///> double normal
-            for (int i=1;i<=3;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_DOUBLENORM4:                               ///> double normal4
-            if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
-            for (int i=1;i<=4;i++)
-             {
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             } 
-            break;
-           case SELEX_UNIFORM1: // uniform 1
-            break;
-           case SELEX_UNIFORM0: // uniform 0
-            break;
-           case SELEX_CUBIC_SPLINE:                             ///> coefficients
-            if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
-            for (int i = 1; i <= slx_extra(k); i++) 
-             { 
-              if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-              if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-              j++;
-             }
-          } // switch
-
-
-          //if (h != h2 || iy != slx_edyr(k)) { j = jstore; ee= estore; }
-
-        } // iy
-       if (verbose>3)  cout << "Done stage 1: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
-
-      // Now the actual deal
-      for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ )
-       {
-        if (iy==slx_styr(k) || slx_timeVar(k)==1)
-         {
-
-          j = jstore; /// ee= estore; 
-
-
-          switch ( slx_type(k) )
-          {
-           case SELEX_PARAMETRIC:                               ///> parametric
-            if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
-            for (int i = 1; i <= nclass; i++) 
-             { 
-              temp_slx1(i) = log_slx_pars(j); 
-              if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx1(i) += SelDevs(j,iy); }
-              j++; 
-             }
-            if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
-            ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[k-1])->SetSelparms(temp_slx1);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_COEFFICIENTS:                             ///> coefficients
-            if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
-            for (int i = 1; i <= slx_extra(k); i++) 
-              { 
-               temp_slx2(i) = log_slx_pars(j); 
-               if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx2(i) += SelDevs(j,iy); }
-               j++; 
-               }
-            ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[k-1])->SetSelCoeffs(temp_slx2);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_STANLOGISTIC:                             ///> logistic
-            if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
-            p1 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
-            j++;
-            ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_5095LOGISTIC:                             ///> logistic95
-            if (verbose>3) cout<<"SELEX_LOGISTIC95"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
-            j++;
-            ((gsm::LogisticCurve95<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
-            if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
-            j++;
-            ((gsm::LogisticCurveOne<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_DECLLOGISTIC:                             ///> declining logistic
-            if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
-            j++;
-            for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-            ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[k-1])->SetParams(p1,p2,temp_slx2);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_DOUBLENORM:                               ///> double normal
-            if (verbose>3) cout<<"SELEX_DOUBLENORM"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            j++;
-            p3 = mfexp(log_slx_pars(j));
-            j++;
-            ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_DOUBLENORM4:                               ///> double normal4
-            if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
-            p1 = mfexp(log_slx_pars(j));
-            j++;
-            p2 = mfexp(log_slx_pars(j));
-            j++;
-            p3 = mfexp(log_slx_pars(j));
-            j++;
-            p4 = mfexp(log_slx_pars(j));
-            j++;
-            ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3,p4);
-            pSLX = ppSLX[k-1];
-            break;
-           case SELEX_UNIFORM1: // uniform 1
-            j++;
-            if (verbose>3) cout<<"SELEX_UNIFORM1"<<endl;
-            pSLX = ppSLX[k-1];//gsm::UniformCurve<dvar_vector>
-            break;
-           case SELEX_UNIFORM0: // uniform 0
-            j++;
-            if (verbose>3) cout<<"SELEX_UNIFORM0"<<endl;
-            pSLX = ppSLX[k-1];//gsm::Uniform0Curve<dvar_vector>
-            break;
-           case SELEX_CUBIC_SPLINE:                             ///> coefficients
-            if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
-            for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
-            for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
-            // Buck
-            //need to set y_vals and x_vals below appropriately
-            //y_vals are values at knots (a dvar_vector)
-            //x_vals are knots           (a dvar_vector)
-            ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[k-1])->initSpline(temp_slx2,knots);
-            pSLX = ppSLX[k-1];//gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
-            //break;
-          } // switch
-
-          // if (h != h2 || iy != slx_edyr(k)) { j = jstore;}
-          
-         } //  if 
-
-        int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
-        if ( slx_gear(k) > 0 )                                            ///> capture selectivity
-         {
-          log_slx_capture(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
-          if (slx_type(k)==SELEX_PARAMETRIC || slx_type(k)==SELEX_COEFFICIENTS || slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
-    if( slx_max_at_1(k) == 1)
-      log_slx_capture(kk,h,iy) -= log_slx_capture(kk,h,iy,nclass);
-          //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_capture(kk,h,i) << " " << exp(log_slx_capture(kk,h,i)) << endl;
-         }
-        else                                                              ///> discard (because the gear is NEGATIVE)
-         {
-          log_slx_retaind(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
-          if (slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
-           log_slx_retaind(kk,h,iy) -= log_slx_retaind(kk,h,iy,nclass);
-          log_slx_retaind(kk,h,iy) += log_high_grade(kk,h,iy);
-          log_slx_discard(kk,h,iy) = log(1.0 - exp(log_slx_retaind(kk,h,iy)) + TINY);
-          //cout << kk << " " << h << " " << iy << " " << slx_type(k) << " " << log_slx_retaind(kk,h,iy) << endl;
-         }
-        } // iy
+          int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
+          if ( slx_gear(k) > 0 ) {                                           ///> capture selectivity
+            log_slx_capture(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
+            if (slx_type(k)==SELEX_PARAMETRIC || slx_type(k)==SELEX_COEFFICIENTS || slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
+              if( slx_max_at_1(k) == 1)
+                log_slx_capture(kk,h,iy) -= log_slx_capture(kk,h,iy,nclass);
+            //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_capture(kk,h,i) << " " << exp(log_slx_capture(kk,h,i)) << endl;
+          } else {                                                              ///> discard (because the gear is NEGATIVE)
+            log_slx_retaind(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
+            if (slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
+              log_slx_retaind(kk,h,iy) -= log_slx_retaind(kk,h,iy,nclass);
+            log_slx_retaind(kk,h,iy) += log_high_grade(kk,h,iy);
+            log_slx_discard(kk,h,iy) = log(1.0 - exp(log_slx_retaind(kk,h,iy)) + TINY);
+            //cout << kk << " " << h << " " << iy << " " << slx_type(k) << " " << log_slx_retaind(kk,h,iy) << endl;
+          }
+        } //--iy loop
         if (verbose>3) cout << "Done stage 2: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
-       }
-    if (verbose>3) cout<<"done selecting SLX"<<endl;
-    //do NOT "delete pSLX;"
-   } // k
+      } //--h loop
+      if (verbose>3) cout<<"done selecting SLX"<<endl;
+      //do NOT "delete pSLX;"
+    }//--if (slx_type(k) < 0)
    //exit(1);
+  }//--k loop
 
   // Mirror mirrow in the file
-  for ( int k = 1; k <= nslx; k++ )
-   if (slx_type(k) < 0)
-    {
-     int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
-     int h1 = 1;
-     int h2 = nsex;
-     if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }     ///> males (or combined sex) only
-     if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                       ///> females only
-     if ( slx_gear(k) > 0 )                                              ///> capture selectivity
-      {
-       for ( i = syr; i <= nyrRetro; i++ )
-        for ( h = h1; h <= h2; h++ )
-         log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
-      }
-     else
-      {
-       for ( i = syr; i <= nyrRetro; i++ )
-        for ( h = h1; h <= h2; h++ )
-         {
-          log_slx_retaind(kk,h,i) = log_slx_retaind(-slx_type(k),h,i);
-          log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
-         }
-     }
-    }
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_type(k) < 0) {
+      int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }     ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; } ///> females only
+      //if ( slx_gear(k) > 0 ) {
+      //  for ( i = syr; i <= nyrRetro; i++ )
+      //  for ( h = h1; h <= h2; h++ )
+      //  log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
+      //} else {
+      //  for ( i = syr; i <= nyrRetro; i++ )
+      //  for ( h = h1; h <= h2; h++ ){
+      //  log_slx_retaind(kk,h,i) = log_slx_retaind(-slx_type(k),h,i);
+      //  log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
+      //  }
+      //}
+      if ( slx_gear(k) > 0 ) {
+        for ( i = syr; i <= nyrRetro; i++ )
+          for ( h = h1; h <= h2; h++ )
+            log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
+      } else {
+        //slx_gear(k) < 0
+        for ( i = syr; i <= nyrRetro; i++ ) {
+          for ( h = h1; h <= h2; h++ ){
+            log_slx_retaind(kk,h,i) = log_slx_retaind(-slx_type(k),h,i);
+            log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
+          }//--h loop
+        }//--i loop
+      }//--if ( slx_gear(k) > 0 )
+    }//--if (slx_type(k) < 0)
+  }//--k loop
 
 	// Sometimes one selectivity pattern is embedded in another
-  for ( int k = 1; k <= nslx; k++ )
-   if (slx_incl(k) > 0 && slx_gear(k) > 0)                                 ///> only for capture selectivity
-    {
-     int h1 = 1;
-     int h2 = nsex;
-     if ( slx_isex(k) == MALESANDCOMBINED ) { h2 = MALESANDCOMBINED; }    ///> males (and combined) only
-     if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }                      ///> females only
-     for ( h = h1; h <= h2; h++ )
-      {
-       int kk = abs(slx_gear(k));                                         ///> pointer to the fleet
-       k2 = slx_incl(k);                                                  ///> pointer to the fleet within within which this fleet falls
-       for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
-        for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
-      }
-    }
-	
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_incl(k) > 0 && slx_gear(k) > 0){                                 ///> only for capture selectivity
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }    ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }///> females only
+      //for ( h = h1; h <= h2; h++ ) {
+      //    int kk = abs(slx_gear(k));                                         ///> pointer to the fleet
+      //    k2 = slx_incl(k);                                                  ///> pointer to the fleet within within which this fleet falls
+      //    for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
+      //      for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
+      //}//--h loop
+      for ( h = h1; h <= h2; h++ ) {
+        int kk = abs(slx_gear(k));
+        k2 = slx_incl(k);
+        for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
+          for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
+      }//--h loop
+    }//--if
+  }//--k loop
+//--end of function
 	
 // --------------------------------------------------------------------------------------------------
 
@@ -5238,7 +5385,7 @@ FUNCTION calc_initial_numbers_at_length
          d4_N(ig)(syr)(1) = mfexp(logN0(ig));
         }
      break;
-    case FREEPARSSCALED:                                 ///> Free parameters (revised
+    case FREEPARSSCALED:                                 ///> Free parameters (revised)
      scale = sum(exp(logN0));
      for ( int h = 1; h <= nsex; h++ )
       for ( int m = 1; m <= nmature; m++ )
@@ -5275,112 +5422,97 @@ FUNCTION update_population_numbers_at_length
   dvar_vector  z(1,nclass);
 
   // this is what should be used because recruitment is not always during the first season (i.e. during the initial conditions)
-  for ( i = syr; i <= nyrRetro; i++ )
-   for ( h = 1; h <= nsex; h++ )
-    {
-     if ( bInitializeUnfished == UNFISHEDEQN )
-      recruits(h,i) = mfexp(logR0)*float(nsex);
-     else
-      recruits(h,i) = mfexp(logRbar)*float(nsex);
-     // This splits recruitment out proportionately into males and females
-     if (nsex == 1) recruits(h)(i) *= mfexp(rec_dev(i));
-     if (nsex == 2 && h == MALESANDCOMBINED) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
-     // if (h == MALESANDCOMBINED) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
-	 if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
-    }
+  for ( i = syr; i <= nyrRetro; i++ ){
+      for ( h = 1; h <= nsex; h++ ){
+      if ( bInitializeUnfished == UNFISHEDEQN )
+        recruits(h,i) = mfexp(logR0)*float(nsex);
+      else
+        recruits(h,i) = mfexp(logRbar)*float(nsex);
+      // This splits recruitment out proportionately into males and females
+      if (nsex == 1) recruits(h)(i) *= mfexp(rec_dev(i));
+      if (nsex == 2 && h == MALES) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
+      if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
+    }//--h
+  }//--i
 
-  for ( i = syr; i <= nyrRetro; i++ )
-   for ( int j = 1; j <= nseason; j++ )
-    {
-     for ( ig = 1; ig <= n_grp; ig++ )
-      {
-       h = isex(ig);
-       isizeTrans = iYrIncChanges(h,i);
-       m = imature(ig);
-       o = ishell(ig);
+  for ( i = syr; i <= nyrRetro; i++ ){
+    for ( int j = 1; j <= nseason; j++ ){
+      for ( ig = 1; ig <= n_grp; ig++ ){
+        h = isex(ig);
+        isizeTrans = iYrIncChanges(h,i);
+        m = imature(ig);
+        o = ishell(ig);
 
-       x = d4_N(ig)(i)(j);
-       // Mortality (natural and fishing)
-       x = x * S(h,m)(i)(j);
-       if ( nshell == 1 )
-        {
-		if(nmature == 1)
-		 {
-		 // Molting and growth
-         if (j == season_growth)
-           {
-            y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
-            x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
-            x = x + y;
-           }
-         // Recruitment
-         if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-         if (j == nseason) d4_N(ig)(i+1)(1) = x;  else  d4_N(ig)(i)(j+1) = x;
-		 }
-        if(nmature == 2)
-		 {
-		  if ( m == 1 ) // mature
-          {
-           //No molting, growth, or recruitment for mature animals
-           if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
-          }
-          if ( m == 2 ) // immature
-          {
-          // Molting and growth
-           z.initialize();
-           if (j == season_growth)
-            {
-             //z = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); 		// molted to maturity
-             //x = elem_prod(x, 1 - molt_probability(h)(i)) * growth_transition(h,isizeTrans);    // molted, but immature
-			 z = elem_prod(x * growth_transition(h,isizeTrans), molt_probability(h)(i)) ; 		// molted to maturity
-             x = elem_prod(x * growth_transition(h,isizeTrans), 1 - molt_probability(h)(i)) ;    // molted, but immature
+        x = d4_N(ig)(i)(j);
+        // Mortality (natural and fishing)
+        x = x * S(h,m)(i)(j);
+        if (nshell == 1 ) {
+          if(nmature == 1) {
+            // Molting and growth
+            if (j == season_growth) {
+              y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
+              x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
+              x = x + y;
             }
-		   if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-           if (j == nseason)
-            { d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; }
-            else
-            { d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; }
-          }	 
-		 }
-        }
-       else
-        {
-         if ( o == 1 ) // newshell
-          {
-		   // Molting and growth
-           if (j == season_growth)
-            {
-             y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
-             x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
+            // Recruitment
+            if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+            if (j == nseason) d4_N(ig)(i+1)(1) = x;  else  d4_N(ig)(i)(j+1) = x;
+          } //nmature==1
+          if(nmature == 2) {
+            if ( m == MATURE ) {// mature
+            //No molting, growth, or recruitment for mature animals
+              if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
             }
-           // Recruitment
-           if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-           if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
-          }
-         if ( o == 2 ) // oldshell
-          {
-		  // Molting and growth
-           z.initialize();
-           if (j == season_growth)
-            {
-             z = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
-             x = elem_prod(x, 1 - molt_probability(h)(i)) + y; // did not molt, remain oldshell and add the newshell that become oldshell
+            if ( m == IMMATURE ) {// immature
+              // Molting and growth
+              z.initialize();
+              if (j == season_growth) {
+                z = elem_prod(x * growth_transition(h,isizeTrans), molt_probability(h)(i)) ; 		// molted to maturity
+                x = elem_prod(x * growth_transition(h,isizeTrans), 1 - molt_probability(h)(i)) ;    // molted, but immature
+              }
+              if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+              if (j == nseason){ 
+                d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; 
+              } else { 
+                d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; 
+              }
+            }	 
+          }//nmature==2
+        } else { //nshell>1
+          if ( o == NEW_SHELL ) {// newshell
+            // Molting and growth
+            if (j == season_growth){
+              y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
+              x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
             }
-           if (j == nseason)
-            { d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; }
-            else
-            { d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; }
-          }
-        }
+            // Recruitment
+            if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+            if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
+          }//-- o == NEW_SHELL
+          if ( o == OLD_SHELL ){ // oldshell
+            // Molting and growth
+            z.initialize();
+            if (j == season_growth) {
+              z = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
+              x = elem_prod(x, 1 - molt_probability(h)(i)) + y; // did not molt, remain oldshell and add the newshell that become oldshell
+            }
+            if (j == nseason){ 
+              d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; 
+            } else { 
+              d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; 
+            }
+          }//-- o == OLD_SHELL
+        }//--if nshell
 
-       if ( o == 1 && m == 2 ) // terminal molt to new shell.
-        {
+        if ( o == NEW_SHELL && m == IMMATURE ) {
+          // terminal molt to new shell.
         }
-       if ( o == 2 && m == 2 ) // terminal molt newshell to oldshell.
-        {
+        if ( o == OLD_SHELL && m == IMMATURE ) {
+          // terminal molt newshell to oldshell.
         }
-	   } // ig
-  } // i and j
+      } //--ig
+    }//--j
+  }//--i
 
 // =================================================================================================================================================
 
@@ -5426,7 +5558,7 @@ FUNCTION calc_predicted_catch
          int type = int(dCatchData(kk,jj,7));                         ///> Type of catch (total= 0, retained = 1, discard = 2)
          int unit = int(dCatchData(kk,jj,8));                         ///> Units of catch equation (1 = biomass, 2 = numbers)
 		 
-         if ( h != BOTHSEX )                                          ///> sex specific
+         if ( h != UNDET_SEX )                                          ///> sex specific
           {
            log_q_catch(kk) += log(ft(k,h,i,j) / effort);
            nhit += 1;
@@ -5497,7 +5629,7 @@ FUNCTION calc_predicted_catch
        effort   =     dCatchData(kk,jj,10);                           ///> Effort data
        cobs     =        obs_catch(kk,jj);                            ///> catch data
 
-       if ( h!=BOTHSEX ) // sex specific
+       if ( h!=UNDET_SEX ) // sex specific
         {
          sel = log_slx_capture(k,h,i);                                ///> Capture selectivity
          //ret = log_slx_retaind(k,h,i);                                ///> Retention probability
@@ -5714,7 +5846,7 @@ FUNCTION calc_predicted_catch_out
       int type = int(dCatchData_out(kk,i,7));                        ///> Type of catch (total= 0, retained = 1, discard = 2)
       int unit = int(dCatchData_out(kk,i,8));                        ///> Units of catch equation (1 = biomass, 2 = numbers)
 
-      if ( h != BOTHSEX )                                            ///> sex specific
+      if ( h != UNDET_SEX )                                            ///> sex specific
        {
         sel = log_slx_capture(k,h,i);
         switch ( type )
@@ -5839,9 +5971,9 @@ FUNCTION calc_relative_abundance
 
           // ANDRES original code
           // for (int h = 1; h <= nsex; h++ )                               ///> Select sex
-            // if (h==h1 || h== BOTHSEX)
+            // if (h==h1 || h== UNDET_SEX)
               // for (int m = 1; m <= nmature; m++ )                          ///> Select maturity
-              // if (m==m1 || m1 == BOTHMATURE)
+              // if (m==m1 || m1 == UNDET_MATURE)
               // {
                 // sel = mfexp(log_slx_capture(g)(h)(i));
                 // for ( int o = 1; o <= nshell; o++ )
@@ -5859,7 +5991,7 @@ FUNCTION calc_relative_abundance
             //=========maturity state is summed over in index============
             if (m1 == 0){
               for (int h = 1; h <= nsex; h++ ){                               ///> Select sex
-                if (h==h1 || h== BOTHSEX) {
+                if (h==h1 || h== UNDET_SEX) {
                 sel = mfexp(log_slx_capture(g)(h)(i));
                 ret = mfexp(log_slx_retaind(g)(h)(i));
                 for ( int m = 1; m <= nmature; m++ ){        //this doesn't really need to be here
@@ -5885,7 +6017,7 @@ FUNCTION calc_relative_abundance
                   if (SurveyType(k)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                   cout << "not coded yet" << endl; exit(1);
                 }
-                } /// end if(h==h1 || h== BOTHSEX)
+                } /// end if(h==h1 || h== UNDET_SEX)
               }//--h loop
             }// m1==0
 
@@ -5894,7 +6026,7 @@ FUNCTION calc_relative_abundance
               //=========index is only MATURE crab============
               //===this uses an input maturity at size vector 
               for (int h = 1; h <= nsex; h++ ){                             
-                if (h==h1 || h== BOTHSEX) {
+                if (h==h1 || h== UNDET_SEX) {
                   sel = mfexp(log_slx_capture(g)(h)(i));
                   ret = mfexp(log_slx_retaind(g)(h)(i));
                   for ( int m = 1; m <= nmature; m++ ){        //this doesn't really need to be here
@@ -5920,7 +6052,7 @@ FUNCTION calc_relative_abundance
                     if (SurveyType(k)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                     cout << "not coded yet" << endl; exit(1);
                   }
-                } /// end if(h==h1 || h== BOTHSEX)
+                } /// end if(h==h1 || h== UNDET_SEX)
               }//--h loop
             }// m1 == 1
 
@@ -5937,7 +6069,7 @@ FUNCTION calc_relative_abundance
             if (m1 == 0){
               //=========maturity state is summed over in index============
               for (int h = 1; h <= nsex; h++ ){                               
-                if (h==h1 || h== BOTHSEX) {
+                if (h==h1 || h== UNDET_SEX) {
                   sel = mfexp(log_slx_capture(g)(h)(i));
                   ret = mfexp(log_slx_retaind(g)(h)(i));
                   for ( int m = 1; m <= nmature; m++ ){
@@ -5963,7 +6095,7 @@ FUNCTION calc_relative_abundance
                     if (SurveyType(k)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                     cout << "not coded yet" << endl; exit(1);
                   }
-                } /// end if(h==h1 || h== BOTHSEX)
+                } /// end if(h==h1 || h== UNDET_SEX)
               }//--h loop
             }// m1==0
 
@@ -5972,7 +6104,7 @@ FUNCTION calc_relative_abundance
               //==this uses the separate arrays for immature and mature crab
               //==to calculate mature biomass--this is different than above
               for (int h = 1; h <= nsex; h++ ) {                               
-                if (h==h1 || h== BOTHSEX) {
+                if (h==h1 || h== UNDET_SEX) {
                   sel = mfexp(log_slx_capture(g)(h)(i));
                   ret = mfexp(log_slx_retaind(g)(h)(i));
                   for ( int m = 1; m <= 1; m++ ){
@@ -5998,7 +6130,7 @@ FUNCTION calc_relative_abundance
                     if (SurveyType(k)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                     cout << "not coded yet" << endl; exit(1);
                   }            
-                } /// end if(h==h1 || h== BOTHSEX)
+                } /// end if(h==h1 || h== UNDET_SEX)
               }//--h loop
             }// m1==1
 
@@ -6114,7 +6246,7 @@ FUNCTION calc_predicted_composition
         int shell   = d3_SizeComps_in(ii)(jj,-2);                     ///> shell condition
         int bmature = d3_SizeComps_in(ii)(jj,-1);                     ///> boolean for maturity
 
-        if ( h != BOTHSEX )                                           ///> sex specific
+        if ( h != UNDET_SEX )                                           ///> sex specific
          {
           dvar_vector sel = mfexp(log_slx_capture(k,h,i));
           dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
@@ -7294,12 +7426,12 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
 	  }
         if(nmature == 2)
 		 {
-		  if ( m == 1 ) // mature
+		  if ( m == MATURE ) // mature
           {
            //No molting, growth, or recruitment for mature animals
            if (j == nseason) d4_N_init(ig)(i+1)(1) = x; else  d4_N_init(ig)(i)(j+1) = x;
           }
-          if ( m == 2 ) // immature
+          if ( m == IMMATURE ) // immature
           {
           // Molting and growth
            z.initialize();
@@ -7320,7 +7452,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
         }
        else
         {
-         if ( o == 1 ) // newshell
+         if ( o == NEW_SHELL ) // newshell
           {
            // Molting and growth
            if (j == season_growth)
@@ -7335,7 +7467,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
            else
             d4_N_init(ig)(i)(j+1) = x;
           }
-         if ( o == 2 ) // oldshell
+         if ( o == OLD_SHELL ) // oldshell
           {
            // Molting and growth
            z.initialize();
@@ -7708,7 +7840,7 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
 	  
       if(nmature == 2)
 		{
-		  if ( m == 1 ) // mature
+		  if ( m == MATURE ) // mature
           {
            //No molting, growth, or recruitment for mature animals
           if (j == nseason)
@@ -7718,7 +7850,7 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
            else
             numbers_proj_gytl(ig,1,j+1) = x;
           }
-          if ( m == 2 ) // immature
+          if ( m == IMMATURE ) // immature
           {
           // Molting and growth
            z.initialize();
@@ -7745,7 +7877,7 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
        }
       else
        {
-        if ( o == 1 ) // newshell
+        if ( o == NEW_SHELL ) // newshell
          {
           // Molting and growth
           if (j == season_growth)
@@ -7767,7 +7899,7 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
           else
            numbers_proj_gytl(ig,1,j+1) = x;
          }
-        if ( o == 2 ) // oldshell
+        if ( o == OLD_SHELL ) // oldshell
          {
           // Molting and growth
           if (j == season_growth)
@@ -8084,7 +8216,7 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
 	  
       if(nmature == 2)
 		{
-		  if ( m == 1 ) // mature
+		  if ( m == MATURE ) // mature
           {
            //No molting, growth, or recruitment for mature animals
           if (j == nseason)
@@ -8094,7 +8226,7 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
           else
            numbers_proj_gytl(ig)(i)(j+1) = x;
           }
-          if ( m == 2 ) // immature
+          if ( m == IMMATURE ) // immature
           {
           // Molting and growth
            z.initialize();
@@ -8117,7 +8249,7 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
         }
        else
         {
-         if ( o == 1 ) // newshell
+         if ( o == NEW_SHELL ) // newshell
           {
            // Molting and growth
            if (j == season_growth)
@@ -8135,7 +8267,7 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
            else
             numbers_proj_gytl(ig)(i)(j+1) = x;
           }
-         if ( o == 2 ) // oldshell
+         if ( o == OLD_SHELL ) // oldshell
           {
            // Molting and growth
            z.initialize();
@@ -8882,7 +9014,7 @@ FUNCTION CreateOutput
 
   // Estimated parameters
   // ====================
-  OutFile1 << "#Parameter_count Parameter_type Index Estimate Phase Lower_bound Upper_bound Penalty Standard_error Estimated_parameter_count" << endl;
+  OutFile1 << "#Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Penalty Standard_error Estimated_parameter_count" << endl;
 
   Npar = 0; NparEst = 0;
   for (Ipar=1;Ipar<=ntheta;Ipar++)
@@ -9222,7 +9354,7 @@ FUNCTION CreateOutput
    
   OutFile1 << endl;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
-  OutFile1 << endl << "# Sex Maturity Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  OutFile1 << endl << "#Sex Maturity Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
   OutFile1 << "                   " << mid_points << endl;
   for (int h=1;h<=nsex;h++)
    for (int m=1;m<=nmature;m++)
@@ -9236,7 +9368,7 @@ FUNCTION CreateOutput
   // catches
   OutFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Catch_fit_summary" << endl;
-  OutFile1 << "# Series Year Fleet Season Sex Catch CV Type Units Mult Effort CV Predicted Residual" << endl;
+  OutFile1 << "#Series Year Fleet Season Sex Catch CV Type Units Mult Effort CV Predicted Residual" << endl;
   for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++)
    for (int irow=1;irow<=nCatchRows(iCatOut); irow++)
     if (int(dCatchData(iCatOut,irow,1)) >= syr && int(dCatchData(iCatOut,irow,1)) <= nyrRetro)
@@ -9264,7 +9396,7 @@ FUNCTION CreateOutput
   // index data
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Index_fit_summary" << endl;
-  OutFile1 << "Series Year Fleet Season Sex Maturity Index base_CV actual_CV Units Time q Predicted" << endl;
+  OutFile1 << "#Series Year Fleet Season Sex Maturity Index base_CV actual_CV Units q  Time Predicted" << endl;
   for ( int k = 1; k <= nSurveyRows; k++ )
    {
      int i = dSurveyData(k,0);
@@ -9298,7 +9430,7 @@ FUNCTION CreateOutput
   adstring ShellName;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "Size_fit_summary" << endl;
-  OutFile1 << "#Original_series Modified_series Year, Fleet,  Season Sex,  Type, Shell,  Maturity, Nsamp,  DataVec (obs), DataVec (pred)" << endl;
+  OutFile1 << "#Original_series Modified_series Year Fleet  Season Sex  Type Shell  Maturity  Nsamp  DataVec_(obs) DataVec_(pred)" << endl;
 
   int oldk = 0;
   for (int ii=1; ii<=nSizeComps_in;ii++)
@@ -9338,7 +9470,7 @@ FUNCTION CreateOutput
   
   OutFile4 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile4 << "# Size_data_summary1" << endl;
-  OutFile4 << "# Year, Seas, Fleet,  Sex,  Type, Shell,  Maturity, Nsamp,  DataVec (obs), DataVec (pred)" << endl;
+  OutFile4 << "#Year Season Fleet  Sex  Type  Shell  Maturity  Nsamp  DataVec_(obs) DataVec_(pred)" << endl;
   oldk = 0;
   for (int ii=1; ii<=nSizeComps_in;ii++)
    {
@@ -9356,7 +9488,7 @@ FUNCTION CreateOutput
     }
   OutFile4 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile4 << "# Size_data_summary2" << endl;
-  OutFile4 << "# Year, Seas, Fleet,  Sex,  Type, Shell,  Maturity, Nsamp,  DataVec (obs), DataVec (pred)" << endl;
+  OutFile4 << "#Year, Seas, Fleet,  Sex,  Type, Shell,  Maturity, Nsamp,  DataVec (obs), DataVec (pred)" << endl;
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
     {
@@ -9462,7 +9594,7 @@ FUNCTION CreateOutput
 
   
   OutFile1 << endl << "# Total mortality by size-class (continuous)" << endl;
-  OutFile1 << "# Sex Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  OutFile1 << "# Sex Maturity Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
   for (int h=1;h<=nsex;h++)
    for(int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++)
@@ -9470,7 +9602,7 @@ FUNCTION CreateOutput
       OutFile1 << sexes(h) << " " << m << " " << i << " " << j << " " << Z(h,m,i,j) << endl;
   
   OutFile1 << endl << "# Total mortality by size-class (discrete)" << endl;
-  OutFile1 << "# Sex Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  OutFile1 << "# Sex Maturity Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
   for (int h=1;h<=nsex;h++)
    for( int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++)
@@ -9573,7 +9705,7 @@ FUNCTION CreateOutput
   OutFile1 << "#Molting and growth" << endl;
   // Molting probability
   OutFile1 << endl << "# Molt probability" << endl;
-  OutFile1 << "# Sex Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl; 
+  OutFile1 << "#Sex Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl; 
   for (int h=1; h<=nsex; h++)
    for (int i=syr;i<=nyrRetro;i++)
     OutFile1 << sexes(h) << " " << i << " " << molt_probability(h,i) << endl;
@@ -9841,7 +9973,7 @@ FUNCTION WriteFiles
   for ( int h = 1; h <= nsex; h++ )
    for ( int m = 1; m <= nmature; m++)
     for ( int i = syr; i <= nyrRetro+1; i++ )
-  OutInpFile1 << mean_wt(h,m,i) << endl;
+      OutInpFile1 << mean_wt(h,m,i) << endl;
   OutInpFile1 << "# Proportion mature by sex" << endl;
   OutInpFile1 << maturity << endl;
   OutInpFile1 << "# Proportion legal by sex" << endl;
@@ -10339,12 +10471,17 @@ GLOBALS_SECTION
   #undef LW_MATRIX
   #define LW_MATRIX 3
 
-  #undef MALESANDCOMBINED
-  #define MALESANDCOMBINED 1
+  #undef BIOMASS
+  #define BIOMASS 1
+  #undef ABUNDANCE
+  #define ABUNDANCE 2
+
+  #undef MALES
+  #define MALES 1
   #undef FEMALES
   #define FEMALES 2
-  #undef BOTHSEX
-  #define BOTHSEX 0
+  #undef UNDET_SEX
+  #define UNDET_SEX 0
 
   #undef UNDET_SHELL
   #define UNDET_SHELL 0
@@ -10357,8 +10494,8 @@ GLOBALS_SECTION
   #define IMMATURE 2
   #undef MATURE
   #define MATURE 1
-  #undef BOTHMATURE
-  #define BOTHMATURE 0
+  #undef UNDET_MATURE
+  #define UNDET_MATURE 0
 
   #undef TOTALCATCH
   #define TOTALCATCH 0
@@ -10753,4 +10890,9 @@ FINAL_SECTION
 // 2024-01-10 ** AEP. (Updated GMACS to version 2.01.M.06) (a) modified to output projected catches, (b) calculated historical mortality for projections
 // 2024-01-11 ** AEP. (Updated GMACS to version 2.01.M.07) (a) updated the _in files to match the latest version of GMACS. (b) producted inputs files with estimated parameters and expected data
 // 2024-01-29 ** AEP. (Updated GMACS to version 2.01.M.08) Fixed time-varying growth increment and added a trap for negative growth increments in fn calls 0 and 1
-
+// 2024-02-01 ** WTS. (Updated GMACS to version 2.01.M.09) Added alternative format for inputting size comps data.
+// 2024-02-02 ** WTS. Renamed BOTHSEX, BOTHMATURE to UNDET_SEX, UNDET_MATURE. Added MALES(=1) macro. Need to refactor MALESANDCOMBINED functionality.
+//                    Removed MALESANDCOMBINED (duplicated MALES). Refactored selectivity assignments and recruitment (no need to loop over h, so cleaner not to). 
+//                    Reformatted some code to add parentheses, replace tabs with spaces, and correctly indent blocks.
+//                    Replaced o == 1/2 with o == NEW_SHELL/OLD_SHELL, similar for m.
+// 2024-02-05 ** WTS. Reverted selectivity assignaments--needed to loop over h if slx_isex(k) was 0. Added alternative input format for fishery catch data.

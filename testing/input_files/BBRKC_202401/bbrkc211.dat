@@ -84,6 +84,8 @@ NMFS_Trawl BSFRF
 # Are the seasons instantaneous (0) or continuous (1)
 1 1 1 1 1 1 1
 #1 1 1 1 1 1 1
+##  CATCH  DATA                                                        
+0 #--input format for catch data (0:old format; 1: new format)
 # Number of catch data frames																																					
 7																																										
 # Number of rows in each data frame
@@ -391,7 +393,8 @@ NMFS_Trawl BSFRF
 ##	Units	of	Abundance:	1	=	biomass,	2	=	numbers																																	
 ##	TODO:	add	column	for	maturity	for	terminal	molt	life-histories																																	
 ##	for	BBRKC	Units	are	in	1000	mt.																																			
-##	————————————————————————————————————————————————————————————————————————————————————	##																																								
+##	————————————————————————————————————————————————————————————————————————————————————	##																																0 #--input format for relative abundance data (0:old format; 1: new format)
+								
 ##	Number	of	relative	abundance	indicies																																					
 2																																										
 # Data type (1=total selectivity; 2=retention*selectivity)
@@ -508,6 +511,7 @@ NMFS_Trawl BSFRF
 2	2015	1	6	2	0	35244	0.161	1  0
 2	2016	1	6	2	0	43399	0.22	1  0
 
+0 #--input format for size comps (0:old format; 1: new format)
 ## Number of length frequency matrices																																					
 13																																										
 ## Number of rows in each matrix																																				

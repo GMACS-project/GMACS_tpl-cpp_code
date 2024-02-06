@@ -34,12 +34,13 @@
 #' @importFrom dplyr 
 #' @export
 #' 
-runTests<-function(tests=c("TannerCrab_MalesOnlyA",
-                           "AIGKC_202401",
+runTests<-function(tests=c("AIGKC_202401",
                            "BBRKC_202401",
                            "NSRKC_202401",
                            "SMBKC_202401",
-                           "SnowCrab_202401"),
+                           "SnowCrab_202401",
+                           "TannerCrab_MalesOnlyA",
+                           "TannerCrab_MalesOnlyANew"),
                    testdir=".",
                    scriptsPath="../scripts",
                    inputsPath="../input_files",
@@ -52,8 +53,10 @@ runTests<-function(tests=c("TannerCrab_MalesOnlyA",
     on.exit(setwd(oldwd));
     if (printPathInfo) cat("working folder for testing: '",getwd(),"'\n",sep="");
     source(file.path(scriptsPath,"readParFile.R"));
+    if (is.logical(verbose)) verbose=as.numeric(verbose);
     results = list();
     for (tst in tests){
+        cat("#--Starting test '",tst,"'\n",sep='');
         if (!dir.exists(tst)) dir.create(tst);
         fns = list.files(path=file.path(getwd(),inputsPath,tst));
         if (printPathInfo) cat("Copying files",fns,"to",tst,"\n\tfrom",normalizePath(file.path(getwd(),inputsPath,tst)),"\n");
@@ -72,6 +75,7 @@ runTests<-function(tests=c("TannerCrab_MalesOnlyA",
           lns = readLines(file.path(scriptsPath,scr));
           xtr = "";
           if (usePin) xtr = " -phase 10 -pin gmacs.pin ";
+          if (verbose>0) xtr = paste(xtr,"-verbose",verbose);
           lns = gsub("&&extra",xtr,lns,fixed=TRUE);
           writeLines(lns,con=file.path(tst,scr))
         }
@@ -135,11 +139,12 @@ runTests<-function(tests=c("TannerCrab_MalesOnlyA",
 }
 
 ##--run all
-#results = runTests(cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE,printPathInfo=TRUE);
+#results = runTests(cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE);
 
-##--run individual tests with various options (testing)
-#results = runTests("TannerCrab_MalesOnlyA",usePin=TRUE,compareWithPin=TRUE,cleanup=FALSE);
-#results = runTests("AIGKC_202401",cleanup=FALSE,compareWithPin=TRUE);
-#results = runTests("BBRKC_202401",cleanup=FALSE,compareWithPin=TRUE);
-#results = runTests("TannerCrab_MalesOnlyA",testdir="../runs_test",usePin=TRUE,compareWithPin=FALSE);
+#--run old format
+#tests_old=c("AIGKC_202401","BBRKC_202401","NSRKC_202401","SMBKC_202401","SnowCrab_202401","TannerCrab_MalesOnlyA");
+#results = runTests(tests=tests_old,cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE);
+
+#--run new format
+#results = runTests("TannerCrab_MalesOnlyANew",usePin=TRUE,compareWithPin=TRUE,cleanup=FALSE,verbose=100);
 

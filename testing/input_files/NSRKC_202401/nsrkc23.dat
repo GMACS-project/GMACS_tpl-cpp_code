@@ -95,6 +95,8 @@ Winter_Com Subsistence Summer_Com
 NMFS_Trawl ADFG_Trawl NBS_Trawl Winter_Pot
 # Are the seasons instantaneous (0) or continuous (1)
 1 1 1 1 1 
+##  CATCH  DATA                                                        
+0 #--input format for catch data (0:old format; 1: new format)
 # Number  of  catch data  frames
  4
 # Number  of  rows  in  each  data  frame
@@ -300,6 +302,7 @@ NMFS_Trawl ADFG_Trawl NBS_Trawl Winter_Pot
 
 ##  RELATIVE  ABUNDANCE DATA
 ##  Units of abundance: 1 = biomass, 2 = numbers
+0 #--input format for relative abundance data (0:old format; 1: new format)
 ##  Number  of  relative  abundance indicies
 6
 # Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame
@@ -383,6 +386,7 @@ NMFS_Trawl ADFG_Trawl NBS_Trawl Winter_Pot
 6	2023	3	3	1	0	2.13	0.07	2	0.5
 
 									
+0 #--input format for size comps (0:old format; 1: new format)
 ##  Number  of  length  frequency matrices
 16
 ##  Number  of  rows  in  each  matrix
