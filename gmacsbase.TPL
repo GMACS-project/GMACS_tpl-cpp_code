@@ -517,6 +517,15 @@ DATA_SECTION
       exit(-1);
       return(id);
     }
+    int indexTypeID(adstring& str){
+      int id = -1;
+      adstring strp = to_lower(str);
+      if (strp=="sel")     return(1);
+      if (strp=="sel+ret") return(2);
+      cout<<"Problem assigning indexTypeID to "<< str << endl;
+      exit(-1);
+      return(id);
+    }
     int sexID(adstring& str){
       int id = -1;
       adstring strp = to_lower(str);
@@ -558,14 +567,14 @@ DATA_SECTION
   // | CATCH SERIES |
   // |--------------|
   !! cout << " * Catch data" << endl;
-  !! gmacs_data << "#\n\n#--CATCH DATA----"<<endl;
-  !! gmacs_data << "# input catch data format (0: old format, 1: new format)" << endl;
+  !! gmacs_data << "\n"<<endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+  !! gmacs_data << "##--CATCH DATA------------------------------------------------" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
   init_int fmtCDS_in;
-  !!WRITEDAT(fmtCDS_in)
+  !! gmacs_data << fmtCDS_in << " #--input catch data format (0: old format, 1: new format)" << endl;
   init_int nCatchDF;
-  !! gmacs_data << "# Number of catch data frames" << endl;
-  !! gmacs_data << nCatchDF << endl;
-
+  !! gmacs_data << nCatchDF << "  #--Number of catch data frames" << endl;
 
   ivector nCatchRows(1,nCatchDF);
   3darray dCatchData(1,nCatchDF,1,nCatchRows,1,11); // array of catch data
@@ -581,58 +590,32 @@ DATA_SECTION
         gmacs_data << nCatchRows << endl;
         for (int idf=1;idf<=nCatchDF;idf++) dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
         (*pGD) >> dCatchData;
-
-        gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
-        gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
-        gmacs_data << "## Units of catch: 1 = biomass, 2 = numbers" << endl;
-        gmacs_data << "## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
-        gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
-        for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++){
-          for (int irow=1;irow<=nCatchRows(iCatOut); irow++) {
-            if (dCatchData(iCatOut,irow,1) <= nyrRetro) {
-              gmacs_data << (int) dCatchData(iCatOut,irow)(1) << " ";
-              gmacs_data << (int) dCatchData(iCatOut,irow)(2) << " ";
-              gmacs_data << (int) dCatchData(iCatOut,irow)(3) << " ";
-              gmacs_data << (int) dCatchData(iCatOut,irow)(4) << " ";
-              gmacs_data << dCatchData(iCatOut,irow)(5,6) << " ";
-              gmacs_data << (int) dCatchData(iCatOut,irow)(7) << " ";
-              gmacs_data << (int) dCatchData(iCatOut,irow)(8) << " ";
-              gmacs_data << dCatchData(iCatOut,irow)(9,11) << " ";
-              anystring = "# " + fleetname(dCatchData(iCatOut,irow,3));
-              if (dCatchData(iCatOut,irow,4)==MALES)      anystring = anystring +"_male";
-              if (dCatchData(iCatOut,irow,4)==FEMALES)    anystring = anystring +"_female";
-              if (dCatchData(iCatOut,irow,7)==TOTALCATCH) anystring = anystring +"_total";
-              if (dCatchData(iCatOut,irow,7)==RETAINED)   anystring = anystring +"_retained";
-              if (dCatchData(iCatOut,irow,7)==DISCARDED)  anystring = anystring +"_discard";
-              if (dCatchData(iCatOut,irow,8)==BIOMASS)    anystring = anystring +"_biomass";
-              if (dCatchData(iCatOut,irow,8)==ABUNDANCE)  anystring = anystring +"_numbers";
-              if (dCatchData(iCatOut,irow,6) <= 0) {
-                cout << "Error: CV of catch is zero (or less) for group " << iCatOut << " row " << irow << endl;
-                exit(1);
-              }
-              gmacs_data << anystring << " ";
-              SDlogD = sqrt(log(1.0 + square(dCatchData(iCatOut,irow,6))));
-              TempW = 0.5/(SDlogD*SDlogD);
-              gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
-              gmacs_data << endl;
-            }//--dCatchData(iCatOut,irow,1) <= nyrRetro
-          }//--irow
-        }//--iCatOut
       } else {
         //--read in using new format
-        adstring unitsType,catchType,fleet,sex,maturity, shell_condition;
+        adstring unitsType,catchType,fleet,sex,maturity, shell;
         int iUT,iCT,iF,iX,iM,iS;
         for (int idf=1;idf<=nCatchDF;idf++) {
+          gmacs_data << "#----------------" << endl;
+          gmacs_data << "# catch dataframe number " << idf << endl;
           (*pGD) >> unitsType;        iUT = substStuff.unitsTypeID(unitsType);
           (*pGD) >> catchType;        iCT = substStuff.catchTypeID(catchType);
           (*pGD) >> fleet;            iF  = substStuff.fleetID(fleet,fleetname);
           (*pGD) >> sex;              iX  = substStuff.sexID(sex);
           (*pGD) >> maturity;         iM  = substStuff.matID(maturity);
-          (*pGD) >> shell_condition;  iS  = substStuff.shellID(shell_condition);
+          (*pGD) >> shell;            iS  = substStuff.shellID(shell);
           (*pGD) >> nCatchRows(idf);
+          gmacs_data << unitsType << "   #--units type" << endl;
+          gmacs_data << catchType << "   #--catch type (retained, discard(ed), total)" << endl;
+          gmacs_data << fleet     << "   #--fleet name" << endl;
+          gmacs_data << sex       << "   #--sex (male(s), female(s), undetermined)" << endl;
+          gmacs_data << maturity  << "   #--maturity (immature, mature, undetermined)" << endl;
+          gmacs_data << shell     << "   #--shell condition (new shell, old shell, undetermined)" << endl;
+          gmacs_data << nCatchRows(idf) << "   #--number of rows in dataframe" << endl;
           dmatrix inpCatchData(1,nCatchRows(idf),1,7);
           dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
           (*pGD) >> inpCatchData;
+          gmacs_data << "#year season value cv multiplier effort discard_mortality" << endl;
+          gmacs_data << inpCatchData << endl;
           for (int irw=1;irw<=nCatchRows(idf);irw++){
             dCatchData(idf,irw, 1) = (int) inpCatchData(irw,1);
             dCatchData(idf,irw, 2) = (int) inpCatchData(irw,2);
@@ -646,14 +629,47 @@ DATA_SECTION
             dCatchData(idf,irw,10) = inpCatchData(irw,6);
             dCatchData(idf,irw,11) = inpCatchData(irw,7);
           }//--irw
-          gmacs_data << inpCatchData << endl;
         }//--idf
         gmacs_data << "#--old format:"<<endl;
-        gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
-        for (int idf=1;idf<=nCatchDF;idf++)
-          for (int irw=1;irw<=nCatchRows(idf);irw++)
-            gmacs_data << "# " << dCatchData(idf,irw) << endl;
       }//--end reading new format
+
+      gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
+      gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
+      gmacs_data << "## Units of catch: 1 = biomass, 2 = numbers" << endl;
+      gmacs_data << "## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
+      gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
+      for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++){
+        for (int irow=1;irow<=nCatchRows(iCatOut); irow++) {
+          if (dCatchData(iCatOut,irow,1) <= nyrRetro) {
+            if (fmtCDS_in>0) gmacs_data << "# ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(1) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(2) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(3) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(4) << " ";
+            gmacs_data << dCatchData(iCatOut,irow)(5,6) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(7) << " ";
+            gmacs_data << (int) dCatchData(iCatOut,irow)(8) << " ";
+            gmacs_data << dCatchData(iCatOut,irow)(9,11) << " ";
+            anystring = "# " + fleetname(dCatchData(iCatOut,irow,3));
+            if (dCatchData(iCatOut,irow,4)==MALES)      anystring = anystring +"_male";
+            if (dCatchData(iCatOut,irow,4)==FEMALES)    anystring = anystring +"_female";
+            if (dCatchData(iCatOut,irow,7)==TOTALCATCH) anystring = anystring +"_total";
+            if (dCatchData(iCatOut,irow,7)==RETAINED)   anystring = anystring +"_retained";
+            if (dCatchData(iCatOut,irow,7)==DISCARDED)  anystring = anystring +"_discard";
+            if (dCatchData(iCatOut,irow,8)==BIOMASS)    anystring = anystring +"_biomass";
+            if (dCatchData(iCatOut,irow,8)==ABUNDANCE)  anystring = anystring +"_numbers";
+            if (dCatchData(iCatOut,irow,6) <= 0) {
+              cout << "Error: CV of catch is zero (or less) for group " << iCatOut << " row " << irow << endl;
+              exit(1);
+            }
+            gmacs_data << anystring << " ";
+            SDlogD = sqrt(log(1.0 + square(dCatchData(iCatOut,irow,6))));
+            TempW = 0.5/(SDlogD*SDlogD);
+            gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
+            gmacs_data << endl;
+          }//--dCatchData(iCatOut,irow,1) <= nyrRetro
+        }//--irow
+      }//--iCatOut
     }
  END_CALCS
 
@@ -816,12 +832,14 @@ DATA_SECTION
   // | RELATIVE ABUNDANCE INDICES |
   // |----------------------------|
   !! cout << " * Abundance data" << endl;
-  !! gmacs_data << "#\n\n#--RELATIVE ABUNDANCE DATA----"<<endl;
+  !! gmacs_data << "\n" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+  !! gmacs_data << "##--RELATIVE ABUNDANCE DATA-----------------------------------" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
   init_int fmtRAD; ///> Format type (0: old format, 1: new format)
-  !!gmacs_data << fmtRAD << "  #--input format type (0: old format, 1: new format)" << endl;
-  !! gmacs_data << "# Number of relative abundance (survey) data frames" << endl;
+  !!gmacs_data << fmtRAD    << "  #--input format type (0: old format, 1: new format)" << endl;
   init_int nSurveys;                                                 ///> Number of survey series
-  !! gmacs_data << nSurveys << endl; //TODO: change name to nSurveyDFs
+  !! gmacs_data << nSurveys << "  #--Number of dataframes" << endl; //TODO: change name to nSurveyDFs
   ivector SurveyType(1,nSurveys);                               ///> Type of survey
   int nSurveyRows;                                              ///> total number of rows in survey dataframes
   matrix dSurveyData;                                           ///> survey data
@@ -843,7 +861,51 @@ DATA_SECTION
       gmacs_data << dSurveyData <<endl;
     } else {
       //new format
-    }//--if (fmtRAD)
+      adstring indexType, unitsType, fleet, sexType, matType, shlType;
+      ivector nrows(1,nSurveys), idIndex(1,nSurveys),idUnits(1,nSurveys);
+      ivector idFlt(1,nSurveys),idSex(1,nSurveys),idMat(1,nSurveys),idShl(1,nSurveys);
+      d3_array inpDFs(1,nSurveys);
+      for (int idf = 1;idf<=nSurveys;idf++){
+        gmacs_data << "#----------------" << endl;
+        gmacs_data << "# relative abundance dataframe number " << idf << endl;
+        (*pGD) >> indexType;  idIndex(idf) = substStuff.indexTypeID(indexType);
+        (*pGD) >> unitsType;  idUnits(idf) = substStuff.unitsTypeID(unitsType);
+        (*pGD) >> fleet;      idFlt(idf) = substStuff.fleetID(fleet,fleetname);
+        (*pGD) >> sexType;    idSex(idf) = substStuff.sexID(sexType);
+        (*pGD) >> matType;    idMat(idf) = substStuff.matID(matType);
+        (*pGD) >> shlType;    idShl(idf) = substStuff.shellID(shlType);
+        (*pGD) >> nrows(idf);
+        gmacs_data << indexType << "  #--abundance index type ('sel' or 'sel+ret')" << endl;
+        gmacs_data << unitsType << "  #--units type ('abundance' or 'biomass')" << endl;
+        gmacs_data << fleet     << "  #--fleet name" << endl;
+        gmacs_data << sexType   << "  #--sex             (male(s), female(s), undetermined)" << endl;
+        gmacs_data << matType   << "  #--maturity        (immature, mature, undetermined)" << endl;
+        gmacs_data << shlType   << "  #--shell condition (new_shell, old_shell, undetermined)" << endl;
+        inpDFs(idf).allocate(1,nrows(idf),1,7);//--allocate dataframe
+        (*pGD) >> inpDFs(idf);
+        gmacs_data << "# q_index year season value cv multiplier CPUE_timing " <<endl;
+        gmacs_data << inpDFs(idf) <<endl;
+      }//--idf
+      nSurveyRows = sum(nrows);
+      dSurveyData.allocate(1,nSurveyRows,0,9);
+      int jrw = 1;
+      for (int idf = 1;idf<=nSurveys;idf++){
+        SurveyType(idf) = idIndex(idf);
+        for (int irw = 1;irw<=nrows(idf);irw++){
+          dSurveyData(jrw, 0) = inpDFs(idf,irw,1); //--q_index
+          dSurveyData(jrw, 1) = inpDFs(idf,irw,2); //--year
+          dSurveyData(jrw, 2) = inpDFs(idf,irw,3); //--season
+          dSurveyData(jrw, 3) = idFlt(idf);        //--fleet
+          dSurveyData(jrw, 4) = idSex(idf);        //--sex
+          dSurveyData(jrw, 5) = idMat(idf);        //--maturity
+          dSurveyData(jrw, 6) = inpDFs(idf,irw,4); //--observed value
+          dSurveyData(jrw, 7) = inpDFs(idf,irw,5); //--cv
+          dSurveyData(jrw, 8) = inpDFs(idf,irw,6); //--units scaling
+          dSurveyData(jrw, 9) = inpDFs(idf,irw,7); //--cpue timing
+          jrw++;
+        }//--irw
+      }//--idf
+     }//--if (fmtRAD)
   }
  END_CALCS
   vector obs_cpue(1,nSurveyRows);
@@ -856,6 +918,7 @@ DATA_SECTION
   cpue_cv  = column(dSurveyData,7);
   cpue_sd  = sqrt(log(1.0 + square(cpue_cv)));
   cpue_time  = column(dSurveyData,9);
+  if (fmtRAD) gmacs_data << "# old format:" << endl;
   gmacs_data << "## Index: One q is estimated for each index (the number of index values should match nSurveys" << endl;
   gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
   gmacs_data << "## Maturity: 1 = mature, 2 = immature, 0 = both" << endl;
@@ -894,13 +957,17 @@ DATA_SECTION
   // | SIZE COMPOSITION DATA |
   // |-----------------------|
   !! cout << " * Size composition data" << endl;
+  !! gmacs_data << "\n" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
+  !! gmacs_data << "##--SIZE COMPOSITION DATA-------------------------------------" << endl;
+  !! gmacs_data << "##------------------------------------------------------------" << endl;
    init_int fmtZCs_in;                                           ///> size composition format flag (0=old style, 1=new style)
-  !!WRITEDAT(fmtZCs_in)
+  !! gmacs_data << fmtZCs_in     << "   #--format flag (0=old style, 1=new style)" << endl;
   init_int nSizeComps_in;                                       ///> Number of series of size-comp data
-  //NEW 202402: WTS--startmod
+  !! gmacs_data << nSizeComps_in << "   #--number of dataframes" << endl;
   ivector nSizeCompRows_in(1,nSizeComps_in);                    ///> Rows of data for each series (was init_ivector)
   ivector nSizeCompCols_in(1,nSizeComps_in);                    ///> Number of size-class bins    (was init_ivector)
-  3darray d3_SizeComps_in(1,nSizeComps_in); //--other dimension are allocated below (was init_3darray)
+  3darray d3_SizeComps_in(1,nSizeComps_in); //--other dimensions are allocated below (was init_3darray)
  LOCAL_CALCS
   {
     cifstream* pGD = ad_comm::global_datafile;
@@ -925,15 +992,22 @@ DATA_SECTION
       int      ict_,iflt_,ix_,im_,is_;
       for (int iZC=1;iZC<=nSizeComps_in;iZC++){
         cout << "iZC = " << iZC << endl;
+        gmacs_data << "#----------------" << endl;
+        gmacs_data << "#--size composition dataframe number " << iZC << endl;
         (*pGD) >> ct_;            //--catch type as string
         (*pGD) >> flt_;           //--fleet as string
         (*pGD) >> x_;             //--sex as string
         (*pGD) >> m_;             //--maturity as string
         (*pGD) >> s_;             //--shell condition as string
+        gmacs_data << ct_  << "   #--catch type (retained, discard(ed), total)" << endl;
+        gmacs_data << flt_ << "   #--fleet name" << endl;
+        gmacs_data << x_   << "   #--sex type (male(s), female(s), undetermined)" << endl;
+        gmacs_data << m_   << "   #--maturity type (immature, mature, undetermined)" << endl;
+        gmacs_data << s_   << "   #--shell condition (new_shell, old_shell, undetermined)" << endl;
         (*pGD) >> nSizeCompRows_in(iZC);
         (*pGD) >> nSizeCompCols_in(iZC);
-        cout << "nSizeCompRows_in(iZC) = " << nSizeCompRows_in(iZC) << endl;
-        cout << "nSizeCompCols_in(iZC) = " << nSizeCompCols_in(iZC) << endl;
+        gmacs_data << nSizeCompRows_in(iZC) << "   #--number of rows in dataframe" << endl;
+        gmacs_data << nSizeCompCols_in(iZC) << "   #--number of columns in dataframe" << endl;
         cout << ct_ << " " << flt_ << " " << x_ << " " << m_ << " " << s_ << endl;
         ict_  = substStuff.catchTypeID(ct_);
         iflt_ = substStuff.fleetID(flt_,fleetname);
@@ -941,10 +1015,11 @@ DATA_SECTION
         im_   = substStuff.matID(m_);
         is_   = substStuff.shellID(s_);
         d3_SizeComps_in(iZC).allocate(1,nSizeCompRows_in(iZC),-7,nSizeCompCols_in(iZC));
+        gmacs_data << "#Year  Season  Stage1_EffN  DataVec" << endl;
         for (int rw=1;rw<=nSizeCompRows_in(iZC);rw++){
           //cout << "rw = " << rw << endl;
           (*pGD) >> d3_SizeComps_in(iZC,rw)(-7,-6);                   //--year, season
-          //cout << d3_SizeComps_in(iZC,rw)(-7,-6) <<" ";
+          gmacs_data << d3_SizeComps_in(iZC,rw)(-7,-6) <<" ";
           d3_SizeComps_in(iZC,rw)(-5) = iflt_;
           d3_SizeComps_in(iZC,rw)(-4) = ix_;
           d3_SizeComps_in(iZC,rw)(-3) = ict_;
@@ -952,7 +1027,7 @@ DATA_SECTION
           d3_SizeComps_in(iZC,rw)(-1) = im_;
           //cout<< "*" << d3_SizeComps_in(iZC,rw)(-5,-1) << "*" << endl;//fleet,sex,catch type,shell,maturity
           (*pGD) >> d3_SizeComps_in(iZC,rw)(0,nSizeCompCols_in(iZC)); //--the remainder
-          cout << d3_SizeComps_in(iZC,rw) << endl;
+          gmacs_data << d3_SizeComps_in(iZC,rw)(0,nSizeCompCols_in(iZC)) << endl;
         }//--rw
       } //--iZC
       cout <<"finished reading new format size comps" << endl;
@@ -961,7 +1036,6 @@ DATA_SECTION
     }
   }
  END_CALCS
-  //NEW 202402: WTS--endmod
 
   3darray d3_obs_size_comps_in(1,nSizeComps_in,1,nSizeCompRows_in,1,nSizeCompCols_in);
   matrix size_comp_sample_size_in(1,nSizeComps_in,1,nSizeCompRows_in);
@@ -969,15 +1043,17 @@ DATA_SECTION
   matrix size_comp_season_in(1,nSizeComps_in,1,nSizeCompRows_in);
 
  LOC_CALCS
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
     dmatrix tmp = trans(d3_SizeComps_in(kk)).sub(1,nSizeCompCols_in(kk));
     d3_obs_size_comps_in(kk) = trans(tmp);
     size_comp_sample_size_in(kk) = column(d3_SizeComps_in(kk),0);
     size_comp_year_in(kk) = column(d3_SizeComps_in(kk),-7);
     size_comp_season_in(kk) = column(d3_SizeComps_in(kk),-6);
-   }
-  WRITEDAT(nSizeComps_in); WRITEDAT(nSizeCompRows_in); WRITEDAT(nSizeCompCols_in);
+  }
+  if (fmtZCs_in>0) gmacs_data << "# old format:" << endl;
+  if (fmtZCs_in==0){
+    ECHO(nSizeComps_in); WRITEDAT(nSizeCompRows_in); WRITEDAT(nSizeCompCols_in);
+  }
   gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
   gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
   gmacs_data << "## Shell: 1 = newshell, 2 = oldshell, 0 = both" << endl;
@@ -990,6 +1066,7 @@ DATA_SECTION
     if ( ((d3_SizeComps_in(irow,jrow,-7) <= nyrRetro) || (d3_SizeComps_in(irow,jrow,-7) == nyrRetro+1 && d3_SizeComps_in(irow,jrow,-6) == 1)) 
            && d3_SizeComps_in(irow,jrow,-7) >= syr)
      {
+      if (fmtZCs_in>0) gmacs_data << "# ";
       gmacs_data << d3_SizeComps_in(irow,jrow) << " ";
       anystring = "# " + fleetname(d3_SizeComps_in(irow,jrow,-5));
       testtotal = 0;
@@ -8937,7 +9014,7 @@ FUNCTION CreateOutput
 
   // Estimated parameters
   // ====================
-  OutFile1 << "#Parameter_count Parameter_type Index Estimate Phase Lower_bound Upper_bound Penalty Standard_error Estimated_parameter_count" << endl;
+  OutFile1 << "#Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Penalty Standard_error Estimated_parameter_count" << endl;
 
   Npar = 0; NparEst = 0;
   for (Ipar=1;Ipar<=ntheta;Ipar++)
@@ -9277,7 +9354,7 @@ FUNCTION CreateOutput
    
   OutFile1 << endl;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
-  OutFile1 << endl << "# Sex Maturity Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  OutFile1 << endl << "#Sex Maturity Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
   OutFile1 << "                   " << mid_points << endl;
   for (int h=1;h<=nsex;h++)
    for (int m=1;m<=nmature;m++)
@@ -9291,7 +9368,7 @@ FUNCTION CreateOutput
   // catches
   OutFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Catch_fit_summary" << endl;
-  OutFile1 << "# Series Year Fleet Season Sex Catch CV Type Units Mult Effort CV Predicted Residual" << endl;
+  OutFile1 << "#Series Year Fleet Season Sex Catch CV Type Units Mult Effort CV Predicted Residual" << endl;
   for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++)
    for (int irow=1;irow<=nCatchRows(iCatOut); irow++)
     if (int(dCatchData(iCatOut,irow,1)) >= syr && int(dCatchData(iCatOut,irow,1)) <= nyrRetro)
@@ -9319,7 +9396,7 @@ FUNCTION CreateOutput
   // index data
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Index_fit_summary" << endl;
-  OutFile1 << "Series Year Fleet Season Sex Maturity Index base_CV actual_CV Units Time q Predicted" << endl;
+  OutFile1 << "#Series Year Fleet Season Sex Maturity Index base_CV actual_CV Units q  Time Predicted" << endl;
   for ( int k = 1; k <= nSurveyRows; k++ )
    {
      int i = dSurveyData(k,0);
@@ -9353,7 +9430,7 @@ FUNCTION CreateOutput
   adstring ShellName;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "Size_fit_summary" << endl;
-  OutFile1 << "#Original_series Modified_series Year, Fleet,  Season Sex,  Type, Shell,  Maturity, Nsamp,  DataVec (obs), DataVec (pred)" << endl;
+  OutFile1 << "#Original_series Modified_series Year Fleet  Season Sex  Type Shell  Maturity  Nsamp  DataVec_(obs) DataVec_(pred)" << endl;
 
   int oldk = 0;
   for (int ii=1; ii<=nSizeComps_in;ii++)
@@ -9393,7 +9470,7 @@ FUNCTION CreateOutput
   
   OutFile4 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile4 << "# Size_data_summary1" << endl;
-  OutFile4 << "# Year, Seas, Fleet,  Sex,  Type, Shell,  Maturity, Nsamp,  DataVec (obs), DataVec (pred)" << endl;
+  OutFile4 << "#Year Season Fleet  Sex  Type  Shell  Maturity  Nsamp  DataVec_(obs) DataVec_(pred)" << endl;
   oldk = 0;
   for (int ii=1; ii<=nSizeComps_in;ii++)
    {
@@ -9411,7 +9488,7 @@ FUNCTION CreateOutput
     }
   OutFile4 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile4 << "# Size_data_summary2" << endl;
-  OutFile4 << "# Year, Seas, Fleet,  Sex,  Type, Shell,  Maturity, Nsamp,  DataVec (obs), DataVec (pred)" << endl;
+  OutFile4 << "#Year, Seas, Fleet,  Sex,  Type, Shell,  Maturity, Nsamp,  DataVec (obs), DataVec (pred)" << endl;
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
     {
@@ -9517,7 +9594,7 @@ FUNCTION CreateOutput
 
   
   OutFile1 << endl << "# Total mortality by size-class (continuous)" << endl;
-  OutFile1 << "# Sex Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  OutFile1 << "# Sex Maturity Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
   for (int h=1;h<=nsex;h++)
    for(int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++)
@@ -9525,7 +9602,7 @@ FUNCTION CreateOutput
       OutFile1 << sexes(h) << " " << m << " " << i << " " << j << " " << Z(h,m,i,j) << endl;
   
   OutFile1 << endl << "# Total mortality by size-class (discrete)" << endl;
-  OutFile1 << "# Sex Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  OutFile1 << "# Sex Maturity Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
   for (int h=1;h<=nsex;h++)
    for( int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++)
@@ -9628,7 +9705,7 @@ FUNCTION CreateOutput
   OutFile1 << "#Molting and growth" << endl;
   // Molting probability
   OutFile1 << endl << "# Molt probability" << endl;
-  OutFile1 << "# Sex Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl; 
+  OutFile1 << "#Sex Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl; 
   for (int h=1; h<=nsex; h++)
    for (int i=syr;i<=nyrRetro;i++)
     OutFile1 << sexes(h) << " " << i << " " << molt_probability(h,i) << endl;

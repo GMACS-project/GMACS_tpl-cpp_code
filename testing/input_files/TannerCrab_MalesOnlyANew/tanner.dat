@@ -124,17 +124,12 @@ undetermined        #--shell condition (new shell, old shell, undetermined)
 ##------------------------------------------------------------
 ##--RELATIVE ABUNDANCE DATA-----------------------------------
 ##------------------------------------------------------------
-1 #--input format for catch data (0:old format; 1: new format)
-1 #--number of dataframes
-##------------------------------------------------------------
-##--RELATIVE ABUNDANCE DATA-----------------------------------
-##------------------------------------------------------------
 1 #--input format for relative abundance data (0:old format; 1: new format)
 1 #--number of dataframes
 #----
 ##--fleet: NMFS; index type: sel; units type: biomass; units: THOUSANDS_MT.
-sel        #--index type ('selectivity' or 'selectivity+retention')
-biomass        #--units type ('abundance' or 'biomass')
+sel        #--index type ('sel' or 'sel+ret')
+biomass    #--units type ('abundance' or 'biomass')
 NMFS        #--fleet
 male        #--sex (male(s), female(s), undetermined)
 undetermined        #--maturity (immature, mature, undetermined)

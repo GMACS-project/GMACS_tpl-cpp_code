@@ -105,7 +105,7 @@ NMFS
 0 #--input format for relative abundance data (0:old format; 1: new format)
 ##	Number	of	relative	abundance	indices																									
 1
-# Index Type  (1=Selecivity; 2=retention)
+# Index Type  (1=selecivity; 2=selectivity+retention)
 1 
 ##	Number	of	rows of index data																											
 41																														
