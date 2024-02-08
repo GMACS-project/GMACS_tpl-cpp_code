@@ -224,117 +224,117 @@ Note&nbsp;1: Theta parameter section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>## LEADING PARAMETER CONTROLS                                                           ##                                                                                  </span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>##     Controls for leading parameter vector (theta)                                    ##                                                                                  </span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>## LEGEND                                                                               ##                                                                                  </span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>##     prior: 0 = uniform, 1 = normal, 2 = lognormal, 3 = beta, 4 = gamma               ##"                                                                                 </span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>## ntheta                                                                                   </span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>100                                                                                 </span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>## ival        lb        ub        phz   prior     p1      p2         # parameter       ##                                                                                  </span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    0.271          0.15    0.7         4       1    0.271    0.00454        # M (male)                                                                                  </span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    0.271          0.15    0.7         4       1    0.271    0.00454        # M (female)                                                                                    </span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>   16.5           -10        20         -2       0  -10.0    20.0         # logR0                                                                                   </span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>   15.0           -10        30         -1       0   10.0    20.0         # logRini, to estimate if NOT initialized at unfished (n68)"                                                                                  </span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>   13.26245375    -10        30         1       0   10.0    20.0         # logRbar, to estimate if NOT initialized at unfished      #1"                                                                                 </span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>   32.5             7.5     42.5        -4       0   32.5     2.25        # recruitment expected value (males or combined)                                                                                  </span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    1.0             0.1       10        -4       0    0.1     5.0         # recruitment scale (variance component) (males or combined)                                                                              </span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    0.0            -10      10          -4       0   0.0     20.00        # recruitment expected value (females)                                                                                    </span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    0.00          -10      10           -3       0    0.0    20.0         # recruitment scale (variance component) (females)                                                                                </span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>   -0.9           -10         0.75      -4       0  -10.0     0.75        # ln(sigma_R)                                                                                 </span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    0.75            0.20      1.00      -2       3    3.0     2.00        # steepness                                                                                   </span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    0.01            0.0001    1.00      -3       3    1.01    1.01        # recruitment autocorrelation                                                                                 </span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    0.0     -10      25         1       0   10.0    20.00        # Deviation for size-class 1   # mature males  (normalization class)                                                               </span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 2                                                                       </span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 3                                                                       </span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 4                                                                       </span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 5                                                                       </span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 6                                                                       </span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 7                                                                       </span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 8                                                                       </span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 9                                                                       </span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 10                                                                      </span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 11                                                                      </span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 12                                                                      </span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 13                                                                      </span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 14                                                                      </span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 15                                                                      </span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 16                                                                      </span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 17                                                                      </span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 18                                                                      </span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 19                                                                      </span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                                                      </span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                                                      </span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                                                      </span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 1                                                                                   </span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 2   # immature males                                                                    </span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 3                                                                       </span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 4                                                                       </span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 5                                                                       </span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 6                                                                       </span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 7                                                                       </span>
-<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 8                                                                       </span>
-<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 9                                                                       </span>
-<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 10                                                                      </span>
-<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 11                                                                      </span>
-<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 12                                                                      </span>
-<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 13                                                                      </span>
-<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 14                                                                      </span>
-<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 15                                                                      </span>
-<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 16                                                                      </span>
-<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 17                                                                      </span>
-<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 18                                                                      </span>
-<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 19                                                                      </span>
-<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                                                      </span>
-<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                                                      </span>
-<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                                                      </span>
-<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 1  # mature females                                                                     </span>
-<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 2                                                                       </span>
-<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 3                                                                       </span>
-<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 4                                                                       </span>
-<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 5                                                                       </span>
-<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 6                                                                       </span>
-<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 7                                                                       </span>
-<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 8                                                                       </span>
-<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 9                                                                       </span>
-<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 10                                                                      </span>
-<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 11                                                                      </span>
-<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 12                                                                      </span>
-<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 13                                                                      </span>
-<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 14                                                                      </span>
-<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 15                                                                      </span>
-<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 16                                                                      </span>
-<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 17                                                                      </span>
-<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 18                                                                      </span>
-<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 19                                                                      </span>
-<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                                                      </span>
-<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                                                      </span>
-<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                                                      </span>
-<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 1   # immature females                                                               </span>
-<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 2                                                                        </span>
-<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 3                                                                        </span>
-<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 4                                                                        </span>
-<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 5                                                                        </span>
-<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 6                                                                        </span>
-<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 7                                                                        </span>
-<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 8                                                                        </span>
-<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 9                                                                        </span>
-<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 10                                                                       </span>
-<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 11                                                                       </span>
-<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 12                                                                       </span>
-<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 13                                                                       </span>
-<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 14                                                                       </span>
-<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 15                                                                       </span>
-<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1      0   10.0    20.00        # Deviation for size-class 16                                                                       </span>
-<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 17                                                                      </span>
-<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 18                                                                      </span>
-<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 19                                                                      </span>
-<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                                                      </span>
-<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                                                      </span>
-<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a>    0.0     -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                                                      </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                          </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>## LEADING PARAMETER CONTROLS                                                           ##                                          </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>##     Controls for leading parameter vector (theta)                                    ##                                          </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>## LEGEND                                                                               ##                                          </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>##     prior: 0 = uniform, 1 = normal, 2 = lognormal, 3 = beta, 4 = gamma               ##"                                          </span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                          </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>## ntheta                                          </span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>100                                          </span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                          </span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>## ival   lb      ub        phz   prior   p1       p2         # parameter       ##                                          </span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                          </span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  0.271   0.15    0.7       4       1    0.271    0.00454    # M (male)                                          </span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  0.271   0.15    0.7       4       1    0.271    0.00454    # M (female)                                          </span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a> 16.5   -10      20        -2       0  -10.0    20.0         # logR0                                          </span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a> 15.0   -10      30        -1       0   10.0    20.0         # logRini, to estimate if NOT initialized at unfished (n68)"                                          </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a> 13.26  -10      30         1       0   10.0    20.0         # logRbar, to estimate if NOT initialized at unfished      #1"                                          </span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a> 32.5     7.5    42.5      -4       0   32.5     2.25        # recruitment expected value (males or combined)                                          </span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  1.0     0.1    10        -4       0    0.1     5.0         # recruitment scale (variance component) (males or combined)                                        </span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  0.0   -10      10        -4       0    0.0     20.00       # recruitment expected value (females)                                          </span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  0.00  -10      10        -3       0    0.0    20.0         # recruitment scale (variance component) (females)                                        </span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a> -0.9   -10       0.75     -4       0  -10.0     0.75        # ln(sigma_R)                                          </span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  0.75    0.20    1.00     -2       3    3.0     2.00        # steepness                                          </span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>  0.01    0.0001  1.00     -3       3    1.01    1.01        # recruitment autocorrelation                                          </span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>  0.0   -10      25         1       0   10.0    20.00        # Deviation for size-class 1  # mature males  (normalization class)                                </span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 2                                    </span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 3                                    </span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 4                                    </span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 5                                    </span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 6                                    </span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 7                                    </span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 8                                    </span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 9                                    </span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 10                                    </span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 11                                    </span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 12                                    </span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 13                                    </span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 14                                    </span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 15                                    </span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 16                                    </span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 17                                    </span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 18                                    </span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 19                                    </span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                    </span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                    </span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                    </span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 1                                           </span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 2  # immature males                                  </span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 3                                    </span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 4                                    </span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 5                                    </span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 6                                    </span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 7                                    </span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 8                                    </span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 9                                    </span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 10                                    </span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 11                                    </span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 12                                    </span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 13                                    </span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 14                                    </span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 15                                    </span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 16                                    </span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 17                                    </span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 18                                    </span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 19                                    </span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                    </span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                    </span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                    </span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 1  # mature females                                    </span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 2                                    </span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 3                                    </span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 4                                    </span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 5                                    </span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 6                                    </span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 7                                    </span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 8                                    </span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 9                                    </span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 10                                    </span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 11                                    </span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 12                                    </span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 13                                    </span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 14                                    </span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 15                                    </span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 16                                    </span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 17                                    </span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 18                                    </span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 19                                    </span>
+<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                    </span>
+<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                    </span>
+<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                    </span>
+<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 1   # immature females                                </span>
+<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 2                                    </span>
+<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 3                                    </span>
+<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 4                                    </span>
+<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 5                                    </span>
+<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 6                                    </span>
+<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 7                                    </span>
+<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 8                                    </span>
+<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 9                                    </span>
+<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 10                                    </span>
+<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 11                                    </span>
+<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 12                                    </span>
+<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 13                                    </span>
+<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 14                                    </span>
+<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 15                                    </span>
+<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 16                                    </span>
+<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 17                                    </span>
+<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 18                                    </span>
+<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 19                                    </span>
+<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                    </span>
+<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                    </span>
+<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                    </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 <div id="nte-ctl2" class="callout callout-style-default callout-note no-icon callout-titled" title="Weight-at-length and Proportions mature/legal section of example `model.ctl` file.">
@@ -347,20 +347,20 @@ Note&nbsp;2: Weight-at-length and Proportions mature/legal section of example <c
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>#   weight-at-length input  method  (1 = allometry  "[w_l = a*l^b],"    2 = vector by sex)                                                              </span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>2                                                                                   </span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>##  Males                                                                               </span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>7.66E-06    1.29E-05    2.00E-05    2.95E-05    4.17E-05    5.68E-05    7.53E-05    0.000097455 0.000123688 0.000154329 0.000189739 0.000230279 0.000276313 0.000328208 0.000386333 0.000451057 0.000522754 0.000601796 0.000688561 0.000783424 0.000886766 0.000998966</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>7.66E-06    1.29E-05    2.00E-05    2.95E-05    4.17E-05    5.68E-05    7.53E-05    0.000097455 0.000123688 0.000154329 0.000189739 0.000230279 0.000276313 0.000328208 0.000386333 0.000451057 0.000522754 0.000601796 0.000688561 0.000783424 0.000886766 0.000998966</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>## Females                                                                                  </span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>9.17E-06    1.44E-05    2.13E-05    2.98E-05    4.03E-05    5.29E-05    6.77E-05    0.000084796 0.000104451 0.000126759 0.000151857 0.000179881 0.000210963 0.000245233 0.00028282  0.00032385  0.000368446 0.000416731 0.000468827 0.000524852 0.000584924 0.00064916</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>9.17E-06    1.44E-05    2.13E-05    2.98E-05    4.03E-05    5.29E-05    6.77E-05    0.000084796 0.000104451 0.000126759 0.000151857 0.000179881 0.000210963 0.000245233 0.00028282  0.00032385  0.000368446 0.000416731 0.000468827 0.000524852 0.000584924 0.00064916</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a># Proportion mature by sex                                                                                  </span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>0   0   0   0   0   0   0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a># Proportion legal by sex                                                                                   </span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>0   0   0   0   0   0   0   0   0   0   0   1   1   1   1   1   1   1   1   1   1   1</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0</span>
+<div class="sourceCode" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>#  weight-at-length input  method  (1 = allometry  "[w_l = a*l^b],"  2 = vector by sex)                                </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>2                                          </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>##  Males                                        </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>7.66E-06  1.29E-05  2.00E-05  2.95E-05  4.17E-05  5.68E-05  7.53E-05  0.000097455  0.000123688  0.000154329  0.000189739  0.000230279  0.000276313  0.000328208  0.000386333  0.000451057  0.000522754  0.000601796  0.000688561  0.000783424  0.000886766  0.000998966</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>7.66E-06  1.29E-05  2.00E-05  2.95E-05  4.17E-05  5.68E-05  7.53E-05  0.000097455  0.000123688  0.000154329  0.000189739  0.000230279  0.000276313  0.000328208  0.000386333  0.000451057  0.000522754  0.000601796  0.000688561  0.000783424  0.000886766  0.000998966</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>## Females                                          </span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>9.17E-06  1.44E-05  2.13E-05  2.98E-05  4.03E-05  5.29E-05  6.77E-05  0.000084796  0.000104451  0.000126759  0.000151857  0.000179881  0.000210963  0.000245233  0.00028282  0.00032385  0.000368446  0.000416731  0.000468827  0.000524852  0.000584924  0.00064916</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>9.17E-06  1.44E-05  2.13E-05  2.98E-05  4.03E-05  5.29E-05  6.77E-05  0.000084796  0.000104451  0.000126759  0.000151857  0.000179881  0.000210963  0.000245233  0.00028282  0.00032385  0.000368446  0.000416731  0.000468827  0.000524852  0.000584924  0.00064916</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a># Proportion mature by sex                                          </span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1  1</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a># Proportion legal by sex                                          </span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>0  0  0  0  0  0  0  0  0  0  0  1  1  1  1  1  1  1  1  1  1  1</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0</span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a># use functional maturity for terminally molting animals?</span>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -375,95 +375,95 @@ Note&nbsp;3: Growth parameter section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>## GROWTH PARAMETER CONTROLS                                                            ##                                                                                  </span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>##     Two lines for each parameter if split sex, one line if not                       ##"                                                                                 </span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>##     Currently if growth parameters change, moltin gprobabilities also must"          ##                                                                      </span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a># Use growth transition matrix option (1=read in growth-increment matrix; 2=read in size-transition; 3=gamma distribution for size-increment; 4=gamma distribution for size after increment)                                                                                    </span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>4                                                                                   </span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a># growth increment model (1=alpha/beta; 2=estimated by size-class;3=pre-specified/emprical)                                                                                 </span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>1                                                                                   </span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a># molt probability function (0=pre-specified; 1=flat;2=declining logistic; 3=free parameters)                                                                                   </span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>0                                                                                   </span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a># Maximum size-class for recruitment(males then females)                                                                                    </span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>3 3                                                                                     </span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>## number of size-increment periods                                                                                 </span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>1 1                                                                                 </span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>## Year(s) size-incremnt period changes (blank if no changes)                                                                                   </span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>## number of molt periods                                                                                   </span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>42 42                                                                                   </span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>## Year(s) molt period changes (blank if no changes)                                                                                    </span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    1983    1984    1985    1986    1987    1988    1989    1990    1991    1992    1993    1994    1995    1996    1997    1998    1999    2000    2001    2002    2003    2004    2005    2006    2007    2008    2009    2010    2011    2012    2013    2014    2015    2016    2017    2018    2019    2020    2021    2022 2023</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    1983    1984    1985    1986    1987    1988    1989    1990    1991    1992    1993    1994    1995    1996    1997    1998    1999    2000    2001    2002    2003    2004    2005    2006    2007    2008    2009    2010    2011    2012    2013    2014    2015    2016    2017    2018    2019    2020    2021    2022 2023</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>## Beta parameters are relative (1=Yes;0=no)                                                                                    </span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>0                                                                                   </span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>## ival       lb        ub        phz   prior     p1      p2          # parameter       ##                                                                                  </span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    2.049       -5          20      3       1           2.049       1       # Males alpha               </span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    -0.2258     -1          0       3       1           -0.2258     0.5     # Males beta            </span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    0.25        0.001       5       -3      0           0           999     # Males scale               </span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    -1.1539     -5          10      3       1           -1.1539     1       # Females alpha             </span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    -0.3389     -1          0       3       1           -0.3389     0.5     # Females beta              </span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    0.25        0.001       5       -3      0           0           999     # Females scale             </span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————————————————————————— ##                                                                                   </span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>## MOLTING PROBABILITY CONTROLS                                                         ##                                                                                  </span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>##     Two lines for each parameter if split sex, one line if not                       ##"                                                                                 </span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>##     If free molting probability, list a probability for each size class and sex</span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>##     iF PRE-specified, matrices by sex, with rows as year and columns as size                                                                 </span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>## ival       lb        ub        phz   prior     p1      p2          # parameter       ##                                                                                  </span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>## ival     lb      ub      phz   prior     p1      p2          # parameter       ##                                                                                    </span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>## GROWTH PARAMETER CONTROLS                                                            ##</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>##     Two lines for each parameter if split sex, one line if not                       ##</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>##     Currently if growth parameters change, moltin gprobabilities also must"          ##</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a># Use growth transition matrix options </span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>##  1 = read in growth-increment matrix; </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>##  2 = read in size-transition; </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>##  3 = gamma distribution for size-increment; </span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>##  4 = gamma distribution for size after increment</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>4                                          </span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a># growth increment model (1=alpha/beta; 2=estimated by size-class;3=pre-specified/emprical)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>1                                          </span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a># molt probability function (0=pre-specified; 1=flat;2=declining logistic; 3=free parameters)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>0                                          </span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a># Maximum size-class for recruitment(males then females)                        </span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>3 3                                           </span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>## number of size-increment periods                                          </span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>1 1                                          </span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>## Year(s) size-incremnt period changes (blank if no changes)                   </span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>## number of molt periods                                          </span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>42 42                                          </span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>## Year(s) molt period changes (blank if no changes)                            </span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>  1983  1984  1985  1986  1987  1988  1989  1990  1991  1992  1993  1994  1995  1996  1997  1998  1999  2000  2001  2002  2003  2004  2005  2006  2007  2008  2009  2010  2011  2012  2013  2014  2015  2016  2017  2018  2019  2020  2021  2022 2023</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>  1983  1984  1985  1986  1987  1988  1989  1990  1991  1992  1993  1994  1995  1996  1997  1998  1999  2000  2001  2002  2003  2004  2005  2006  2007  2008  2009  2010  2011  2012  2013  2014  2015  2016  2017  2018  2019  2020  2021  2022 2023</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>## Beta parameters are relative (1=Yes;0=no)                                    </span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>0                                          </span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————---## </span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>## ival       lb  ub   phz  prior p1    p2    # parameter        ## </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————## </span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>  2.049    -5     20    3    1  2.05    1    # Males alpha        </span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>  -0.2258  -1      0    3    1 -0.22    0.5  # Males beta       </span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>   0.25     0.001  5   -3    0  0     999    # Males scale        </span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>  -1.1539  -5     10    3    1 -1.15    1    # Females alpha        </span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>  -0.3389  -1      0    3    1 -0.34    0.5  # Females beta        </span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>   0.25     0.001  5   -3    0  0     999    # Females scale        </span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————- ##  </span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ## </span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>## MOLTING PROBABILITY CONTROLS                                                         ## </span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>##     Two lines for each parameter if split sex, one line if not                       ## </span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>##     If free molting probability, list a probability for each size class and sex</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>##     iF PRE-specified, matrices by sex, with rows as year and columns as size           </span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ## </span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>## ival       lb        ub        phz   prior     p1      p2          # parameter       ##  </span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##  </span>
 <span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>## MALES</span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.006   0.017   0.051   0.106   0.149   0.178   0.181   0.156   0.193   0.293   0.406   0.532   0.669   0.815   0.914   0.968   0.993   0.987   0.989   0.996</span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.001   0.003   0.022   0.058   0.092   0.124   0.191   0.295   0.355   0.371   0.379   0.377   0.436   0.557   0.693   0.844   0.940   0.980   1.000   1.000</span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.001   0.002   0.017   0.045   0.091   0.154   0.204   0.239   0.268   0.291   0.302   0.300   0.409   0.630   0.800   0.918   0.977   0.976   0.982   0.994</span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.004   0.011   0.058   0.144   0.203   0.236   0.299   0.391   0.452   0.482   0.519   0.565   0.662   0.812   0.913   0.967   0.995   0.998   1.000   1.000</span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.005   0.014   0.037   0.074   0.144   0.247   0.388   0.564   0.663   0.685   0.708   0.732   0.796   0.900   0.960   0.976   0.988   0.996   1.000   1.000</span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.058   0.098   0.151   0.217   0.301   0.404   0.477   0.519   0.534   0.522   0.600   0.767   0.883   0.949   0.986   0.995   1.000   1.000</span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.005   0.014   0.041   0.084   0.127   0.168   0.237   0.332   0.424   0.511   0.588   0.655   0.725   0.797   0.871   0.945   0.980   0.974   0.979   0.993</span>
-<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.035   0.105   0.152   0.175   0.228   0.311   0.373   0.414   0.450   0.481   0.595   0.794   0.908   0.940   0.967   0.989   1.000   1.000</span>
-<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.002   0.006   0.034   0.084   0.129   0.170   0.209   0.248   0.265   0.261   0.293   0.362   0.485   0.663   0.807   0.919   0.981   0.994   1.000   1.000</span>
-<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.005   0.015   0.046   0.099   0.149   0.194   0.267   0.367   0.408   0.389   0.406   0.460   0.579   0.762   0.882   0.939   0.973   0.986   0.994   0.998</span>
-<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.023   0.068   0.117   0.170   0.223   0.276   0.349   0.445   0.469   0.422   0.456   0.572   0.699   0.835   0.917   0.944   0.968   0.989   1.000   1.000</span>
-<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.004   0.011   0.028   0.055   0.126   0.242   0.324   0.374   0.401   0.406   0.453   0.545   0.677   0.851   0.946   0.963   0.978   0.993   1.000   1.000</span>
-<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.033   0.099   0.142   0.161   0.200   0.260   0.332   0.416   0.492   0.559   0.672   0.832   0.923   0.945   0.967   0.989   1.000   1.000</span>
-<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.007   0.021   0.087   0.203   0.288   0.341   0.359   0.342   0.370   0.443   0.580   0.782   0.913   0.971   1.000   1.000   1.000   1.000</span>
-<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.013   0.040   0.072   0.110   0.149   0.189   0.222   0.251   0.291   0.344   0.369   0.366   0.468   0.677   0.820   0.898   0.926   0.904   0.919   0.973</span>
-<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.037   0.112   0.190   0.270   0.351   0.431   0.533   0.656   0.684   0.617   0.633   0.734   0.828   0.914   0.968   0.989   1.000   1.000</span>
-<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.014   0.043   0.078   0.119   0.165   0.216   0.295   0.401   0.485   0.547   0.555   0.508   0.594   0.813   0.933   0.952   0.968   0.981   0.990   0.997</span>
-<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.019   0.057   0.095   0.133   0.222   0.360   0.434   0.443   0.442   0.430   0.478   0.588   0.672   0.731   0.808   0.902   0.962   0.987   1.000   1.000</span>
-<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.032   0.097   0.204   0.355   0.459   0.514   0.531   0.507   0.485   0.465   0.555   0.754   0.868   0.897   0.867   0.779   0.801   0.934</span>
-<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.100   0.300   0.388   0.363   0.359   0.376   0.348   0.275   0.208   0.149   0.245   0.496   0.716   0.905   1.000   1.000   1.000   1.000</span>
-<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.001   0.002   0.025   0.071   0.176   0.342   0.476   0.579   0.624   0.611   0.680   0.833   0.925   0.956   0.964   0.949   0.957   0.986   1.000   1.000</span>
-<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.031   0.094   0.133   0.146   0.256   0.461   0.544   0.505   0.483   0.481   0.610   0.870   1.000   1.000   0.964   0.893   0.893   0.964</span>
-<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.016   0.049   0.124   0.243   0.357   0.466   0.530   0.550   0.600   0.680   0.770   0.871   0.932   0.953   0.972   0.991   1.000   1.000</span>
-<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.000   0.000   0.031   0.093   0.190   0.321   0.420   0.488   0.534   0.556   0.572   0.581   0.683   0.877   0.981   0.994   1.000   1.000   1.000   1.000</span>
-<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.009   0.028   0.104   0.237   0.309   0.321   0.355   0.410   0.480   0.563   0.662   0.778   0.865   0.922   0.961   0.980   0.992   0.997   1.000   1.000</span>
-<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.008   0.023   0.066   0.136   0.232   0.354   0.442   0.497   0.572   0.665   0.757   0.849   0.918   0.965   0.991   0.997   1.000   1.000   1.000   1.000</span>
-<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.042   0.125   0.162   0.154   0.170   0.209   0.244   0.273   0.320   0.386   0.519   0.718   0.835   0.870   0.909   0.952   0.980   0.993   1.000   1.000</span>
-<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.010   0.029   0.067   0.123   0.184   0.250   0.321   0.396   0.445   0.467   0.503   0.551   0.648   0.795   0.893   0.945   0.973   0.977   0.984   0.995</span>
-<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.111   0.334   0.477   0.540   0.574   0.579   0.574   0.560   0.561   0.577   0.612   0.664   0.757   0.893   0.971   0.990   1.000   1.000   1.000   1.000</span>
-<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>0.000   0.000   0.003   0.008   0.037   0.090   0.159   0.245   0.392   0.598   0.663   0.585   0.565   0.603   0.687   0.815   0.900   0.941   0.972   0.991   1.000   1.000</span>
-<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>0.000   0.005   0.022   0.047   0.081   0.126   0.182   0.248   0.320   0.396   0.471   0.544   0.619   0.695   0.770   0.838   0.896   0.941   0.973   0.994   1.000   1.000</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.006  0.017  0.051  0.106  0.149  0.178  0.181  0.156  0.193  0.293  0.406  0.532  0.669  0.815  0.914  0.968  0.993  0.987  0.989  0.996</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.001  0.003  0.022  0.058  0.092  0.124  0.191  0.295  0.355  0.371  0.379  0.377  0.436  0.557  0.693  0.844  0.940  0.980  1.000  1.000</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.001  0.002  0.017  0.045  0.091  0.154  0.204  0.239  0.268  0.291  0.302  0.300  0.409  0.630  0.800  0.918  0.977  0.976  0.982  0.994</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.004  0.011  0.058  0.144  0.203  0.236  0.299  0.391  0.452  0.482  0.519  0.565  0.662  0.812  0.913  0.967  0.995  0.998  1.000  1.000</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.005  0.014  0.037  0.074  0.144  0.247  0.388  0.564  0.663  0.685  0.708  0.732  0.796  0.900  0.960  0.976  0.988  0.996  1.000  1.000</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.058  0.098  0.151  0.217  0.301  0.404  0.477  0.519  0.534  0.522  0.600  0.767  0.883  0.949  0.986  0.995  1.000  1.000</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.005  0.014  0.041  0.084  0.127  0.168  0.237  0.332  0.424  0.511  0.588  0.655  0.725  0.797  0.871  0.945  0.980  0.974  0.979  0.993</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.035  0.105  0.152  0.175  0.228  0.311  0.373  0.414  0.450  0.481  0.595  0.794  0.908  0.940  0.967  0.989  1.000  1.000</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.002  0.006  0.034  0.084  0.129  0.170  0.209  0.248  0.265  0.261  0.293  0.362  0.485  0.663  0.807  0.919  0.981  0.994  1.000  1.000</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.005  0.015  0.046  0.099  0.149  0.194  0.267  0.367  0.408  0.389  0.406  0.460  0.579  0.762  0.882  0.939  0.973  0.986  0.994  0.998</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.023  0.068  0.117  0.170  0.223  0.276  0.349  0.445  0.469  0.422  0.456  0.572  0.699  0.835  0.917  0.944  0.968  0.989  1.000  1.000</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.004  0.011  0.028  0.055  0.126  0.242  0.324  0.374  0.401  0.406  0.453  0.545  0.677  0.851  0.946  0.963  0.978  0.993  1.000  1.000</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.033  0.099  0.142  0.161  0.200  0.260  0.332  0.416  0.492  0.559  0.672  0.832  0.923  0.945  0.967  0.989  1.000  1.000</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.007  0.021  0.087  0.203  0.288  0.341  0.359  0.342  0.370  0.443  0.580  0.782  0.913  0.971  1.000  1.000  1.000  1.000</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.013  0.040  0.072  0.110  0.149  0.189  0.222  0.251  0.291  0.344  0.369  0.366  0.468  0.677  0.820  0.898  0.926  0.904  0.919  0.973</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.037  0.112  0.190  0.270  0.351  0.431  0.533  0.656  0.684  0.617  0.633  0.734  0.828  0.914  0.968  0.989  1.000  1.000</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.014  0.043  0.078  0.119  0.165  0.216  0.295  0.401  0.485  0.547  0.555  0.508  0.594  0.813  0.933  0.952  0.968  0.981  0.990  0.997</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.019  0.057  0.095  0.133  0.222  0.360  0.434  0.443  0.442  0.430  0.478  0.588  0.672  0.731  0.808  0.902  0.962  0.987  1.000  1.000</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.032  0.097  0.204  0.355  0.459  0.514  0.531  0.507  0.485  0.465  0.555  0.754  0.868  0.897  0.867  0.779  0.801  0.934</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.100  0.300  0.388  0.363  0.359  0.376  0.348  0.275  0.208  0.149  0.245  0.496  0.716  0.905  1.000  1.000  1.000  1.000</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.001  0.002  0.025  0.071  0.176  0.342  0.476  0.579  0.624  0.611  0.680  0.833  0.925  0.956  0.964  0.949  0.957  0.986  1.000  1.000</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.031  0.094  0.133  0.146  0.256  0.461  0.544  0.505  0.483  0.481  0.610  0.870  1.000  1.000  0.964  0.893  0.893  0.964</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.016  0.049  0.124  0.243  0.357  0.466  0.530  0.550  0.600  0.680  0.770  0.871  0.932  0.953  0.972  0.991  1.000  1.000</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.000  0.000  0.031  0.093  0.190  0.321  0.420  0.488  0.534  0.556  0.572  0.581  0.683  0.877  0.981  0.994  1.000  1.000  1.000  1.000</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.009  0.028  0.104  0.237  0.309  0.321  0.355  0.410  0.480  0.563  0.662  0.778  0.865  0.922  0.961  0.980  0.992  0.997  1.000  1.000</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.008  0.023  0.066  0.136  0.232  0.354  0.442  0.497  0.572  0.665  0.757  0.849  0.918  0.965  0.991  0.997  1.000  1.000  1.000  1.000</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.042  0.125  0.162  0.154  0.170  0.209  0.244  0.273  0.320  0.386  0.519  0.718  0.835  0.870  0.909  0.952  0.980  0.993  1.000  1.000</span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.010  0.029  0.067  0.123  0.184  0.250  0.321  0.396  0.445  0.467  0.503  0.551  0.648  0.795  0.893  0.945  0.973  0.977  0.984  0.995</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.111  0.334  0.477  0.540  0.574  0.579  0.574  0.560  0.561  0.577  0.612  0.664  0.757  0.893  0.971  0.990  1.000  1.000  1.000  1.000</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>0.000  0.000  0.003  0.008  0.037  0.090  0.159  0.245  0.392  0.598  0.663  0.585  0.565  0.603  0.687  0.815  0.900  0.941  0.972  0.991  1.000  1.000</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>0.000  0.005  0.022  0.047  0.081  0.126  0.182  0.248  0.320  0.396  0.471  0.544  0.619  0.695  0.770  0.838  0.896  0.941  0.973  0.994  1.000  1.000</span>
 <span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>## FEMALES</span>
 <span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>0.0061  0.0189  0.0584  0.1775  0.4667  0.7761  0.8119  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999</span>
 <span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>0.0061  0.0189  0.0584  0.1775  0.4667  0.7761  0.8119  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999</span>
@@ -507,41 +507,420 @@ Note&nbsp;3: Growth parameter section of example <code>model.ctl</code> file.
 <span id="cb3-130"><a href="#cb3-130" aria-hidden="true" tabindex="-1"></a>0.0061  0.0189  0.0584  0.1775  0.4667  0.7761  0.8119  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999</span>
 <span id="cb3-131"><a href="#cb3-131" aria-hidden="true" tabindex="-1"></a>0.0061  0.0189  0.0584  0.1775  0.4667  0.7761  0.8119  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999</span>
 <span id="cb3-132"><a href="#cb3-132" aria-hidden="true" tabindex="-1"></a>0.0061  0.0189  0.0584  0.1775  0.4667  0.7761  0.8119  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999  0.9999</span>
-<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a>## males and combined                                                                                   </span>
-<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a>##   90.0386      20.     200.0      2       0    0.0    999.0         # molt_mu males                                                                                  </span>
-<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a>##   0.1         0.0001     2.0     2       0    0.0    999.0         # molt_cv males                                                                                   </span>
-<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a>## females                                                                                  </span>
-<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a>##   50.0000       5.     200.0      2       0    0.0    999.0         # molt_mu females                                                                                    </span>
-<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a>##   0.001         0.0001    9.0     2       0    0.0    999.0         # molt_cv females                                                                                    </span>
-<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                                                                  </span>
-<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————————————————————————— ##                                                                                   </span>
-<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a># The custom growth-increment matrix (if any)   </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##  </span>
+<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a>##   ival     lb         ub      phz   prior   p1      p2          # parameter          ##  </span>
+<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##  </span>
+<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a>## males and combined                                          </span>
+<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a>##   90.0386  20.      200.0      2       0    0.0    999.0         # molt_mu males</span>
+<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a>##    0.1      0.0001    2.0      2       0    0.0    999.0         # molt_cv males </span>
+<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a>## females                                          </span>
+<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a>##  50.0000    5.      200.0      2       0    0.0    999.0         # molt_mu females</span>
+<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a>##   0.001     0.0001    9.0      2       0    0.0    999.0         # molt_cv females</span>
+<span id="cb3-142"><a href="#cb3-142" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————————————————————————— ## </span>
+<span id="cb3-143"><a href="#cb3-143" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————————————————————————— ## </span>
+<span id="cb3-144"><a href="#cb3-144" aria-hidden="true" tabindex="-1"></a># custom growth-increment matrix (if any)  </span>
+<span id="cb3-145"><a href="#cb3-145" aria-hidden="true" tabindex="-1"></a>NEED EXAMPLE</span>
+<span id="cb3-146"><a href="#cb3-146" aria-hidden="true" tabindex="-1"></a># custom molt probability matrix (if any)  </span>
+<span id="cb3-147"><a href="#cb3-147" aria-hidden="true" tabindex="-1"></a>NEED EXAMPLE</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
-<div id="nte-ctl4" class="callout callout-style-default callout-note no-icon callout-titled" title="Theta parameter section of example `model.ctl` file.">
+<div id="nte-ctl4" class="callout callout-style-default callout-note no-icon callout-titled" title="Selectivity parameter section of example `model.ctl` file.">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;4: Theta parameter section of example <code>model.ctl</code> file.
+Note&nbsp;4: Selectivity parameter section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>## SELECTIVITY CONTROLS                                                                 ##</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>##     Selectivity P(capture of all sizes). Each gear must have a selectivity and a     ##</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>##     retention selectivity. If a uniform prior is selected for a parameter then the   ##</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>##     lb and ub are used (p1 and p2 are ignored)                                       ##</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>## LEGEND                                                                               ##</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>##     sel type: 0 = parametric, 1 = coefficients (NIY), 2 = logistic, 3 = logistic95,  ##</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>##               4 = double normal (NIY)                                                ##</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>##     gear index: use +ve for selectivity, -ve for retention                           ## </span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>##     sex dep: 0 for sex-independent, 1 for sex-dependent                              ##</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>## Gear-1   Gear-2   Gear-3  Gear-4</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>## PotFshry TrawlByc NMFS    NMFS    </span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>   1        1        1       1       # selectivity periods</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>   1        0        1       1       # sex specific selectivity</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>   2        2        0       0       # male selectivity type (slx_type_in, to mirror, make negative and equal to the fleet to be mirrored)</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>   2        2        0       0       # female selectivity type</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>   0        0        0       0       # within another gear  </span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>   0        0        0       0       # extra parameters for each pattern by fleet (males)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>   0        0        0       0       # extra parameters for each pattern by fleet (females)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>## Gear-1   Gear-2   Gear-3  Gear-4                                        </span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>   1        1        1       1       # retention periods                        </span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>   1        0        0       0       # sex specific retention                   </span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>   2        6        6       6       # male   retention type                   </span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>   6        6        6       6       # female retention type                    </span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>   1        0        0       0       # male   retention flag (0 = no, 1 = yes)</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>   0        0        0       0       # female retention flag (0 = no, 1 = yes)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>   0        0        0       0       # extra parameters for each pattern by fleet (males)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>   0        0        0       0       # extra parameters for each pattern by fleet (females)</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>   1        1        0       0       # determines if maximum selectivity at size is forced to equal 1 or not</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————-------————————————————————————-————————————————————————-——————— ##</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>## gear  par   sel                                             start  end     Env  Link  Rand  Start_Y  End_Y   Sigma          ##</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>## index index par sex  ival    lb  ub  prior  p1 p2     phz   period period  Link  Par  Walk  period  period                  ##</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————————————————————————————————-————————————————————————-——————— ##</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a># Gear-1                                          </span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>   1      1    1   1  105.71   5    186    0    1 999    4    1982    2023     0    0     0      0       0      0</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>   1      2    2   1    4.99   0.01  20    0    1 999    4    1982    2023     0    0     0      0       0      0 </span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>   1      3    1   2   74.85   5    150    0    1 999    4    1982    2023     0    0     0      0       0      0</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>   1      4    2   2    4.18   0.01  20    0    1 999    4    1982    2023     0    0     0      0       0      0</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a># Gear-2   </span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>   2      5    1   0  109.93   5    185    0    1 999    4    1982    2023 0  0  0  0  0   0 </span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>   2      6    2   0   11.86   0.01  20    0    1 999    4    1982    2023 0  0  0  0  0   0 </span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>...</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
-<div id="nte-ctl5" class="callout callout-style-default callout-note no-icon callout-titled" title="Theta parameter section of example `model.ctl` file.">
+<div id="nte-ctl6" class="callout callout-style-default callout-note no-icon callout-titled" title="Retention curve section of example `model.ctl` file.">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;5: Theta parameter section of example <code>model.ctl</code> file.
+Note&nbsp;5: Retention curve section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>## Retained                                                                             ## </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————-------————————————————————————-————————————————————————-—————##</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>## gear  par   sel                                                  start  end    Env  Link Rand  Start_Y  End_Y   Sigma    ##</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>## index index par sex  ival    lb     ub   prior p1   p2    phz   period period  Link Par  Walk  period  period            ##</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————————————————————————————————-————————————————————————-—————##</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a># Gear-1                                          </span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  -1     61    1   1   96.03    1      190    1   96   10    4     1982   2022     0    0    0      0       0      0</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  -1     62    2   1    2.19    0.001   20    0    1  999    4     1982   2022     0    0    0      0       0      0 </span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  -1     63    1   2    595     1      999    0    1  999   -3     1982   2022     0    0    0      0       0      0</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a># Gear-2                                                                                             </span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  -2     64    1   0    595     1      999    0    1  999   -3     1982   2022     0    0    0      0       0      0</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a># Gear-3                                                                                            </span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  -3     65    1   0    595     1      999    0    1  999   -3     1982   2022     0    0    0      0       0      0</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a># Gear-4                                                                                            </span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>  -4     66    1   0    595     1      999    0    1  999   -3     1982   2022     0    0    0      0       0      0</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##           </span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a># Number of asymptotic parameters                                          </span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>0                                          </span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a># Fleet  Sex  Year    ival     lb   ub    phz    </span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>#   1     1   1982   0.000001   0    1     -3    </span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a># Deviation parameter phase</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>-1                                      </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl7" class="callout callout-style-default callout-note no-icon callout-titled" title="Survey catchability section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;6: Survey catchability section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb6"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>## PRIORS FOR CATCHABILITY                                          </span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>##     If a uniform prior is selected for a parameter then the lb and ub are used (p1   ##</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>##     and p2 are ignored). ival must be &gt; 0                                            ##</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>## LEGEND                                                                               ##</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>##     prior: 0 = uniform, 1 = normal, 2 = lognormal, 3 = beta, 4 = gamma               ##</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>## ival   lb    ub    phz   prior    p1      p2   Analytic? LAMBDA Emphasis               </span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>   1     0.01  1.01   -5       0  0.843136  0.03     0        1       1   # NMFS_TRAWL_1982 FEMALES</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>   1     0.01  1.01   -5       0  0.843136  0.03     0        1       1   # NMFS_TRAWL_1989 FEMALES</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>   1     0.01  1.01   -5       0  0.45136   0.5      0        1       1   # NMFS_TRAWL_1982 MALES </span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>   1     0.01  1.01   -5       0  0.453136  0.5      0        1       1   # NMFS_TRAWL_1989 MALES</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl8" class="callout callout-style-default callout-note no-icon callout-titled" title="Additional CV section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;7: Additional CV section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb7"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>## ADDITIONAL CV FOR SURVEYS/INDICES                                                    ##</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>##     If a uniform prior is selected for a parameter then the lb and ub are used (p1   ##</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>##     and p2 are ignored). ival must be &gt; 0                                            ##</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>## LEGEND                                                                               ##</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>##     prior type: 0 = uniform, 1 = normal, 2 = lognormal, 3 = beta, 4 = gamma          ##</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>## ival        lb        ub        phz   prior     p1      p2                          </span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>   0.0001      0.00001   10.0      -4    0         1.0     100   # NMFS  era 1         </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>   0.0001      0.00001   10.0      -4    0         1.0     100   # NMFS  era 2</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>   0.0001      0.00001   10.0      -4    0         1.0     100   # NMFS  era 1         </span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>   0.0001      0.00001   10.0      -4    0         1.0     100   # NMFS  era 2 </span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>### Pointers to how the the additional CVs are used (0 ignore; &gt;0 link to one of the parameters</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a> 0 0 0 0</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>####</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl9" class="callout callout-style-default callout-note no-icon callout-titled" title="Penalties on average fishing mortality rates section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;8: Penalties on average fishing mortality rates section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb8"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>## PENALTIES FOR AVERAGE FISHING MORTALITY RATE FOR EACH GEAR                             </span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>## Mean_F   Female Offset STD_PHZ1   STD_PHZ2   PHZ_M   PHZ_F                           </span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>   1           0.0505      0.5        45.50      1       1     -12  4  -10     10     -10    10  # Pot</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>   0.018       1.0         0.5        45.50      1      -1     -12  4  -10     10     -10    10   # Trawl</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>   0.00        0.0         2.0        20.00     -1      -1     -12  4  -10     10     -10    10   # NMFS trawl survey era 1 (0 catch)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>   0.00        0.0         2.0        20.00     -1      -1     -12  4  -10     10     -10    10   # NMFS trawl survey era 2 (0 catch)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl10" class="callout callout-style-default callout-note no-icon callout-titled" title="Options for size compositions section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;9: Options for size compositions section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb9"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a># ——————————————————————————————————————————————————————————————————————————————##</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>## OPTIONS FOR SIZE COMPOSTION DATA                                             ##</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>##     One column for each data matrix                                          ##</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>## LEGEND                                                                       ##</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>##     Likelihood: 1 = Multinomial with estimated/fixed sample size             ##</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>##                 2 = Robust approximation to multinomial                      ##</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>##                 3 = logistic normal (NIY)                                    ##</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>##                 4 = multivariate-t (NIY)                                     ##</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>##                 5 = Dirichlet                                                ##</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>## AUTO TAIL COMPRESSION                                                        ##</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>##     pmin is the cumulative proportion used in tail compression               ##</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>## —————————————————————————————————————————————————————————————————————————————##</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>#  Pot         Trawl   NMFS                                              </span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>   2   2   2   2   2   2   2   2   2  2   2   2   2   # Type of likelihood  </span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>   0   0   0   0   0   0   0   0   0  0   0   0   0   # Auto tail compression (pmin)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>   1   1   1   1   1   1   1   1   1  1   1   1   1   # Initial value for effective sample size multiplier  </span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  -4  -4  -4  -4  -4  -4  -4  -4  -4  -4  -4  -4  -4  # Phz for estimating effective sample size (if appl.) </span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>   1   2   3   4   5   6   7   8   9  10  11  12  13  # Composition splicer</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>   1   1   1   1   1   2   2   2   2  2   2   2   2   # Set to 2 for survey-like predictions; 1 for catch-like predictions</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>   1   1   1   1   1   1   1   1   1  1   1   1   1   # LAMBDA                  </span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>   1   1   1   1   1   1   1   1   1  1   1   1   1   # Emphasis AEP            </span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————————————————————##</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl11" class="callout callout-style-default callout-note no-icon callout-titled" title="Time-varying natural mortality parameter section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;10: Time-varying natural mortality parameter section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb10"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>## TIME VARYING NATURAL MORTALIIY RATES                                                 ##</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>## LEGEND                                                                               ##</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>## Type: 0 = constant natural mortality                                                 ##</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>##       1 = Random walk (deviates constrained by variance in M)                        ##</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>##       2 = Cubic Spline (deviates constrained by nodes &amp; node-placement)              ##</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>##       3 = Blocked changes (deviates constrained by variance at specific knots)       ##</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>##       4 = Time blocks                                                                ##</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>## Type                                          </span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>6</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a># 0</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>## M is relative (YES=1; NO=0)                                          </span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>0                                          </span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>## Phase of estimation                                          </span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>4</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a># -3</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>## STDEV in m_dev for Random walk                                          </span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>2</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a># 0.25</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>## Number of nodes for cubic spline or number of step-changes for option 3     </span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>3</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>3</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a># 0</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>## Year position of the knots (vector must be equal to the number of nodes)</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>2018 2019 2020</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>2018 2019 2020</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a># 0</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a># number of breakpoints in M by size                                          </span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>0                                          </span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>#                                           </span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>## Specific initial values for the natural mortality devs (0-no, 1=yes)"</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>1  </span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a>## —————————————————————————————————————————————————————————————————————————————##</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>## ival     lb  ub  phz  extra  prior  p1  p2  # parameter </span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>## —————————————————————————————————————————————————————————————————————————————##</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a> 1.000000   0   9   4      0                                        </span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a> 1.000000   0   9   4      0</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a> 0.000010   0   9  -4      0                                        </span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a> 1.000000   0   9   4      0                                        </span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a> 1.000000   0   9   4      0</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a> 0.000010   0   9  -4      0                                        </span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a> 1.000000   0   9   4      0                                        </span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a> 1.000000   0   9   4      0</span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a> 0.000010   0   9  -4      0                                        </span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a> 1.000000   0   9   4      0                                        </span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a> 1.000000   0   9   4      0  </span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a> 0.000010   0   9  -4      0                                        </span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a>## —————————————————————————————————————————————————————————————————————————————-##</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl12" class="callout callout-style-default callout-note no-icon callout-titled" title="Tagging controls parameter section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;11: Tagging controls parameter section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb11"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>##  ————————————————————————————————————————————————————————————————————————————##</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>##  TAGGING controls  CONTROLS</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>##  ————————————————————————————————————————————————————————————————————————————##</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>1          # emphasis on tagging data</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>## —————————————————————————————————————————————————————————————————————————————##</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>NEED EXAMPLE</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl13" class="callout callout-style-default callout-note no-icon callout-titled" title="Maturity specific natural mortality parameter section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;12: Maturity specific natural mortality parameter section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb12"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>## ————————————————————————————————————————————————————————————————————————---##  </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>## Maturity specific natural mortality</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————##  </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a># maturity specific natural mortality? (yes = 1; no = 0; only for use if nmature &gt; 1)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>1                                        </span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>## —————————————————————————————————————————————————————————————————————————-##                 </span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>## ival    lb     ub    phz   prior  p1      p2   # parameter                ##</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>## ——————————————————————————————————————————————————————————————————————————##                 </span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a> 0.00      -4     4     4       1    0     0.05   # offset for immature male natural mortality    </span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a> 0.00      -4     4     4       1    0     0.05   # offset for immature female natural mortality  </span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##       </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl14" class="callout callout-style-default callout-note no-icon callout-titled" title="Other controls section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;13: Other controls section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb13"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>## OTHER CONTROLS                                          </span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>1982       # First rec_dev                                          </span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>2022       # last rec_dev</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>   1       # Terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>   1       # Estimated rec_dev phase  </span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>   2       # Estimated sex_ratio phase</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>   0.5     # Initial sex ratio</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  -3       # Estimated rec_ini phase                                          </span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>   2       # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>   1       # Lambda (proportion of mature male biomass for SPR reference points).                                          </span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>   0       # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)"                                          </span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>   0       # Use average sex ratio for computing recruitment for reference points (0 = off, i.e. Rec based on End year, 1 = on)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a> 200       # Years to compute equilibria                                      </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl15" class="callout callout-style-default callout-note no-icon callout-titled" title="Emphasis factors section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;14: Emphasis factors section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb14"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>## EMPHASIS FACTORS (CATCH)                                          </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>#Ret_male Disc_male Disc_female Disc_trawl                                           </span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>   1         1           1          1                                                </span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>## EMPHASIS FACTORS (Priors) by fleet: fdev_total, Fdov_total, Fdev_year, Fdov_year       </span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>#</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a> 1 1 0 0 # Pot_Fishery </span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a> 1 0 0 0 # Trawl_Bycatch</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a> 0 0 0 0 # NMFS_Trawl_1982 </span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a> 0 0 0 0 # NMFS_Trawl_1989</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>#</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>## EMPHASIS FACTORS (Priors)                                          </span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a># Log_fdevs   meanF  Mdevs  Rec_devs Initial_devs Fst_dif_dev Mean_sex-Ratio  Molt_prob  Free selectivity  Init_n_at_len  Fdevs  Fdovs</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>#    10000      0     1         1       15           1             3           60            3                  5  </span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>#    10000      0     1         1       15           1             3           60            3                  5           0    0      </span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>10000  # Log_fdevs</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>0      # meanF  </span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>1      # Mdevs</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>1      # Rec_devs </span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>15     # Initial_devs</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>1      # Fst_dif_dev</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>3      # Mean_sex-Ratio</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>60     # Molt_prob</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>3      # Free selectivity</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>5      # Init_n_at_len</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>0      # Fdevs</span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>0      # Fdovs</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>0      # Sel_devs    </span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>9999 ## EOF                                          </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl16" class="callout callout-style-default callout-note no-icon callout-titled" title="?? section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;15: ?? section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb15"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="nte-ctl17" class="callout callout-style-default callout-note no-icon callout-titled" title="?? section of example `model.ctl` file.">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note&nbsp;16: ?? section of example <code>model.ctl</code> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<div class="sourceCode" id="cb16"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 

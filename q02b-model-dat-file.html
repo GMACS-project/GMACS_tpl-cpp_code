@@ -565,17 +565,31 @@ Note&nbsp;9: Maturity data section of example <code>model.dat</code> file.
 </section>
 <section id="sec-envd" class="level2">
 <h2 class="anchored" data-anchor-id="sec-envd">Environmental data</h2>
-<div id="nte-envd" class="callout callout-style-default callout-note no-icon callout-titled" title="Environmental data section of example `model.dat` file.">
+<div id="nte-envd" class="callout callout-style-default callout-note no-icon callout-titled" title="Environmental data section from an example `model.dat` file.">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;10: Environmental data section of example <code>model.dat</code> file.
+Note&nbsp;10: Environmental data section from an example <code>model.dat</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb10"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a># Number of series</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>2                        (1)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a># Year ranges            (2)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>#--start_year end_year </span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    2005      2020      #--data series 1</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    2005      2020      #--data series 2</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a># Indices</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a># Index Year Value       (3)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>      1 2005     1</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>      1 2006     2</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>      1 2007     3</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>      1 2008     3</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>      1 2009     2</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>...</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>The number of environmental data series is given on line (1). The year ranges corresponding to the data series (2) are given in the form of a matrix, with the beginning and ending year for seies `i` given on row `i` of the matrix. Note that missing years are not allowed. The values for the series are given in the form of a matrix with each row consisting of the index of the associated data series, the year of the observed value, and the observed value (the submatrices corresponding to single data series are "stacked" on one another). </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 
