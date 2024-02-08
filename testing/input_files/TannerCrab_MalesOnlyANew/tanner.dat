@@ -93,6 +93,7 @@ undetermined   #--shell condition (new shell, old shell, undetermined)
 2020 2 0.657503 1.520906 1 34914 0.321 
 2021 2 0.494283 2.023132 1 19252 0.321 
 2022 2 0.913308 1.094921 1 37564 0.321 
+#------------------
 ##--fleet: TCF; gear: all; catch_type: TOTAL; units: THOUSANDS_MT.
 BIOMASS        #--units type
 TOTAL        #--catch type

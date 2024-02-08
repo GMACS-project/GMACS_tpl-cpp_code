@@ -1,0 +1,43 @@
+---
+title: "File organization"
+---
+## File organization {#sec-files}
+
+GMACS is a modeling *framework* that provides the means to define and run an integrated assessment model for an exploited crustacean stock. Defining a GMACS *model* consists of selecting among numerous options to parameterize a size-based population dynamics model, provide observations to constrain the model, calculate the associated likelihood, estimate the parameters, and provide populations projections and management advice. An individual model, then, is defined using a set of text-based input files as described below. These files can be prepared and edited using a text editor of your choice. For the most part, output files from a model run are also text files, although a few ADMB-specific files are in binary format. The [gmr](https://github.com/GMACS-project/gmr.git) R package provides simplified access to model results.
+
+## Input Files
+
+The following text files are required to define and run a GMACS model, where *model* is a character string identifying the model:
+
+  1. `gmacs.dat`: file containing the names of the files specified below, as well as ancillary information for a model run.
+  2. `model.dat`: file containing model dimensions and the data.
+  3. `model.ctl`: file containing set-up for the parameters and options selected to.
+  4. `model.prj`: file containing specifications for the reference points and projections.
+  
+Specific details for these files are discussed in subsequent chapters.
+
+## Output Files
+
+The following text files are among those written out as part of running a GMACS model:
+
+  1. `gmacs_files_in.dat`: a "new" version of the `gmacs.dat` file, with annotations
+  2. `gmacs_in.dat`: a "new" version of the `model.dat` file, with annotations 
+  3. `gmacs_in.ctl`: a new version of the `model.ctl` file, with annotations 
+  4. `gmacs_in.prj`: a ew version of the `model.prj` file, with annotations 
+  5. `checkfile.rep`: produced during the read-in and calculation stages of a model run.
+  6. `Gmacsall.out`: formatted version of many model results
+  7. `Gmacsall.std`: 
+  
+The first five files above can be very helpful for diagnosing problems with incorrectly-formatted input files.
+  
+Standard ADMB-specific files are also written out during a successful model run. Among these are:
+
+  1. `gmacs.par`: the "par" file with parameter values at the MLE 
+  2. `gmacs.p??`: "par" files with parameter values at the end of individual estimation phases (where "??" indicates the phase)
+  3. `gmacs.rep`: the "report" file
+  4. `admodel.hes`: contains the estimated model hessian matrix at the MLE (a binary file)
+  4. `gmacs.std`: the "std" file with parameter estimates and hessian-derived standard errors at the MLE
+  7. `gradient.dat`: contains the parameter gradients at the MLE
+  
+  
+  

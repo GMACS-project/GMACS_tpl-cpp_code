@@ -3,4 +3,7 @@ include/.DS_Store
 .DS_Store
 /.vscode/
 /_build/
+/docs/
 /testing/runs/*
+.Rproj.user
+.Rhistory
