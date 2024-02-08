@@ -278,9 +278,24 @@ NOT DEFINED YET!!
 ## Environmental data {#sec-envd}
 
 
-::: {#nte-envd .callout-note title="Environmental data section of example `model.dat` file."}
+::: {#nte-envd .callout-note title="Environmental data section from an example `model.dat` file."}
 
 ```default
+# Number of series
+2                        (1)
+# Year ranges            (2)
+#--start_year end_year 
+    2005      2020      #--data series 1
+    2005      2020      #--data series 2
+# Indices
+# Index Year Value       (3)
+      1 2005     1
+      1 2006     2
+      1 2007     3
+      1 2008     3
+      1 2009     2
+...
+The number of environmental data series is given on line (1). The year ranges corresponding to the data series (2) are given in the form of a matrix, with the beginning and ending year for seies `i` given on row `i` of the matrix. Note that missing years are not allowed. The values for the series are given in the form of a matrix with each row consisting of the index of the associated data series, the year of the observed value, and the observed value (the submatrices corresponding to single data series are "stacked" on one another). 
 ```
 
 :::
