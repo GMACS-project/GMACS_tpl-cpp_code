@@ -1,0 +1,47 @@
+---
+title: "gmacs.dat file"
+---
+
+## `The gmacs.dat` file {#sec-gmacs-dat-file}
+
+The `gmacs.dat` file specifies the paths to the `.dat`, `.ctl`, and `.prj` files, as well as the weight units, the stock name, specifications for parameter jittering, whether variances are determined for various output quantities, the number of peels to use for a retrospective model run, and other details affecting a model run. An example based on the snow crab assessment model is given in the text box.
+
+::: {.callout-note title="Example `gmacs.dat` file."}
+
+```default
+## Input files
+snow.dat #--relative path to the data file
+snow.ctl #--relative path to control file
+snow.prj #--relative path to projection file
+
+## Other information
+1000_mt       # Weight unit
+EBS_Snow_crab # Stock name
+
+### Jitter specs
+0    #--flag to jitter parameters (0=no, 1=yes)
+0.1  #--std. deviation for jittering
+
+### Flags (0=no, 1=yes) to output variances for the following quantities
+1   # Reference points
+0   # Recruits
+0   # SSB
+0   # Fbar
+0   # OutDynB0
+
+0   #--number of peels for retrospective
+
+### Other controls
+   10      # Maximum phase (estimation stops after this phase).																					
+   -1      # Maximum number of function calls, if 1, stop at fn1 call; if -1 run as long as it takes
+    1      # Calculate reference points (0=no, 1=yes)
+    0      # 1 to use a pin file (1) to initialize parameter values, 0 for a normal run
+    0      # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)
+
+9999 #EOF (end-of-file marker)
+
+```
+
+:::
+
+The "#" is used to begin a comment; any text prefaced with "#" is ignored. Input character strings (e.g., the weight units or the stock name) must not contain spaces. An underscore ("_") is used to indicate a space--underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). The end of the file is marked by "9999" as a diagnostic check that all information has been read.

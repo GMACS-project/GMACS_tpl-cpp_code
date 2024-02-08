@@ -1,0 +1,81 @@
+# ============================================================ #
+#                    GMACS main projection file 
+# 
+# *** 
+#  GMACS Version 2.01.M.01 
+# Last GMACS mofification made by:   ** MV ** 
+# 
+# Stock of interest:  Tanner crab 
+# Model name:  test 
+# Year of assessment:   
+# ============================================================ #
+0                          # compute MSY (0=No; 1=Yes)
+0 1                        # Mortality rate applied to each fleet (0= F35%; 1= F is fixed)
+1982 2022                  # First and last year for average recruitment/MMB for Bspr calculation (Tier 3 or Tier 4)
+1982 2018                  # First and last year for average sex ratio??
+2018 2022                  # First and last year for average F for discards (computing reference points and projections)
+2020 2022 # First and last years for computing the natural mortality
+2020 2022 # First and last years for computing season lengths
+2022      # First year for computing growth
+2022 2022 # First and last year for computing the average vulnerability
+
+# -------------------------------------- #
+## OFL specifications
+# -------------------------------------- #
+0.35                       # Target SPR ratio for Bmsy proxy.
+3                          # Tier
+0.10                       # Alpha (cut-off)
+0.25                       # Beta (limit)
+1.00                       # Gamma
+0.80                       # ABC-OFL buffer
+0                          # (0 = No; 1 = year) for whether the yield function should be reported
+
+# -------------------------------------- #
+## Projection specifications
+# -------------------------------------- #
+2033                       # Last year of projection 
+1                          # Projection type (1=Constant F; 2=proportion of current F)
+0                          # Number of F strategies (0 for no projections)
+                           # Range of F values (empty if above is 0)
+1                          # 0 for no mortality for non-directed fleets (see input #1 above); 1=Yes
+1                          # MCMC replicates per draw
+-3423.8                    # Fixed BMSY (negative number for replicate-specific)
+1982 2017                  # for Rbar calc, First and last year for average recruitment
+2014 2018 # First and last years for computing the average sex ratio
+2018 2022 # First and last years for computing the average fishing mortality for discards
+2022 2022 # First and last years for computing the natural mortality
+0 0       # First and last years for computing proportions of seasons
+0         # Year for specifying growth in the projections (0=last year)
+0 0       # First and last year for computing the average vulnerability (0=last year)
+
+# -------------------------------------- #
+## Recruitment specifications
+# -------------------------------------- #
+1                          # Stock-recruitment option (1=Mean Rec;2=Ricker)
+5                          # Time to recruitment
+1991 2021                  # First and last years for generating future recruitment (only used if Stock_recruitment option = 1)
+10000					             # mean recruitment for projections (??)
+0.6                        # SigmaR (only used if Stock_recruitment option = 2) [0.6]
+0.0                        # Prow         (?)
+0.0                        # First recruitment deviation  (?)
+
+# -------------------------------------- #
+## Specifying State strategies
+# -------------------------------------- #
+0                          # Apply strategies [OFL, ABC] (1=yes;0=no)
+0                          # Apply state strategy
+0                          # number of state strategy parameters
+# 0.001729630                # Mean weight to use (mature)  TODO: replace w/ Tanner values
+# 0.001930932                # Mean weight to use (legal)   TODO: replace w/ Tanner values
+
+# -------------------------------------- #
+## Run specificities
+# -------------------------------------- #
+10000 # Stop after XX mcdraws
+1     # Full diagnostics (0 = No; 1 = Yes)
+# -------------------------------------- #
+
+# -------------------------------------- #
+## End of projection file
+# -------------------------------------- #
+9999
