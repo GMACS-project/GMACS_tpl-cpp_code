@@ -4,6 +4,10 @@ title: "model.prj file"
 
 ## `The model.prj` file {#sec-model-prj-file}
 
+While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below). 
+
+Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or "#", but can contain numbers and punctuation. An underscore ("_") is used to indicate a space--underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). 
+
 An example of how the model projection information is specified is given in the following text box:
 
 ::: {#nte-prj1 .callout-note title="Management reference points section from an example `model.prj` file."}
@@ -13,7 +17,7 @@ An example of how the model projection information is specified is given in the 
 0              # compute MSY (0: no, 1: yes)
 0 1 1 1        # Set to 0 if F35% applied to this fleet; 1 if F is to be fixed
 1982 2022      # First and last year for average recruitment/MMB for Bspr calculation (Tier 3 or Tier 4)
-1982 2022      # First and last year for average sex ratio for computing reference points UPDATED
+1982 2022      # First and last year for average sex ratio for computing reference points
 2011 2021      # First and last year for average F for discards (computing reference points and projections)
 1982 2017      # First and last years for M (0 = last year)
 1982 2022      # First and last years for proportion of the season

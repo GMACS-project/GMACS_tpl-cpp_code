@@ -4,6 +4,9 @@ title: "model.ctl file"
 
 ## `The model.ctl` file {#sec-model-ctl-file}
 
+While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below). 
+
+Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or "#", but can contain numbers and punctuation. An underscore ("_") is used to indicate a space--underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). 
 ::: {#nte-ctl1 .callout-note title="Theta parameter section of example `model.ctl` file."}
 
 ```default

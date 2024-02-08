@@ -4,9 +4,9 @@ title: "gmacs.dat file"
 
 ## `The gmacs.dat` file {#sec-gmacs-dat-file}
 
-The `gmacs.dat` file specifies the paths to the `.dat`, `.ctl`, and `.prj` files, as well as the weight units, the stock name, specifications for parameter jittering, whether variances are determined for various output quantities, the number of peels to use for a retrospective model run, and other details affecting a model run. An example based on the snow crab assessment model is given in the text box.
+The `gmacs.dat` file specifies the paths to the `.dat`, `.ctl`, and `.prj` files, as well as the weight units, the stock name, specifications for parameter jittering, whether variances are determined for various output quantities, the number of peels to use for a retrospective model run, and other details affecting a model run. Comments in the `gmacs.dat` file are prefaced with the "#" symbol. Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or "#", but can contain numbers and punctuation. An underscore ("_") is used to indicate a space--underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). An example file is given in [@nte-gdf] (the numbers in parentheses indicate text notes).
 
-::: {.callout-note title="Example `gmacs.dat` file."}
+::: {#nte-gdf .callout-note title="Example `gmacs.dat` file."}
 
 ```default
 ## Input files
@@ -15,8 +15,8 @@ snow.ctl #--relative path to control file
 snow.prj #--relative path to projection file
 
 ## Other information
-1000_mt       # Weight unit
-EBS_Snow_crab # Stock name
+1000_mt       # Weight unit   (1)
+EBS_Snow_crab # Stock name    (2)
 
 ### Jitter specs
 0    #--flag to jitter parameters (0=no, 1=yes)
@@ -38,10 +38,10 @@ EBS_Snow_crab # Stock name
     0      # 1 to use a pin file (1) to initialize parameter values, 0 for a normal run
     0      # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)
 
-9999 #EOF (end-of-file marker)
+9999 #EOF (3) 
 
 ```
 
 :::
 
-The "#" is used to begin a comment; any text prefaced with "#" is ignored. Input character strings (e.g., the weight units or the stock name) must not contain spaces. An underscore ("_") is used to indicate a space--underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). The end of the file is marked by "9999" as a diagnostic check that all information has been read.
+Note the use of underscores in the weight units (1) and stock name (2). The "9999" (3) marks the end of the file and serves as a diagnostic check that all information has been read.
