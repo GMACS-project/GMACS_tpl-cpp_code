@@ -34,6 +34,51 @@ The first command creates the `_build` subfolder and the Makefile appropriate fo
 
 Changes to the tpl or c++ files can be recompiled using "cmake --build _build", which will only update the compilation process for files changed since the last build (i.e., not recompiling everything). To "start from scratch", you can either delete the _build folder and run the two commands above again or run "cmake --build _build --target clean" (which deletes the gmacs executable, gmacs.tpl, gmacs.cpp, gmacs.htp and all the object files under the `_build` folder, but not the CMake-associated files) followed by "cmake --build _build".
 
+### User manual 
+
+A user manual (currently under construction) can be accessed [here](https://gmacs-project.github.io/GMACS_tpl-cpp_code/). It can also be built locally as html on your computer from the source distribution. It is written in Quarto Markdown, so you will need [Quarto](https://quarto.org) (which conveniently comes with [RStudio](https://posit.co/products/open-source/rstudio/)), installed on your computer to create teh manual. Once Quarto is installed on your computer, you can create the manual using either a terminal (Command Prompt on Windows) or RStudio.
+
+#### Using a terminal
+
+  1. Open a terminal/Command Prompt window and change directory to the `quarto` subfolder of the local repository or source distribution
+  2. run "quarto render" from the command prompt. 
+  3. (2) will create the manual website in a `docs`subfolder of the local repo or source distribution. 
+  4. The manual can be accessed by opening the index.html file in the `docs` subfolder using a web browser.
+  
+#### Using RStudio
+
+  1. Open the quarto project in RStudio
+    a. Start RStudio
+    b. Click "Open Project..." on the `File` menu
+  2. Under the `View` menu, click `Show Build` to show the `Build` window
+  3. Click the "Render Website" icon in the `Build` window
+  4. (3) will create the manual website in a `docs`subfolder of the local repo or source distribution. 
+  5. The manual can be accessed by opening the index.html file in the `docs` subfolder using a web browser.
+
+To re-render the local manual website (after, e.g., updating your local repository), delete the contents of the `docs` folder and re-run one of the sets of steps above.
+
+### Code documentation 
+
+A website with fairly extensive documentation for the TPL and C++ code can be created locally on your computer using [Doxygen](https://www.doxygen.nl/index.html). In order to do this, you will need doxygen installed on your computer (see the website for the latest version and installation instructions). 
+
+#### Using Doxywizard
+
+`Doxywizard` is a convenient graphical user interface provided to configure and run `doxygen`. To use the wizard, 
+  1. Start `Doxywizard`
+  2. From the `File` menu, Click "Open..." and select the configuration file "Doxygen" in the top folder of the repo/source distribution.
+  3. Edit the following entries: 
+    a. change the working directory in which doxygen will run to the path to your repo/source distribution.
+    b. If you have `dot` installed to create diagrams.
+      1. click the "Expert" button.
+      2. In the "Topics" window, select "Dot".
+      3. Scroll to the "DOT_PATH" entry and provide the path to the `dot` executable on your computer.
+  4. Edit the various other entries in the "Wizard" or "Expert" views to suit your needs (the defaults will suit most needs).
+  5. Click the "Run" button.
+  6. Click the "Run doxygen" button to create the html documentation in the "doxy" subfolder.
+  7. If successful, Use "File>Save" to save your changes to the configuration ("Doxyfile" or other) file.
+
+The `Doxywizard` can also be used to create the documentation in other formats such as pdf or docbook by setting the appropriate options in the configuration file (see the online Doxygen documentation).
+
 ## Testing
 
 The `testing/input_files` folder contains subfolders with suitable input files to test the compiled GMACS executable. The `testing/runs` folder contains two R files which can be used to test the models in the `testing/input_files` subfolders. To run the tests: 
