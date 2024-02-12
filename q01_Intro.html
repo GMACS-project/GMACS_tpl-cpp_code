@@ -87,6 +87,8 @@ div.csl-indent {
     "search-label": "Search"
   }
 }</script>
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet">
 
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -201,9 +203,14 @@ window.Quarto = {
    
   <ul>
   <li><a href="#source-code-repository" id="toc-source-code-repository" class="nav-link active" data-scroll-target="#source-code-repository">Source code repository</a></li>
-  <li><a href="#installation-and-compilation" id="toc-installation-and-compilation" class="nav-link" data-scroll-target="#installation-and-compilation">Installation and compilation</a></li>
+  <li><a href="#installation-and-compilation" id="toc-installation-and-compilation" class="nav-link" data-scroll-target="#installation-and-compilation">Installation and compilation</a>
+  <ul class="collapse">
+  <li><a href="#user-manual" id="toc-user-manual" class="nav-link" data-scroll-target="#user-manual">User manual</a></li>
+  <li><a href="#code-documentation" id="toc-code-documentation" class="nav-link" data-scroll-target="#code-documentation">Code documentation</a></li>
+  </ul></li>
   <li><a href="#testing" id="toc-testing" class="nav-link" data-scroll-target="#testing">Testing</a></li>
   <li><a href="#which-tools-are-available-for-working-with-gmacs" id="toc-which-tools-are-available-for-working-with-gmacs" class="nav-link" data-scroll-target="#which-tools-are-available-for-working-with-gmacs">Which tools are available for working with GMACS?</a></li>
+  <li><a href="#the-gmacs-development-team" id="toc-the-gmacs-development-team" class="nav-link" data-scroll-target="#the-gmacs-development-team">The Gmacs development team</a></li>
   <li><a href="#noaa-disclaimer" id="toc-noaa-disclaimer" class="nav-link" data-scroll-target="#noaa-disclaimer">NOAA Disclaimer</a></li>
   </ul>
 </nav>
@@ -250,6 +257,43 @@ window.Quarto = {
 * cmake --build _build</code></pre>
 <p>The first command creates the <code>_build</code> subfolder and the Makefile appropriate for the given platform (“Unix Makefiles” appears to be an appropriate value for the -G option when compiling with RTools under either OSX or Windows). The second command builds the project by running the Makefile and (if successful) concatenates the gmacsbase.TPL and personal.TPL files as gmacs.tpl, copies this to <code>_build</code>, calls tpl2cpp on gmacs.tpl to create the associated .cpp and .htp files, and finally compiles the source and header files to create the gmacs executble in the <code>_build</code> folder (<code>gmacs</code> on Mac OSX and <code>gmacs.exe</code> on Windows).</p>
 <p>Changes to the tpl or c++ files can be recompiled using “cmake –build _build”, which will only update the compilation process for files changed since the last build (i.e., not recompiling everything). To “start from scratch”, you can either delete the _build folder and run the two commands above again or run “cmake –build _build –target clean” (which deletes the gmacs executable, gmacs.tpl, gmacs.cpp, gmacs.htp and all the object files under the <code>_build</code> folder, but not the CMake-associated files) followed by “cmake –build _build”.</p>
+<section id="user-manual" class="level3">
+<h3 class="anchored" data-anchor-id="user-manual">User manual</h3>
+<p>A user manual (currently under construction) can be accessed <a href="https://gmacs-project.github.io/GMACS_tpl-cpp_code/">here</a>. It can also be built locally as html on your computer from the source distribution. It is written in Quarto Markdown, so you will need <a href="https://quarto.org">Quarto</a> (which conveniently comes with <a href="https://posit.co/products/open-source/rstudio/">RStudio</a>), installed on your computer to create teh manual. Once Quarto is installed on your computer, you can create the manual using either a terminal (Command Prompt on Windows) or RStudio.</p>
+<section id="using-a-terminal" class="level4">
+<h4 class="anchored" data-anchor-id="using-a-terminal">Using a terminal</h4>
+<ol type="1">
+<li>Open a terminal/Command Prompt window and change directory to the <code>quarto</code> subfolder of the local repository or source distribution</li>
+<li>run “quarto render” from the command prompt.</li>
+<li><ol start="2" type="1">
+<li>will create the manual website in a <code>docs</code>subfolder of the local repo or source distribution.</li>
+</ol></li>
+<li>The manual can be accessed by opening the index.html file in the <code>docs</code> subfolder using a web browser.</li>
+</ol>
+</section>
+<section id="using-rstudio" class="level4">
+<h4 class="anchored" data-anchor-id="using-rstudio">Using RStudio</h4>
+<ol type="1">
+<li>Open the quarto project in RStudio a. Start RStudio b. Click “Open Project…” on the <code>File</code> menu</li>
+<li>Under the <code>View</code> menu, click <code>Show Build</code> to show the <code>Build</code> window</li>
+<li>Click the “Render Website” icon in the <code>Build</code> window</li>
+<li><ol start="3" type="1">
+<li>will create the manual website in a <code>docs</code>subfolder of the local repo or source distribution.</li>
+</ol></li>
+<li>The manual can be accessed by opening the index.html file in the <code>docs</code> subfolder using a web browser.</li>
+</ol>
+<p>To re-render the local manual website (after, e.g., updating your local repository), delete the contents of the <code>docs</code> folder and re-run one of the sets of steps above.</p>
+</section>
+</section>
+<section id="code-documentation" class="level3">
+<h3 class="anchored" data-anchor-id="code-documentation">Code documentation</h3>
+<p>A website with fairly extensive documentation for the TPL and C++ code can be created locally on your computer using <a href="https://www.doxygen.nl/index.html">Doxygen</a>. In order to do this, you will need doxygen installed on your computer (see the website for the latest version and installation instructions).</p>
+<section id="using-doxywizard" class="level4">
+<h4 class="anchored" data-anchor-id="using-doxywizard">Using Doxywizard</h4>
+<p><code>Doxywizard</code> is a convenient graphical user interface provided to configure and run <code>doxygen</code>. To use the wizard, 1. Start <code>Doxywizard</code> 2. From the <code>File</code> menu, Click “Open…” and select the configuration file “Doxygen” in the top folder of the repo/source distribution. 3. Edit the following entries: a. change the working directory in which doxygen will run to the path to your repo/source distribution. b. If you have <code>dot</code> installed to create diagrams. 1. click the “Expert” button. 2. In the “Topics” window, select “Dot”. 3. Scroll to the “DOT_PATH” entry and provide the path to the <code>dot</code> executable on your computer. 4. Edit the various other entries in the “Wizard” or “Expert” views to suit your needs (the defaults will suit most needs). 5. Click the “Run” button. 6. Click the “Run doxygen” button to create the html documentation in the “doxy” subfolder. 7. If successful, Use “File&gt;Save” to save your changes to the configuration (“Doxyfile” or other) file.</p>
+<p>The <code>Doxywizard</code> can also be used to create the documentation in other formats such as pdf or docbook by setting the appropriate options in the configuration file (see the online Doxygen documentation).</p>
+</section>
+</section>
 </section>
 <section id="testing" class="level2">
 <h2 class="anchored" data-anchor-id="testing">Testing</h2>
@@ -258,6 +302,87 @@ window.Quarto = {
 <section id="which-tools-are-available-for-working-with-gmacs" class="level2">
 <h2 class="anchored" data-anchor-id="which-tools-are-available-for-working-with-gmacs">Which tools are available for working with GMACS?</h2>
 <p>Currently GMACS is linked to <a href="gmacs-project.github.io/gmr/"><code>gmr</code></a>, an R package to work with GMACS in R, create plots of GMACS output, compare different models and prepare SAFE documents.</p>
+</section>
+<section id="the-gmacs-development-team" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="the-gmacs-development-team">The Gmacs development team</h2>
+<p><a href="#tbl-contribs" class="quarto-xref">Table&nbsp;1</a> summarizes the people who have worked on the Gmacs project since its inception.</p>
+<div class="cell" data-layout-align="center">
+<div id="tbl-contribs" class="cell quarto-float anchored" data-layout-align="center">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-contribs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: GMACS development team - Contributors.
+</figcaption>
+<div aria-describedby="tbl-contribs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+<table class="do-not-create-environment cell table table-sm table-striped small" data-quarto-postprocess="true">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">Contributors</th>
+<th style="text-align: left;" data-quarto-table-cell-role="th">Organization</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Jim Ianelli</td>
+<td style="text-align: left;">Alaska Fisheries Science Center - NOAA</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">D'Arcy Webber</td>
+<td style="text-align: left;">Quantfish</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Cody Szuwalski</td>
+<td style="text-align: left;">Alaska Fisheries Science Center - NOAA</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Jack Turnock</td>
+<td style="text-align: left;">Alaska Fisheries Science Center - NOAA</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Jie Zheng</td>
+<td style="text-align: left;">Alaska Department of Fish and Game</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Hamachan Hamazaki</td>
+<td style="text-align: left;">Alaska Department of Fish and Game</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Athol Whitten</td>
+<td style="text-align: left;">School of Aquatic and Fishery Sciences - University of Washington</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Andre Punt</td>
+<td style="text-align: left;">School of Aquatic and Fishery Sciences - University of Washington</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">David Fournier</td>
+<td style="text-align: left;">Otter Research Ltd.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">John Levitt</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">Steve Martell</td>
+<td style="text-align: left;">SeaState Inc.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left; font-weight: bold;">Matthieu Veron</td>
+<td style="text-align: left;">School of Aquatic and Fishery Sciences - University of Washington</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left; font-weight: bold;">William Stockhausen</td>
+<td style="text-align: left;">Alaska Fisheries Science Center - NOAA</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
+</figure>
+</div>
+</div>
 </section>
 <section id="noaa-disclaimer" class="level2">
 <h2 class="anchored" data-anchor-id="noaa-disclaimer">NOAA Disclaimer</h2>

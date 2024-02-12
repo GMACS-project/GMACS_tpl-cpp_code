@@ -214,14 +214,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="sec-gmacs-dat-file" class="level2">
 <h2 class="anchored" data-anchor-id="sec-gmacs-dat-file"><code>The gmacs.dat</code> file</h2>
-<p>The <code>gmacs.dat</code> file specifies the paths to the <code>.dat</code>, <code>.ctl</code>, and <code>.prj</code> files, as well as the weight units, the stock name, specifications for parameter jittering, whether variances are determined for various output quantities, the number of peels to use for a retrospective model run, and other details affecting a model run. An example based on the snow crab assessment model is given in the text box.</p>
-<div class="callout callout-style-default callout-note no-icon callout-titled" title="Example `gmacs.dat` file.">
+<p>The <code>gmacs.dat</code> file specifies the paths to the <code>.dat</code>, <code>.ctl</code>, and <code>.prj</code> files, as well as the weight units, the stock name, specifications for parameter jittering, whether variances are determined for various output quantities, the number of peels to use for a retrospective model run, and other details affecting a model run. Comments in the <code>gmacs.dat</code> file are prefaced with the “#” symbol. Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or “#”, but can contain numbers and punctuation. An underscore (“_“) is used to indicate a space–underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). An example file is given in <a href="#nte-gdf" class="quarto-xref">Note&nbsp;1</a> (the numbers in parentheses indicate text notes).</p>
+<div id="nte-gdf" class="callout callout-style-default callout-note no-icon callout-titled" title="Example `gmacs.dat` file.">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Example <code>gmacs.dat</code> file.
+Note&nbsp;1: Example <code>gmacs.dat</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -231,8 +231,8 @@ Example <code>gmacs.dat</code> file.
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>snow.prj #--relative path to projection file</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>## Other information</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>1000_mt       # Weight unit</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>EBS_Snow_crab # Stock name</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>1000_mt       # Weight unit   (1)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>EBS_Snow_crab # Stock name    (2)</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>### Jitter specs</span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>0    #--flag to jitter parameters (0=no, 1=yes)</span>
@@ -254,10 +254,10 @@ Example <code>gmacs.dat</code> file.
 <span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    0      # 1 to use a pin file (1) to initialize parameter values, 0 for a normal run</span>
 <span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    0      # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)</span>
 <span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>9999 #EOF (end-of-file marker)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>9999 #EOF (3) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
-<p>The “#” is used to begin a comment; any text prefaced with “#” is ignored. Input character strings (e.g., the weight units or the stock name) must not contain spaces. An underscore (“_“) is used to indicate a space–underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). The end of the file is marked by”9999” as a diagnostic check that all information has been read.</p>
+<p>Note the use of underscores in the weight units (1) and stock name (2). The “9999” (3) marks the end of the file and serves as a diagnostic check that all information has been read.</p>
 
 
 </section>

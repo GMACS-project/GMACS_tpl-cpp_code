@@ -213,6 +213,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="sec-model-prj-file" class="level2">
 <h2 class="anchored" data-anchor-id="sec-model-prj-file"><code>The model.prj</code> file</h2>
+<p>While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below).</p>
+<p>Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or “#”, but can contain numbers and punctuation. An underscore (“_“) is used to indicate a space–underscores will be replaced by spaces in formatted model output (e.g., in tables or figures).</p>
 <p>An example of how the model projection information is specified is given in the following text box:</p>
 <div id="nte-prj1" class="callout callout-style-default callout-note no-icon callout-titled" title="Management reference points section from an example `model.prj` file.">
 <div class="callout-header d-flex align-content-center">
@@ -228,7 +230,7 @@ Note&nbsp;1: Management reference points section from an example <code>model.prj
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>0              # compute MSY (0: no, 1: yes)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>0 1 1 1        # Set to 0 if F35% applied to this fleet; 1 if F is to be fixed</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>1982 2022      # First and last year for average recruitment/MMB for Bspr calculation (Tier 3 or Tier 4)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>1982 2022      # First and last year for average sex ratio for computing reference points UPDATED</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>1982 2022      # First and last year for average sex ratio for computing reference points</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>2011 2021      # First and last year for average F for discards (computing reference points and projections)</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>1982 2017      # First and last years for M (0 = last year)</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>1982 2022      # First and last years for proportion of the season</span>

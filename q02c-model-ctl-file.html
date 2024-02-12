@@ -214,16 +214,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="sec-model-ctl-file" class="level2">
 <h2 class="anchored" data-anchor-id="sec-model-ctl-file"><code>The model.ctl</code> file</h2>
-<div id="nte-ctl1" class="callout callout-style-default callout-note no-icon callout-titled" title="Theta parameter section of example `model.ctl` file.">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note&nbsp;1: Theta parameter section of example <code>model.ctl</code> file.
-</div>
-</div>
-<div class="callout-body-container callout-body">
+<p>While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below).</p>
+<p>Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or “#”, but can contain numbers and punctuation. An underscore (“_“) is used to indicate a space–underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). ::: {#nte-ctl1 .callout-note title=”Theta parameter section of example <code>model.ctl</code> file.”}</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>## ———————————————————————————————————————————————————————————————————————————————————— ##                                          </span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>## LEADING PARAMETER CONTROLS                                                           ##                                          </span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>##     Controls for leading parameter vector (theta)                                    ##                                          </span>
@@ -335,15 +327,14 @@ Note&nbsp;1: Theta parameter section of example <code>model.ctl</code> file.
 <span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 20                                    </span>
 <span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 21                                    </span>
 <span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a>  0.0   -20      25         1       0   10.0    20.00        # Deviation for size-class 22                                    </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</div>
+<p>:::</p>
 <div id="nte-ctl2" class="callout callout-style-default callout-note no-icon callout-titled" title="Weight-at-length and Proportions mature/legal section of example `model.ctl` file.">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;2: Weight-at-length and Proportions mature/legal section of example <code>model.ctl</code> file.
+Note&nbsp;1: Weight-at-length and Proportions mature/legal section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -371,7 +362,7 @@ Note&nbsp;2: Weight-at-length and Proportions mature/legal section of example <c
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;3: Growth parameter section of example <code>model.ctl</code> file.
+Note&nbsp;2: Growth parameter section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -530,7 +521,7 @@ Note&nbsp;3: Growth parameter section of example <code>model.ctl</code> file.
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;4: Selectivity parameter section of example <code>model.ctl</code> file.
+Note&nbsp;3: Selectivity parameter section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -585,7 +576,7 @@ Note&nbsp;4: Selectivity parameter section of example <code>model.ctl</code> fil
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;5: Retention curve section of example <code>model.ctl</code> file.
+Note&nbsp;4: Retention curve section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -620,7 +611,7 @@ Note&nbsp;5: Retention curve section of example <code>model.ctl</code> file.
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;6: Survey catchability section of example <code>model.ctl</code> file.
+Note&nbsp;5: Survey catchability section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -645,7 +636,7 @@ Note&nbsp;6: Survey catchability section of example <code>model.ctl</code> file.
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;7: Additional CV section of example <code>model.ctl</code> file.
+Note&nbsp;6: Additional CV section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -672,7 +663,7 @@ Note&nbsp;7: Additional CV section of example <code>model.ctl</code> file.
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;8: Penalties on average fishing mortality rates section of example <code>model.ctl</code> file.
+Note&nbsp;7: Penalties on average fishing mortality rates section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -694,7 +685,7 @@ Note&nbsp;8: Penalties on average fishing mortality rates section of example <co
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;9: Options for size compositions section of example <code>model.ctl</code> file.
+Note&nbsp;8: Options for size compositions section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -728,7 +719,7 @@ Note&nbsp;9: Options for size compositions section of example <code>model.ctl</c
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;10: Time-varying natural mortality parameter section of example <code>model.ctl</code> file.
+Note&nbsp;9: Time-varying natural mortality parameter section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -789,7 +780,7 @@ Note&nbsp;10: Time-varying natural mortality parameter section of example <code>
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;11: Tagging controls parameter section of example <code>model.ctl</code> file.
+Note&nbsp;10: Tagging controls parameter section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -807,7 +798,7 @@ Note&nbsp;11: Tagging controls parameter section of example <code>model.ctl</cod
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;12: Maturity specific natural mortality parameter section of example <code>model.ctl</code> file.
+Note&nbsp;11: Maturity specific natural mortality parameter section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -830,7 +821,7 @@ Note&nbsp;12: Maturity specific natural mortality parameter section of example <
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;13: Other controls section of example <code>model.ctl</code> file.
+Note&nbsp;12: Other controls section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -857,7 +848,7 @@ Note&nbsp;13: Other controls section of example <code>model.ctl</code> file.
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;14: Emphasis factors section of example <code>model.ctl</code> file.
+Note&nbsp;13: Emphasis factors section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -903,7 +894,7 @@ Note&nbsp;14: Emphasis factors section of example <code>model.ctl</code> file.
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;15: ?? section of example <code>model.ctl</code> file.
+Note&nbsp;14: ?? section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -916,7 +907,7 @@ Note&nbsp;15: ?? section of example <code>model.ctl</code> file.
 <i class="callout-icon no-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-Note&nbsp;16: ?? section of example <code>model.ctl</code> file.
+Note&nbsp;15: ?? section of example <code>model.ctl</code> file.
 </div>
 </div>
 <div class="callout-body-container callout-body">

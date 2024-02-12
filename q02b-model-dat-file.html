@@ -216,7 +216,6 @@ window.Quarto = {
    
   <ul>
   <li><a href="#sec-model-dat-file" id="toc-sec-model-dat-file" class="nav-link active" data-scroll-target="#sec-model-dat-file">The <code>model.dat</code> file</a></li>
-  <li><a href="#sec-mci" id="toc-sec-mci" class="nav-link" data-scroll-target="#sec-mci">Model configuration information</a></li>
   <li><a href="#sec-fcd" id="toc-sec-fcd" class="nav-link" data-scroll-target="#sec-fcd">Fishery catch data</a></li>
   <li><a href="#sec-rad" id="toc-sec-rad" class="nav-link" data-scroll-target="#sec-rad">Relative abundance data</a></li>
   <li><a href="#sec-zcd" id="toc-sec-zcd" class="nav-link" data-scroll-target="#sec-zcd">Size composition data</a></li>
@@ -252,7 +251,7 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="sec-model-dat-file">The <code>model.dat</code> file</h2>
 <p>The <code>model.dat</code> file (where <em>model</em> is an arbitrary character string with no spaces) defines</p>
 <ul>
-<li>model configuration information (<a href="#sec-mci" class="quarto-xref">Section&nbsp;2</a>)
+<li>model configuration information (<strong>?@sec-mci</strong>)
 <ul>
 <li>the model dimensions
 <ul>
@@ -268,17 +267,15 @@ window.Quarto = {
 <li>the names of the survey fleets</li>
 <li>whether seasons are continuous or instantaneous</li>
 </ul></li>
-<li>fishery catch data (<a href="#sec-fcd" class="quarto-xref">Section&nbsp;3</a>)</li>
-<li>relative abundance (e.g., survey or fishery CPUE) data (<a href="#sec-rad" class="quarto-xref">Section&nbsp;4</a>)</li>
-<li>size composition data (from fisheries and/or surveys) (<a href="#sec-zcd" class="quarto-xref">Section&nbsp;5</a>)</li>
-<li>growth (molt increment or tagging) data (<a href="#sec-grd" class="quarto-xref">Section&nbsp;6</a>)</li>
-<li>maturity data (<a href="#sec-mat" class="quarto-xref">Section&nbsp;7</a>)</li>
-<li>environmental data (<a href="#sec-envd" class="quarto-xref">Section&nbsp;8</a>)</li>
+<li>fishery catch data (<a href="#sec-fcd" class="quarto-xref">Section&nbsp;2</a>)</li>
+<li>relative abundance (e.g., survey or fishery CPUE) data (<a href="#sec-rad" class="quarto-xref">Section&nbsp;3</a>)</li>
+<li>size composition data (from fisheries and/or surveys) (<a href="#sec-zcd" class="quarto-xref">Section&nbsp;4</a>)</li>
+<li>growth (molt increment or tagging) data (<a href="#sec-grd" class="quarto-xref">Section&nbsp;5</a>)</li>
+<li>maturity data (<a href="#sec-mat" class="quarto-xref">Section&nbsp;6</a>)</li>
+<li>environmental data (<a href="#sec-envd" class="quarto-xref">Section&nbsp;7</a>)</li>
 </ul>
-<p>While the file is a single entity, it is convenient to examine the different sections separately (but in the order they occur in the file).</p>
-</section>
-<section id="sec-mci" class="level2">
-<h2 class="anchored" data-anchor-id="sec-mci">Model configuration information</h2>
+<p>While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below).</p>
+<p>Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or “#”, but can contain numbers and punctuation. An underscore (“_“) is used to indicate a space–underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). ## Model configuration information {#sec-mci}</p>
 <p>An example of how the model configuration information is specified is given in the following text box:</p>
 <div id="nte-mci" class="callout callout-style-default callout-note no-icon callout-titled" title="Model cofiguration information section of example `model.dat` file.">
 <div class="callout-header d-flex align-content-center">
