@@ -1,11 +1,13 @@
 // ==================================================================================== //
-//  Gmacs: A generalized size-structured stock assessment modeling framework.
+//  GMACS: A generalized size-structured stock assessment modeling framework.
 //
 //  Authors: gmacs development team at the
 //           Alaska Fisheries Science Centre, Seattle
 //           and the University of Washington.
 //
-//  Info: https://github.com/seacode/gmacs Copyright (C) 2014-2019. All rights reserved.
+//  Latest available GMACS version: 
+// 		https://github.com/GMACS-project/GMACS_Assessment_code/tree/main/GMACS_versions/Latest_Version 
+//	Copyright (C) 2014-2019. All rights reserved.
 //
 //  ACKNOWLEDGEMENTS:
 //     finacial support provided by NOAA and Bering Sea Fisheries Research Foundation.
@@ -20,10 +22,17 @@
 //    m = index for maturity state
 //    o = index for shell condition.
 //
+//  INPUT FILES:
+//	  gmacs.dat 		 Names of input files (specified below), and ancillary information 
+//						 for a GMACS model run
+//	  model.dat			 Model dimensions and data
+//	  model.ctl			 Set-up for the parameters and options selected
+//	  model.prj			 Specifications for reference points and projections
+//
 //  OUTPUT FILES:
-//    gmacs.rep  Main result file for reading into R etc
-//    gmacs.std  Result file for reading into R etc
-//    gmacsall.out Result file for all all sorts of purposes.
+//    gmacs.rep			  Main result file for reading into R etc
+//    gmacs.std  		  Result file for reading into R etc
+//    gmacsall.out 		  Result file for all sorts of purposes
 //
 //  FOR DEBUGGING INPUT FILES: (for accessing easily with read_admb() function)
 //    gmacs_files_in.dat  Which control and data files were specified for the current run
@@ -81,7 +90,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader =  adstring("## GMACS Version 2.01.M.09; Completed 2024-02-06");
+ !! TheHeader = adstring("## GMACS Version 2.01.M.09; ** MV **; Compiled 2024-02-22 12:20:22");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -95,22 +104,22 @@ DATA_SECTION
     int on = 0; int opt;//defined for local scope only here
     int testingflag = 0;
     if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-testing",opt))>-1 )
-     {
-      testingflag = 1;
-     }
+    {
+    testingflag = 1;
+    }
     if (testingflag==1){
-       //Testing alternative dat file reader
-      cout<<"|---------------------------------------|"<<endl;
-      cout<<"| Testing with alternative dat file     |"<<endl;
-      cout<<"|---------------------------------------|"<<endl;
-      //AEP
-      //DatFileReader* pDFR = new DatFileReader();
-      //cifstream is("TannerCrab_NewDatFile.dat",ios::in);
-      //is>>(*pDFR);
-      //is.close();
-      //cout<<(*pDFR)<<endl;
-      exit(1);
-    } 
+    //Testing alternative dat file reader
+    cout<<"|---------------------------------------|"<<endl;
+    cout<<"| Testing with alternative dat file     |"<<endl;
+    cout<<"|---------------------------------------|"<<endl;
+    //AEP
+    //DatFileReader* pDFR = new DatFileReader();
+    //cifstream is("TannerCrab_NewDatFile.dat",ios::in);
+    //is>>(*pDFR);
+    //is.close();
+    //cout<<(*pDFR)<<endl;
+    exit(1);
+    }
     if (0){
        //Testing selectivity using "constant" values
       cout<<"|---------------------------------------|"<<endl;
@@ -180,7 +189,6 @@ DATA_SECTION
    }//--end local scope
  END_CALCS
 
-
   //friend_class gmacs_comm;
   // |---------------------|
   // | SIMULATION CONTROLS |
@@ -196,18 +204,17 @@ DATA_SECTION
   sexes += "male";
   sexes += "female";
 
-
   /**
-   * @brief command line option for simulating data.
+  * @brief command line option for simulating data.
   **/
   if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-sim",opt))>-1 )
-   {
+  {
     simflag = 1;
     rseed = atoi(ad_comm::argv[on+1]);
-   }
+  }
 
   if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-i",opt))>-1 )
-   {
+  {
     cout << "\n";
     cout << "  +----------------------------------------------------------+\n";
     cout << "  | CONTRIBUTIONS (code and intellectual)                    |\n";
@@ -224,6 +231,8 @@ DATA_SECTION
     cout << "  | Dave Fournier                Otter Research              |\n";
     cout << "  | John Levitt                  Mathemetician               |\n";
     cout << "  | William Stockhausen          NOAA-NMFS                   |\n";
+    cout << "  | Matthieu Veron               University of Washington    |\n";
+    cout << "  | Tyler Jackson                ADF&G                       |\n";	
     cout << "  +----------------------------------------------------------+\n";
     cout << "\n";
     cout << "  +----------------------------------------------------------+\n";
@@ -237,7 +246,7 @@ DATA_SECTION
     cout << "  +----------------------------------------------------------+\n";
     cout << "  | DOCUMENTATION                                            |\n";
     cout << "  +----------------------------------------------------------+\n";
-    cout << "  | online api: http://seacode.github.io/gmacs/index.html    |\n";
+    cout << "  | online api: https://gmacs-project.github.io/User-manual/ |\n";
     cout << "  +----------------------------------------------------------+\n";
     cout << "\n";
     exit(1);
@@ -253,7 +262,7 @@ DATA_SECTION
     cout << "  | YET TO BE IMPLEMENTED                                    |\n";
     cout << "  +----------------------------------------------------------+\n";
     exit(1);
-   }
+  }
  END_CALCS
 
   // create a random number generator for projections
@@ -288,7 +297,7 @@ DATA_SECTION
   !! WriteFileName(OutDynB0);
   init_int nyrRetro;                                        ///> Retrospective end year
   !! WriteFileName(nyrRetro);
-  
+
   init_int TurnOffPhase;                                    ///> Maximum phase
   init_int StopAfterFnCall                                  ///> Number of function calls to stop after
   init_int CalcRefPoints;                                   ///> Set this to zero not to compute reference points
@@ -296,7 +305,7 @@ DATA_SECTION
   init_int verbose;                                         ///> Flag to print to screen
 
   //check for commandline overide of pinfile use (if set, overrides value from gmacs.dat)
-  LOCAL_CALCS
+ LOCAL_CALCS
     if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-verbose",opt))>-1 ){
       verbose = atoi(ad_comm::argv[on+1]);
       cout<<"#--verbose level set to: "<<verbose<<endl;
@@ -331,7 +340,8 @@ DATA_SECTION
           cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
       }
     }
-  END_CALCS
+ END_CALCS
+
   !!gmacs_files << TurnOffPhase << " # Maximum phase (stop the estimation after this phase)" << endl;
   !!gmacs_files << StopAfterFnCall << " # Maximum number of function calls" << endl;
   !!gmacs_files << CalcRefPoints << " # Calculate reference points (0=no)" << endl;
@@ -342,7 +352,7 @@ DATA_SECTION
   !!echoinput << CalcRefPoints  << " # Calculate reference points (0=no)" << endl;
   !!echoinput << usepinfile << " # use pin file (0=no, 1=yes)" << endl;
   !!echoinput << verbose << " # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)" << endl;
- 
+
   init_int dataeof;
   !! WriteFileName(dataeof);
   !! if ( dataeof != 9999 ) {cout << "Error reading GMACS.DAT" << endl; exit(1);}
@@ -409,18 +419,18 @@ DATA_SECTION
   int h,m,o;
   int hmo=1;
   for ( h = 1; h <= nsex; h++ )
-   for ( m = 1; m <= nmature; m++ )
-    for ( o = 1; o <= nshell; o++ )
-     {
-      isex(hmo) = h;
-      ishell(hmo) = o;
-      imature(hmo) = m;
-      pntr_hmo(h,m,o) = hmo++;
-     }
+    for ( m = 1; m <= nmature; m++ )
+      for ( o = 1; o <= nshell; o++ )
+      {
+        isex(hmo) = h;
+        ishell(hmo) = o;
+        imature(hmo) = m;
+        pntr_hmo(h,m,o) = hmo++;
+      }
  END_CALCS
-  init_vector size_breaks(1,nclass+1);
-  vector mid_points(1,nclass);
-  !!WRITEDAT(size_breaks);
+      init_vector size_breaks(1,nclass+1);
+      vector mid_points(1,nclass);
+      !!WRITEDAT(size_breaks);
 
   // |-------------------------------|
   // | NATURAL MORTALITY             |
@@ -437,7 +447,8 @@ DATA_SECTION
   init_matrix m_prop_in(1,m_dim,1,nseason);
   !! gmacs_data << "# Natural mortality per season input type (1 = vector by season, 2 = matrix by season/year)" << endl << " 2" << endl;
   matrix m_prop(syr,nyrRetro,1,nseason);
- LOC_CALCS
+  
+  LOC_CALCS
    switch ( m_prop_type )
     {
      // vector by season
@@ -474,7 +485,6 @@ DATA_SECTION
   !!      fleetname+=anystring;
   !!  }
   !! WRITEDAT(fleetname)
- 
   // |-------------|
   // | FLEET TYPES |
   // |-------------|
@@ -488,7 +498,7 @@ DATA_SECTION
  LOCAL_CALCS
   //class to provide substitutions from/to strings/integers
   class Subst{
-    public:
+  public:
     int fleetID(adstring& flt,adstring_array& fleetname){
       int id = 0;
       for (int f=fleetname.indexmin();f<=fleetname.indexmax();f++)
@@ -562,7 +572,6 @@ DATA_SECTION
   Subst substStuff;
  END_CALCS
 
-
   // |--------------|
   // | CATCH SERIES |
   // |--------------|
@@ -581,117 +590,117 @@ DATA_SECTION
   !!float TempW;
   !!float SDlogD;
  LOCAL_CALCS
-    {
-      cifstream* pGD = ad_comm::global_datafile;
-      if (fmtCDS_in==0){
-        //--read in using old format
-        (*pGD) >> nCatchRows;
-        gmacs_data << "# Number of lines for each dataframe (this is not correct for retrospective analyses)" << endl;
-        gmacs_data << nCatchRows << endl;
-        for (int idf=1;idf<=nCatchDF;idf++) dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
+  {
+    cifstream* pGD = ad_comm::global_datafile;
+    if (fmtCDS_in==0){
+      //--read in using old format
+      (*pGD) >> nCatchRows;
+      gmacs_data << "# Number of lines for each dataframe (this is not correct for retrospective analyses)" << endl;
+      gmacs_data << nCatchRows << endl;
+      for (int idf=1;idf<=nCatchDF;idf++) dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
         (*pGD) >> dCatchData;
-      } else {
-        //--read in using new format
-        adstring unitsType,catchType,fleet,sex,maturity, shell;
-        int iUT,iCT,iF,iX,iM,iS;
-        for (int idf=1;idf<=nCatchDF;idf++) {
-          gmacs_data << "#----------------" << endl;
-          gmacs_data << "# catch dataframe number " << idf << endl;
-          (*pGD) >> unitsType;        iUT = substStuff.unitsTypeID(unitsType);
-          (*pGD) >> catchType;        iCT = substStuff.catchTypeID(catchType);
-          (*pGD) >> fleet;            iF  = substStuff.fleetID(fleet,fleetname);
-          (*pGD) >> sex;              iX  = substStuff.sexID(sex);
-          (*pGD) >> maturity;         iM  = substStuff.matID(maturity);
-          (*pGD) >> shell;            iS  = substStuff.shellID(shell);
-          (*pGD) >> nCatchRows(idf);
-          gmacs_data << unitsType << "   #--units type" << endl;
-          gmacs_data << catchType << "   #--catch type (retained, discard(ed), total)" << endl;
-          gmacs_data << fleet     << "   #--fleet name" << endl;
-          gmacs_data << sex       << "   #--sex (male(s), female(s), undetermined)" << endl;
-          gmacs_data << maturity  << "   #--maturity (immature, mature, undetermined)" << endl;
-          gmacs_data << shell     << "   #--shell condition (new shell, old shell, undetermined)" << endl;
-          gmacs_data << nCatchRows(idf) << "   #--number of rows in dataframe" << endl;
-          dmatrix inpCatchData(1,nCatchRows(idf),1,7);
-          dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
-          (*pGD) >> inpCatchData;
-          gmacs_data << "#year season value cv multiplier effort discard_mortality" << endl;
-          gmacs_data << inpCatchData << endl;
-          for (int irw=1;irw<=nCatchRows(idf);irw++){
-            dCatchData(idf,irw, 1) = (int) inpCatchData(irw,1);
-            dCatchData(idf,irw, 2) = (int) inpCatchData(irw,2);
-            dCatchData(idf,irw, 3) = iF;
-            dCatchData(idf,irw, 4) = iX;
-            dCatchData(idf,irw, 5) = inpCatchData(irw,3);
-            dCatchData(idf,irw, 6) = inpCatchData(irw,4);
-            dCatchData(idf,irw, 7) = iCT;
-            dCatchData(idf,irw, 8) = iUT;
-            dCatchData(idf,irw, 9) = inpCatchData(irw,5);
-            dCatchData(idf,irw,10) = inpCatchData(irw,6);
-            dCatchData(idf,irw,11) = inpCatchData(irw,7);
+    } else {
+      //--read in using new format
+      adstring unitsType,catchType,fleet,sex,maturity, shell;
+      int iUT,iCT,iF,iX,iM,iS;
+      for (int idf=1;idf<=nCatchDF;idf++) {
+        gmacs_data << "#----------------" << endl;
+        gmacs_data << "# catch dataframe number " << idf << endl;
+        (*pGD) >> unitsType;        iUT = substStuff.unitsTypeID(unitsType);
+        (*pGD) >> catchType;        iCT = substStuff.catchTypeID(catchType);
+        (*pGD) >> fleet;            iF  = substStuff.fleetID(fleet,fleetname);
+        (*pGD) >> sex;              iX  = substStuff.sexID(sex);
+        (*pGD) >> maturity;         iM  = substStuff.matID(maturity);
+        (*pGD) >> shell;            iS  = substStuff.shellID(shell);
+        (*pGD) >> nCatchRows(idf);
+        gmacs_data << unitsType << "   #--units type" << endl;
+        gmacs_data << catchType << "   #--catch type (retained, discard(ed), total)" << endl;
+        gmacs_data << fleet     << "   #--fleet name" << endl;
+        gmacs_data << sex       << "   #--sex (male(s), female(s), undetermined)" << endl;
+        gmacs_data << maturity  << "   #--maturity (immature, mature, undetermined)" << endl;
+        gmacs_data << shell     << "   #--shell condition (new shell, old shell, undetermined)" << endl;
+        gmacs_data << nCatchRows(idf) << "   #--number of rows in dataframe" << endl;
+        dmatrix inpCatchData(1,nCatchRows(idf),1,7);
+        dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
+        (*pGD) >> inpCatchData;
+        gmacs_data << "#year season value cv multiplier effort discard_mortality" << endl;
+        gmacs_data << inpCatchData << endl;
+        for (int irw=1;irw<=nCatchRows(idf);irw++){
+          dCatchData(idf,irw, 1) = (int) inpCatchData(irw,1);
+          dCatchData(idf,irw, 2) = (int) inpCatchData(irw,2);
+          dCatchData(idf,irw, 3) = iF;
+          dCatchData(idf,irw, 4) = iX;
+          dCatchData(idf,irw, 5) = inpCatchData(irw,3);
+          dCatchData(idf,irw, 6) = inpCatchData(irw,4);
+          dCatchData(idf,irw, 7) = iCT;
+          dCatchData(idf,irw, 8) = iUT;
+          dCatchData(idf,irw, 9) = inpCatchData(irw,5);
+          dCatchData(idf,irw,10) = inpCatchData(irw,6);
+          dCatchData(idf,irw,11) = inpCatchData(irw,7);
           }//--irw
-        }//--idf
-        gmacs_data << "#--old format:"<<endl;
-      }//--end reading new format
+          }//--idf
+          gmacs_data << "#--old format:"<<endl;
+          }//--end reading new format
 
-      gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
-      gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
-      gmacs_data << "## Units of catch: 1 = biomass, 2 = numbers" << endl;
-      gmacs_data << "## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
-      gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
-      for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++){
-        for (int irow=1;irow<=nCatchRows(iCatOut); irow++) {
-          if (dCatchData(iCatOut,irow,1) <= nyrRetro) {
-            if (fmtCDS_in>0) gmacs_data << "# ";
-            gmacs_data << (int) dCatchData(iCatOut,irow)(1) << " ";
-            gmacs_data << (int) dCatchData(iCatOut,irow)(2) << " ";
-            gmacs_data << (int) dCatchData(iCatOut,irow)(3) << " ";
-            gmacs_data << (int) dCatchData(iCatOut,irow)(4) << " ";
-            gmacs_data << dCatchData(iCatOut,irow)(5,6) << " ";
-            gmacs_data << (int) dCatchData(iCatOut,irow)(7) << " ";
-            gmacs_data << (int) dCatchData(iCatOut,irow)(8) << " ";
-            gmacs_data << dCatchData(iCatOut,irow)(9,11) << " ";
-            anystring = "# " + fleetname(dCatchData(iCatOut,irow,3));
-            if (dCatchData(iCatOut,irow,4)==MALES)      anystring = anystring +"_male";
-            if (dCatchData(iCatOut,irow,4)==FEMALES)    anystring = anystring +"_female";
-            if (dCatchData(iCatOut,irow,7)==TOTALCATCH) anystring = anystring +"_total";
-            if (dCatchData(iCatOut,irow,7)==RETAINED)   anystring = anystring +"_retained";
-            if (dCatchData(iCatOut,irow,7)==DISCARDED)  anystring = anystring +"_discard";
-            if (dCatchData(iCatOut,irow,8)==BIOMASS)    anystring = anystring +"_biomass";
-            if (dCatchData(iCatOut,irow,8)==ABUNDANCE)  anystring = anystring +"_numbers";
-            if (dCatchData(iCatOut,irow,6) <= 0) {
-              cout << "Error: CV of catch is zero (or less) for group " << iCatOut << " row " << irow << endl;
-              exit(1);
-            }
-            gmacs_data << anystring << " ";
-            SDlogD = sqrt(log(1.0 + square(dCatchData(iCatOut,irow,6))));
-            TempW = 0.5/(SDlogD*SDlogD);
-            gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
-            gmacs_data << endl;
-          }//--dCatchData(iCatOut,irow,1) <= nyrRetro
-        }//--irow
-      }//--iCatOut
-    }
+          gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
+          gmacs_data << "## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
+          gmacs_data << "## Units of catch: 1 = biomass, 2 = numbers" << endl;
+          gmacs_data << "## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
+          gmacs_data << "# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
+          for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++){
+            for (int irow=1;irow<=nCatchRows(iCatOut); irow++) {
+              if (dCatchData(iCatOut,irow,1) <= nyrRetro) {
+                if (fmtCDS_in>0) gmacs_data << "# ";
+                gmacs_data << (int) dCatchData(iCatOut,irow)(1) << " ";
+                gmacs_data << (int) dCatchData(iCatOut,irow)(2) << " ";
+                gmacs_data << (int) dCatchData(iCatOut,irow)(3) << " ";
+                gmacs_data << (int) dCatchData(iCatOut,irow)(4) << " ";
+                gmacs_data << dCatchData(iCatOut,irow)(5,6) << " ";
+                gmacs_data << (int) dCatchData(iCatOut,irow)(7) << " ";
+                gmacs_data << (int) dCatchData(iCatOut,irow)(8) << " ";
+                gmacs_data << dCatchData(iCatOut,irow)(9,11) << " ";
+                anystring = "# " + fleetname(dCatchData(iCatOut,irow,3));
+                if (dCatchData(iCatOut,irow,4)==MALES)      anystring = anystring +"_male";
+                if (dCatchData(iCatOut,irow,4)==FEMALES)    anystring = anystring +"_female";
+                if (dCatchData(iCatOut,irow,7)==TOTALCATCH) anystring = anystring +"_total";
+                if (dCatchData(iCatOut,irow,7)==RETAINED)   anystring = anystring +"_retained";
+                if (dCatchData(iCatOut,irow,7)==DISCARDED)  anystring = anystring +"_discard";
+                if (dCatchData(iCatOut,irow,8)==BIOMASS)    anystring = anystring +"_biomass";
+                if (dCatchData(iCatOut,irow,8)==ABUNDANCE)  anystring = anystring +"_numbers";
+                if (dCatchData(iCatOut,irow,6) <= 0) {
+                  cout << "Error: CV of catch is zero (or less) for group " << iCatOut << " row " << irow << endl;
+                  exit(1);
+                }
+                gmacs_data << anystring << " ";
+                SDlogD = sqrt(log(1.0 + square(dCatchData(iCatOut,irow,6))));
+                TempW = 0.5/(SDlogD*SDlogD);
+                gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
+                gmacs_data << endl;
+                }//--dCatchData(iCatOut,irow,1) <= nyrRetro
+                }//--irow
+                }//--iCatOut
+              }
  END_CALCS
 
-  matrix obs_catch(1,nCatchDF,1,nCatchRows);
-  matrix obs_effort(1,nCatchDF,1,nCatchRows);
-  3darray dCatchData_out(1,nCatchDF,syr,nyr,1,11);
-  matrix obs_catch_out(1,nCatchDF,syr,nyr);
+              matrix obs_catch(1,nCatchDF,1,nCatchRows);
+              matrix obs_effort(1,nCatchDF,1,nCatchRows);
+              3darray dCatchData_out(1,nCatchDF,syr,nyr,1,11);
+              matrix obs_catch_out(1,nCatchDF,syr,nyr);
 
-  matrix catch_cv(1,nCatchDF,1,nCatchRows);
-  matrix catch_dm(1,nCatchDF,1,nCatchRows);
-  matrix catch_mult(1,nCatchDF,1,nCatchRows);
-
+              matrix catch_cv(1,nCatchDF,1,nCatchRows);
+              matrix catch_dm(1,nCatchDF,1,nCatchRows);
+              matrix catch_mult(1,nCatchDF,1,nCatchRows);
+			  
  LOC_CALCS
   for ( int k = 1; k <= nCatchDF; k++ )
-   {
+  {
     catch_mult(k) = column(dCatchData(k),9);
     obs_catch(k)  = column(dCatchData(k),5);
     catch_cv(k)   = column(dCatchData(k),6);
     catch_dm(k)   = column(dCatchData(k),11);
     obs_catch(k)  = elem_prod(obs_catch(k), catch_mult(k));         ///> rescale catch by multiplier
     obs_effort(k) = column(dCatchData(k),10);
-   }
+  }
   ECHO(obs_catch);
   ECHO(catch_cv);
  END_CALCS
@@ -1517,17 +1526,17 @@ DATA_SECTION
   ECHO(iYrIncChanges);
  END_CALCS
 
- !! if (GrowthObsType==GROWTHCLASS_DATA)
- !!  for (int i=1;i<=nGrowthObs;i++)
- !!   {
- !!    int h = iMoltIncSex(i); //--sex
- !!    int k = iMoltTrans(i);  //
- !!    if (k < 0 || k > nSizeIncChanges(h)+1)
- !!     {
- !!      cout << "Error: a specified size-transition matrix in the DAT file is out of range (line: " << i << ")" << endl;
- !!      exit(1);
- !!     }
- !!   }
+  !! if (GrowthObsType==GROWTHCLASS_DATA)
+  !!  for (int i=1;i<=nGrowthObs;i++)
+  !!   {
+    !!    int h = iMoltIncSex(i); //--sex
+    !!    int k = iMoltTrans(i);  //
+    !!    if (k < 0 || k > nSizeIncChanges(h)+1)
+    !!     {
+      !!      cout << "Error: a specified size-transition matrix in the DAT file is out of range (line: " << i << ")" << endl;
+      !!      exit(1);
+      !!     }
+      !!   }
 
   int nGrwth;
   int nSizeIncPar;
@@ -10621,7 +10630,7 @@ GLOBALS_SECTION
   #define SURVEY_COMP 2
   
   adstring_array parname1(1,500);
-  adstring_array selname1(1,100);
+  adstring_array selname1(1,500);
   adstring_array mdevname1(1,100);
   adstring_array seldevnames1(1,100);
   adstring_array selenvnames1(1,100);
@@ -10882,17 +10891,23 @@ FINAL_SECTION
 // - 2. Add the developped code by ** AEP ** to incorporate potential random walk in the selectivity parameters. Modify the initial code to
 // make it more flexible. Need to be updated to allow environmental impacts not being dependent upon time period of random walk.
 // ================================================ //
-// 2023-03-23 ** MV ** (Upgrade GMACS to version 2.01.M.01) - 1. Fixed a bug in the checking section of the inputs for the growth maxtrix and growth increment model
-// 2023-05-30 ** AEP. (Upgrade GMACS to version 2.01.M.02) Added labels for model output and GMACSALL.STD, mature abundance (SSBA) and fixed some bugs in the calculaton of Francis weights.
-// 2024-01-08 ** AEP. (Updated GMACS to version 2.01.M.03) (a) Corrected a bug with labels for selectivity; (b) Tag emphasis can be real; (c) merged Cody changes wrt time-varying molt probability and functional maturity;
-// 2024-01-09 ** AEP. (Updated GMACS to version 2.01.M.04) (a) added output for the weight units, (b) moved where last functional call, last phase and calculate reference points occurs
-// 2024-01-09 ** AEP. (Updated GMACS to version 2.01.M.05) (a) fixed indexing for matrix-based weight-at-length; (b) maturity-specific length-weight, (c) formatted output for gmacsall.out, (d) added OFLs by fleet to gmacsall.out
-// 2024-01-10 ** AEP. (Updated GMACS to version 2.01.M.06) (a) modified to output projected catches, (b) calculated historical mortality for projections
-// 2024-01-11 ** AEP. (Updated GMACS to version 2.01.M.07) (a) updated the _in files to match the latest version of GMACS. (b) producted inputs files with estimated parameters and expected data
-// 2024-01-29 ** AEP. (Updated GMACS to version 2.01.M.08) Fixed time-varying growth increment and added a trap for negative growth increments in fn calls 0 and 1
-// 2024-02-01 ** WTS. (Updated GMACS to version 2.01.M.09) Added alternative format for inputting size comps data.
-// 2024-02-02 ** WTS. Renamed BOTHSEX, BOTHMATURE to UNDET_SEX, UNDET_MATURE. Added MALES(=1) macro. Need to refactor MALESANDCOMBINED functionality.
-//                    Removed MALESANDCOMBINED (duplicated MALES). Refactored selectivity assignments and recruitment (no need to loop over h, so cleaner not to). 
-//                    Reformatted some code to add parentheses, replace tabs with spaces, and correctly indent blocks.
-//                    Replaced o == 1/2 with o == NEW_SHELL/OLD_SHELL, similar for m.
-// 2024-02-05 ** WTS. Reverted selectivity assignaments--needed to loop over h if slx_isex(k) was 0. Added alternative input format for fishery catch data.
+// 2023-03-23 ** MV ** (Upgrade GMACS to version 2.01.M.01) - 1. Fixed a bug in the checking section of the inputs for the growth maxtrix and growth 
+// increment model
+// ================================================ //
+// 2024-02-17 ** AEP ** (Upgrade GMACS to version 2.01.M.02) - 1. Added labels for model output and GMACSALL.STD, mature abundance (SSBA).
+// - 2. Fixed some bugs in the calculaton of Francis weights.
+// 2024-01-08 ** AEP ** (Upgrade GMACS to version 2.01.M.03) (a) Corrected a bug with labels for selectivity; (b) Tag emphasis can be real; (c) merged Cody changes wrt time-varying molt probability and functional maturity;
+// 2024-01-09 ** AEP ** (Upgrade GMACS to version 2.01.M.04) (a) added output for the weight units, (b) moved where last functional call, last phase and calculate reference points occurs
+// 2024-01-09 ** AEP ** (Upgrade GMACS to version 2.01.M.05) (a) fixed indexing for matrix-based weight-at-length; (b) maturity-specific length-weight, (c) formatted output for gmacsall.out, (d) added OFLs by fleet to gmacsall.out
+// 2024-01-10 ** AEP ** (Upgrade GMACS to version 2.01.M.06) (a) modified to output projected catches, (b) calculated historical mortality for projections
+// 2024-01-11 ** AEP ** (Upgrade GMACS to version 2.01.M.07) (a) updated the _in files to match the latest version of GMACS. (b) producted inputs files with estimated parameters and expected data
+// 2024-01-29 ** AEP ** (Upgrade GMACS to version 2.01.M.08) Fixed time-varying growth increment and added a trap for negative growth increments in fn calls 0 and 1
+// 2024-02-01 ** WTS ** (Upgrade GMACS to version 2.01.M.09) Added alternative format for inputting size comps data.
+// 2024-02-02 ** WTS ** (Update GMACS version 2.01.M.09) Renamed BOTHSEX, BOTHMATURE to UNDET_SEX, UNDET_MATURE. Added MALES(=1) macro. Need to refactor MALESANDCOMBINED functionality.
+//                      Removed MALESANDCOMBINED (duplicated MALES). Refactored selectivity assignments and recruitment (no need to loop over h, so cleaner not to). 
+//                      Reformatted some code to add parentheses, replace tabs with spaces, and correctly indent blocks.
+//                      Replaced o == 1/2 with o == NEW_SHELL/OLD_SHELL, similar for m.
+// 2024-02-05 ** WTS ** (Update GMACS version 2.01.M.09) Reverted selectivity assignaments--needed to loop over h if slx_isex(k) was 0. Added alternative input format for fishery catch data.
+// ================================================ //
+// 2024-02-22 ** MV ** (Update GMACS version 2.01.M.09) - 1. Update info about developpers
+// - 2. Fix indetation issues when compiling and change the length of the selname1 vector

@@ -394,6 +394,7 @@ NMFS_Trawl BSFRF
 ##	TODO:	add	column	for	maturity	for	terminal	molt	life-histories																																	
 ##	for	BBRKC	Units	are	in	1000	mt.																																			
 ##	————————————————————————————————————————————————————————————————————————————————————	##																																0 #--input format for relative abundance data (0:old format; 1: new format)
+0 #--input format for relative abundance data (0:old format; 1: new format)
 								
 ##	Number	of	relative	abundance	indicies																																					
 2																																										

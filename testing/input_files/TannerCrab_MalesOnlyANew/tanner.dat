@@ -194,7 +194,9 @@ undetermined        #--shell condition (new shell, old shell, undetermined)
 ##--fleet: TCF; gear: crab pot; catch_type: RETAINED; units: MILLIONS.
 RETAINED    #--catch type
 TCF   #--fleet
-male undetermined undetermined        #--sex, maturity, shell condition
+male                #--sex
+undetermined        #--maturity
+undetermined        #--shell condition
 25 #--number of rows in dataframe
 32 #--number of size bins in dataframe
 #Year  Season  Stage1_EffN  25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150 155 160 165 170 175 180 
@@ -229,7 +231,9 @@ male undetermined undetermined        #--sex, maturity, shell condition
 ##--fleet: TCF; gear: crab pot; catch_type: TOTAL; units: MILLIONS.
 TOTAL    #--catch type
 TCF   #--fleet
-male undetermined undetermined        #--sex, maturity, shell condition
+male        #--sex (male(s), female(s), undetermined)
+undetermined        #--maturity (immature, mature, undetermined)
+undetermined        #--shell condition (new shell, old shell, undetermined)
 19 #--number of rows in dataframe
 32 #--number of size bins in dataframe
 #Year  Season  Stage1_EffN  25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150 155 160 165 170 175 180 
@@ -257,7 +261,9 @@ male undetermined undetermined        #--sex, maturity, shell condition
 ##--fleet: NMFS; gear: survey; catch_type: TOTAL; units: MILLIONS.
 TOTAL    #--catch type
 NMFS   #--fleet
-male undetermined undetermined        #--sex, maturity, shell condition
+male        #--sex (male(s), female(s), undetermined)
+undetermined        #--maturity (immature, mature, undetermined)
+undetermined        #--shell condition (new shell, old shell, undetermined)
 41 #--number of rows in dataframe
 32 #--number of size bins in dataframe
 #Year  Season  Stage1_EffN  25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150 155 160 165 170 175 180 
