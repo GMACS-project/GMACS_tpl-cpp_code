@@ -36,7 +36,7 @@ Changes to the tpl or c++ files can be recompiled using "cmake --build _build", 
 
 ### User manual 
 
-A user manual (currently under construction) can be accessed [here](https://gmacs-project.github.io/GMACS_tpl-cpp_code/). It can also be built locally as html on your computer from the source distribution. It is written in Quarto Markdown, so you will need [Quarto](https://quarto.org) (which conveniently comes with [RStudio](https://posit.co/products/open-source/rstudio/)), installed on your computer to create teh manual. Once Quarto is installed on your computer, you can create the manual using either a terminal (Command Prompt on Windows) or RStudio.
+A user manual (currently under construction) can be accessed [here](https://gmacs-project.github.io/GMACS_tpl-cpp_code/). It can also be built locally as html on your computer from the source distribution. It is written in Quarto Markdown, so you will need [Quarto](https://quarto.org) (which conveniently comes with [RStudio](https://posit.co/products/open-source/rstudio/)), installed on your computer to create the manual. Once Quarto is installed on your computer, you can create the manual using either a terminal (Command Prompt on Windows) or RStudio.
 
 #### Using a terminal
 

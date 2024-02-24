@@ -3,7 +3,7 @@ title: "model.dat file"
 ---
 ## The `model.dat` file {#sec-model-dat-file}
 
-The `model.dat` file (where *model* is an arbitrary character string with no spaces) defines 
+The `model.dat` file (where *model* is an arbitrary character string with no spaces) gives 
 
   * model configuration information ([@sec-mci]) 
     * the model dimensions
@@ -13,7 +13,7 @@ The `model.dat` file (where *model* is an arbitrary character string with no spa
       * number of sex, maturity, shell condition, and size classes
       * size class breakpoints
     * the seasons in which various actions occur
-    * the proportions of natural mortality to occur within each season (i.e., the length of each seas)
+    * the proportions of natural mortality to occur within each season (i.e., the length of each season)
     * the names of the fishing fleets
     * the names of the survey fleets
     * whether seasons are continuous or instantaneous
@@ -26,7 +26,8 @@ The `model.dat` file (where *model* is an arbitrary character string with no spa
 
 While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below). 
 
-Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or "#", but can contain numbers and punctuation. An underscore ("_") is used to indicate a space--underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). 
+Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or "#", but can contain numbers and punctuation. An underscore ("_") in an input text string can be used to indicate a space--underscores will be replaced by spaces in formatted model output (e.g., in tables or figures). 
+
 ## Model configuration information {#sec-mci}
 
 An example of how the model configuration information is specified is given in the following text box:
@@ -67,14 +68,15 @@ A few of the entries above are self-explanatory, but the remainder (those that h
 
 ## Fishery catch data {#sec-fcd}
 
+Fishery catch data can be entered using one of two formats: the 'old' format ([#nte-fcdo]) and the 'new' format ([#nte-fcdn]). Catch data is entered as a series of "stacked" dataframes by year in the 'old' format, with integers indicating the associated level (e.g., "1" for retained catch, "2" for discarded catch) or option in several different categories (e.g., catch type, catch units, fleet, sex, etc.). In the 'new' format, catch data is entered as a series of individual dataframes, with the associated level (e.g., "RETAINED" for retained catch, "DISCARDS" for discarded catch) in different categories that apply to the individual dataframe entered as a text string. Which format is used is indicated by the input format flag (0: old format; 1: new format) given at the start of the catch data section (at (1) in both examples below).
 
 ::: {#nte-fcdo .callout-note title="Fishery catch data section using the 'old' format from example `model.dat` file."}
 
 ```default
 ##  CATCH  DATA                                                        
-0 #--input format for catch data (0:old format; 1: new format)                  
-4 # Number of catch data frames                                                 
-# Number of rows in each data frame                                             
+0 #--input format for catch data (0: old format; 1: new format)                 (1)
+4 # Number of catch data frames                                                 (2)
+# Number of rows in each data frame                                             (3)
 40  40  40  41                                                      
 ##    ##                                                        
 ##  Type of  "catch: 1 = retained, 2"  "= discard, 0 ="  total                  
@@ -82,7 +84,7 @@ A few of the entries above are self-explanatory, but the remainder (those that h
 ##  for snow Units  are in 1000 mt  for landed & discards.                      
 ##    ##                                                        
 ##  Male  retained  pot  fishery  (tonnes)                                      
-#year  seas  fleet  sex  obs  cv  type  units  mult  effort  discard_mortality  
+#year  seas  fleet  sex  obs  cv  type  units  mult  effort  discard_mortality  (4)
 1982  2  1  1  11.8518  0.04  1  1  1  0  1                                     
 1983  2  1  1  12.1623  0.04  1  1  1  0  1                                     
 1984  2  1  1  29.9369  0.04  1  1  1  0  1                                     
@@ -92,6 +94,7 @@ A few of the entries above are self-explanatory, but the remainder (those that h
 
 :::
 
+In the "old" format, the number of rows in each (stacked) dataframe (3) is given as vector (row or column), with the number of elements matching the number of input dataframes (2). Individual rows in the stacked dataframe (4) indicate the year, season, fleet, sex, value ("obs" in the example), cv, catch type flag, units type flag, a factor to multiply the input value to convert to standard units (e.g., from millions of lbs to 1,000's of t), the effort associated with the catch (or 0, if unknown), and the associated value for discard mortality assumed for the fleet.
 
 ::: {#nte-fcdn .callout-note title="Fishery catch data section using the 'new' format from an example `model.dat` file."}
 
@@ -132,31 +135,34 @@ undetermined        #--shell condition (new shell, old shell, undetermined)
 
 :::
 
-The beginning of the second catch dataframe (total catch [retained + discards] of males in the fishery labeled 'TCF') starts at (11).
+The "new" format also starts with the number of input dataframes (2). However, individual dataframes are entered separately, with "header" information describing the associated units type (3), the catch type (4), the fleet (5), sex (6), maturity state (7), and shell condition (8) as text strings entered prior to the data matrix. Currently, catch data is not fit by maturity state and/or shell condition, so these should be "undetermined". The next value given (9) is the number of rows in the dataframe. An individual catch dataframe (10) consists of rows with values for year, season, catch value, cv, a multiplier to convert to standard units, effort, and a value for the discard mortality rate. Subsequent dataframes (e.g., 11) are entered similarly, ith header information followed by the dataframe itself.
 
 ## Relative abundance data {#sec-rad}
 
+Similar to the catch data section, two formats  (0: old format; 1: new format) are available to enter relative abundance data.
 
 ::: {#nte-rado .callout-note title="Relative abundance data section using the 'old' format from an example `model.dat` file."}
 
 ```default
-##	RELATIVE	ABUNDANCE	DATA																											
-0 #--input format for relative abundance data (0:old format; 1: new format)
-##	Number	of	relative	abundance	indicies																									
-4
+##  RELATIVE  ABUNDANCE  DATA                                                    
+0 #--input format for relative abundance data (0:old format; 1: new format)     (1)
+##  Number  of  relative  abundance  indicies                                    
+4                                                                               (2)
 # Index Type  (1=Selecivity; 2=retention)
-1 1 1 1																													
-##	Number	of	rows of index data																											
-82																														
-##	Survey	data																												
-##  Mature: 1=mature; 2=immature; 0=combined																														
-##  Index: indicates if a different q is estimated for the survey																														
-##	Units:	of	Abundance:	1	=	"biomass,"	2	=	numbers		(Units for snow crab are in 1000 mt.)																			
-#Index Year	Season	Fleet	Sex Mature	Obs		CV		Units	Timing
-1	1982	1		3		2		1	144.395	0.153	1		0
-1	1983	1		3		2		1	90.1343	0.197	1		0
-1	1984	1		3		2		1	42.316	0.194	1		0
-1	1985	1		3		2		1	6.1218	0.199	1		0
+1 1 1 1                                                                         (3)
+##  Number  of  rows of index data                                              
+82                                                                              (4)
+##  Survey  data                                                                
+##  Mature: 1=mature; 2=immature; 0=combined                                    
+##  Index: indicates if a different q is estimated for the survey               
+##  Units:  of  Abundance:  1  =  "biomass,"  2  =  numbers    (Units for snow crab are in 1000 mt.)
+#Index Year  Season  Fleet  Sex Mature  Obs    CV    Units  Timing
+1  1982  1    3    2    1  144.395  0.153  1    0
+1  1983  1    3    2    1  90.1343  0.197  1    0
+1  1984  1    3    2    1  42.316  0.194  1    0
+1  1985  1    3    2    1  6.1218  0.199  1    0
+...
+
 ```
 
 :::
@@ -165,18 +171,18 @@ The beginning of the second catch dataframe (total catch [retained + discards] o
 ::: {#nte-radn .callout-note title="Relative abundance data section using the 'new' format from an example `model.dat` file."}
 
 ```default
-1 #--input format for relative abundance data (0:old format; 1: new format)
-1 #--number of dataframes
+1 #--input format for relative abundance data (0:old format; 1: new format)     (1)
+1 #--number of dataframes                                                       (2)
 #----
 ##--fleet: NMFS; index type: sel; units type: biomass; units: THOUSANDS_MT.
-sel        #--index type ('sel' or 'sel+ret')
-biomass    #--units type ('abundance' or 'biomass')
-NMFS        #--fleet
-male        #--sex (male(s), female(s), undetermined)
-undetermined        #--maturity (immature, mature, undetermined)
-undetermined        #--shell condition (new shell, old shell, undetermined)
-41        #--number of rows in dataframe
-# q_index year season value cv multiplier CPUE_timing 
+sel         #--index type ('sel' or 'sel+ret')                                  (3)
+biomass     #--units type ('abundance' or 'biomass')                            (4)
+NMFS        #--fleet                                                            (5)
+male        #--sex (male(s), female(s), undetermined)                           (6)
+undetermined        #--maturity (immature, mature, undetermined)                (7)
+undetermined        #--shell condition (new shell, old shell, undetermined)     (8)
+41        #--number of rows in dataframe                                        (9)
+# q_index year season value cv multiplier CPUE_timing                           (10)
 #1 1975 1 294.8844 0.3184167 1 0 
 #1 1976 1 157.0179 0.138066 1 0 
 #1 1977 1 138.4987 0.1213517 1 0 
@@ -199,25 +205,27 @@ undetermined        #--shell condition (new shell, old shell, undetermined)
 
 ```default
 ##--SIZE COMPS------------------------------------------------
-0 #--input format for size comps (0:old format; 1: new format)
-## Number of length frequency matrices	 																													
-13																														
-## Number of rows in each matrix																														
-40	30	27	32	32	7	34	7	34	7	34	7	34																	
-##	Number	of	bins	in	each	matrix	(columns	of	size	data)																				
-22	22	22	22	22	22	22	22	22	22	22	22	22															
-##	SIZE COMPOSITION DATA FOR ALL FLEETS																													
-##	SIZE	COMP	LEGEND																											
-##	Sex: 1	"= male,"	"2 = female, 0"	#NAME?																										
-##	Type of	composition: 1	"= retained, 2 ="	"discard, 0 = total composition"																										
-##	Maturity	state:	1	=	"mature,"	2	=	"immature,"	0	=	both	states	combined																	
-##	Shell	condition:	1	=	new	"shell,"	2	=	old	"shell,"	0	=	both	shell	types	combined														
-##		##																												
-#Retained	males																													
-#Year	Season	Fleet	Sex	Type	Shell	Maturity	Nsamp	DataVec																						
-1982	2	1	1	1	0	0	100	0	0	0	0	0	0	0	0	0	0.000194628	0.000389257	0.000973141	0.003697937	0.01985206	0.1329311	0.3435186	0.2763725	0.1405216	0.05663681	0.01848965	0.004865703	0.001557026	
-1983	2	1	1	1	0	0	100	0	0	0	0	0	0	0	0	0	0	0.000238284	0.00039714	0.00127085	0.00833996	0.0518665	0.1884829	0.2749805	0.2584595	0.1475775	0.05409058	0.01199365	0.002303416	
-1984	2	1	1	1	0	0	100	0	0	0	0	0	0	0	6.74E-05	0	0.000202265	0.000134844	0.001685545	0.005326318	0.02117045	0.068568	0.1681495	0.2284249	0.2343583	0.1687563	0.0788161	0.02009168	0.00424758	
+0 #--input format for size comps (0:old format; 1: new format)                  (1)
+## Number of length frequency matrices                                          
+13                                                                              (2)
+## Number of rows in each matrix                                                
+40  30  27  32  32  7  34  7  34  7  34  7  34                                  (3)
+##  Number  of  bins  in  each  matrix  (columns  of  size  data)               
+22  22  22  22  22  22  22  22  22  22  22  22  22                              (4)
+##  SIZE COMPOSITION DATA FOR ALL FLEETS                                        
+##  SIZE  COMP  LEGEND                                                          
+##  Sex: 1 = male,  2 = female, 0 = undetermined/combined                       
+##  Type of  composition: 1 = retained, 2 = discard, 0 = total composition      
+##  Maturity state: 1 = mature,  2 = immature,  0 =  undetermined/combined     
+##  Shell  condition: 1  =  new  shell, 2 = old shell, 0 = undetermined/combined
+##                                                                             
+#Retained  males                                                               
+#Year  Season  Fleet  Sex  Type  Shell  Maturity  Nsamp  DataVec                
+1982  2  1  1  1  0  0  100  0  0  0  0  0  0  0  0  0  0.000194628  0.000389257  0.000973141  0.003697937  0.01985206  0.1329311  0.3435186  0.2763725  0.1405216  0.05663681  0.01848965  0.004865703  0.001557026  
+1983  2  1  1  1  0  0  100  0  0  0  0  0  0  0  0  0  0  0.000238284  0.00039714  0.00127085  0.00833996  0.0518665  0.1884829  0.2749805  0.2584595  0.1475775  0.05409058  0.01199365  0.002303416  
+1984  2  1  1  1  0  0  100  0  0  0  0  0  0  0  6.74E-05  0  0.000202265  0.000134844  0.001685545  0.005326318  0.02117045  0.068568  0.1681495  0.2284249  0.2343583  0.1687563  0.0788161  0.02009168  0.00424758  
+...
+
 ```
 
 :::
@@ -227,19 +235,23 @@ undetermined        #--shell condition (new shell, old shell, undetermined)
 
 ```default
 ##--SIZE COMPS------------------------------------------------
-1 #--input format for size comps (0:old format; 1: new format)
-3 #--number of size comps dataframes
+1 #--input format for size comps (0:old format; 1: new format)                  (1)
+3 #--number of size comps dataframes                                            (2)
 ##--fleet: TCF; gear: crab pot; catch_type: RETAINED; units: MILLIONS.
-RETAINED    #--catch type
-TCF   #--fleet
-male undetermined undetermined        #--sex, maturity, shell condition
-25 #--number of rows in dataframe
-32 #--number of size bins in dataframe
+RETAINED    #--catch type                                                       (3)
+TCF         #--fleet                                                            (4)
+male                #--sex                                                      
+undetermined        #--maturity                                                 
+undetermined        #--shell condition                                          
+25 #--number of rows in dataframe                                               
+32 #--number of size bins in dataframe                                          
 #Year  Season  Stage1_EffN  25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150 155 160 165 170 175 180 
 #1980 3 95.65676 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.00097130818933133 0 0.00291392456799399 0.00777046551465064 0.0806185797145004 0.714882827347859 2.30782825785124 2.44866794530428 2.38359029661908 2.07180036784373 1.36371669782119 0.867378213072878 0.413777288655146 0.179692015026296 0.0845038124718257 
 #1981 3 81.29028 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.000854209176907435 0.00170841835381487 0.00427104588453718 0.00896919635752807 0.0128131376536115 0.0431375634338255 0.550110709928388 1.20358073026258 1.01992575722748 0.792279011581646 0.55609017416674 0.34125656617452 0.150340815135709 0.114036925117143 0.0222094385995933 0.00939630094598179 
 1982 3 97.15881 0 0 0 0 0 0 0 0 0 0 0 0 0 0.000169151268584955 0 0 0.000169151268584955 0.000676605074339818 0.00169151268584955 0.00219896649160441 0.00507453805754864 0.0126863451438716 0.226831851172424 0.554647009690066 0.510498528589393 0.432350642503144 0.278084685553665 0.156972377246838 0.0656306922109623 0.0257109928249131 0.00997992484651231 0.00338302537169909 
 1983 3 12.03795 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.00030858328358209 0 0 0.00154291641791045 0.00030858328358209 0.000617166567164179 0.00277724955223881 0.00462874925373134 0.0808488202985075 0.154908808358209 0.111089982089552 0.0780715707462687 0.048138992238806 0.0216008298507463 0.0089489152238806 0.00154291641791045 0.00154291641791045 0 
+...
+
 ```
 
 :::
@@ -250,16 +262,16 @@ male undetermined undetermined        #--sex, maturity, shell condition
 ::: {#nte-grd .callout-note title="Growth data section of example `model.dat` file."}
 
 ```default
-## Growth data																														
-# Type of growth increment (0=ignore; 1=growth increment with a CV;2=size-at-release; 3= size-at-release values) 	
-1  # type of increment																														
-# nobs_growth																														
-110																														
-## Premolt	Sex	Molt Inc	CV																											
-16.1	1	6.9		0.03																										
-19.2	1	7.4		0.03																										
-19.8	1	6.7		0.03																										
-20		1	6.3		0.03																									
+## Growth data                                                            
+# Type of growth increment (0=ignore; 1=growth increment with a CV;2=size-at-release; 3= size-at-release values)   
+1  # type of increment                                                            
+# nobs_growth                                                            
+110                                                            
+## Premolt  Sex  Molt Inc  CV                                                      
+16.1  1  6.9    0.03                                                    
+19.2  1  7.4    0.03                                                    
+19.8  1  6.7    0.03                                                    
+20    1  6.3    0.03                                                  
 ```
 
 :::
