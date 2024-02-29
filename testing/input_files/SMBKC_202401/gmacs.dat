@@ -6,6 +6,7 @@ sm22.ctl
 sm22.prj
 # Weight unit
 1000_mt
+UNKNOWN #--abundance units
 # Stock name
 St_Matthew_Island_blue_king_crab
 # Jitter specs (1= yes; SD)

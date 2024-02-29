@@ -1,11 +1,9 @@
-#datafile
-EAG_23_1b.dat
-# controlfile
-EAG_23_1b.ctl
-# projectfile
-EAG_23_1b.prj
-# Weight unit
-Tonnes
+
+EAG_23_1b.dat #datafile
+EAG_23_1b.ctl # controlfile
+EAG_23_1b.prj # projectfile
+Tonnes # Weight unit
+UNKNOWN # Abundance units (WTS: new 2024-02-28)
 # Stock name
 Aleutian_Islands_golden_king_crab
 # Jitter specs (1= yes; SD)

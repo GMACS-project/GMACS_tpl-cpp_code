@@ -1,11 +1,9 @@
-#datafile
-tanner.dat
-#controlfile
-tanner.ctl
-#projectionfile
-tanner.prj
-#weightunit
-1000_mt
+#--gmacs.dat file for Tanner crab
+tanner.dat  #data file
+tanner.ctl  #control file
+tanner.prj  #projection file
+1000_mt     #weight unit
+millions    #abundance unit
 #StockName
 Tanner_crab
 ## Jitter specs (1=yes; SD)
