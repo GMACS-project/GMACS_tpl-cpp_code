@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader =  adstring("## GMACS Version 2.01.M.09; Completed 2024-02-06");
+ !! TheHeader =  adstring("## GMACS Version 2.01.M.10; Completed 2024-02-27");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -267,9 +267,11 @@ DATA_SECTION
   init_adstring controlfile;
   init_adstring projectfile;
   init_adstring weightunit;
+  init_adstring numbersunit;
   init_adstring StockName;
   !!WriteFileName(datafile); WriteFileName(controlfile); WriteFileName(projectfile);
   !!WriteFileName(weightunit);
+  !!WriteFileName(numbersunit);
   !!WriteFileName(StockName);
   init_int IsJittered;
   init_number sdJitter;
@@ -2096,9 +2098,9 @@ DATA_SECTION
   vector AsympSel_ub(1,NumAsympRet);
   ivector AsympSel_phz(1,NumAsympRet);
  LOC_CALCS
-  gmacs_ctl << "#Number of asymptotic selectivity parameters" << endl;
+  gmacs_ctl << "#Number of asymptotic retention parameters" << endl;
   gmacs_ctl << NumAsympRet << endl;
-  echoinput << "#Number of asymptotic selectivity parameters" << endl;
+  echoinput << "#Number of asymptotic retention parameters" << endl;
   echoinput << NumAsympRet << endl;
   if (NumAsympRet > 0)
    {
@@ -3200,6 +3202,7 @@ DATA_SECTION
 
   // Phases off
   int NVarPar;
+  int NEstPars;
   int NRefPars;
   int NRecPar;
   int NSSBPar;
@@ -3243,6 +3246,7 @@ DATA_SECTION
   for (Ipar=1;Ipar<=nSurveys; Ipar++) if (q_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=nSurveys; Ipar++) if (cv_phz(Ipar) > 0) NVarPar += 1;
   cout << "Number of estimated parameters: " << NVarPar << endl;
+  NEstPars = NVarPar;
   
   NRefPars = NVarPar;
   if (OutRefPars==YES) NVarPar += (6 + 3*nfleet);
@@ -3587,6 +3591,7 @@ PARAMETER_SECTION
 //  sdreport_vector sd_log_ssb(syr,nyr);
 //  sdreport_number sd_last_ssb;
 
+  vector gradientOut(1,NEstPars);
   sdreport_matrix sd_log_recruits(1,nsex,syr,nyr);
   sdreport_vector ParsOut(1,NVarPar);
   vector sd_fmsy(1,nfleet);
@@ -5413,7 +5418,7 @@ FUNCTION calc_initial_numbers_at_length
    * @param rec_sdd is the vector of recruitment size proportions. It has dimension (1,nclass)
   **/
 FUNCTION update_population_numbers_at_length
-  int h,i,ig,o,m,isizeTrans;
+  int h,o,m,isizeTrans;
 
   dmatrix Id = identity_matrix(1,nclass);
   dvar_vector rt(1,nclass);
@@ -5422,8 +5427,8 @@ FUNCTION update_population_numbers_at_length
   dvar_vector  z(1,nclass);
 
   // this is what should be used because recruitment is not always during the first season (i.e. during the initial conditions)
-  for ( i = syr; i <= nyrRetro; i++ ){
-      for ( h = 1; h <= nsex; h++ ){
+  for (int i = syr; i <= nyrRetro; i++ ){
+      for (int h = 1; h <= nsex; h++ ){
       if ( bInitializeUnfished == UNFISHEDEQN )
         recruits(h,i) = mfexp(logR0)*float(nsex);
       else
@@ -5435,9 +5440,9 @@ FUNCTION update_population_numbers_at_length
     }//--h
   }//--i
 
-  for ( i = syr; i <= nyrRetro; i++ ){
-    for ( int j = 1; j <= nseason; j++ ){
-      for ( ig = 1; ig <= n_grp; ig++ ){
+  for (int i = syr; i <= nyrRetro; i++ ){
+    for (int j = 1; j <= nseason; j++ ){
+      for (int ig = 1; ig <= n_grp; ig++ ){
         h = isex(ig);
         isizeTrans = iYrIncChanges(h,i);
         m = imature(ig);
@@ -5735,7 +5740,7 @@ FUNCTION calc_predicted_catch
    
   // Now make predictions of catch mortality
    histcat.initialize();
-   for (int i=syr;i<=nyr;i++)
+   for (int i=syr;i<=nyrRetro;i++)
    for ( int j = 1; j <= nseason; j++ )
     {
      for ( int m = 1; m <= nmature; m++ )
@@ -6588,7 +6593,7 @@ FUNCTION calc_prior_densities
      j++;
     }
 
-  // Asymptotic selectivity
+  // Asymptotic retention
   for ( int i = 1; i <= NumAsympRet; i++ )
    {
     if ( AsympSel_phz(i) > 0 && AsympSel_phz(i) <= current_phase() )
@@ -7117,10 +7122,10 @@ FUNCTION dvar_vector calc_ssb()
      if(nmature==1)
       ssb(i) += lam * d4_N(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(i), maturity(h));
      if(nmature==2 && use_func_mat==0)
-      if(m==1)
+      if(m==MATURE)
        ssb(i) += lam * d4_N(ig)(i)(season_ssb) * mean_wt(h,m)(i);
      if(nmature==2 && use_func_mat==1)
-      if(m==1)
+      if(m==MATURE)
         ssb(i) += lam * d4_N(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(i), maturity(h));
     }
   return(ssb);
@@ -7152,10 +7157,10 @@ FUNCTION dvar_vector calc_ssba()
      if(nmature==1)
       ssba(i) += lam * sum(elem_prod(d4_N(ig)(i)(season_ssb), maturity(h)));
      if(nmature==2 && use_func_mat==0)
-      if(m==1)
+      if(m==MATURE)
        ssba(i) += lam * sum(d4_N(ig)(i)(season_ssb));
      if(nmature==2 && use_func_mat==1)
-      if(m==1)
+      if(m==MATURE)
        ssba(i) += lam * sum(elem_prod(d4_N(ig)(i)(season_ssb), maturity(h)));
     }
   return(ssba);
@@ -7931,10 +7936,10 @@ FUNCTION dvar4_array project_one_year(const int i, const int iproj, const int Yr
 	if(nmature==1)
      ssb_pass += lam * numbers_proj_gytl(ig,1,season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
 	if(nmature==2 && use_func_mat==0)
-     if(m==1)
+     if(m==MATURE)
 		ssb_pass += lam * numbers_proj_gytl(ig,1,season_ssb) * mean_wt(h,m,YrRefGrow);
 	if(nmature==2 && use_func_mat==1)
-     if(m==1)
+     if(m==MATURE)
       ssb_pass += lam * numbers_proj_gytl(ig,1,season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
    }
 
@@ -8302,10 +8307,10 @@ FUNCTION dvar_vector project_biomass_OFL(const int YrRef2, const int YrRefGrow,
 	 if(nmature==1)
       ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(YrRefGrow), maturity(h));
      if(nmature==2 && use_func_mat==0)
-	  if(m == 1)
+	  if(m == MATURE)
 		ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * mean_wt(h,m)(YrRefGrow); 
 	 if(nmature==2 && use_func_mat==1)
-	  if(m == 1)
+	  if(m == MATURE)
 		ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(YrRefGrow), maturity(h));
     }
    //cout<<"mean_wt"<<mean_wt<<endl;
@@ -8923,6 +8928,7 @@ FUNCTION dvector calc_Francis_weights()
 FUNCTION CreateOutput
   int Ipar,Jpar,Npar,NparEst;
   int nnnn;                                                          //
+  dvariable MaxGrad;                                                 //> Maximum gradient
   dvar_matrix SummaryTable(syr,nyr,1,5);
   dvar_matrix SummaryTableSD(syr,nyr,1,5);
 
@@ -8941,7 +8947,7 @@ FUNCTION CreateOutput
   OutFile4.open("simdata.out");
   OutFile5.close();
   OutFile5.open("Gmacsall.std");
-
+  
   // The header material
   OutFile1 << TheHeader << endl;
   OutFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
@@ -8959,6 +8965,7 @@ FUNCTION CreateOutput
   OutFile1 << "Number of shell conditions: \t " << nshell << endl;
   OutFile1 << "Number of maturity states:  \t " << nmature << endl;
   OutFile1 << "Weight unit is:             \t " << weightunit << endl;
+  OutFile1 << "Numbers unit is:            \t " <<numbersunit << endl;
   
   // Likelihood summary
   OutFile1 << endl << "#Likelihoods_by_type (raw and weighted)" << endl;
@@ -9011,10 +9018,15 @@ FUNCTION CreateOutput
   OutFile1 << "12. Fdovs_(flt): " << nlogPenalty(12) << " " << Penalty_emphasis(12) << " " << nlogPenalty(12)*Penalty_emphasis(12) << endl;
   OutFile1 << "13. SelDevs: " << nlogPenalty(13) << " " << Penalty_emphasis(13) << " " << nlogPenalty(13)*Penalty_emphasis(13) << endl;
   OutFile1 << endl;
+  
+  MaxGrad = 0;
+  for (int i=1;i<=NEstPars;i++) if (fabs(gradientOut(i)) > fabs(MaxGrad)) MaxGrad = gradientOut(i);
+  OutFile1 << "Maximum gradient: " << MaxGrad << endl << endl;;
+  
 
   // Estimated parameters
   // ====================
-  OutFile1 << "#Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Penalty Standard_error Estimated_parameter_count" << endl;
+  OutFile1 << "#Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Penalty Gradient Standard_error Estimated_parameter_count" << endl;
 
   Npar = 0; NparEst = 0;
   for (Ipar=1;Ipar<=ntheta;Ipar++)
@@ -9024,7 +9036,7 @@ FUNCTION CreateOutput
     if (theta_phz(Ipar) > 0 && theta_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(theta(Ipar),theta_lb(Ipar),theta_ub(Ipar));  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << theta(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9036,7 +9048,7 @@ FUNCTION CreateOutput
     if (Grwth_phz(Ipar) > 0 && Grwth_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(Grwth(Ipar),Grwth_lb(Ipar),Grwth_ub(Ipar));  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << Grwth(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9048,7 +9060,7 @@ FUNCTION CreateOutput
     if (slx_phzm(Ipar) > 0 && slx_phzm(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(log_slx_pars(Ipar),slx_lb(Ipar),slx_ub(Ipar));  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << selname1(Ipar) << " " << log_slx_pars(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9061,7 +9073,7 @@ FUNCTION CreateOutput
     if (AsympSel_phz(Ipar) > 0 && AsympSel_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(Asymret(Ipar),AsympSel_lb(Ipar),AsympSel_ub(Ipar));  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << Asymret(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9074,7 +9086,7 @@ FUNCTION CreateOutput
     if (SlxEnvPar_phz(Ipar) > 0 && SlxEnvPar_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(slx_env_pars(Ipar),SlxEnvPar_lb(Ipar),SlxEnvPar_ub(Ipar));  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << selenvnames1(Ipar) << " " << slx_env_pars(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9087,7 +9099,7 @@ FUNCTION CreateOutput
     if (SlxDevPar_phz(Ipar) > 0 && SlxDevPar_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(sel_devs(Ipar),-12.0,12.0);  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << seldevnames1(Ipar) << " " << sel_devs(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9100,7 +9112,7 @@ FUNCTION CreateOutput
     if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(log_fbar(Ipar),-1000.0,1000.0);  
-      OutFile1 << priorDensity(NparEst) << " "<< ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fbar(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9119,7 +9131,7 @@ FUNCTION CreateOutput
         if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) 
          { 
           NparEst +=1; CheckBounds(log_fdev(Ipar,Jpar),-1000.0,1000.0);  
-          OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+          OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
           OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
          }
         OutFile1 << endl;
@@ -9133,7 +9145,7 @@ FUNCTION CreateOutput
     if (foff_phz(Ipar) > 0 && foff_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(log_foff(Ipar),-1000.0,1000.0);  
-      OutFile1 << priorDensity(NparEst) << " "<< ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_foff(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9152,7 +9164,7 @@ FUNCTION CreateOutput
         if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) 
          { 
           NparEst +=1; CheckBounds(log_fdov(Ipar,Jpar),-1000.0,1000.0);  
-          OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+          OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
           OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
          }
         OutFile1 << endl;
@@ -9167,7 +9179,7 @@ FUNCTION CreateOutput
     if (rec_ini_phz > 0 && rdv_phz <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(rec_ini(Ipar),-14.0,14.0);  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " Rec_ini_size_class_" << Ipar << " " << rec_ini(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9179,7 +9191,7 @@ FUNCTION CreateOutput
     if (rdv_phz > 0 && rdv_phz <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(rec_dev_est(Ipar),-8.0,8.0);  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << "Rec_dev_est_"+str(Ipar) << " " << rec_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9191,7 +9203,7 @@ FUNCTION CreateOutput
     if (rec_prop_phz > 0 && rec_prop_phz <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(logit_rec_prop_est(Ipar),-100.0,100.0);  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << "Logit_rec_prop_est_"+str(Ipar) << " " << logit_rec_prop_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9203,7 +9215,7 @@ FUNCTION CreateOutput
     if (Mdev_phz(Ipar) > 0 && Mdev_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(m_dev_est(Ipar),Mdev_lb(Ipar),Mdev_ub(Ipar));  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " <<  mdevname1(Ipar) << " " << m_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9216,7 +9228,7 @@ FUNCTION CreateOutput
     if (nvn_phz(Ipar) > 0 && nvn_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(log_vn(Ipar),-1000.0,1000.0);  
-      OutFile1 << priorDensity(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_vn(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9229,7 +9241,7 @@ FUNCTION CreateOutput
     if (q_phz(Ipar) > 0 && q_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(survey_q(Ipar),q_lb(Ipar),q_ub(Ipar));  
-      OutFile1 << priorDensity(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << survey_q(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9242,7 +9254,7 @@ FUNCTION CreateOutput
     if (cv_phz(Ipar) > 0 && cv_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(log_add_cv(Ipar),log_add_cv_lb(Ipar),log_add_cv_ub(Ipar));  
-      OutFile1 << priorDensity(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_add_cv(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
@@ -9338,7 +9350,7 @@ FUNCTION CreateOutput
   for (int k=1;k<=nfleet;k++) OutFile1 << fleetname(k) << " ";
   OutFile1 << "Rec_dev logit_rec_prop res_recruit ";
   OutFile1 << endl;
-  for (int i=syr;i<=nyr;i++)
+  for (int i=syr;i<=nyrRetro;i++)
    {
     OutFile1 << i << " " << ssb(i) << " " << SummaryTable(i,3) << " " << SummaryTableSD(i,3) << " " << ssba(i) << " ";
     OutFile1 << dyn_Bzero(i) << " " << SummaryTable(i,5) << " " << SummaryTableSD(i,5) << " ";
@@ -9537,6 +9549,17 @@ FUNCTION CreateOutput
   for ( int i = syr; i <= nyrRetro; i++ ) for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
     OutFile2 << i << " " << sexes(h) << " " << fleetname(j) << " " << mfexp(log_slx_discard(j,h,i)) << endl;
   OutFile2 << endl;
+    
+  
+  // Outout the selex controls 
+  OutFile1 << "# Select_control" << endl;
+  OutFile1 << "# Selex_no first_par_no Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW" << endl;  
+  for (int i=1;i<=nslx;i++)
+   {
+    OutFile1 <<  slx_control(i,1) << " " << slx_control(i,2);
+    for (int j=11;j<=nslx_cols_in;j++) OutFile1 << " " << slx_control(i,j); 
+    OutFile1 << endl;
+   }
     
   OutFile2 << endl << "Selectivity" << endl; 
   for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
@@ -9837,6 +9860,8 @@ FUNCTION CreateOutput
 REPORT_SECTION
   CreateOutput();
   save_gradients(gradients);
+  if (last_phase()) for (int i=1;i<=NEstPars;i++) gradientOut(i) = gradients(i);
+  
   cout<<"Finished REPORT_SECTION"<<endl;
 
 // =====================================================================================================================================
@@ -10117,7 +10142,7 @@ FUNCTION WriteFiles
     for (int ip=6;ip <=nslx_cols_in; ip++) OutInpFile1 << slx_control_in(i,ip) << " ";
     OutInpFile1 << " # " << selname1(i) << endl;
    }
-  OutInpFile1 << endl << "#Number of asymptotic selectivity parameters" << endl;
+  OutInpFile1 << endl << "#Number of asymptotic retention parameters" << endl;
   OutInpFile1 << NumAsympRet << endl;
   OutInpFile1 << "# Fleet   Sex     Year       ival   lb   ub    phz" << endl;
   for (int i=1;i<=NumAsympRet;i++)
@@ -10896,3 +10921,4 @@ FINAL_SECTION
 //                    Reformatted some code to add parentheses, replace tabs with spaces, and correctly indent blocks.
 //                    Replaced o == 1/2 with o == NEW_SHELL/OLD_SHELL, similar for m.
 // 2024-02-05 ** WTS. Reverted selectivity assignaments--needed to loop over h if slx_isex(k) was 0. Added alternative input format for fishery catch data.
+// 2024-02-29 ** AEP. (Updated GMACS to version 2.01.M.10) (a) corrected error wrt retrospective patterns, (d) adding units rto ead-in, and (c) output selex andgradient output.
