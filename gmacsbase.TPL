@@ -392,12 +392,22 @@ DATA_SECTION
   int nlikes;                                              ///> 1      2     3           4         5
  LOC_CALCS
   n_grp = nsex * nshell * nmature;
-  nlikes = 5;                                              ///> catch, cpue, size comps, recruits, molt increments
-  WRITEDAT(syr); WRITEDAT(nyrRetro); WRITEDAT(nseason);
-  WRITEDAT(nfleet); WRITEDAT(nsex); WRITEDAT(nshell); WRITEDAT(nmature); WRITEDAT(nclass);
-  WRITEDAT(season_recruitment); WRITEDAT(season_growth);
-  WRITEDAT(season_ssb); WRITEDAT(season_N);
-  WRITEDAT(nSizeSex);
+  nlikes = 5;          ///> catch, cpue, size comps, recruits, molt increments
+  gmacs_data << syr << " # Start year" << endl;
+  gmacs_data << nyrRetro << " # End year (retro)" << endl;
+  gmacs_data << nseason << " # Number of seasons" << endl;
+  gmacs_data << nfleet << " # Number of distinct data groups (fleet, among fishing fleets and surveys)" << endl;
+  gmacs_data << nsex << " # Number of sexes" << endl;
+  gmacs_data << nshell << " # Number of shell condition types" << endl;
+  gmacs_data << nmature << " # Number of maturity types" << endl;
+  gmacs_data << nclass << " # Number of size-classes in the model" << endl;
+  gmacs_data << season_recruitment << " # Season recruitment occurs" << endl;
+  gmacs_data << season_growth << " # Season molting and growth occurs" << endl;
+  gmacs_data << season_ssb << " # Season to calculate SSB (changed to match Feb mating)" << endl;
+  gmacs_data << season_N << " # Season for N output" << endl;
+  gmacs_data << "# maximum size-class (males then females)" << endl;
+  gmacs_data << nSizeSex << endl;
+  
   // Check at least one matches nclass
   if (max(nSizeSex)!=nclass) { cout << "One of the maximum size-classes needs to match nclass; STOPPING" << endl; exit(1); }
  END_CALCS
@@ -422,7 +432,8 @@ DATA_SECTION
  END_CALCS
   init_vector size_breaks(1,nclass+1);
   vector mid_points(1,nclass);
-  !!WRITEDAT(size_breaks);
+  !! gmacs_data << "# size_breaks (a vector giving the break points between size intervals with dimension nclass+1)" << endl;
+  !! gmacs_data << size_breaks << endl;
 
   // |-------------------------------|
   // | NATURAL MORTALITY             |
@@ -578,8 +589,9 @@ DATA_SECTION
   init_int nCatchDF;
   !! gmacs_data << nCatchDF << "  #--Number of catch data frames" << endl;
 
-  ivector nCatchRows(1,nCatchDF);
-  3darray dCatchData(1,nCatchDF,1,nCatchRows,1,11); // array of catch data
+  // AEP: This is where the bug came in
+  ivector nCatchRows(1,nCatchDF); // this can't be an init_vector here--incompatible with "new" format
+  3darray dCatchData(1,nCatchDF); // array of catch data WTS: full allocation delayed until nCatchRows is determined
   !!float TempW;
   !!float SDlogD;
  LOCAL_CALCS
@@ -9889,7 +9901,7 @@ FUNCTION WriteFiles
   OutInpFile1 << "# maximum size-class (males then females)" << endl;
   OutInpFile1 << nSizeSex << endl;
   OutInpFile1 << "# size_breaks (a vector giving the break points between size intervals with dimension nclass+1)" << endl;
-  OutInpFile1 << mid_points << endl;
+  OutInpFile1 << size_breaks << endl;
   OutInpFile1 << "# Natural mortality per season input type (1 = vector by season, 2 = matrix by season/year)" << endl;
   OutInpFile1 << m_prop_type << endl;
   OutInpFile1 << "# Proportion of the total natural mortality to be applied each season" << endl;
