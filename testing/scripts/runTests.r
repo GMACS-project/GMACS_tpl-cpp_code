@@ -140,22 +140,22 @@ runTests<-function(tests=c("AIGKC_202401",
 
 ##--run all
 if (FALSE) {
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirThs = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
   results = runTests(cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE,
-                     testdir=file.path(dirPrj,"testing/runs"));
+                     testdir=file.path(dirThs,"testing/runs"));
 }
 
 #--run old format
 if (FALSE){
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirThs = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
   tests_old=c("AIGKC_202401","BBRKC_202401","NSRKC_202401","SMBKC_202401","SnowCrab_202401","TannerCrab_MalesOnlyA");
   results = runTests(tests=tests_old,cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE,
-                     testdir=file.path(dirPrj,"testing/runs"));
+                     testdir=file.path(dirThs,"testing/runs"));
 }
 
 #--run new format
 if (FALSE) {
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirThs = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
   results = runTests("TannerCrab_MalesOnlyANew",cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE,
                      testdir=file.path(dirPrj,"testing/runs"),
                      verbose=100);

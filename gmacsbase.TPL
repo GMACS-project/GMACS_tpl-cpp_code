@@ -8969,7 +8969,7 @@ FUNCTION CreateOutput
   
   OutFile1 << "#Stock being assessed: " << StockName << endl << endl;
   OutFile1 << "#General information" << endl;
-  OutFile1 << "Year_range:                 \t " << syr << " " << nyrRetro << endl;
+  OutFile1 << "Year_range:                 \t " << syr << " " << nyrRetro << "; actual data file end year is " << nyr << endl;
   OutFile1 << "Number of seasons:          \t " << nseason << endl;
   OutFile1 << "Number_of_fleets:           \t " << nfleet << endl;
   OutFile1 << "Fleets:                     \t "; for (int k=1;k<=nfleet;k++) OutFile1 << fleetname(k) << " "; OutFile1 << endl;
@@ -10658,7 +10658,7 @@ GLOBALS_SECTION
   #define SURVEY_COMP 2
   
   adstring_array parname1(1,500);
-  adstring_array selname1(1,100);
+  adstring_array selname1(1,500);
   adstring_array mdevname1(1,100);
   adstring_array seldevnames1(1,100);
   adstring_array selenvnames1(1,100);
@@ -10933,4 +10933,4 @@ FINAL_SECTION
 //                    Reformatted some code to add parentheses, replace tabs with spaces, and correctly indent blocks.
 //                    Replaced o == 1/2 with o == NEW_SHELL/OLD_SHELL, similar for m.
 // 2024-02-05 ** WTS. Reverted selectivity assignaments--needed to loop over h if slx_isex(k) was 0. Added alternative input format for fishery catch data.
-// 2024-02-29 ** AEP. (Updated GMACS to version 2.01.M.10) (a) corrected error wrt retrospective patterns, (d) adding units rto ead-in, and (c) output selex andgradient output.
+// 2024-02-29 ** AEP. (Updated GMACS to version 2.01.M.10) (a) corrected error wrt retrospective patterns and catch re-in, (d) adding units to read-in, and (c) output selex andgradient output.
