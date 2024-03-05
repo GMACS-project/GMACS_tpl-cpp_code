@@ -8,3 +8,5 @@ include/.DS_Store
 /testing/runs/*
 .Rproj.user
 .Rhistory
+gmacsbase_20240304.TPL
+gmacsbaseOLD.TPL

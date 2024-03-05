@@ -157,7 +157,15 @@ if (FALSE){
 if (FALSE) {
   dirThs = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
   results = runTests("TannerCrab_MalesOnlyANew",cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE,
-                     testdir=file.path(dirPrj,"testing/runs"),
+                     testdir=file.path(dirThs,"testing/runs"),
+                     verbose=100);
+}
+
+#--run new format
+if (FALSE) {
+  dirThs = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  results = runTests("SnowCrab_20240304",cleanup=FALSE,usePin=TRUE,compareWithPin=TRUE,
+                     testdir=file.path(dirThs,"testing/runs"),
                      verbose=100);
 }
 

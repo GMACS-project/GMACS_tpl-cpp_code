@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader =  adstring("## GMACS Version 2.01.M.10; Completed 2024-02-27");
+ !! TheHeader =  adstring("## GMACS Version 2.10.01; Completed 2024-03-05");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -420,6 +420,8 @@ DATA_SECTION
  LOC_CALCS
   int h,m,o;
   int hmo=1;
+  gmacs_data << "# Group definitions: " << n_grp << endl;
+  gmacs_data << "# Index Sex Shell Maturity" << endl;
   for ( h = 1; h <= nsex; h++ )
    for ( m = 1; m <= nmature; m++ )
     for ( o = 1; o <= nshell; o++ )
@@ -427,7 +429,13 @@ DATA_SECTION
       isex(hmo) = h;
       ishell(hmo) = o;
       imature(hmo) = m;
+      gmacs_data << "# " << hmo << " : " << sexes(h) << " ";
+      if (o==NEW_SHELL) gmacs_data << "New shell(" << o << ") ";
+      if (o==OLD_SHELL) gmacs_data << "old shell(" << o << ") ";
+      if (m==IMMATURE) gmacs_data << "Immature(" << m << ") ";
+      if (m==MATURE) gmacs_data << "Mature(" << m << ") ";
       pntr_hmo(h,m,o) = hmo++;
+      gmacs_data << pntr_hmo(h,m,o) << endl;
      }
  END_CALCS
   init_vector size_breaks(1,nclass+1);
@@ -1517,7 +1525,38 @@ DATA_SECTION
   init_int BetaParRelative;                                ///> Are the beta parameters relative to a base level
   !!WriteCtl(BetaParRelative);
 
-  imatrix iYrIncChanges(1,nsex,syr,nyrRetro);
+  // Maturity stuff
+  int bUseCustomMatureProbability;
+  int maxMatureVaries;
+  ivector nMatureVaries(1,nsex);                              ///> Number of blocks of maturity probability
+  ivector nMatureChanges(1,nsex);                             ///> Number of CHANGES in maturity probability
+  imatrix iYrsMatureChanges(1,nsex,1,1000);         ///> Years with changes in maturity probability
+  !! for (int h=1;h<=nsex;h++) nMatureVaries(h)=1;
+  !! nMatureChanges = nMatureVaries-1;
+  !! maxMatureVaries = max(nMatureVaries);
+  !! if (nmature==2)  
+  !!  {
+  !!   gmacs_ctl << "# Maturity specifications (for a model with two maturity partitions" << endl;
+  !!   *(ad_comm::global_datafile) >> bUseCustomMatureProbability;
+  !!   WriteCtl(bUseCustomMatureProbability);
+  !!   for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> nMatureVaries(h);
+  !!   WriteCtl(nMatureVaries);
+  !!   nMatureChanges = nMatureVaries-1;
+  !!   maxMatureVaries = max(nMatureVaries);
+  !!   for (int h=1;h<=nsex;h++)
+  !!    for (int ii=1;ii<=nMatureChanges(h);ii++)
+  !!     *(ad_comm::global_datafile) >> iYrsMatureChanges(h,ii);
+  !!   gmacs_ctl << "# Start of the blocks in which maturity probability changes (one row for each sex) - the first block starts in " << syr << endl;
+  !!   gmacs_ctl << "# Note: there is one less year than there are blocks" << endl;
+  !!   gmacs_ctl << "# iYrsMoltChanges:" << endl;
+  !!   for (int isex=1;isex<=nsex;isex++)
+  !!    {
+  !!    for (int ii=1;ii<=nMatureChanges(isex);ii++) gmacs_ctl << iYrsMatureChanges(isex,ii) << " ";
+  !!    gmacs_ctl << "# " << sexes(isex)  << endl;
+  !!    }
+  !!  }
+  
+ imatrix iYrIncChanges(1,nsex,syr,nyrRetro);
  LOC_CALCS
   for (int h=1;h<=nsex;h++)
    {
@@ -1603,10 +1642,28 @@ DATA_SECTION
   !!  for (int h=1;h<=nsex;h++)
   !!   for (int i=1;i<=nMoltVaries(h);i++)
   !!    {
-  !!    for (int l=1;l<= nSizeSex(h);l++)
-  !!     gmacs_ctl << CustomMoltProbabilityMatrix(h,i,l) << " ";
+  !!     for (int l=1;l<= nSizeSex(h);l++)
+  !!      gmacs_ctl << CustomMoltProbabilityMatrix(h,i,l) << " ";
   !!     gmacs_ctl << endl;
-  !!     }
+  !!    }
+  !! }
+
+ 3darray CustomMatureProbabilityMatrix(1,nsex,1,maxMatureVaries,1,nclass);          ///> Custom mature probability (read in)
+  !!if (nmature==2 & bUseCustomMatureProbability==FIXED_PROB_MATURE)
+  !! {
+  !!  WriteCtlStr("Using custom mature probability");
+  !!  for (int h=1;h<=nsex;h++)
+  !!   for (int i=1;i<=nMatureVaries(h);i++)
+  !!    for (int l=1;l<= nSizeSex(h);l++)
+  !!     *(ad_comm::global_datafile) >>  CustomMatureProbabilityMatrix(h,i,l);
+  !!  gmacs_ctl << "#Pre-specified mature probability" << endl;;
+  !!  for (int h=1;h<=nsex;h++)
+  !!   for (int i=1;i<=nMatureVaries(h);i++)
+  !!    {
+  !!     for (int l=1;l<= nSizeSex(h);l++)
+  !!      gmacs_ctl << CustomMatureProbabilityMatrix(h,i,l) << " ";
+  !!     gmacs_ctl << endl;
+  !!    }
   !! }
 
   // |--------------------------------|
@@ -2825,7 +2882,12 @@ DATA_SECTION
      cout << "Error: recruitment cannot be estimated after end year" << endl;//NOTE: could set phases to -1
      exit(1);
    }
-  Term_molt           = int(model_controls(3));			 
+  Term_molt           = int(model_controls(3));	
+  if (Term_molt==1 & nmature==1)
+   {
+    cout << "Error: terminal molt requires two maturity partitions" << endl;
+    exit(1);
+   }
   rdv_phz             = int(model_controls(4));
   if (nsex==1) rec_prop_phz = -1; else rec_prop_phz = int(model_controls(5));
   init_sex_ratio = model_controls(6);
@@ -3495,6 +3557,8 @@ PARAMETER_SECTION
   matrix rec_sdd(1,nsex,1,nclass);                         ///> recruitment size_density_distribution
   matrix molt_mu(1,nsex,1,nMoltVaries);                    ///> 50% probability of molting at length each year
   matrix molt_cv(1,nsex,1,nMoltVaries);                    ///> CV in molting probabilility
+  matrix mature_mu(1,nsex,1,nMoltVaries);                  ///> 50% probability of maturing at length each year
+  matrix mature_cv(1,nsex,1,nMoltVaries);                  ///> CV in maturing probabilility
   matrix Linf(1,nsex,1,maxSizeIncVaries);                  ///> Mean Linf
   matrix Kappa(1,nsex,1,maxSizeIncVaries);                 ///> Mean Kappa
   matrix SigmaKappa(1,nsex,1,maxSizeIncVaries);            ///> SD of kappa
@@ -3514,6 +3578,8 @@ PARAMETER_SECTION
   3darray molt_increment(1,nsex,1,maxSizeIncVaries,1,nclass);        ///> linear molt increment
   3darray molt_probability(1,nsex,syr,nyr,1,nclass);                 ///> probability of molting
   3darray molt_probability_in(1,nsex,1,maxSizeIncVaries,1,nclass);   ///> input probability of molting for free estimation
+  3darray mature_probability(1,nsex,syr,nyr,1,nclass);                 ///> probability of mature
+  3darray mature_probability_in(1,nsex,1,maxSizeIncVaries,1,nclass);   ///> input probability of mature for free estimation
   3darray ProbMolt(1,nsex,1,nclass,1,nclass);                        ///> Diagonal matrix of molt probabilities
   4darray growth_transition(1,nsex,1,maxSizeIncVaries,1,nclass,1,nclass);   ///> The time-dependent growth transition matrix
 
@@ -3782,6 +3848,7 @@ PRELIMINARY_CALCS_SECTION
   initialize_model_parameters();            if ( verbose >= 3 ) cout << "Ok after initialize_model_parameters in Prelim ..." << endl;
   calc_growth_increments();                 if ( verbose >= 3 ) cout << "Ok after calc_growth_increments in Prelim ..." << endl;
   calc_molting_probability();               if ( verbose >= 3 ) cout << "Ok after calc_molting_probability in Prelim ..." << endl;
+  calc_mature_probability();                if ( verbose >= 3 ) cout << "Ok after calc_mature_probability in Prelim ..." << endl;
   for ( int h = 1; h <= nsex; h++ )
    for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
     for ( int l = 1; l <= nclass; l++ )
@@ -3844,6 +3911,7 @@ PROCEDURE_SECTION
    {
     calc_growth_increments();                              if ( verbose >= 3 ) cout << "Ok after calc_growth_increments ..." << endl;
     calc_molting_probability();                            if ( verbose >= 3 ) cout << "Ok after calc_molting_probability ..." << endl;
+    calc_mature_probability();                             if ( verbose >= 3 ) cout << "Ok after calc_mature_probability ..." << endl;
     calc_growth_transition();                              if ( verbose >= 3 ) cout << "Ok after calc_growth_transition ..." << endl;
    }
   else
@@ -3927,7 +3995,7 @@ PROCEDURE_SECTION
 FUNCTION initialize_model_parameters
   int Ipnt, Jpnt, Ihmo;
 
-  if (verbose>=3) cout<<"starting initialize_model_parameters";
+  if (verbose >= 3) cout<<"starting initialize_model_parameters";
 
   // Get parameters from theta control matrix:
   M0(1)      = theta(1);
@@ -3976,7 +4044,7 @@ FUNCTION initialize_model_parameters
     rec_dev(i) = rec_dev_est(i);
     logit_rec_prop(i) = logit_rec_prop_est(i);
    }
-   if (verbose>=3) cout<<"--finished setting rec_dev()"<<endl;
+   if (verbose >= 3) cout<<"--finished setting rec_dev()"<<endl;
 
   // Estimate initial numbers as absolute
   if ( bInitializeUnfished == FREEPARS )
@@ -4127,6 +4195,29 @@ FUNCTION initialize_model_parameters
 	icnt += (nclass);
       } 
      }
+   for ( int h = 1; h <= nsex; h++ )
+    for (int igrow=1;igrow<=nMatureVaries(h);igrow++)
+     {
+     if (bUseCustomMatureProbability == LOGISTIC_PROB_MATURE)
+      {
+       mature_mu(h,igrow) = Grwth(icnt);
+       mature_cv(h,igrow) = Grwth(icnt+1);
+       parname1(PPnt+1) = "Mature_probability_mu_"+sexes(h)+"_period_"+str(igrow);
+       parname1(PPnt+2) = "Mature_probability_CV_"+sexes(h)+"_period_"+str(igrow);
+       PPnt += 2;
+       icnt = icnt + 2;
+      }
+     if (bUseCustomMatureProbability == FREE_PROB_MATURE  )
+      {
+       for (int l=1; l<=nclass;l++) 
+	{
+	 mature_probability_in(h,igrow,l) = Grwth(icnt+l-1);
+	 parname1(PPnt+1)="Mature_probability_"+sexes(h)+"_period_"+str(igrow)+"_class_"+str(l);
+	 PPnt += 1;
+	}
+	icnt += (nclass);
+      } 
+     }
   
    // high grade factors
    log_high_grade.initialize();
@@ -4271,7 +4362,6 @@ FUNCTION init_selectivities
        pSLX = new class gsm::Uniform0Curve<dvar_vector>;
        break;
       case SELEX_CUBIC_SPLINE:                             ///> cubic spline
-       if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
        for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
        for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
        // Buck
@@ -4306,7 +4396,7 @@ FUNCTION init_selectivities
    * Need to deprecate the abstract class for selectivity, 7X slower.
   **/
 FUNCTION calc_selectivities
-  if (verbose>=3) cout<<"starting calc_selectivities"<<endl;
+  if (verbose >= 3) cout<<"starting calc_selectivities"<<endl;
   int h,i,k, k2;
   int jstore, estore, sd;
   dvar_vector pv;
@@ -4330,14 +4420,14 @@ FUNCTION calc_selectivities
   //cout << slx_dev_sigma<< endl;
 
   // Specify non-mirrored selectivity
-  if (verbose>=3) cout<<"evaluating non-mirrored selectivities"<<endl;
+  if (verbose >= 3) cout<<"evaluating non-mirrored selectivities"<<endl;
   int j = 1; int ee = 1; sd = 1;
   for ( int k = 1; k <= nslx; k++ ){
     if (slx_type(k) < 0){
       pSLX=0; 
       j++;
     } else {
-      if (verbose>3) cout<<"retrieving selex for k = "<<k<<endl;
+      if (verbose == 5) cout<<"retrieving selex for k = "<<k<<endl;
       dvar_vector temp_slx2(1,slx_extra(k));
       dvar_vector knots(1,slx_extra(k));
 
@@ -4350,21 +4440,21 @@ FUNCTION calc_selectivities
       if ( slx_isex(k) == MALES ) { h2 = MALES; }     ///> males (or single/combined-sex) only
       if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; } ///> females only
       for ( h = h1; h <= h2; h++ ) {
-        if (verbose>3) cout<<"h = "<<h<<" for slx_isex(k)"<<endl;
+        if (verbose == 5) cout<<"h = "<<h<<" for slx_isex(k)"<<endl;
         // Set the time-varying dev for this fleet x sex
         if (slx_timeVar(k)==1) {
           for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
             j = jstore; ee= estore; 
             switch ( slx_type(k) ) {
               case SELEX_PARAMETRIC:                               ///> parametric
-                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
+                if (verbose== 5) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
                 for (int i = 1; i <= nclass; i++) { 
                   if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
                   if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
                   if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
                   j++;
                 }
-                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
+                if (verbose == 5) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
                 break;
               case SELEX_COEFFICIENTS:                             ///> coefficients
                 if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
@@ -4376,14 +4466,14 @@ FUNCTION calc_selectivities
                 }
                 break;
               case SELEX_STANLOGISTIC:                             ///> logistic
-                if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
+                if (verbose == 5) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
                 for (int i=1;i<=2;i++) {
                   if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-                  if (verbose>3) cout<<"--1"<<j<<endl;
+                  if (verbose == 5) cout<<"--1"<<j<<endl;
                   if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
-                  if (verbose>3) cout<<"--2"<<j<<endl;
+                  if (verbose == 5) cout<<"--2"<<j<<endl;
                   if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
-                  if (verbose>3) cout<<"--3"<<j<<endl;
+                  if (verbose == 5) cout<<"--3"<<j<<endl;
                   j++;
                 } 
                 break;
@@ -4396,14 +4486,14 @@ FUNCTION calc_selectivities
                 } 
                 break;
               case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
-                if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
+                if (verbose == 5) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
                 if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
                 if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
                 if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
                 j++;
                 break;
               case SELEX_DECLLOGISTIC:                             ///> declining logistic
-                if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
+                if (verbose == 5) cout<<"SELEX_DECLOGISTIC"<<endl;
                 for (int i=1;i<=2;i++) {
                   if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
                   if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
@@ -4420,7 +4510,7 @@ FUNCTION calc_selectivities
                 } 
                 break;
               case SELEX_DOUBLENORM4:                               ///> double normal4
-                if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
+                if (verbose == 5) cout<<"SELEX_DOUBLENORM4"<<endl;
                 for (int i=1;i<=4;i++) {
                   if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
                   if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
@@ -4433,7 +4523,7 @@ FUNCTION calc_selectivities
               case SELEX_UNIFORM0: // uniform 0
                 break;
               case SELEX_CUBIC_SPLINE:                             ///> coefficients
-                if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
+                if (verbose == 5) cout<<"creating SelectivitySpline class"<<endl;
                 for (int i = 1; i <= slx_extra(k); i++) { 
                   if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
                   if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
@@ -4443,27 +4533,27 @@ FUNCTION calc_selectivities
             } // switch
           } // iy
         }
-        if (verbose>3)  cout << "Done stage 1: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
+        if (verbose== 5)  cout << "Done stage 1: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
 
         // Now the actual deal
-        if (verbose>=3) cout<<"starting calc_selectivities"<<endl;
+        if (verbose >= 5) cout<<"starting calc_selectivities"<<endl;
         for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
           if (iy==slx_styr(k) || slx_timeVar(k)==1) {
             j = jstore; /// ee= estore; 
             switch ( slx_type(k) ) {
               case SELEX_PARAMETRIC:                               ///> parametric
-                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
+                if (verbose == 5) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
                 for (int i = 1; i <= nclass; i++) { 
                   temp_slx1(i) = log_slx_pars(j); 
                   if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx1(i) += SelDevs(j,iy); }
                   j++; 
                 }
-                if (verbose>3) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
+                if (verbose == 5) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
                 ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[k-1])->SetSelparms(temp_slx1);
                 pSLX = ppSLX[k-1];
                 break;
               case SELEX_COEFFICIENTS:                             ///> coefficients
-                if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
+                if (verbose == 5) cout<<"SELEX_COEFFICIENTS"<<endl;
                 for (int i = 1; i <= slx_extra(k); i++) { 
                   temp_slx2(i) = log_slx_pars(j); 
                   if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx2(i) += SelDevs(j,iy); }
@@ -4473,7 +4563,7 @@ FUNCTION calc_selectivities
                 pSLX = ppSLX[k-1];
                 break;
               case SELEX_STANLOGISTIC:                             ///> logistic
-                if (verbose>3) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
+                if (verbose == 5) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
                 p1 = mfexp(log_slx_pars(j));
                 if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
                 j++;
@@ -4484,7 +4574,7 @@ FUNCTION calc_selectivities
                 pSLX = ppSLX[k-1];
                 break;
               case SELEX_5095LOGISTIC:                             ///> logistic95
-                if (verbose>3) cout<<"SELEX_LOGISTIC95"<<endl;
+                if (verbose == 5) cout<<"SELEX_LOGISTIC95"<<endl;
                 p1 = mfexp(log_slx_pars(j));
                 if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
                 j++;
@@ -4495,7 +4585,7 @@ FUNCTION calc_selectivities
                 pSLX = ppSLX[k-1];
                 break;
               case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
-                if (verbose>3) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
+                if (verbose == 5) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
                 p1 = mfexp(log_slx_pars(j));
                 if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
                 j++;
@@ -4503,7 +4593,7 @@ FUNCTION calc_selectivities
                 pSLX = ppSLX[k-1];
                 break;
               case SELEX_DECLLOGISTIC:                             ///> declining logistic
-                if (verbose>3) cout<<"SELEX_DECLOGISTIC"<<endl;
+                if (verbose == 5) cout<<"SELEX_DECLOGISTIC"<<endl;
                 p1 = mfexp(log_slx_pars(j));
                 if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
                 j++;
@@ -4515,7 +4605,7 @@ FUNCTION calc_selectivities
                 pSLX = ppSLX[k-1];
                 break;
               case SELEX_DOUBLENORM:                               ///> double normal
-                if (verbose>3) cout<<"SELEX_DOUBLENORM"<<endl;
+                if (verbose == 5) cout<<"SELEX_DOUBLENORM"<<endl;
                 p1 = mfexp(log_slx_pars(j));
                 j++;
                 p2 = mfexp(log_slx_pars(j));
@@ -4526,7 +4616,7 @@ FUNCTION calc_selectivities
                 pSLX = ppSLX[k-1];
                 break;
               case SELEX_DOUBLENORM4:                               ///> double normal4
-                if (verbose>3) cout<<"SELEX_DOUBLENORM4"<<endl;
+                if (verbose == 5) cout<<"SELEX_DOUBLENORM4"<<endl;
                 p1 = mfexp(log_slx_pars(j));
                 j++;
                 p2 = mfexp(log_slx_pars(j));
@@ -4540,16 +4630,16 @@ FUNCTION calc_selectivities
                 break;
               case SELEX_UNIFORM1: // uniform 1
                 j++;
-                if (verbose>3) cout<<"SELEX_UNIFORM1"<<endl;
+                if (verbose == 5) cout<<"SELEX_UNIFORM1"<<endl;
                 pSLX = ppSLX[k-1];//gsm::UniformCurve<dvar_vector>
                 break;
               case SELEX_UNIFORM0: // uniform 0
                 j++;
-                if (verbose>3) cout<<"SELEX_UNIFORM0"<<endl;
+                if (verbose == 5) cout<<"SELEX_UNIFORM0"<<endl;
                 pSLX = ppSLX[k-1];//gsm::Uniform0Curve<dvar_vector>
                 break;
               case SELEX_CUBIC_SPLINE:                             ///> coefficients
-                if (verbose>3) cout<<"creating SelectivitySpline class"<<endl;
+                if (verbose == 5) cout<<"creating SelectivitySpline class"<<endl;
                 for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
                 for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
                 // Buck
@@ -4578,9 +4668,9 @@ FUNCTION calc_selectivities
             //cout << kk << " " << h << " " << iy << " " << slx_type(k) << " " << log_slx_retaind(kk,h,iy) << endl;
           }
         } //--iy loop
-        if (verbose>3) cout << "Done stage 2: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
+        if (verbose == 5) cout << "Done stage 2: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
       } //--h loop
-      if (verbose>3) cout<<"done selecting SLX"<<endl;
+      if (verbose == 5) cout<<"done selecting SLX"<<endl;
       //do NOT "delete pSLX;"
     }//--if (slx_type(k) < 0)
    //exit(1);
@@ -4853,14 +4943,14 @@ FUNCTION calc_molting_probability
           }
         }
       }
-     // Uniform selectivity
+     // Uniform probability of maturing
      if (bUseCustomMoltProbability == CONSTANT_PROB_MOLT)
       {
        for ( int i = syr; i <= nyrRetro; i++ )
         for ( int l = 1; l <= nclass; l++ )
-          molt_probability(h,i,l) = 1;
+          molt_probability(h,i,l) = 1.0;
       }
-     // Estimated logistic selectivity
+     // Estimated mature probability of maturing
      if (bUseCustomMoltProbability == LOGISTIC_PROB_MOLT)
       {
        dvariable mu = molt_mu(h,1);
@@ -4876,10 +4966,10 @@ FUNCTION calc_molting_probability
         }
       }
 
-	  // Estimated free probability of molting
-	  if (bUseCustomMoltProbability==FREE_PROB_MOLT)
+     // Estimated free probability of molting
+     if (bUseCustomMoltProbability==FREE_PROB_MOLT)
       {
-       for ( int i = syr; i <= nyr; i++ )
+       for ( int i = syr; i <= nyrRetro; i++ )
         {
          if (igrow==1)
           molt_probability(h)(i) = molt_probability_in(h,1);
@@ -4891,6 +4981,15 @@ FUNCTION calc_molting_probability
         }
       }
     }
+
+
+  /**
+   * @brief Calculate the probability of maturing by carapace width.
+   * @details Note that the parameters mature_mu and mature_cv can only be estimated in cases where there is new shell and old shell data. Note that the diagonal of the P matrix != 0, otherwise the matrix is singular in inv(P).
+   *
+   * @param mature_mu is the mean of the distribution
+   * @param mature_cv scales the variance of the distribution
+  **/
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -5252,6 +5351,64 @@ FUNCTION calc_growth_transition
       }  // if
    } // h
 
+// =======================================================================================================================================
+// =======================================================================================================================================
+
+FUNCTION calc_mature_probability
+  double tiny = 0.000;
+
+  mature_probability.initialize();
+
+  for ( int h = 1; h <= nsex; h++ )
+   for ( int igrow=1;igrow<=nMatureVaries(h);igrow++)
+    {
+     // Pre-specified mature probability
+     if (bUseCustomMatureProbability==FIXED_PROB_MATURE)
+      {
+       for ( int i = syr; i <= nyrRetro; i++ )
+        {
+         if (igrow==1)
+          mature_probability(h)(i) = CustomMatureProbabilityMatrix(h,1);
+         else
+          {
+           if ( igrow > 1 && i >= iYrsMatureChanges(h,igrow-1))
+            mature_probability(h)(i) = CustomMatureProbabilityMatrix(h,igrow);
+          }
+        }
+      }
+     // Estimated logistic probability of maturing
+     if (bUseCustomMatureProbability == LOGISTIC_PROB_MATURE)
+      {
+       dvariable mu = mature_mu(h,1);
+       dvariable sd = mu * mature_cv(h,1);
+       for ( int i = syr; i <= nyrRetro; i++ )
+        {
+         if ( igrow > 1 && i >= iYrsMatureChanges(h,igrow-1) )
+          {
+           mu = mature_mu(h,igrow);
+           sd = mu * mature_cv(h,igrow);
+          }
+         mature_probability(h)(i) = 1.0 - ((1.0 - 2.0 * tiny) * plogis(dvar_mid_points, mu, sd) + tiny);
+        }
+      }
+
+     // Estimated free probability of maturing
+     if (bUseCustomMatureProbability==FREE_PROB_MATURE)
+      {
+       for ( int i = syr; i <= nyrRetro; i++ )
+        {
+         if (igrow==1)
+          mature_probability(h)(i) = mature_probability_in(h,1);
+         else
+          {
+           if ( igrow > 1 && i >= iYrsMatureChanges(h,igrow-1))
+            mature_probability(h)(i) = mature_probability_in(h,igrow);
+          }
+        }
+      }
+    }
+
+
 // ============================================================================================================================================
 
   /**
@@ -5419,7 +5576,224 @@ FUNCTION calc_initial_numbers_at_length
   /**
    * @brief Update numbers-at-length
    * @author Team
-   * @details Numbers at length are propagated each year for each sex based on the size transition matrix and a vector of size-specifc survival rates. The columns of the size-transition matrix are multiplied by the size-specific survival rate (a scalar). New recruits are added based on the estimated average recruitment and annual deviate, multiplied by a vector of size-proportions (rec_sdd).
+   * @details Numbers at length are propagated each year for each sex based on the size transition matrix and a vector of size-specifc survival rates. 
+   * This is for one season
+   * The columns of the size-transition matrix are multiplied by the size-specific survival rate (a scalar). 
+   * New recruits are added based on the estimated average recruitment and annual deviate, multiplied by a vector of size-proportions (rec_sdd).
+   **/
+
+FUNCTION void update_population_numbers_at_length_season(const int i, const int j)
+  int h,o,m,isizeTrans;
+
+  dvar_vector rt(1,nclass);
+  dvar_vector  x(1,nclass);
+  dvar_vector  y(1,nclass);
+  dvar_vector  z(1,nclass);
+  dvar_vector  t1(1,nclass);
+  dvar_vector  t2(1,nclass);
+  dvar_matrix next(1,n_grp,1,nclass);
+
+  // reset next
+  next.initialize();
+  
+  // Loop over groupds
+  for (int ig = 1; ig <= n_grp; ig++){
+   
+    // Extract group
+    h = isex(ig);
+    isizeTrans = iYrIncChanges(h,i);
+    m = imature(ig);
+    o = ishell(ig);
+
+    // Numbers-at-size for this group
+    x = d4_N(ig)(i)(j);
+    // Mortality (natural and fishing)
+    x = x * S(h,m)(i)(j);
+   
+    // What to do next depends on which group (shell and maturity) we are in
+    // ======================================================================
+    
+    // Case-A: one shell condition and one maturity state
+    if (nshell == 1 & nmature == 1) {
+      // Molting and growth
+      if (j == season_growth) {
+       y = elem_prod(x, 1.0 - molt_probability(h)(i));                                  // did not molt, become oldshell
+       x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans);     // molted and grew, stay newshell
+       x = x + y;                                                                       // only one shell type so combine
+       }
+      // Recruitment
+      if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+      next(ig) += x;
+      if (verbose==4 & i==syr) cout << "Case-A: one shell condition and one maturity state" << endl;
+    } // nshell == 1 & nmature == 1
+
+
+    //-------------------------------------------------------------------------------------------------------------------------------
+    // Case-B & C: One shell condition, two maturity stages
+
+    // Terminal molt does not impact imature animals
+    if (nshell == 1 & nmature == 2 & m == IMMATURE){ 
+      // Molting and growth
+      z.initialize();
+//      This works
+//      if (j == season_growth) {
+//       z = elem_prod(x * growth_transition(h,isizeTrans), mature_probability(h)(i)) ; 		 // molted to maturity
+//       x = elem_prod(x * growth_transition(h,isizeTrans), 1.0 - mature_probability(h)(i)) ;// molted, but immature
+//       }
+       // This does not work!
+       if (j == season_growth) {
+         y = elem_prod(x, 1.0 - molt_probability(h)(i));                            // did not molt (should be zero!)
+         cout<<"y should be 0: "<<y<<endl;
+         x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans);// molted and grew
+         x = x + y;                                                                 // only one shell type so combine
+       
+         z = elem_prod(x , mature_probability(h)(i)) ; 		                          // molted to maturity
+         x = elem_prod(x , 1.0 - mature_probability(h)(i)) ;                        // did not molt to maturity (and stayed immature)
+       }
+      if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+      next(ig-1) += z; next(ig) += x;
+      if (Term_molt==0 & verbose==4 & i==syr) cout << "Case-B1: no terminal molt, one shell condition, and two maturity states; IMMATURE" << endl;
+      if (Term_molt==1 & verbose==4 & i==syr) cout << "Case-C1: Terminal molt, one shell condition, and two maturity states; IMMATURE" << endl;
+     } // Term_molt==0 or 1 &  nshell == 1 & nmature == 2 & m == IMMATURE
+
+    if (Term_molt==0 & nshell == 1 & nmature == 2 & m == MATURE) {
+      // Molting and growth
+      if (j == season_growth) {
+       y = elem_prod(x, 1.0 - molt_probability(h)(i));                                  // did not molt, become oldshell
+       x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans);      // molted and grew, stay newshell
+       x = x + y;                                                                       // only one shell type so combine
+      }
+      next(ig) += x;
+      if (verbose==4 & i==syr) cout << "Case-B2: no terminal molt, one shell condition, and two maturity states; MATURE" << endl;
+    } // Term_molt==0 & nshell == 1 & nmature == 2 & m == MATURE
+
+    // Terminal molt: No molting, growth, or recruitment for mature animals if there is a terminal motl
+    if (Term_molt==1 & nshell == 1 & nmature == 2 & m == MATURE) {
+      next(ig) += x;
+      if (verbose==4 & i==syr) cout << "Case-C2: Terminal molt, one shell condition, and two maturity states; MATURE" << endl;
+    } // Term-Molt == 1 & nshell == 1 & nmature == 2 & m == MATURE
+         
+    //-------------------------------------------------------------------------------------------------------------------------------
+    // Case-D: No-terminal molt; two shell conditions, one maturity stage
+    if (Term_molt==0 & nshell == 2  & nmature == 1 & o == NEW_SHELL) {
+      // Molting and growth
+      if (j == season_growth){
+       y = elem_prod(x, 1.0 - molt_probability(h)(i));                             // did not molt, become oldshell
+       x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
+       }
+      // Recruitment
+      if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+      next(ig) += x;
+      if (verbose==4 & i==syr) cout << "Case-D1: No-terminal molt, two shell condition, and one maturity state; NEW_SHELL" << endl;
+     } // Term_molt==0 & nshell == 0 & o == NEW_SHELL
+         
+    if (Term_molt==0 & nshell == 2  & nmature == 1 & o == OLD_SHELL) 
+     {
+      // Molting and growth
+      z.initialize();
+      if (j == season_growth) {
+       z = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
+       x = elem_prod(x, 1 - molt_probability(h)(i)) + y;                           // did not molt, remain oldshell and add the newshell that become oldshell
+       }
+      next(ig-1) += z; next(ig) += x;
+      if (verbose==4 & i==syr) cout << "Case-D2: No-terminal molt, two shell condition, and one maturity state; OLD_SHELL" << endl;
+     } // Term_molt==0 & nshell == 0 & o == OLD_SHELL
+
+    //-------------------------------------------------------------------------------------------------------------------------------
+    // Cases-E and F: Two shell conditions, two maturity stages
+    if (verbose==4 & i==syr) cout << Term_molt << " " << j << " " << ig << " " << h << " " << o << " " << m << endl;
+    if (nshell == 2 & nmature == 2 & o == NEW_SHELL & m == IMMATURE) 
+     {
+      // Molting and growth
+      z.initialize();
+      y.initialize();
+       if (j == season_growth) {
+         y = elem_prod(x, 1.0 - molt_probability(h)(i));                                                // did not molt (immature old shell)
+         x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans);                    // molted and grew (new shell)
+         z = elem_prod(x , mature_probability(h)(i)) ; 		                                        // molted to maturity (mature new shell)
+         x = elem_prod(x , 1.0 - mature_probability(h)(i)) ;                                            // did not molt to maturity (immature new shell)
+        if (Term_molt==0 & verbose==4 & i==syr) cout << "Case-E1: no terminal molt, two shell condition, and two maturity states; NEW_SHELL & IMMATURE " << ig << endl;
+        if (Term_molt==1 & verbose==4 & i==syr) cout << "Case-F1: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & IMMATURE " << ig << endl;
+       }
+      if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+      next(ig-2) += z; next(ig) += x; next(ig+1) += y;
+      }
+    if (Term_molt==0 & nshell == 2 & nmature == 2 & o == NEW_SHELL & m == MATURE) 
+     {
+      // Molting and growth
+      y.initialize();
+       if (j == season_growth) {
+         y = elem_prod(x, 1.0 - molt_probability(h)(i));                                                // did not molt (mature old shell)
+         x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans);                    // molted and grew (mature new shell)
+        if (Term_molt==0 & verbose==4 & i==syr) cout << "Case-E2: no terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
+       }
+      if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
+      next(ig) += x; next(ig+1) += y;
+     }
+    if (Term_molt==1 & nshell == 2 & nmature == 2 & o == NEW_SHELL & m == MATURE) 
+     {
+      // Only become oldshell
+      y.initialize();
+      if (j == season_growth) {
+       y = x;
+       x.initialize();
+       if (Term_molt==1 & verbose==4 & i==syr) cout << "Case-F2: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
+       }
+      next(ig+1) += y;  next(ig) += x;
+     }
+    
+    if (nshell == 2 & nmature == 2 & o == OLD_SHELL & m==IMMATURE) 
+     {
+      // Molting and growth
+      z.initialize();
+      y.initialize();
+      if (j == season_growth) {
+         y = elem_prod(x, 1.0 - molt_probability(h)(i));                                                // did not molt (immature old shell)
+         x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans);                    // molted and grew (new shell)
+         z = elem_prod(x , mature_probability(h)(i)) ; 		                                        // molted to maturity (mature new shell)
+         x = elem_prod(x , 1.0 - mature_probability(h)(i)) ;                                            // did not molt to maturity (immature new shell)
+         if (Term_molt==0 & verbose==4 & i==syr) cout << "Case-E3: no terminal molt, two shell condition, and two maturity states; OLD_SHELL & IMMATURE " << ig << endl;
+         if (Term_molt==1 & verbose==4 & i==syr) cout << "Case-F3: Terminal molt, two shell condition, and two maturity states; OLD_SHELL & IMMATURE " << ig << endl;
+       }
+      next(ig-3) += z; next(ig-1) += x; next(ig) += y;
+     }
+     
+    if (Term_molt==0 & nshell == 2 & nmature == 2 & o == OLD_SHELL & m==MATURE) 
+     {
+      // Molting and growth
+      y.initialize();
+      if (j == season_growth) {
+         y = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans);                    // molted and grew (mature new shell)
+         x = elem_prod(x, 1.0 - molt_probability(h)(i));                                                // did not molt (mature old shell)
+         if (verbose==4 & i==syr) cout << "Case-E4: No-terminal molt, two shell condition, and two maturity states; OLD_SHELL & MATURE " << ig << endl;
+       }
+      next(ig) += x; next(ig-1) += y;
+     }
+    
+    if (Term_molt==1 & nshell == 2 & nmature == 2 & o == OLD_SHELL & m==MATURE) 
+     {
+      if (j == season_growth) {
+       if (verbose==4 & i==syr) cout << "Case-F4: Terminal molt, rwo shell condition, and two maturity states; OLD_SHELL & MATURE " << ig << endl;
+       }
+      next(ig) += x;
+     }
+   
+   } // grp
+
+   // update the n-matrix
+   for (int ig=1;ig<=n_grp;ig++)
+    if (j == nseason)
+     { d4_N(ig)(i+1)(1) = next(ig); }
+     else 
+     { d4_N(ig)(i)(j+1) = next(ig); }
+
+
+// --------------------------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Update numbers-at-length
+   * @author Team
+   * @details Projections for entire period
    *
    * @param bInitializeUnfished
    * @param logR0
@@ -5452,84 +5826,9 @@ FUNCTION update_population_numbers_at_length
     }//--h
   }//--i
 
-  for (int i = syr; i <= nyrRetro; i++ ){
-    for (int j = 1; j <= nseason; j++ ){
-      for (int ig = 1; ig <= n_grp; ig++ ){
-        h = isex(ig);
-        isizeTrans = iYrIncChanges(h,i);
-        m = imature(ig);
-        o = ishell(ig);
-
-        x = d4_N(ig)(i)(j);
-        // Mortality (natural and fishing)
-        x = x * S(h,m)(i)(j);
-        if (nshell == 1 ) {
-          if(nmature == 1) {
-            // Molting and growth
-            if (j == season_growth) {
-              y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
-              x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
-              x = x + y;
-            }
-            // Recruitment
-            if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-            if (j == nseason) d4_N(ig)(i+1)(1) = x;  else  d4_N(ig)(i)(j+1) = x;
-          } //nmature==1
-          if(nmature == 2) {
-            if ( m == MATURE ) {// mature
-            //No molting, growth, or recruitment for mature animals
-              if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
-            }
-            if ( m == IMMATURE ) {// immature
-              // Molting and growth
-              z.initialize();
-              if (j == season_growth) {
-                z = elem_prod(x * growth_transition(h,isizeTrans), molt_probability(h)(i)) ; 		// molted to maturity
-                x = elem_prod(x * growth_transition(h,isizeTrans), 1 - molt_probability(h)(i)) ;    // molted, but immature
-              }
-              if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-              if (j == nseason){ 
-                d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; 
-              } else { 
-                d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; 
-              }
-            }	 
-          }//nmature==2
-        } else { //nshell>1
-          if ( o == NEW_SHELL ) {// newshell
-            // Molting and growth
-            if (j == season_growth){
-              y = elem_prod(x, 1.0 - molt_probability(h)(i)); // did not molt, become oldshell
-              x = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, stay newshell
-            }
-            // Recruitment
-            if (j == season_recruitment) x += recruits(h)(i) * rec_sdd(h);
-            if (j == nseason) d4_N(ig)(i+1)(1) = x; else  d4_N(ig)(i)(j+1) = x;
-          }//-- o == NEW_SHELL
-          if ( o == OLD_SHELL ){ // oldshell
-            // Molting and growth
-            z.initialize();
-            if (j == season_growth) {
-              z = elem_prod(x, molt_probability(h)(i)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
-              x = elem_prod(x, 1 - molt_probability(h)(i)) + y; // did not molt, remain oldshell and add the newshell that become oldshell
-            }
-            if (j == nseason){ 
-              d4_N(ig-1)(i+1)(1) += z; d4_N(ig)(i+1)(1) = x; 
-            } else { 
-              d4_N(ig-1)(i)(j+1) += z; d4_N(ig)(i)(j+1) = x; 
-            }
-          }//-- o == OLD_SHELL
-        }//--if nshell
-
-        if ( o == NEW_SHELL && m == IMMATURE ) {
-          // terminal molt to new shell.
-        }
-        if ( o == OLD_SHELL && m == IMMATURE ) {
-          // terminal molt newshell to oldshell.
-        }
-      } //--ig
-    }//--j
-  }//--i
+  for (int i = syr; i <= nyrRetro; i++ )
+    for (int j = 1; j <= nseason; j++ )
+     update_population_numbers_at_length_season(i,j);
 
 // =================================================================================================================================================
 
@@ -6930,7 +7229,7 @@ FUNCTION calc_objective_function
       nlogPenalty(1) += Penalty_fdevs(k,2)*r*r;
      }
    }
-   if (verbose>=3) cout<<"finished penalties on log_fdev"<<endl;
+   if (verbose >= 3) cout<<"finished penalties on log_fdev"<<endl;
 
   // 2) Penalty on mean F to regularize the solution.
   int irow = 1;
@@ -6947,7 +7246,7 @@ FUNCTION calc_objective_function
       nlogPenalty(2) += dnorm(ln_fbar, log(pen_fbar(k)), pen_fstd(irow,k));
      }
    }
-   if (verbose>=3) cout<<"finished penalties on mean F"<<endl;
+   if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
 
   // 3) Penalty to constrain M in random walk
   if (nMdev > 0)
@@ -6959,7 +7258,7 @@ FUNCTION calc_objective_function
     if ( active(rec_ini) && nSRR_flag !=0 ) nlogPenalty(5) = dnorm(rec_ini, 1.0);
     if ( active(rec_dev_est) ) nlogPenalty(6) = dnorm(first_difference(rec_dev), 1.0);
    }
-   if (verbose>=3) cout<<"finished penalties on rec_devs"<<endl;
+   if (verbose >= 3) cout<<"finished penalties on rec_devs"<<endl;
 
   // 7) Penalties on sex-specific recruitment
   if (nsex > 1) {
@@ -6968,7 +7267,7 @@ FUNCTION calc_objective_function
      { SumRecF += recruits(2)(i); SumRecM += recruits(1)(i); }
     nlogPenalty(7) = square(log(SumRecF) - log(SumRecM));
   }
-  if (verbose>=3) cout<<"finished penalties on sex-specific recruitment"<<endl;
+  if (verbose >= 3) cout<<"finished penalties on sex-specific recruitment"<<endl;
 
   // 8) Smoothness penalty on molting probability
   if (bUseCustomMoltProbability==FREE_PROB_MOLT) {
@@ -6977,7 +7276,7 @@ FUNCTION calc_objective_function
       if (nsex>1) nlogPenalty(8) += dnorm(first_difference(molt_probability_in(2,igrow)), 1.0);  
     }
   }
-  if (verbose>=3) cout<<"finished Smoothness penalty on molting probability"<<endl;
+  if (verbose >= 3) cout<<"finished Smoothness penalty on molting probability"<<endl;
    
    // 9) Smoothness penalty on free selectivity
   for ( int k = 1; k <= nslx; k++ ) {
@@ -6987,20 +7286,20 @@ FUNCTION calc_objective_function
   	    nlogPenalty(9) += dnorm(first_difference(log_slx_capture(kk,h,syr)), 1.0); 
     }//--if( slx_type(k) == SELEX_PARAMETRIC)
   }//--k
-  if (verbose>=3) cout<<"Finished smoothness penalty on free selectivity"<<endl;
+  if (verbose >= 3) cout<<"Finished smoothness penalty on free selectivity"<<endl;
 
   // 10) Smoothness penalty on initial numbers at length
   for ( int k = 1; k <= n_grp; k++ ) {
     nlogPenalty(10) += dnorm(first_difference(logN0(k)), 1.0); 
   }
-  if (verbose>=3) cout<<"Finished smoothness penalty on initial Ns"<<endl;
+  if (verbose >= 3) cout<<"Finished smoothness penalty on initial Ns"<<endl;
 
   // 11) Penalties on annual devs
   for ( int k = 1; k <= nfleet; k++ )
     {
     nlogPenalty(11) += Penalty_fdevs(k,3)*sum(square(log_fdev(k)));
     }
-   if (verbose>=3) cout<<"Finished smoothness penalty on annual devs"<<endl;
+   if (verbose >= 3) cout<<"Finished smoothness penalty on annual devs"<<endl;
 
   // 12) Penalties on sex-specific devs
   if (nsex > 1)
@@ -7008,7 +7307,7 @@ FUNCTION calc_objective_function
     {
      nlogPenalty(12) += Penalty_fdevs(k,4)*sum(square(log_fdov(k)));
     }
-   if (verbose>=3) cout<<"Finished penalties on sex-specific devs"<<endl;
+   if (verbose >= 3) cout<<"Finished penalties on sex-specific devs"<<endl;
 
   // 13) Penalty on selectivity devs
   nlogPenalty(13) = logDevPenal;
@@ -7054,6 +7353,7 @@ FUNCTION simulation_model
   // Population dynamics ...
   calc_growth_increments();
   calc_molting_probability();
+  calc_mature_probability();
   calc_growth_transition();
   calc_natural_mortality();
   calc_total_mortality();
@@ -9432,8 +9732,8 @@ FUNCTION CreateOutput
      if (dSurveyData(k,4)==1) OutFile1 << " Male ";
      if (dSurveyData(k,4)==2) OutFile1 << " Female ";
      if (dSurveyData(k,4)==0) OutFile1 << " Both ";
-     if (dSurveyData(k,5)==1) OutFile1 << " Immature ";
-     if (dSurveyData(k,5)==2) OutFile1 << " Mature ";
+     if (dSurveyData(k,5)==1) OutFile1 << " Mature ";
+     if (dSurveyData(k,5)==2) OutFile1 << " Immature ";
      if (dSurveyData(k,5)==0) OutFile1 << " All ";
      OutFile1 << dSurveyData(k,6) << " " << cpue_cv(k) << " " << cpue_cv_add(k) << " ";
      if (dSurveyData(k,8)==1) OutFile1 << " Biomass ";
@@ -9474,8 +9774,8 @@ FUNCTION CreateOutput
         if (d3_SizeComps_in(ii,jj,-2)==1) ShellName = " New ";
 	if (d3_SizeComps_in(ii,jj,-2)==2) ShellName = " Old ";
 	if (d3_SizeComps_in(ii,jj,-2)==0) ShellName = " All ";
-        if (d3_SizeComps_in(ii,jj,-1)==1) MatName = " Immature ";
-	if (d3_SizeComps_in(ii,jj,-1)==2) MatName = " Mature ";
+        if (d3_SizeComps_in(ii,jj,-1)==1) MatName = " Mature ";
+	if (d3_SizeComps_in(ii,jj,-1)==2) MatName = " Immature ";
 	if (d3_SizeComps_in(ii,jj,-1)==0) MatName = " All ";
 	for (int kk=1;kk<=nSizeComps_in;kk++)
 	 if (kk!=ii && k == iCompAggregator(kk)) 
@@ -9658,6 +9958,12 @@ FUNCTION CreateOutput
   dvar_matrix N_females_old(syr,nyrRetro+1,1,nclass);
   dvar_matrix N_males_mature(syr,nyrRetro+1,1,nclass);
   dvar_matrix N_females_mature(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_males_imature(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_females_imature(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_males_imature_new(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_males_imature_old(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_males_mature_new(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_males_mature_old(syr,nyrRetro+1,1,nclass);
   N_total.initialize();
   N_males.initialize();
   N_females.initialize();
@@ -9666,7 +9972,13 @@ FUNCTION CreateOutput
   N_males_old.initialize();
   N_females_old.initialize();
   N_males_mature.initialize();
+  N_males_imature.initialize();
   N_females_mature.initialize();
+  N_females_imature.initialize();
+  N_males_imature_new.initialize();
+  N_males_imature_old.initialize();
+  N_males_mature_new.initialize();
+  N_males_mature_old.initialize();
   for ( int i = syr; i <= nyrRetro+1; i++ )
    for ( int l = 1; l <= nclass; l++ )
     for ( int k = 1; k <= n_grp; k++ )
@@ -9680,6 +9992,17 @@ FUNCTION CreateOutput
          N_males_old(i,l) += d4_N(k,i,season_N,l);
         if ( imature(k) == 1 )
          N_males_mature(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 2 )
+         N_males_imature(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 2 & ishell(k)==1)
+         N_males_imature_new(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 2 & ishell(k)==2)
+         N_males_imature_old(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 1 & ishell(k)==1)
+         N_males_mature_new(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 1 & ishell(k)==2)
+         N_males_mature_old(i,l) += d4_N(k,i,season_N,l);
+         
        }
       else
        {
@@ -9689,6 +10012,8 @@ FUNCTION CreateOutput
         if ( ishell(k) == 2 )
          N_females_old(i,l) += d4_N(k,i,season_N,l);
         if ( imature(k) == 1 )
+         N_females_mature(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 2 )
          N_females_mature(i,l) += d4_N(k,i,season_N,l);
        }
       N_total(i,l) += d4_N(k,i,season_N,l);
@@ -9735,6 +10060,44 @@ FUNCTION CreateOutput
     OutFile1 << "#Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
     for (int i=syr;i<=nyrRetro;i++) OutFile1 << i << " " << N_females_mature(i) << endl;
    }
+  OutFile1 << endl << "# N(males_imature)" << endl;
+  OutFile1 << "#Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  for (int i=syr;i<=nyrRetro;i++) OutFile1 << i << " " << N_males_imature(i) << endl;
+  if (nsex > 1) 
+   {
+    OutFile1 << endl << "# N(females_imature)" << endl;
+    OutFile1 << "#Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+    for (int i=syr;i<=nyrRetro;i++) OutFile1 << i << " " << N_females_imature(i) << endl;
+   }
+  
+  for (int ig=1;ig<=n_grp;ig++)
+   if (isex(ig)==1 & ishell(ig)==1 & imature(ig)==2)
+   {
+    OutFile1 << endl << "# N(males_imature_new)" << endl;
+    OutFile1 << "#Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+    for (int i=syr;i<=nyrRetro;i++) OutFile1 << i << " " << N_males_imature_new(i) << endl;
+   }
+  for (int ig=1;ig<=n_grp;ig++)
+   if (isex(ig)==1 & ishell(ig)==2 & imature(ig)==2)
+   {
+    OutFile1 << endl << "# N(males_imature_old)" << endl;
+    OutFile1 << "#Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+    for (int i=syr;i<=nyrRetro;i++) OutFile1 << i << " " << N_males_imature_old(i) << endl;
+   }
+  for (int ig=1;ig<=n_grp;ig++)
+   if (isex(ig)==1 & ishell(ig)==1 & imature(ig)==1)
+   {
+    OutFile1 << endl << "# N(males_mature_new)" << endl;
+    OutFile1 << "#Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+    for (int i=syr;i<=nyrRetro;i++) OutFile1 << i << " " << N_males_mature_new(i) << endl;
+   }
+  for (int ig=1;ig<=n_grp;ig++)
+   if (isex(ig)==1 & ishell(ig)==2 & imature(ig)==1)
+   {
+    OutFile1 << endl << "# N(males_mature_old)" << endl;
+    OutFile1 << "#Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+    for (int i=syr;i<=nyrRetro;i++) OutFile1 << i << " " << N_males_mature_old(i) << endl;
+   }
   
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Molting and growth" << endl;
@@ -9772,11 +10135,23 @@ FUNCTION CreateOutput
        OutFile1 << endl;
       }
     }
+
+  // Mature probability
+  if (nmature==2)
+   {
+    OutFile1 << endl << "# Mature probability" << endl;
+    OutFile1 << "#Sex Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl; 
+    for (int h=1; h<=nsex; h++)
+     for (int i=syr;i<=nyrRetro;i++)
+     OutFile1 << sexes(h) << " " << i << " " << mature_probability(h,i) << endl;
+   }
+
+
 	
 // Special output
-  if (verbose>3) cout<<"writing MyOutput"<<endl;
+  if (verbose > 3) cout<<"writing MyOutput"<<endl;
   MyOutput();
-  if (verbose>3) cout<<"Finished MyOutput"<<endl;
+  if (verbose > 3) cout<<"Finished MyOutput"<<endl;
 
   // Projection stuff
   if ( last_phase() || NfunCall == StopAfterFnCall)
@@ -10513,12 +10888,12 @@ GLOBALS_SECTION
   #undef ABUNDANCE
   #define ABUNDANCE 2
 
+  #undef UNDET_SEX
+  #define UNDET_SEX 0
   #undef MALES
   #define MALES 1
   #undef FEMALES
   #define FEMALES 2
-  #undef UNDET_SEX
-  #define UNDET_SEX 0
 
   #undef UNDET_SHELL
   #define UNDET_SHELL 0
@@ -10527,12 +10902,12 @@ GLOBALS_SECTION
   #undef OLD_SHELL
   #define OLD_SHELL 2
   
-  #undef IMMATURE
-  #define IMMATURE 2
-  #undef MATURE
-  #define MATURE 1
   #undef UNDET_MATURE
   #define UNDET_MATURE 0
+  #undef MATURE
+  #define MATURE 1
+  #undef IMMATURE
+  #define IMMATURE 2
 
   #undef TOTALCATCH
   #define TOTALCATCH 0
@@ -10600,6 +10975,15 @@ GLOBALS_SECTION
   #define LOGISTIC_PROB_MOLT 2
   #undef FREE_PROB_MOLT
   #define FREE_PROB_MOLT 3
+
+  #undef FIXED_PROB_MATURE
+  #define FIXED_PROB_MATURE 0
+  #undef CONSTANT_PROB_MATURE
+  #define CONSTANT_PROB_MATURE 1
+  #undef LOGISTIC_PROB_MATURE
+  #define LOGISTIC_PROB_MATURE 2
+  #undef FREE_PROB_MATURE
+  #define FREE_PROB_MATURE 3
 
   #undef UNIFORM_PRIOR
   #define UNIFORM_PRIOR 0
@@ -10934,3 +11318,6 @@ FINAL_SECTION
 //                    Replaced o == 1/2 with o == NEW_SHELL/OLD_SHELL, similar for m.
 // 2024-02-05 ** WTS. Reverted selectivity assignaments--needed to loop over h if slx_isex(k) was 0. Added alternative input format for fishery catch data.
 // 2024-02-29 ** AEP. (Updated GMACS to version 2.01.M.10) (a) corrected error wrt retrospective patterns and catch re-in, (d) adding units to read-in, and (c) output selex andgradient output.
+// 2024-03-03 ** AEP. (Updated GMACS to versions 2.10) (Corrected the terminal molt)
+// 2024-03-04 ** AEP. (Updated GMACS to versions 2.10.01) (Added immature N matrices)
+
