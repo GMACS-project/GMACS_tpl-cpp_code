@@ -1758,7 +1758,6 @@ DATA_SECTION
   !! gmacs_ctl << "#  1: Linear" << endl;
   !! gmacs_ctl << "#  2: Individual" << endl;
   !! gmacs_ctl << "#  3: Individual (Same as 2)" << endl;
-  !! gmacs_ctl << "#  4: Power law for mean post-molt size" << endl;
   !! gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
   !! gmacs_ctl << "## Type_1 Type_2   Block" << endl;
   !! echoinput << "## Type_1 Type_2   Block" << endl;
@@ -1838,7 +1837,6 @@ DATA_SECTION
     if (ig <= nsex)
      {
       if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL)      nparG = 3;
-      if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL)      nparG = 3;
       if (bUseGrowthIncrementModel2(ig)==INDIVIDUAL_GROWTHMODEL1) nparG = (nclass+1);
       if (bUseGrowthIncrementModel2(ig)==INDIVIDUAL_GROWTHMODEL2) nparG = (nclass+1);
       if (bUseGrowthIncrementModel2(ig)==GROWTH_VARYK)            nparG = 3;
@@ -1916,9 +1914,6 @@ DATA_SECTION
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
        if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
         if (ipar <=nclass)
          anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
@@ -1978,29 +1973,26 @@ DATA_SECTION
            for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
             GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
-           if (ipar <=nclass)
-            anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-           else 
-            anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h)+"_period_"+str(iblock);
-           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h)+"_period_"+str(iblock);
-           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) anystring = "Molt_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
+	   if (ipar <=nclass)
+	    anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+	   else 
+	    anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h)+"_period_"+str(iblock);
+	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h)+"_period_"+str(iblock);
+	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) anystring = "Molt_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
            if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h)+"_period_"+str(iblock);
            if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h)+"_period_"+str(iblock);
            if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) anystring = "Mature_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
@@ -4521,12 +4513,6 @@ FUNCTION initialize_model_parameters
        beta(h,igrow)    = G_pars(2);
        gscale(h,igrow)  = G_pars(3);
       }
-     if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL)
-      {
-       alpha(h,igrow)   = G_pars(1);
-       beta(h,igrow)    = G_pars(2);
-       gscale(h,igrow)  = G_pars(3);
-      }
      if (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)
       {
        for (int l=1; l<=nclass;l++) molt_increment(h,igrow,l) = G_pars(l);
@@ -5489,20 +5475,7 @@ FUNCTION calc_growth_increments
           for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
          }
        } // - for h     
-   } else if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL)
-   {
-     for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
-      {
-       for ( int l = 1; l <= nclass; l++ )
-        molt_increment(h,igrow,l) = exp(alpha(h,igrow) + beta(h,igrow) * log(mid_points(l))) - mid_points(l);
-       if (NfunCall==0 || NfunCall==1)
-        if (molt_increment(h,igrow,int(nclass/2)) < 0)
-         {
-         // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
-          for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
-         }
-       } // - for h     
-   }// -- if
+  } // -- if
 
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
@@ -7531,12 +7504,6 @@ FUNCTION recruitment_likelihood
   // 5) Likelihood for growth increment data #1
   // AEP
   if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
-    {
-    // Predictions are for matrix 1
-    dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
-    nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
-   }
-  if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
     {
     // Predictions are for matrix 1
     dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
@@ -10487,7 +10454,6 @@ FUNCTION WriteFiles
   OutInpFile1 << "## 1: Linear" << endl;
   OutInpFile1 << "## 2: Individual" << endl;
   OutInpFile1 << "## 3: Individual (Same as 2)" << endl;
-  OutInpFile1 << "## 4: Power law model for mean post-molt size" << endl;
   OutInpFile1 << "# Growth increment model matrix option" << endl;
   OutInpFile1 << bUseGrowthIncrementModel2 << endl;
   OutInpFile1 << "# molt probability function (0=pre-specified; 1=flat;2=declining logistic)" << endl;
@@ -11009,8 +10975,6 @@ GLOBALS_SECTION
   #define INDIVIDUAL_GROWTHMODEL1 2
   #undef INDIVIDUAL_GROWTHMODEL2
   #define INDIVIDUAL_GROWTHMODEL2 3
-  #undef PWRLAW_GROWTHMODEL
-  #define PWRLAW_GROWTHMODEL 4
 
   #undef M_CONSTANT
   #define M_CONSTANT 0
@@ -11336,5 +11300,4 @@ FINAL_SECTION
 // 2024-03-08 ** AEP. (Updated GMACS to versions 2.10.04) (a) Improved speed for the Hessian inversion stage by making loops more efficient, and (b) corrected the projection component of the code
 // 2024-03-12 ** AEP. (Updated GMACS to versions 2.10.05) Changed read-in for q and add_cv to allow for generic parameter structure
 // 2024-03-26 ** AEP. Fixed stock-recruitment bug for two sex models and models with terminal molt
-// 2024-03-28 ** WTS. Added PWRLAW_GROWTHMODEL as alternative to LINEAR_GROWTHMODEL
 

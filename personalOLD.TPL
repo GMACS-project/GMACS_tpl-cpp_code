@@ -95,7 +95,7 @@ FUNCTION dvariable StMatsTAC(const int j, const int iproj,const int YrRefGrow)
     for ( int ig = 1; ig <= n_grp; ig++ )
      {
       int h = isex(ig);
-      isizeTrans = iYrsIncChanges(h,YrRefGrow);
+      isizeTrans = iYrIncChanges(h,YrRefGrow);
       int m = imature(ig);
       int o = ishell(ig);
       h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
@@ -115,7 +115,7 @@ FUNCTION dvariable StMatsTAC(const int j, const int iproj,const int YrRefGrow)
   for ( int ig = 1; ig <= n_grp; ig++ )
    {
     int h = isex(ig);
-    isizeTrans = iYrsIncChanges(h,YrRefGrow);
+    isizeTrans = iYrIncChanges(h,YrRefGrow);
     int m = imature(ig);
     int o = ishell(ig);
     h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);

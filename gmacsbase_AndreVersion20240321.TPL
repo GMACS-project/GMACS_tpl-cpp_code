@@ -194,9 +194,6 @@ DATA_SECTION
 
   sexes += "male";
   sexes += "female";
-  
-  seltypes += "selectivity";
-  seltypes += "retention";
 
 
   /**
@@ -395,8 +392,6 @@ DATA_SECTION
 
   int Nyears;
   !! Nyears =(nyrRetro-syr+1);
-  int Nyears2;
-  !! Nyears2 =(nyrRetro+1-syr+1);
 
  LOC_CALCS
   n_grp = nsex * nshell * nmature;
@@ -1379,7 +1374,7 @@ DATA_SECTION
   int n_deviations;
   int n_devvars;
   !! n_devvars=0;
-  imatrix devpoints(1,100,1,10);
+  imatrix devpoints(1,100,1,6);
   matrix rdevpoints(1,100,1,5);
   !! devpoints.initialize();
 
@@ -1388,7 +1383,7 @@ DATA_SECTION
   // |---------------------------------------------------------|
   !! cout << " * General controls" << endl;
   !! ECHOSTR(" * General controls");
-  init_vector model_controls(1,12);
+  init_vector model_controls(1,11);
   int rdv_syr;                                             ///> First year of estimates devs
   int rdv_eyr;                                             ///> First year of estimates devs
   int Term_molt;					   ///> Consider terminal molting?
@@ -1403,8 +1398,6 @@ DATA_SECTION
   number init_sex_ratio;                                   ///> Sex ratio input
   int BRP_rec_sexR;					   ///> Way average recruitment for reference points is calculated (0= used the End year - 1=Use an average sex ratio) 
   int NyrEquil;                                            ///> NUmber of years to project when computing equilbria
-  int devParPhase;                                         ///> Phase for the deviation parameters 
-  
  LOC_CALCS
   {
   rdv_syr             = int(model_controls(1));
@@ -1442,8 +1435,6 @@ DATA_SECTION
   nSRR_flag           = int(model_controls(9));
   BRP_rec_sexR        = int(model_controls(10));
   NyrEquil            = int(model_controls(11));
-  devParPhase         = int(model_controls(12));  
-  
   gmacs_ctl << endl << "# Extra controls" << endl;
   gmacs_ctl << model_controls(1) << " # First year of recruitment estimation" << endl;
   gmacs_ctl << model_controls(2) << " # Last year of recruitment estimation" << endl;
@@ -1456,7 +1447,6 @@ DATA_SECTION
   gmacs_ctl << model_controls(9) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
   gmacs_ctl << model_controls(10) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
   gmacs_ctl << model_controls(11) << " # Years to compute equilibria" << endl;
-  gmacs_ctl << model_controls(12) << " # Phase for deviation parameters" << endl;
   gmacs_ctl << endl;
   echoinput << endl << "# Extra controls" << endl;
   echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
@@ -1470,14 +1460,20 @@ DATA_SECTION
   echoinput << model_controls(9) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
   echoinput << model_controls(10) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
   echoinput << model_controls(11) << " # Years to compute equilibria" << endl;
-  echoinput << model_controls(12) << " # Phase for deviation parameters" << endl;
   echoinput << endl;
 
   // Default number of parameters
-  ntheta = 3 + 2*nsex + 3;
+  ntheta = nsex+3 + 2*nsex + 3;
   
   int Jpnt;
-  Jpnt = 1;
+  parname1(1) = "M-base";
+  Jpnt = 2;
+  if (nsex>1)
+   {
+    if (MrelFem==YES) parname1(2) = "M-fem-offset";
+    if (MrelFem==NO) parname1(2) = "M-female";
+    Jpnt = 3;
+   }
   parname1(Jpnt) = "Log(R0)";
   parname1(Jpnt+1) = "Log(Rinitial)";
   parname1(Jpnt+2) = "Log(Rbar)";
@@ -1495,6 +1491,7 @@ DATA_SECTION
   parname1(Jpnt+2) = "Rho";
   Jpnt = Jpnt + 2;
   PPnt = Jpnt;
+  cout << "HelloB" << PPnt << endl;
 
   int nthetatest;
   nthetatest = 0;
@@ -1506,6 +1503,7 @@ DATA_SECTION
   gmacs_ctl << "Expecting " << ntheta << " theta parameters" << endl;
   echoinput << "Expecting " << ntheta<< " theta parameters" << endl;
   echoinput << "Thetas" << endl;
+  echoinput << nsex << " for base M values" << endl;
   echoinput << 3 << " for log(R0), log(Rini), and log(Rbar)" << endl;
   echoinput << 2*nsex << " for the recruitment distribution parameters" << endl;
   echoinput << 3 << " for log(sigmaR), steepness and recruitment autocorrelation" << endl;
@@ -1552,6 +1550,8 @@ DATA_SECTION
        }
     PPnt += Ipnt-1;
    }
+  cout << "HelloB" << PPnt << endl;
+
   }
  END_CALCS
 
@@ -1592,16 +1592,16 @@ DATA_SECTION
 
 
   // Some combinations of options don't work
-  if ( bInitializeUnfished == UNFISHEDEQN && theta_phz(2) > 0 )
+  if ( bInitializeUnfished == UNFISHEDEQN && theta_phz(nsex+2) > 0 )
    { cout << "Error: cannot LogRini when unfished steady state is selected" << endl;  exit(1); }
-  if ( bInitializeUnfished == FISHEDEQN && theta_phz(1) > 0 )
+  if ( bInitializeUnfished == FISHEDEQN && theta_phz(nsex+1) > 0 )
    { cout << "Error: cannot LogR0 when fished steady state is selected" << endl;  exit(1); }
-  if ( bInitializeUnfished == FREEPARS && theta_phz(1) > 0 )
+  if ( bInitializeUnfished == FREEPARS && theta_phz(nsex+1) > 0 )
    {
     cout << "Error: cannot estimate LogR0 when individual parameters are estimated" << endl;
     exit(1);
    }
-  if ( bInitializeUnfished == FREEPARS && theta_phz(2) > 0 )
+  if ( bInitializeUnfished == FREEPARS && theta_phz(nsex+2) > 0 )
    {
     cout << "Error: cannot estimate LogRini when individual parameters are estimated" << endl;
     exit(1);
@@ -1716,7 +1716,6 @@ DATA_SECTION
   !! gmacs_ctl << legal << endl;
   
 
-  // --------------------------------------------------------------------------------------------------------------------------------------
   // |----------------------------|
   // | GROWTH PARAMETER CONTROLS  |
   // |----------------------------|
@@ -1743,7 +1742,11 @@ DATA_SECTION
   ivector bUseCustomMatureProbability2(1,nsex);                                    // Option for probability of maturing
   !!bUseCustomMatureProbability2.initialize();
 
-  matrix Growth_controls(1,3*nsex,1,3);
+  ivector G_block(1,3*nsex);
+  vector G_RW_sigma(1,3*nsex);
+  int n_Gpar;
+
+  matrix Growth_controls(1,3*nsex,1,4);
   !! gmacs_ctl << "# Growth transition" << endl;
   !! gmacs_ctl << "##Type_1: Options for the growth matrix" << endl;
   !! gmacs_ctl << "#  1: Pre-specified growth transition matrix (requires molt probability)" << endl;
@@ -1758,10 +1761,10 @@ DATA_SECTION
   !! gmacs_ctl << "#  1: Linear" << endl;
   !! gmacs_ctl << "#  2: Individual" << endl;
   !! gmacs_ctl << "#  3: Individual (Same as 2)" << endl;
-  !! gmacs_ctl << "#  4: Power law for mean post-molt size" << endl;
   !! gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
-  !! gmacs_ctl << "## Type_1 Type_2   Block" << endl;
-  !! echoinput << "## Type_1 Type_2   Block" << endl;
+  !! gmacs_ctl << "# Sigma_RW: Sigma for the random walk parameters" << endl;
+  !! gmacs_ctl << "## Type_1 Type_2   Block Block_Sigma_RW" << endl;
+  !! echoinput << "## Type_1 Type_2   Block Block_Sigma_RW" << endl;
   !! for (int ig=1;ig<=nsex;ig++) *(ad_comm::global_datafile) >> Growth_controls(ig); 
   !! for (int ig=1;ig<=nsex;ig++) gmacs_ctl << Growth_controls(ig) << endl;
   !! for (int ig=1;ig<=nsex;ig++) echoinput << Growth_controls(ig) << endl;
@@ -1786,14 +1789,15 @@ DATA_SECTION
   !! gmacs_ctl << "#  2: Logistic" << endl;
   !! gmacs_ctl << "#  3: Individual" << endl;
   !! gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
-  !! gmacs_ctl << "## Type Block" << endl;
-  !! echoinput << "## Type Block" << endl;
+  !! gmacs_ctl << "# Sigma_RW: Sigma for the random walk parameters" << endl;
+  !! gmacs_ctl << "## Type Block Sigma_RW" << endl;
+  !! echoinput << "## Type Block Sigma_RW" << endl;
   !! for (int ig=1;ig<=nsex;ig++) 
-  !! { *(ad_comm::global_datafile) >> Growth_controls(nsex+ig,1) >> Growth_controls(nsex+ig,3); }
+  !! { *(ad_comm::global_datafile) >> Growth_controls(nsex+ig,1); for (int ii=3;ii<=4;ii++) *(ad_comm::global_datafile) >> Growth_controls(nsex+ig,ii); }
   !! for (int ig=1;ig<=nsex;ig++) 
-  !! { gmacs_ctl << Growth_controls(nsex+ig,1) << " " << Growth_controls(nsex+ig,3) << " "; gmacs_ctl << endl; }
+  !! { gmacs_ctl << Growth_controls(nsex+ig,1) << " "; for (int ii=3;ii<=4;ii++) gmacs_ctl << Growth_controls(nsex+ig,ii) << " "; gmacs_ctl << endl; }
   !! for (int ig=1;ig<=nsex;ig++) 
-  !! { echoinput << Growth_controls(nsex+ig,1) << " " << Growth_controls(nsex+ig,3) << " "; echoinput << endl; }
+  !! { echoinput << Growth_controls(nsex+ig,1) << " "; for (int ii=3;ii<=4;ii++) echoinput << Growth_controls(nsex+ig,ii) << " "; echoinput << endl; }
   !! for (int ig=1;ig<=nsex;ig++) 
   !!  {
   !!   bUseCustomMoltProbability2(ig) = int(Growth_controls(ig+nsex,1));
@@ -1810,14 +1814,15 @@ DATA_SECTION
   !!   gmacs_ctl << "#  2: Logistic" << endl;
   !!   gmacs_ctl << "#  3: Individual" << endl;
   !!   gmacs_ctl << "# Block: Block number for time-varying growth   " << endl;
-  !!   gmacs_ctl << "## Type Block" << endl;
-  !!   echoinput << "## Type Block" << endl;
+  !!   gmacs_ctl << "# Sigma_RW: Sigma for the random walk parameters" << endl;
+  !!   gmacs_ctl << "## Type Block Sigma_RW" << endl;
+  !!   echoinput << "## Type Block Sigma_RW" << endl;
   !!   for (int ig=1;ig<=nsex;ig++) 
-  !!    { *(ad_comm::global_datafile) >> Growth_controls(2*nsex+ig,1)>> Growth_controls(2*nsex+ig,3); }
+  !!    { *(ad_comm::global_datafile) >> Growth_controls(2*nsex+ig,1); for (int ii=3;ii<=4;ii++) *(ad_comm::global_datafile) >> Growth_controls(2*nsex+ig,ii); }
   !!   for (int ig=1;ig<=nsex;ig++) 
-  !!    { gmacs_ctl << Growth_controls(2*nsex+ig,1) << " " << Growth_controls(2*nsex+ig,3) << " "; gmacs_ctl << endl; }
+  !!    { gmacs_ctl << Growth_controls(2*nsex+ig,1) << " "; for (int ii=3;ii<=4;ii++) gmacs_ctl << Growth_controls(2*nsex+ig,ii) << " "; gmacs_ctl << endl; }
   !!   for (int ig=1;ig<=nsex;ig++) 
-  !!    { echoinput << Growth_controls(2*nsex+ig,1) << " " << Growth_controls(2*nsex+ig,3) << " "; echoinput << endl; }
+  !!    { echoinput << Growth_controls(2*nsex+ig,1) << " "; for (int ii=3;ii<=4;ii++) echoinput << Growth_controls(2*nsex+ig,ii) << " "; echoinput << endl; }
   !!   for (int ig=1;ig<=nsex;ig++) 
   !!    {
   !!     bUseCustomMatureProbability2(ig) = int(Growth_controls(ig+2*nsex,1));
@@ -1825,20 +1830,17 @@ DATA_SECTION
   !!  } //-- if (nmature==2)
   !!  echoinput << "Growth_controls\n" << Growth_controls << endl;
 
-  int n_Gpar;
   ivector nparGs(1,3*nsex)
-  ivector G_block(1,3*nsex);
-  vector G_RW_sigma(1,3*nsex);
  LOC_CALCS
   n_Gpar = 0; int nparG; nparGs.initialize();
   G_block    = ivector(column(Growth_controls,3));
+  G_RW_sigma = column(Growth_controls,4);
   for (int ig=1;ig<=3*nsex;ig++)
    {
     nparG = 0;
     if (ig <= nsex)
      {
       if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL)      nparG = 3;
-      if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL)      nparG = 3;
       if (bUseGrowthIncrementModel2(ig)==INDIVIDUAL_GROWTHMODEL1) nparG = (nclass+1);
       if (bUseGrowthIncrementModel2(ig)==INDIVIDUAL_GROWTHMODEL2) nparG = (nclass+1);
       if (bUseGrowthIncrementModel2(ig)==GROWTH_VARYK)            nparG = 3;
@@ -1863,7 +1865,7 @@ DATA_SECTION
   // Storage by year
   imatrix GrowPnt(1,3*nsex*Nyears,1,nclass+5);
 
-  matrix Gpar_control(1,1000,1,15);
+  matrix Gpar_control(1,1000,1,14);
   imatrix GtoIG(1,1000,1,4);
  LOC_CALCS 
   {
@@ -1872,29 +1874,19 @@ DATA_SECTION
    GrowPnt.initialize();
    gmacs_ctl << endl;
    echoinput << endl;
-   gmacs_ctl << "## General parameter specificiations " << endl;
-   gmacs_ctl << "##  Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
-   gmacs_ctl << "##  Lower & Upper: Range for the parameter" << endl;
-   gmacs_ctl << "##  Prior type:"  << endl;
-   gmacs_ctl << "##   0: Uniform   - parameters are the range of the uniform prior"  << endl;
-   gmacs_ctl << "##   1: Normal    - parameters are the mean and sd" << endl;
-   gmacs_ctl << "##   2: Lognormal - parameters are the mean and sd of the log" << endl;
-   gmacs_ctl << "##   3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
-   gmacs_ctl << "##   4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
-   gmacs_ctl << "##  Phase: Set equal to a negative number not to estimate" << endl;
-   gmacs_ctl << "##  Relative: 0: absolute; 1 relative " << endl;
-   gmacs_ctl << "##  Block: Block number for time-varying selectivity   " << endl;
-   gmacs_ctl << "##  Block_fn: 0:absolute values; 1:exponential" << endl;
-   gmacs_ctl << "##  Env_L: Environmental link - options are 0:none; 1:additive; 2:multiplicative; 3:exponential" << endl;
-   gmacs_ctl << "##  EnvL_var: Environmental variable" << endl;
-   gmacs_ctl << "##  RW: 0 for no random walk changes; 1 otherwise" << endl;
-   gmacs_ctl << "##  RW_blk: Block number for random walks" << endl;
-   gmacs_ctl << "##  Sigma_RW: Sigma used for the random walk" << endl;
+   gmacs_ctl << "# General parameter specificiations " << endl;
+   gmacs_ctl << "#  Relative: 0: absolute; 1 relative " << endl;
+   gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
+   gmacs_ctl << "#  Block_fn: 0:absolute values; 1:exponential" << endl;
+   gmacs_ctl << "#  Env_L: Environmental link - options are 1:additive; 2:multiplicative; 3:exponential" << endl;
+   gmacs_ctl << "#  EnvL_var: Environmental variable" << endl;
+   gmacs_ctl << "#  RW: 0 for not random walk changes; 1 otherwise" << endl;
+   gmacs_ctl << "#  RW_blk: Block number for random walks" << endl;
    gmacs_ctl << endl;
    for (int ig=1;ig<=3*nsex;ig++)
     {
      if (nparGs(ig) > 0) gmacs_ctl << "# Inputs for sex * type " << ig << endl;
-     if (nparGs(ig) > 0) gmacs_ctl << "# MAIN PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Block Block_fn Env_L EnvL_var RW RW_Block RW_Sigma" << endl;
+     if (nparGs(ig) > 0) gmacs_ctl << "# MAIN PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Block Block_fn Env_L EnvL_var RW RW_Block " << endl;
      n_Gpar2 = n_Gpar;
      if (nsex==1) h = 1;
      if (nsex==2 & (ig==1 | ig==3)) h = 1;
@@ -1912,43 +1904,38 @@ DATA_SECTION
        GtoIG(n_Gpar,2) = ipar;
        GtoIG(n_Gpar,3) = 0;
        iblock = 1;
-       for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+       for (int ii=1;ii<=13;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
+       for (int ii=1;ii<=13;ii++) gmacs_ctl << Gpar_control(n_Gpar,ii) << " "; gmacs_ctl << endl;
+       for (int ii=1;ii<=13;ii++) echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << endl;
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) parname1(PPnt+1) = "Alpha_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) parname1(PPnt+1) = "Beta_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) parname1(PPnt+1) = "Gscale_"+sexes(h)+"_period_"+str(iblock);
        if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
         if (ipar <=nclass)
-         anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+         parname1(PPnt+1) = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
         else 
-         anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-       if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h)+"_period_"+str(iblock);
-       if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h)+"_period_"+str(iblock);
-       if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) anystring = "Molt_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-       if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h)+"_period_"+str(iblock);
-       if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h)+"_period_"+str(iblock);
-       if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) anystring = "Mature_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-       for (int ii=1;ii<=14;ii++) gmacs_ctl << Gpar_control(n_Gpar,ii) << " "; gmacs_ctl << "# " << anystring; gmacs_ctl << endl;
-       for (int ii=1;ii<=14;ii++) echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << "# " << anystring; echoinput << endl;
-       parname1(PPnt+1) = anystring;
+         parname1(PPnt+1) = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) parname1(PPnt+1) = "Linf_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) parname1(PPnt+1) = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) parname1(PPnt+1) = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) parname1(PPnt+1) = "Linf_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) parname1(PPnt+1) = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) parname1(PPnt+1) = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) parname1(PPnt+1) = "Linf_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) parname1(PPnt+1) = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) parname1(PPnt+1) = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+       if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) parname1(PPnt+1) = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+       if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) parname1(PPnt+1) = "Molt_probability_mu_"+sexes(h)+"_period_"+str(iblock);
+       if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) parname1(PPnt+1) = "Molt_probability_CV_"+sexes(h)+"_period_"+str(iblock);
+       if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) parname1(PPnt+1) = "Molt_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+       if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) parname1(PPnt+1) = "Mature_probability_mu_"+sexes(h)+"_period_"+str(iblock);
+       if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) parname1(PPnt+1) = "Mature_probability_CV_"+sexes(h)+"_period_"+str(iblock);
+       if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) parname1(PPnt+1) = "Mature_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
        PPnt += 1;
       }
      if (nparGs(ig) > 0)  gmacs_ctl << "# EXTRA PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Relative " << endl;
      for (int iyr=syr;iyr<=nyrRetro;iyr++)
       for (int ipar=1; ipar<=nparGs(ig);ipar++)  GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar2+ipar;
-     
      for (int ipar=1; ipar<=nparGs(ig);ipar++)
       {
        // Are there blocks
@@ -1959,7 +1946,6 @@ DATA_SECTION
        int IgEnvLinkVar = int(Gpar_control(jpar,11));
        int IgRW = int(Gpar_control(jpar,12));
        int IgRWBlock = int(Gpar_control(jpar,13));
-       float SigmaRW = Gpar_control(jpar,15);
        if (IgBlock !=0)
         {
          cout << "Block" << " " << IgBlock << " " << blocks(IgBlock) << " " << ipar << endl;
@@ -1974,41 +1960,39 @@ DATA_SECTION
            GtoIG(n_Gpar,1) = ig;
            GtoIG(n_Gpar,2) = ipar;
            GtoIG(n_Gpar,3) = 0;
-           for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);*(ad_comm::global_datafile) >> Gpar_control(n_Gpar,15);
+           for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
+             *(ad_comm::global_datafile) >> GtoIG(n_Gpar,4);
+           for (int ii=1;ii<=7;ii++) gmacs_ctl << Gpar_control(n_Gpar,ii) << " "; gmacs_ctl << GtoIG(n_Gpar,4) << endl;
+           for (int ii=1;ii<=7;ii++) echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << GtoIG(n_Gpar,4) << endl;
            for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
             GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
-           if (ipar <=nclass)
-            anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-           else 
-            anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h)+"_period_"+str(iblock);
-           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h)+"_period_"+str(iblock);
-           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) anystring = "Molt_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-           if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h)+"_period_"+str(iblock);
-           if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h)+"_period_"+str(iblock);
-           if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) anystring = "Mature_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-           for (int ii=1;ii<=7;ii++) gmacs_ctl << Gpar_control(n_Gpar,ii) << " "; gmacs_ctl << Gpar_control(n_Gpar,15) << " # " << anystring << endl;
-           for (int ii=1;ii<=7;ii++) echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << Gpar_control(n_Gpar,15) << " # " << anystring <<  endl;
-           parname1(PPnt+1) = anystring;
-           PPnt += 1;
-         } //-- kpar
+           cout << ig << " " << ipar << " " << n_Gpar << endl;
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) parname1(PPnt+1) = "Alpha_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) parname1(PPnt+1) = "Beta_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) parname1(PPnt+1) = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
+	   if (ipar <=nclass)
+	    parname1(PPnt+1) = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+	   else 
+	    parname1(PPnt+1) = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) parname1(PPnt+1) = "Linf_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) parname1(PPnt+1) = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) parname1(PPnt+1) = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) parname1(PPnt+1) = "Linf_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) parname1(PPnt+1) = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) parname1(PPnt+1) = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) parname1(PPnt+1) = "Linf_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) parname1(PPnt+1) = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) parname1(PPnt+1) = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) parname1(PPnt+1) = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) parname1(PPnt+1) = "Molt_probability_mu_"+sexes(h)+"_period_"+str(iblock);
+	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) parname1(PPnt+1) = "Molt_probability_CV_"+sexes(h)+"_period_"+str(iblock);
+	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) parname1(PPnt+1) = "Molt_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+           if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) parname1(PPnt+1) = "Mature_probability_mu_"+sexes(h)+"_period_"+str(iblock);
+           if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) parname1(PPnt+1) = "Mature_probability_CV_"+sexes(h)+"_period_"+str(iblock);
+           if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) parname1(PPnt+1) = "Mature_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+          PPnt += 1;
+         } 
         } //-- blocks 
       if (IgEnvLink !=0) 
        {
@@ -2022,9 +2006,9 @@ DATA_SECTION
         GtoIG(n_Gpar,2) = ipar;
         GtoIG(n_Gpar,3) = 0;
         for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
-          *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,15);
-        for (int ii=1;ii<=7;ii++) gmacs_ctl << Gpar_control(n_Gpar,ii) << " ";  gmacs_ctl << Gpar_control(n_Gpar,15) << endl;
-        for (int ii=1;ii<=7;ii++) echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << Gpar_control(n_Gpar,15) << endl;
+          *(ad_comm::global_datafile) >> GtoIG(n_Gpar,4);
+        for (int ii=1;ii<=7;ii++) gmacs_ctl << Gpar_control(n_Gpar,ii) << " ";  gmacs_ctl << GtoIG(n_Gpar,4) << endl;
+        for (int ii=1;ii<=7;ii++) echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << GtoIG(n_Gpar,4) << endl;
         for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++)
          {
           for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
@@ -2043,13 +2027,9 @@ DATA_SECTION
            GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
         for (int iblk=1;iblk<=blocks(IgRWBlock);iblk++)
          n_deviations += (blocklimits(IgRWBlock,iblk,2)-blocklimits(IgRWBlock,iblk,1)+1);
-        devpoints(n_devvars,4) = n_deviations; 
-        devpoints(n_devvars,5) = IgRWBlock;
-        devpoints(n_devvars,6) = ipar;
-        if (ig <= nsex)  devpoints(n_devvars,7) = 1;
-        if (ig > nsex & ig <= 2*nsex)  devpoints(n_devvars,7) = 2;
-        if (ig > 2*nsex & ig <= 3*nsex)  devpoints(n_devvars,7) = 3;
-        rdevpoints(n_devvars,1) =  SigmaRW;
+        devpoints(n_devvars,4) = n_deviations; devpoints(n_devvars,5) = IgRWBlock;
+        devpoints(n_devvars,6) = blocks(IgRWBlock);
+        rdevpoints(n_devvars,1) =  G_RW_sigma(ig);
        } //--Random walk
      } //--ipar
       
@@ -2057,6 +2037,10 @@ DATA_SECTION
    }  
   echoinput <<  "GrowPnt" << endl;
   echoinput <<  GrowPnt << endl;
+  echoinput <<  "devpoints" << endl;
+  echoinput <<  devpoints << endl;
+  echoinput << "rdevpoints" << endl;
+  echoinput << rdevpoints << endl;
 
  END_CALCS
 
@@ -2125,7 +2109,7 @@ DATA_SECTION
     prior_G_p1(ipar)    = Gpar_control(ipar,5);
     prior_G_p2(ipar)    = Gpar_control(ipar,6);
     G_phz(ipar)         = int(Gpar_control(ipar,7));
-    G_relative(ipar)    = int(Gpar_control(ipar,15));
+    G_relative(ipar)    = int(Gpar_control(ipar,14));
   
     // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
     if ( prior_Gtype(ipar) == UNIFORM_PRIOR )
@@ -2135,7 +2119,7 @@ DATA_SECTION
      }
    } //--ipar
   ECHO(G_ival) 
-  ECHO(prior_Gtype); ECHO(prior_G_p1); ECHO(prior_G_p2); ECHO(G_phz) ; ECHO(G_relative);
+  ECHO(prior_Gtype); ECHO(prior_G_p1); ECHO(prior_G_p2); ECHO(G_phz);
  END_CALCS
   
   // Special situation when growth, molt increment or maturity are pre-specified
@@ -2270,17 +2254,16 @@ DATA_SECTION
   !! gmacs_ctl <<"## " << endl;
   !! gmacs_ctl <<"# Relative: 0 - absolute values; 1+ - based on another M-at-size vector (indexed by ig)" << endl;
   !! gmacs_ctl <<"# Type: 0 for standard; 1: Spline" << endl;
-  !! gmacs_ctl <<"#  For spline: set extra to the number of knots, the parameters are the knots (phase -1) and the log-differences from base M" << endl;
   !! gmacs_ctl <<"# Brkpnts: number of changes in M by size" << endl;
   !! gmacs_ctl <<"# Mirror: Mirror M-at-size over to that for another partition (indexed by ig)" << endl;
   !! gmacs_ctl <<"# Block: Block number for time-varying M-at-size" << endl;
   !! gmacs_ctl <<"# Block_fn: 0:absolute values; 1:exponential" << endl;
-  !! gmacs_ctl <<"# Env_L: Environmental link - options are 0: none; 1:additive; 2:multiplicative; 3:exponential" << endl;;
+  !! gmacs_ctl <<"# Env_L: Environmental link - options are 1:additive; 2:multiplicative; 3:exponential" << endl;;
   !! gmacs_ctl <<"# EnvL_var: Environmental variable" << endl;
-  !! gmacs_ctl <<"# RW: 0 for no random walk changes; 1 otherwise" << endl;
+  !! gmacs_ctl <<"# RW: 0 for not random walk changes; 1 otherwise" << endl;
   !! gmacs_ctl <<"# RW_blk: Block number for random walks" << endl;
   !! gmacs_ctl <<"# Sigma_RW: Sigma for the random walk parameters" << endl;
-  !! gmacs_ctl <<"# Mirror_RW: Should time-varying aspects be mirrored (Indexed by ig)" << endl;
+  !! gmacs_ctl <<"# Mirror_RW: Should time-varying aspects be mirrows (Indexed by ig)" << endl;
   !! gmacs_ctl <<"## Relative? Type Brkpts Mirror Block Env_L EnvL_Var  RW RW_blk Sigma_RW Mirror_RW" << endl;
   !! gmacs_ctl << M_controls << endl;
   
@@ -2355,7 +2338,7 @@ DATA_SECTION
         if (M_RW(ig)!=0) 
          {
           n_devvars += 1;
-          devpoints(n_devvars,1) = 2; devpoints(n_devvars,2) = ig; devpoints(n_devvars,3) = n_deviations+1;
+          devpoints(n_devvars,1) = 1; devpoints(n_devvars,2) = ig; devpoints(n_devvars,3) = n_deviations+1;
           if (M_RW_blk(ig) <=0) { cout << "Error: There needs to a block for random walk - sex*maturity state " << h << " & " << m << endl;  exit(1); }
           if (M_RW_blk(ig) > nblocks) { cout << "Error: The block for random walk survey in out of range - sex*maturity state " << h << " & " << m << endl;  exit(1); }
           for (int iblk=1;iblk<=blocks(M_RW_blk(ig));iblk++)
@@ -2459,23 +2442,32 @@ DATA_SECTION
   // |--------------------------------|
   !! cout << " * Selectivity parameter controls" << endl;
   !! WriteCtlStr(" * Selectivity parameter controls");
- 
-  imatrix slx_bsex_in(1,2,1,nfleet);                    //> boolean for sex-specific selex
-  imatrix slx_type_in(1,2*nsex,1,nfleet);               //> integer for selectivity type (e.g. logistic, double normal)
-  imatrix slx_include_in(1,2,1,nfleet);                 //> insertion of fleet in another
-  imatrix slx_extra_in(1,2*nsex,1,nfleet);              //> extra parameters for each pattern
-  imatrix slx_max_at_1_in(1,2*nsex,1,nfleet);	        //> determines if selectivity for the maximum size class is forced to be 1
-  imatrix slx_1_at_size(1,2*nsex,1,nfleet);	        //> size class at which selex is 1
-  imatrix slx_nret(1,2*nsex,1,nfleet);                  //> boolean for retention/discard
-  imatrix ret_max_in(1,2*nsex,1,nfleet);	        //> should asymptotic selectivity be estimated?
-  imatrix slx_type_npar(1,2*nsex,1,nfleet);             //> integer for number of selex parameters
+  int nslx;                                                //> number of selectivities (gears x blocks selectivity + gears * blocks retained)
+  int nslx_pars;                                           //> number of selectivity parameters in total
+  int nslx_rows_in;                                        //> number of selectivity rows
+  int nslx_cols_in;                                        //> number of selectivity columns
+  !! nslx_cols_in = 19;                                    //> number of columns in the control file to be read in
+  int nslx_envpars;                                        //> number of environmental parameters
+  !! nslx_envpars = 0;
+  int nslx_devpars;                                        //> number of deviation parameters
+  !! nslx_devpars = 0;
 
- LOC_CALCS 
-  gmacs_ctl << endl;
-  gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  gmacs_ctl <<"## SELECTIVITY PARAMETERS OPTIONS                                                       ##" << endl;
-  gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  gmacs_ctl <<"## " << endl;
+  init_ivector slx_nsel_period_in(1,nfleet);               //> number of selex time periods
+  init_ivector slx_bsex_in(1,nfleet);                      //> boolean for sex-specific selex
+  init_imatrix slx_type_in(1,nsex,1,nfleet);               //> integer for selectivity type (e.g. logistic, double normal)
+  init_ivector slx_include_in(1,nfleet);                   //> insertion of fleet in another
+  init_imatrix slx_extra_in(1,nsex,1,nfleet);              //> extra parameters for each pattern
+  imatrix slx_type_npar(1,nsex,1,nfleet);                  //> integer for number of selex parameters
+
+  init_ivector ret_nret_period_in(1,nfleet);               //> number of retention time periods
+  init_ivector ret_bsex_in(1,nfleet);                      //> boolean for sex-specific retention
+  init_imatrix ret_type_in(1,nsex,1,nfleet);               //> integer for retention type (e.g. logistic, double normal)
+  init_imatrix slx_nret(1,nsex,1,nfleet);                  //> boolean for retention/discard
+  init_imatrix ret_extra_in(1,nsex,1,nfleet);              //> extra parameters for each pattern
+  imatrix ret_type_npar(1,nsex,1,nfleet);                  //> integer for number of retention parameters
+  init_ivector slx_max_at_1_in(1,nfleet);	           //> determines if selectivity for the maximum size class is forced to be 1
+
+ LOC_CALCS
   anystring = "";
   WriteCtlStr("\n## Selectivity parameter controls");
   WriteCtlStr("## Selectivity (and retention) types");
@@ -2490,372 +2482,537 @@ DATA_SECTION
   WriteCtlStr("##   7: Flat-topped double normal selectivity (4 parameters)");
   WriteCtlStr("##   8: Declining logistic selectivity with initial values (50% and 95% selection plus extra)");
   WriteCtlStr("##   9: Cubic-spline (specified with knots and values at knots)");
-  WriteCtlStr("##      Inputs: knots (in length units); values at knots (0-1) - at least one should have phase -1");
   WriteCtlStr("##  10: One parameter logistic selectivity (inflection point and slope)");
-  gmacs_ctl << "## Selectivity specifications --" << endl;
-  
   WriteCtlStr("## Extra (type 1): number of selectivity parameters to estimated");
   anystring = "# ";
   for ( int kk = 1; kk <= nfleet; kk++ ) anystring = anystring + " " + fleetname(kk);
   WriteCtlStr(anystring);
   
-  slx_bsex_in.initialize();
-  slx_type_in.initialize();
-  slx_include_in.initialize();
-  slx_extra_in.initialize();
-  slx_max_at_1_in.initialize();
-  slx_1_at_size.initialize();
-  slx_nret.initialize();
-  ret_max_in.initialize();
-  slx_type_npar.initialize();
+  WriteCtlStr(" # selectivity periods");
+  WriteCtl(slx_nsel_period_in);
+  WriteCtlStr(" # sex specific selectivity (1=Yes, 0=No)");
+  WriteCtl(slx_bsex_in);
+  WriteCtlStr(" # selectivity type (by sex)");
+  WriteCtl(slx_type_in);
+  WriteCtlStr(" # selectivity within another gear");
+  WriteCtl(slx_include_in);
+  WriteCtlStr(" # extra parameters for each pattern");
+  WriteCtl(slx_extra_in);
+  WriteCtlStr(" # retention periods ");
+  WriteCtl(ret_nret_period_in);
+  WriteCtlStr(" # sex specific retention (1=Yes, 0=No)");
+  WriteCtl(ret_bsex_in);
+  WriteCtlStr(" # retention type (by sex)");
+  WriteCtl(ret_type_in);
+  WriteCtlStr(" # retention flag");
+  WriteCtl(slx_nret);
+  WriteCtlStr(" # extra parameters for each pattern");
+  WriteCtl(ret_extra_in);
+  WriteCtlStr(" # Is maximum selectivity at size is forced to equal 1 or not");
+  WriteCtl(slx_max_at_1_in);
+  WriteCtlStr(" ");
   
-  *(ad_comm::global_datafile) >> slx_bsex_in(1);
-  gmacs_ctl << slx_bsex_in(1)  << " # is selectivity sex=specific? (1=Yes; 0=No)"  << endl;
-  for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> slx_type_in(h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << slx_type_in(h)  << " # " <<sexes(h) << " selectivity type"  << endl;
-  *(ad_comm::global_datafile) >>slx_include_in(1);
-  gmacs_ctl <<slx_include_in(1)  << " # selectivity within another gear"  << endl;
-  for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> slx_extra_in(h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << slx_extra_in(h)  << " # " << sexes(h) << " extra parameters for each pattern"  << endl;
-  for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> slx_max_at_1_in(h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << slx_max_at_1_in(h)  << " # " << sexes(h) << ": is maximum selectivity at size forced to equal 1 (1) or not (0)"  << endl;
-  for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> slx_1_at_size(h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << slx_1_at_size(h)  << " # size-class at which selectivity is forced to equal 1 (ignored if the previous input is 1)" << endl;
-  
-  gmacs_ctl << "## Retention specifications --" << endl;
-  *(ad_comm::global_datafile) >> slx_bsex_in(2);
-  gmacs_ctl << slx_bsex_in(2)  << " # is retention sex=specific? (1=Yes; 0=No)"  << endl;
-  for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> slx_type_in(nsex+h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << slx_type_in(nsex+h)  << " # " << sexes(h) << " retention type"  << endl;
-  for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> slx_nret(nsex+h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << slx_nret(nsex+h)  << " # " << sexes(h) << " retention flag (0 = no, 1 = yes)"  << endl;
-  for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> slx_extra_in(nsex+h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << slx_extra_in(nsex+h)  << " # " << sexes(h) << " extra parameters for each pattern"  << endl;
-  for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> ret_max_in(nsex+h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << ret_max_in(nsex+h)  << " # " << sexes(h) << " # should maximum retention be estimated for " <<sexes(h) << "s (1=Yes; 0=No)" << endl;
-  gmacs_ctl << endl;
- END_CALCS
+  // Work out how many selectivities we are dealing with, nfleet * nsex, plus any additonal sex-specific or time period selectivities
+  nslx = 0;
+  for ( int k = 1; k <= nfleet; k++ )
+   {
+    nslx += slx_nsel_period_in(k) * (1 + slx_bsex_in(k));
+    nslx += ret_nret_period_in(k) * (1 + ret_bsex_in(k));
+   }
+  ECHO(nslx);
 
-  // Find the base parameters
-  int n_Spar;
-  imatrix nparSs(1,2,1,2*nfleet)
- LOC_CALCS 
-  n_Spar = 0; int nparS; nparSs.initialize();  
-  slx_type_npar.initialize();
-  for (int it=1;it<=2;it++)
-   for (int k=1;k<=nfleet;k++) 
-    {
-     for (int h=1;h<=slx_bsex_in(it,k)+1;h++)
-      {
-       nparS = 0;
-       int ipnt = (it-1)*nsex+h;
-       if (slx_type_in(ipnt,k) == SELEX_PARAMETRIC)   nparS = nclass;                 ///> non-parametric
-       if (slx_type_in(ipnt,k) == SELEX_COEFFICIENTS) nparS = slx_extra_in(h,k);      ///> coefficients
-       if (slx_type_in(ipnt,k) == SELEX_STANLOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
-       if (slx_type_in(ipnt,k) == SELEX_STANLOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
-       if (slx_type_in(ipnt,k) == SELEX_5095LOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
-       if (slx_type_in(ipnt,k) == SELEX_ONE_PAR_LOGISTIC) nparS = 1;                  ///> logisticOne has 1 parameter
-       if (slx_type_in(ipnt,k) == SELEX_DECLLOGISTIC) nparS = 2+slx_extra_in(h,k);    ///> declining logistic has 2 + extra parameters
-       if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM) nparS = 3;                        ///> double normal has 3 parameters
-       if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM4) nparS = 4;                       ///> double normal has 4 parameters
-       if (slx_type_in(ipnt,k) == SELEX_UNIFORM1) nparS = 0;                          ///> uniform has 0 parameters
-       if (slx_type_in(ipnt,k) == SELEX_UNIFORM0) nparS = 0;                          ///> uniform has 0 parameters
-       if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE) nparS = 2 * slx_extra_in(h,k);  ///> spline has parameters for knots and values
-       if (slx_type_in(ipnt,k)< 0) nparS = 0;                                         ///> mirror has 0 parameters
-       nparS += ret_max_in(ipnt,k); 
-       slx_type_npar(ipnt,k) = nparS;
-       nparSs(it,(h-1)*nfleet+k) = nparS;
-      } //-- h
-    } //-- k
-   cout << "slx_type_in" << endl;
-   cout << slx_type_in << endl;
-   cout << "slx_type_npar" << endl;
-   cout << slx_type_npar << endl;
-   cout << "nparSs" << endl;
-   cout << nparSs << endl;
- END_CALCS;
-
-  // Storage by year
-  imatrix SelPnt(1,2*nsex*nfleet*Nyears2,1,nclass+6);
-
-  matrix Spar_control(1,1000,1,15);
-  imatrix StoIG(1,1000,1,4);
- LOC_CALCS 
-  {
-   n_Spar = 0;
-   int n_Spar2; int h; int iblock;
-   SelPnt.initialize();
-   echoinput << endl;
-   gmacs_ctl << "## General parameter specificiations " << endl;
-   gmacs_ctl << "##  Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
-   gmacs_ctl << "##  Lower & Upper: Range for the parameter" << endl;
-   gmacs_ctl << "##  Prior type:"  << endl;
-   gmacs_ctl << "##   0: Uniform   - parameters are the range of the uniform prior"  << endl;
-   gmacs_ctl << "##   1: Normal    - parameters are the mean and sd" << endl;
-   gmacs_ctl << "##   2: Lognormal - parameters are the mean and sd of the log" << endl;
-   gmacs_ctl << "##   3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
-   gmacs_ctl << "##   4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
-   gmacs_ctl << "##  Phase: Set equal to a negative number not to estimate" << endl;
-   gmacs_ctl << "##  Relative: 0: absolute; 1 relative " << endl;
-   gmacs_ctl << "##  Block: Block number for time-varying selectivity   " << endl;
-   gmacs_ctl << "##  Block_fn: 0:absolute values; 1:exponential" << endl;
-   gmacs_ctl << "##  Env_L: Environmental link - options are 0:none; 1:additive; 2:multiplicative; 3:exponential" << endl;
-   gmacs_ctl << "##  EnvL_var: Environmental variable" << endl;
-   gmacs_ctl << "##  RW: 0 for no random walk changes; 1 otherwise" << endl;
-   gmacs_ctl << "##  RW_blk: Block number for random walks" << endl;
-   gmacs_ctl << "##  Sigma_RW: Sigma used for the random walk" << endl;
-   gmacs_ctl << endl;
-   for (int it=1;it<=2;it++)
-    for (int h=1;h<=nsex;h++)
-     for (int k=1;k<=nfleet;k++)
-     if ( nparSs(it,(h-1)*nfleet+k) > 0)
-      {
-       int ipnt1 = (h-1)*nfleet+k;
-       int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-       int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
-       if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# Inputs for type*sex*fleet: " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl;
-       if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# MAIN PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Block Block_fn Env_L EnvL_var RW RW_Block Sigma RW" << endl;
-       n_Spar2 = n_Spar;
-       for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-        {
-         cout << ipnt3+iyr-syr+1 << " " << Nyears2 << endl;
-         SelPnt(ipnt3+iyr-syr+1,nclass+2) = it;
-         SelPnt(ipnt3+iyr-syr+1,nclass+3) = h;
-         SelPnt(ipnt3+iyr-syr+1,nclass+4) = k;
-         SelPnt(ipnt3+iyr-syr+1,nclass+5) = iyr;
-        }
-       cout << "here" << endl;
-       int ExtraStuff;
-       ExtraStuff = 0;
-       for (int ipar=1;ipar<=nparSs(it,ipnt1);ipar++)
-        {
-         n_Spar += 1;
-         cout << "ipar " << n_Spar << endl;
-         StoIG(n_Spar,1) = ipnt2;
-         StoIG(n_Spar,2) = ipar;
-         StoIG(n_Spar,3) = 0;
-         iblock = 1;
-         for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii);
-         if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(iblock)+"_par_"+str(ipar);
-         if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(iblock)+"_par_"+str(ipar);
-	 for (int ii=1;ii<=14;ii++) gmacs_ctl << Spar_control(n_Spar,ii) << " "; gmacs_ctl << "# " << anystring << endl;
-	 for (int ii=1;ii<=14;ii++) echoinput << Spar_control(n_Spar,ii) << " "; echoinput << "# " << anystring << endl;
-	 if (int(Spar_control(n_Spar,8)) > 0 || int(Spar_control(n_Spar,10)) > 0 || int(Spar_control(n_Spar,12)) > 0) ExtraStuff = 1;
-         cout << anystring << endl;
-         parname1(PPnt+1) += anystring;
-         PPnt += 1;
-        }
-       if (ExtraStuff==1) gmacs_ctl << "# EXTRA PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Relative " << endl;
-       for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-        for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)  SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar2+ipar;
-       for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)
-        {
-         // Are there blocks
-         int jpar = n_Spar2+ipar;
-         int IgBlock = int(Spar_control(jpar,8));
-         int IgBlockFn = int(Spar_control(jpar,9));
-         int IgEnvLink = int(Spar_control(jpar,10));
-         int IgEnvLinkVar = int(Spar_control(jpar,11));
-         int IgRW = int(Spar_control(jpar,12));
-         int IgRWBlock = int(Spar_control(jpar,13));
-         float SigmaRW = Spar_control(jpar,14);
-         if (IgBlock !=0)
-          {
-           cout << "Block" << " " << IgBlock << " " << blocks(IgBlock) << " " << ipar << endl;
-           // Environmental link
-           if (IgEnvLink!=0 || IgRW!=0) { cout << "Error: you can't have blocks and RWs at the same time - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); } 
-           if (IgBlock<0 & IgBlock>nblocks) { cout << "Error: block out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
-           if (IgBlockFn<0 & IgBlockFn>1) { cout << "Error: block_fn out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
-           for (int kpar=1;kpar<=blocks(IgBlock);kpar++)
-            {
-             iblock = kpar + 1;
-             n_Spar += 1;
-             StoIG(n_Spar,1) = ipnt2;
-             StoIG(n_Spar,2) = ipar;
-             StoIG(n_Spar,3) = 0;
-             for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii); *(ad_comm::global_datafile) >> Spar_control(n_Spar,15);
-             for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
-              SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar;
-             cout << ipnt3 << " " << ipar << " " << n_Spar << endl;
-             if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(iblock)+"_par_"+str(ipar);
-             if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(iblock)+"_par_"+str(ipar);
-             for (int ii=1;ii<=7;ii++) gmacs_ctl << Spar_control(n_Spar,ii) << " "; gmacs_ctl << Spar_control(n_Spar,15) << " # " << anystring << endl;
-             for (int ii=1;ii<=7;ii++) echoinput << Spar_control(n_Spar,ii) << " "; echoinput << Spar_control(n_Spar,15) << " # " << anystring << endl;
-             cout << anystring << endl;
-             parname1(PPnt+1) += anystring;
-             PPnt += 1;
-            } //-- kpar  
-           } //-- blocks
-         if (IgEnvLink !=0) 
-          {
-           cout << "dev" << endl;
-           if (IgEnvLink != 1 & IgEnvLink != 2 & IgEnvLink != 3) { cout << "Error: Environmental links can only be 1, 2 or 3 - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); } 
-           if (IgEnvLinkVar <= 0 || IgEnvLinkVar > NenvIndics) { cout << "Error: Environmental variable outside range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); } 
-           if (IgRWBlock <=0) { cout << "Error: There needs to a block for environment variables - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); }
-           n_Spar += 1;
-           anystring = "Env_link_"+fleetname(k)+"_"+sexes(h)+"_par_"+str(ipar);
-           parname1(PPnt+1) = anystring;
-           PPnt += 1;
-           StoIG(n_Spar,1) = ipnt2;
-           StoIG(n_Spar,2) = ipar;
-           StoIG(n_Spar,3) = 1;
-           for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii); *(ad_comm::global_datafile) >> Spar_control(n_Spar,15);
-           for (int ii=1;ii<=7;ii++) gmacs_ctl << Spar_control(n_Spar,ii) << " "; gmacs_ctl << Spar_control(n_Spar,15) << " # " << anystring << endl;
-           for (int ii=1;ii<=7;ii++) echoinput << Spar_control(n_Spar,ii) << " "; echoinput << Spar_control(n_Spar,15) << " # " << anystring << endl;
-           for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++)
-            {
-             for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
-              SelPnt(ipnt3+iyr-syr+1,ipar) = iyr*1000000.0+n_Spar*10000+0+IgEnvLink*100+IgEnvLinkVar;
-            } //-- kpar
-          } //--Env link
-        // Random walk
-        if (IgRW !=0) 
-         {
-          cout << "RW" << endl;
-          n_devvars += 1;
-          devpoints(n_devvars,1) = 3; devpoints(n_devvars,2) = ipnt2; devpoints(n_devvars,3) = n_deviations+1;
-          if (IgRWBlock <=0) { cout << "Error: There needs to a block for random walk - " << seltypes(it) << " " << sexes(h) << " " << " par " << ipar <<   endl;  exit(1); }
-          if (IgRWBlock > nblocks) { cout << "Error: The block for random walk survey in out of range - " << seltypes(it) << " " << sexes(h) << " " << " par " << ipar <<  endl;  exit(1); }
-          for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++)
-           for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
-            {
-             cout << ipnt3+iyr-syr+1 << " " << ipar << endl;
-             SelPnt(ipnt3+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
-            }
-          for (int iblk=1;iblk<=blocks(IgRWBlock);iblk++)
-           n_deviations += (blocklimits(IgRWBlock,iblk,2)-blocklimits(IgRWBlock,iblk,1)+1);
-          cout << n_deviations << endl; 
-          devpoints(n_devvars,4) = n_deviations; devpoints(n_devvars,5) = IgRWBlock;
-          devpoints(n_devvars,6) = ipar;
-          devpoints(n_devvars,7) = it;
-          devpoints(n_devvars,8) = h;
-          devpoints(n_devvars,9) = k;
-          rdevpoints(n_devvars,1) =  SigmaRW;
-         } //--Random walk
-        } //-- ipar (if)
-      gmacs_ctl << endl;
-     } //it,h,k
-    else
+  // Work out how many rows are in the selectivity/retention control inputs matrix 
+  // based on the type of each selectivity and the number of blocks
+  nslx_rows_in = 0;
+  for ( int k = 1; k <= nfleet; k++ )
+   {
+    echoinput << "fleet = " << k << endl;
+    int inc = 0;
+    int tmp_nslx = nslx_rows_in;
+    // Selectivity
+    ECHOSTR("selectivity function parameters");
+    for ( int h = 1; h <= slx_bsex_in(k)+1; h++ )
      {
-      int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
-      for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
+      if( slx_type_in(h,k) == SELEX_PARAMETRIC)             ///> parametric
        {
-        SelPnt(ipnt3+iyr-syr+1,nclass+2) = it;
-        SelPnt(ipnt3+iyr-syr+1,nclass+3) = h;
-        SelPnt(ipnt3+iyr-syr+1,nclass+4) = k;
-        SelPnt(ipnt3+iyr-syr+1,nclass+5) = iyr;
-       } // iy
-     } //- ipar (if)
-   } 
+        inc = nclass * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = nclass;
+       }
+      if( slx_type_in(h,k) == SELEX_COEFFICIENTS)           ///> coefficients
+       {
+        inc = slx_extra_in(h,k) * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = slx_extra_in(h,k);
+       }
+      if( slx_type_in(h,k) == SELEX_STANLOGISTIC)           ///> logistic has 2 parameters
+       {
+        inc = 2 * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 2;
+       }
+      if( slx_type_in(h,k) == SELEX_5095LOGISTIC)           ///> logistic95 has 2 parameters
+       {
+        inc = 2 * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 2;
+       }
+      if( slx_type_in(h,k) == SELEX_ONE_PAR_LOGISTIC)       ///> logisticOne has 1 parameters
+       {
+        inc = 1 * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 1;
+       }
+      if( slx_type_in(h,k) == SELEX_DECLLOGISTIC)           ///> declining logistic has 2 + extra parameters
+       {
+        inc = (2+slx_extra_in(h,k)) * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 2+slx_extra_in(h,k);
+       }
+      if( slx_type_in(h,k) == SELEX_DOUBLENORM)             ///> double normal has 3 parameters
+       {
+        inc = 3 * slx_nsel_period_in(k);
+        slx_type_npar(h,k) =  3;
+       }
+      if( slx_type_in(h,k) == SELEX_DOUBLENORM4)            ///> double normal has 4 parameters
+       {
+        inc = 4 * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 4;
+       }
+      if( slx_type_in(h,k) == SELEX_UNIFORM1)               ///> uniform has 1 parameter
+       {
+        inc = 1 * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 1;
+       }
+      if( slx_type_in(h,k) == SELEX_UNIFORM0)               ///> uniform has 1 parameter
+       {
+        inc = 1 * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 1;
+       }
+      if( slx_type_in(h,k) == SELEX_CUBIC_SPLINE)          ///> spline has parameters for knots and values
+       {
+        inc = 2 * slx_extra_in(h,k) * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 2 * slx_extra_in(h,k);
+       }
+      if( slx_type_in(h,k) <0)                            ///> mirror has 1 parameter
+       {
+        // AEP: 01-06-2024
+        //inc = 1 * slx_nsel_period_in(k);
+        //slx_type_npar(h,k) = 1 * slx_extra_in(h,k);
+        inc = 1 * slx_nsel_period_in(k);
+        slx_type_npar(h,k) = 1;
+       }
+       echoinput << "h = "<<h<<"  "<<"num pars = "<<inc<<endl;
+       nslx_rows_in += inc;//add in increment
+     }
+    tmp_nslx = nslx_rows_in-tmp_nslx;
+    // Retention
+    int tmp_nret = nslx_rows_in;
+    ECHOSTR("--retention function parameters");
+    for ( int h = 1; h <= ret_bsex_in(k)+1; h++ )
+     {
+      if( ret_type_in(h,k) == SELEX_PARAMETRIC)             ///> parametric
+       {
+        inc = nclass * ret_nret_period_in(k);
+        ret_type_npar(h,k) = nclass;
+       }
+      if( ret_type_in(h,k) == SELEX_COEFFICIENTS)           ///> coefficients
+       {
+        inc = ret_extra_in(h,k) * ret_nret_period_in(k);
+        ret_type_npar(h,k) = ret_extra_in(h,k);
+       }
+      if( ret_type_in(h,k) == SELEX_STANLOGISTIC)           ///> logistic has 2 parameters
+       {
+        inc = 2 * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 2;
+       }
+      if( ret_type_in(h,k) == SELEX_5095LOGISTIC)           ///> logistic95 has 2 parameters
+       {
+        inc = 2 * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 2;
+       }
+      if( ret_type_in(h,k) == SELEX_ONE_PAR_LOGISTIC)       ///> logisticOne has 1 parameters
+       {
+        inc = 1 * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 1;
+       }
+      if( ret_type_in(h,k) == SELEX_DECLLOGISTIC)           ///> declining logistic has 2 + extra parameters
+       {
+        inc = (2+ret_extra_in(h,k)) * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 2+ret_extra_in(h,k);
+       }
+      if( ret_type_in(h,k) == SELEX_DOUBLENORM)             ///> double normal has 3 parameters
+       {
+        inc = 3 * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 3;
+       }
+      if( ret_type_in(h,k) == SELEX_DOUBLENORM4)            ///> double normal has 4 parameters
+       {
+        inc = 4 * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 4;
+       }
+      if( ret_type_in(h,k) == SELEX_UNIFORM1)               ///> uniform has 1 parameter
+       {
+        inc = 1 * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 1;
+       }
+      if( ret_type_in(h,k) == SELEX_UNIFORM0)               ///> uniform has 1 parameter
+       {
+        inc = 1 * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 1;
+       }
+      if( ret_type_in(h,k) == SELEX_CUBIC_SPLINE)           ///> spline has parameters for knots and values
+       {
+        inc = 2 * ret_extra_in(h,k) * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 2 * ret_extra_in(h,k);
+       }
+      if( ret_type_in(h,k) <0)                             ///> mirror has 1 parameter
+       {
+        inc = 1 * ret_nret_period_in(k);
+        ret_type_npar(h,k) = 1;
+       }
+       echoinput << "h = "<<h<<"  "<<"num pars = "<<inc<<endl;
+       nslx_rows_in += inc;                                ///add in increment
+      }
+    tmp_nret = nslx_rows_in - tmp_nret;
+    echoinput << "numbers of selectivity, retention rows: " << tmp_nslx << "  " << tmp_nret << endl;
+   }
+  ECHO(nslx_rows_in);
  END_CALCS
 
-  imatrix iYrsSelChanges(1,2*nsex*nfleet,syr,nyrRetro+1);
-  int nsel_use;
-  ivector sel_patterns(1,1000);
-  ivector sel_patterns2(1,1000);
-  ivector nSelVaries(1,2*nsex*nfleet);
-  int maxSelVaries;
-  int nsel_patterns;
+  init_matrix slx_control_in(1,nslx_rows_in,1,nslx_cols_in);
+  !! gmacs_ctl  << "# Selectivity parameters" << endl;
+  !! gmacs_ctl << "## Fleet: The index of the fleet  (positive for capture selectivity; negative for retention)" << endl;
+  !! gmacs_ctl << "## Index: Parameter count (not used)" << endl;
+  !! gmacs_ctl << "## Parameter_no: Parameter count within the current pattern (not used)" << endl;
+  !! gmacs_ctl << "## Sex: Sex (not used)" << endl;
+  !! gmacs_ctl << "## Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
+  !! gmacs_ctl << "## Lower & Upper: Range for the parameter" << endl;
+  !! gmacs_ctl << "## Phase: Set equal to a negative number not to estimate" << endl;
+  !! gmacs_ctl << "## Prior type:"  << endl;
+  !! gmacs_ctl << "## 0: Uniform   - parameters are the range of the uniform prior"  << endl;
+  !! gmacs_ctl << "## 1: Normal    - parameters are the mean and sd" << endl;
+  !! gmacs_ctl << "## 2: Lognormal - parameters are the mean and sd of the log" << endl;
+  !! gmacs_ctl << "## 3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
+  !! gmacs_ctl << "## 4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
+  !! gmacs_ctl << "## Start / End block: years to define the current block structure" << endl;
+  !! gmacs_ctl << "## Env_Link: Do environmental impact ? (0/1)" << endl;
+  !! gmacs_ctl << "## Env_Link_Var: Which environmental variable to consider for tihs parameter ? (column of Env data)" << endl;
+  !! gmacs_ctl << "## Rand_Walk: Do a random walk? (0/1)" << endl;
+  !! gmacs_ctl << "## Start_year_RW: Start year of the random walk" << endl;
+  !! gmacs_ctl << "## End_year_RW: End year of the random walk" << endl;
+  !! gmacs_ctl << "## Sigma_RW: Sigma used for the random walk" << endl;
 
-  !! {
-  !!  int inew;
-  !!  nsel_patterns = 0;
-  !!  nSelVaries.initialize();
-  !!  for (int it=1;it<=2;it++)
-  !!   for (int h=1;h<=nsex;h++)
-  !!    for (int k=1;k<=nfleet;k++)
-  !!     {
-  !!      inew = 1;
-  !!      int ipnt1 = (h-1)*nfleet+k;
-  !!      int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-  !!      int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
-  !!      SelPnt(ipnt3+1,nclass+6) = 1;
-  !!      iYrsSelChanges(ipnt2,syr) = 1;
-  !!      nsel_patterns += 1; sel_patterns(nsel_patterns) = ipnt3+1;
-  !!      for (int iyr=syr+1;iyr<=nyrRetro+1;iyr++)
-  !!       {
-  !!        int OK = 1; int Match=-1;
-  !!        for (int iyr2=syr;iyr2<iyr;iyr2++)
-  !!         {
-  !!         int OK2 = 0;
-  !!         for (int ipar=1;ipar<=nclass;ipar++)
-  !!          if (SelPnt(ipnt3+iyr-syr+1,ipar)!=SelPnt(ipnt3+iyr2-syr+1,ipar)) OK2 = 1;
-  !!          if (OK2 == 0 & Match < 0) Match = iyr2;
-  !!          if (OK2==0) OK = 0; 
-  !!         }
-  !!        if (OK==1) { inew += 1; SelPnt(ipnt3+iyr-syr+1,nclass+6) = inew; nsel_patterns += 1; sel_patterns(nsel_patterns) = ipnt3+iyr-syr+1; }
-  !!        if (OK==0) { SelPnt(ipnt3+iyr-syr+1,nclass+6) = SelPnt(ipnt3+Match-syr+1,nclass+6); }
-  !!        iYrsSelChanges(ipnt2,iyr) = SelPnt(ipnt3+iyr-syr+1,nclass+6);
-  !!       }
-  !!      nSelVaries(ipnt2) = inew;
-  !!     } //-- it,h,k
-  !!  maxSelVaries = max(nSelVaries); 
-  !!  echoinput << "nSelVaries " << nSelVaries << endl;
-  !!  echoinput << "maxSelVaries " << maxSelVaries << endl;
-  !!  echoinput << "iYrsSelChanges " << endl;
-  !!  echoinput << iYrsSelChanges << endl;
-  !!  echoinput << SelPnt << endl;
-  !!  echoinput << "sel_patterns" << endl;
-  !!  echoinput << sel_patterns << endl;
-  
-  !!   // Get selectivity parameters
-  !!   nsel_use = 0;
-  !!   cout << "HERE" << endl;
-  !!   for (int it=1;it<=2;it++)
-  !!    for (int h=1;h<=nsex;h++)
-  !!     for (int k=1;k<=nfleet;k++)
-  !!     if ( nparSs(it,(h-1)*nfleet+k) > 0)
-  !!      {
-  !!       int is = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-  !!       int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-  !!       nsel_use +=  nSelVaries(ipnt2);
-  !!      }
-  !!     cout << nsel_use << endl;
-  !! }
+  !! gmacs_ctl << "# Fleet Index Parameter_no Sex Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW" << endl;
+  !! for (int k=1;k<=nslx_rows_in;k++)
+  !!  {
+  !!   if (slx_control_in(k,13) == nyr+1)
+  !!    slx_control_in(k,13) = nyrRetro+1;
+  !!   else
+  !!    if (slx_control_in(k,13) >= nyrRetro)
+  !!     slx_control_in(k,13) = nyrRetro;
+  !!  }
+  !! gmacs_ctl  << slx_control_in << endl;
 
-  // Set up the specifications for the selectivity parameters
-  vector S_ival(1,n_Spar);
-  vector S_lb(1,n_Spar);
-  vector S_ub(1,n_Spar);
-  ivector S_phz(1,n_Spar);
-  ivector prior_Stype(1,n_Spar);
-  vector prior_S_p1(1,n_Spar);
-  vector prior_S_p2(1,n_Spar);
-  ivector S_relative(1,n_Spar);
+  imatrix slx_control(1,nslx,1,nslx_cols_in);
+  ivector slx_indx(1,nslx);                                ///> index for the first parameter for each gear type
+  ivector slx_gear(1,nslx);                                ///> index the gear type
+  ivector slx_type(1,nslx);                                ///> the type of selectivity function
+  ivector slx_isex(1,nslx);                                ///> 0 = males and females, 1 = males only, 2 = females only
+  ivector slx_styr(1,nslx);                                ///> period start year for block
+  ivector slx_edyr(1,nslx);                                ///> period end year for block
+  ivector slx_cols(1,nslx);
+  ivector slx_npar(1,nslx);                                ///> parameters by pattern
+  ivector slx_incl(1,nslx);				                         ///> is the selectivity in another gear
+  ivector slx_extra(1,nslx);
+  ivector slx_max_at_1(1,nslx);
 
  LOC_CALCS
-  for (int ipar=1;ipar<=n_Spar;ipar++)
+  // Work out the type of each selectivity and place in the ivector slx_type
+  int kk = 1; int nparsel = 0;
+  for ( int k = 1; k <= nfleet; k++ )
    {
-    prior_Stype(ipar)   = int(Spar_control(ipar,4));
-    if (StoIG(ipar,3)==0)
+   int hh = 1 + slx_bsex_in(k);
+   for ( int h = 1; h <= hh; h++ )
+    for ( int i = 1; i <= slx_nsel_period_in(k); i++ )
+      {
+       slx_type(kk) = slx_type_in(h,k);
+       slx_incl(kk) = slx_include_in(k);
+       slx_extra(kk) = slx_extra_in(h,k);
+       slx_max_at_1(kk) = slx_max_at_1_in(k);
+       for (int ll=1;ll<=slx_type_npar(h,k);ll++)
+        selname1(ll+nparsel) = "Sel_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(i)+"_par_"+str(ll);
+       nparsel +=slx_type_npar(h,k);
+       kk ++;
+      }
+    }
+  for ( int k = 1; k <= nfleet; k++ )
+   {
+    int hh = 1 + ret_bsex_in(k);
+    for ( int h = 1; h <= hh; h++ )
+     for ( int i = 1; i <= ret_nret_period_in(k); i++ )
+      {
+       slx_type(kk) = ret_type_in(h,k);
+       slx_extra(kk) = ret_extra_in(h,k);
+       slx_max_at_1(kk) = slx_max_at_1_in(k);
+       for (int ll=1;ll<=ret_type_npar(h,k);ll++)
+        selname1(ll+nparsel) = "Ret_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(i)+"_par_"+str(ll);
+       nparsel +=ret_type_npar(h,k);
+       kk ++;
+      }
+    }
+  // count up number of parameters required
+  slx_cols.initialize();
+  slx_npar.initialize();
+  for ( int k = 1; k <= nslx; k++ )
+   {
+    if ( slx_type(k) == SELEX_PARAMETRIC)                               ///> parametric
+      { slx_cols(k) = nclass; slx_npar(k) = nclass; }
+    if ( slx_type(k) == SELEX_COEFFICIENTS)                            ///> coefficients
+      { slx_cols(k) = slx_extra(k); slx_npar(k) = slx_extra(k); }
+    if ( slx_type(k) == SELEX_STANLOGISTIC)                            ///> logistic
+      { slx_cols(k) = 2; slx_npar(k) = 2; }
+    if ( slx_type(k) == SELEX_5095LOGISTIC)                            ///> logistic95
+      { slx_cols(k) = 2; slx_npar(k) = 2; }
+    if ( slx_type(k) == SELEX_ONE_PAR_LOGISTIC)                        ///> logistic_one_par
+      { slx_cols(k) = 1; slx_npar(k) = 1; }
+    if ( slx_type(k) == SELEX_DECLLOGISTIC)                            ///> declining logistic
+      { slx_cols(k) = 2+slx_extra(k); slx_npar(k) = 2+slx_extra(k); }
+    if ( slx_type(k) == SELEX_DOUBLENORM)                              ///> double normal
+      { slx_cols(k) = 3; slx_npar(k) = 3; }
+    if ( slx_type(k) == SELEX_DOUBLENORM4)                             ///> double normal4
+      { slx_cols(k) = 4; slx_npar(k) = 4; }
+    if ( slx_type(k) == SELEX_UNIFORM1)                                ///> constant 1
+      { slx_cols(k) = 1;  slx_npar(k) = 1; }
+    if ( slx_type(k) == SELEX_UNIFORM0)                                ///> constant 0
+      { slx_cols(k) = 1; slx_npar(k) = 1; }
+    if ( slx_type(k) == SELEX_CUBIC_SPLINE)                            ///> cubspline
+      { slx_cols(k) = 2*slx_extra(k); slx_npar(k) = 2*slx_extra(k); }
+    if ( slx_type(k) < 0)                                              ///> mirror
+      { slx_cols(k) = 1; slx_npar(k) = 1; }
+   }
+
+  // slx_indx is an ivector of the index for the first parameter of each nslx in the slx_control_in matrix
+  kk = 1;
+  for ( int k = 1; k <= nslx; k++ )
+   {
+    slx_indx(k) = kk;
+    kk += slx_cols(k);
+   }
+  // Store a version of the control file that only records the first parameter of each selectivity type - this is useful for R plots. Also extract vectors of elements from this matrix
+  for ( int k = 1; k <= nslx; k++ )
+   {
+    int kk = slx_indx(k);
+    for ( int i = 1; i <= nslx_cols_in; i++ )
+     if (slx_cols(k) > 0)
+      slx_control(k,i) = slx_control_in(kk,i);
+    slx_gear(k) = slx_control_in(kk,1);
+    slx_isex(k) = slx_control_in(kk,4);
+    slx_styr(k) = slx_control_in(kk,12);
+    if (slx_styr(k)==0) slx_styr(k) = syr;
+    slx_edyr(k) = slx_control_in(kk,13);
+    if (slx_styr(k) < syr)  //logic here is possibly wrong: should test if slx_edyr < syr
      {
-      S_ival(ipar)        = log(Spar_control(ipar,1));
-      S_lb(ipar)          = log(Spar_control(ipar,2));
-      S_ub(ipar)          = log(Spar_control(ipar,3));
-      prior_S_p1(ipar)    = log(Spar_control(ipar,5));
-      prior_S_p2(ipar)    = log(Spar_control(ipar,6));
+      cout << "Error: The start year selex block for fleet " << abs(slx_gear(k)) << " is before the start year" << endl;
+      exit(1);
      }
-    else
+    if (slx_edyr(k) > nyr+1)  //logic here is possibly wrong: should test if slx_styr < nyr+1
      {
-      S_ival(ipar)        = Spar_control(ipar,1);
-      S_lb(ipar)          = Spar_control(ipar,2);
-      S_ub(ipar)          = Spar_control(ipar,3);
-      prior_S_p1(ipar)    = Spar_control(ipar,5);
-      prior_S_p2(ipar)    = Spar_control(ipar,6);
+      cout << "Error: The end year selex block for fleet " << abs(slx_gear(k)) << " is beyond the end year+1" << endl;
+      exit(1);
      }
-    S_phz(ipar)         = int(Spar_control(ipar,7));
-    S_relative(ipar)    = int(Spar_control(ipar,15));
-    // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
-    if ( prior_Stype(ipar) == UNIFORM_PRIOR )
-     {
-      prior_S_p1(ipar) = S_lb(ipar);
-      prior_S_p2(ipar) = S_ub(ipar);
-     }
-     
-   } //--ipar
-  ECHO(S_ival) 
-  ECHO(prior_Stype); ECHO(prior_S_p1); ECHO(prior_S_p2); ECHO(S_phz);ECHO(S_relative);
+   }
+  nslx_pars = sum(slx_cols);
  END_CALCS
+
+ // Load the parameters into their own ragged matrix
+  matrix slx_par(1,nslx,1,slx_npar);                       ///> parameter vector for selex parameters
+  3darray slx_priors(1,nslx,1,slx_cols,1,3);               ///> prior specifications
+  vector  slx_lb(1,nslx_pars);                             ///> lower bound
+  vector  slx_ub(1,nslx_pars);                             ///> uppder bound
+  ivector slx_phzm(1,nslx_pars);                           ///> phase/mirror
+  ivector slx_envlink(1,nslx_pars);                        ///> Is there an environmental link (0/1)
+  ivector slx_envvar(1,nslx_pars);                         ///> link to environmental parameter (i.e., which param (column) in the Envdata matrix)
+  ivector slx_RdWalk_dev_type(1,nslx_pars);                ///> is there a random walk (0/1/2)- If so (1/2), which type (1: First order autoregressive process, 2: gaussian white noise)
+  vector slx_dev_sigma(1,nslx_pars);                       ///> sigma for the random walk or random parameters
+  ivector slx_styr_RdWalk(1,nslx_pars);                    ///> period start year for random walk devs
+  ivector slx_edyr_RdWalk(1,nslx_pars);                    ///> period end year for random walk devs
+  ivector slx_timeVar(1,nslx);                             ///> is selectivity time-varying
+
+ LOC_CALCS
+  int nseldevnames = 0;
+  for ( int k = 1; k <= nslx; k++ ) slx_timeVar(k) = 0;
+  for ( int k = 1; k <= nslx; k++ )
+   if (slx_type(k) >=0)
+   {
+    int kk = slx_indx(k);
+    // cout << k << " " << kk << " " << slx_cols(k) << endl;
+    for ( int j = 1; j <= slx_cols(k); j++ )               ///> read parameters for each pattern
+     {
+      int jj = kk + (j - 1);
+      slx_par(k,j)      = slx_control_in(jj,5);            ///> init
+      slx_priors(k,j,1) = slx_control_in(jj,8);            ///> prior type
+      // If a uniform prior is specified then use the lb and ub rather than p1 and p2
+      if ( slx_priors(k,j,1) == UNIFORM_PRIOR )
+       {
+        slx_priors(k,j,2) = slx_control_in(jj,6);          ///> p1
+        slx_priors(k,j,3) = slx_control_in(jj,7);          ///> p2
+       }
+      else
+       {
+        slx_priors(k,j,2) = slx_control_in(jj,9);          ///> p1
+        slx_priors(k,j,3) = slx_control_in(jj,10);         ///> p2
+       }
+      slx_phzm(jj) = slx_control_in(jj,11);
+       if (slx_type(k) == 9 && slx_phzm(jj) != -999)
+        {
+         slx_lb(jj) = log(slx_control_in(jj,6)/(1.0-slx_control_in(jj,6)));
+         slx_ub(jj) = log(slx_control_in(jj,7)/(1.0-slx_control_in(jj,7)));
+		}
+       else
+       {
+        slx_lb(jj) = log(slx_control_in(jj,6));
+        slx_ub(jj) = log(slx_control_in(jj,7));
+        }
+      if (slx_type(k) == SELEX_UNIFORM1 || slx_type(k) == SELEX_UNIFORM0) slx_phzm(jj) = -1*abs(slx_phzm(jj));
+
+       // Deal with environmental links
+       slx_envlink(jj) = slx_control_in(jj,14);
+       slx_envvar(jj) = slx_control_in(jj,15);
+       slx_RdWalk_dev_type(jj) = slx_control_in(jj,16);
+       slx_styr_RdWalk(jj) = slx_control_in(jj,17);
+       slx_edyr_RdWalk(jj) = slx_control_in(jj,18);
+       slx_dev_sigma(jj) = slx_control_in(jj,19);
+       //cout << slx_control_in(jj) << endl;
+       if (slx_envlink(jj) == 1) 
+        { 
+         nslx_envpars += 1; slx_timeVar(k) = 1; 
+         selenvnames1(nslx_envpars) = "Selpattern_"+str(k)+"_par_"+str(j)+"_env_dev";
+        }
+       if (slx_RdWalk_dev_type(jj) == 1) 
+        { 
+         nslx_devpars += (slx_edyr_RdWalk(j)-slx_styr_RdWalk(j)); slx_timeVar(k) = 1; 
+         for (int ii=1;ii<=(slx_edyr_RdWalk(j)-slx_styr_RdWalk(j))+1;ii++)
+          seldevnames1(nseldevnames+ii) = "Selpattern_"+str(k)+"_par_"+str(j)+"_dev_for_year_"+str(slx_styr_RdWalk(j)+ii-1);
+         nseldevnames += (slx_edyr_RdWalk(j)-slx_styr_RdWalk(j))+1;
+        }
+       if (slx_RdWalk_dev_type(jj) == 2) 
+        { 
+         nslx_devpars += (slx_edyr_RdWalk(j)-slx_styr_RdWalk(j)+1); slx_timeVar(k) = 1; 
+         for (int ii=1;ii<=(slx_edyr_RdWalk(j)-slx_styr_RdWalk(j))+1;ii++)
+          seldevnames1(nseldevnames+ii) = "Selpattern_"+str(k)+"_par_"+str(j)+"_for_year_"+str(slx_styr_RdWalk(j)+ii-1);
+         nseldevnames +=  (slx_edyr_RdWalk(j)-slx_styr_RdWalk(j))+1;
+        }
+
+     }
+   }
+   else  // End if (slx_type(k) >=0)
+   {
+	 int kk = slx_indx(k);
+     // cout << "Mirrors" << k << " " << kk << " " << slx_cols(k) << endl;
+     for ( int j = 1; j <= slx_cols(k); j++ )               ///> mirror special
+      {
+       int jj = kk + (j - 1);
+       slx_par(k,j) = slx_control_in(jj,5);            ///> init
+       slx_lb(jj)   = log(slx_control_in(jj,6));
+       slx_ub(jj)   = log(slx_control_in(jj,7));
+       slx_phzm(jj) = slx_control_in(jj,11);
+      }
+   }
+  ECHO(slx_priors);
+ END_CALCS
+  vector log_slx_pars_init(1,nslx_pars);                   /// > Initial parameters
+
+ LOC_CALCS
+  int jj = 1;                                              /// > Set the selectivity parameters
+  for ( int k = 1; k <= nslx; k++ )
+   for ( int i = 1; i <= slx_npar(k); i++ )
+    if (slx_type(k) == 9 && slx_phzm(jj) != -999)
+    { log_slx_pars_init(jj) = log(slx_par(k,i)/(1-slx_par(k,i))); jj++; }
+    else
+    { log_slx_pars_init(jj) = log(slx_par(k,i)); jj++; }
+ END_CALCS
+
+  init_int NumAsympRet;                                    /// > Number of asymptotic retention
+  init_matrix AsympSel_control(1,NumAsympRet,1,7);         /// > Read the parameters
+
+  ivector AsympSel_fleet(1,NumAsympRet);
+  ivector AsympSel_sex(1,NumAsympRet);
+  ivector AsympSel_year(1,NumAsympRet);
+  vector AsympSel_ival(1,NumAsympRet);
+  vector AsympSel_lb(1,NumAsympRet);
+  vector AsympSel_ub(1,NumAsympRet);
+  ivector AsympSel_phz(1,NumAsympRet);
+ LOC_CALCS
+  gmacs_ctl << "#Number of asymptotic retention parameters" << endl;
+  gmacs_ctl << NumAsympRet << endl;
+  echoinput << "#Number of asymptotic retention parameters" << endl;
+  echoinput << NumAsympRet << endl;
+  if (NumAsympRet > 0)
+   {
+    AsympSel_fleet = ivector(column(AsympSel_control,1));
+    AsympSel_sex = ivector(column(AsympSel_control,2));
+    AsympSel_year = ivector(column(AsympSel_control,3));
+    AsympSel_ival = column(AsympSel_control,4);
+    AsympSel_lb = column(AsympSel_control,5);
+    AsympSel_ub = column(AsympSel_control,6);
+    AsympSel_phz = ivector(column(AsympSel_control,7));
+   }
+  gmacs_ctl << "# Fleet Sex Year Initial lower_bound upper_bound phase" << endl;
+  gmacs_ctl << AsympSel_control << endl;
+  echoinput << "# Fleet Sex Year Initial lower_bound upper_bound phase" << endl;
+  echoinput << AsympSel_control << endl;
+ END_CALCS
+
+  // |-----------------------------------------------------------------|
+  // | ENVIRONMENTAL PARAMETERS AND RANDOM WALK SELECTIVITY OPTIONS    |
+  // |-----------------------------------------------------------------|
+
+ int nslx_envpardim;
+ !! nslx_envpardim = nslx_envpars;
+ !! if (nslx_envpardim==0) nslx_envpardim = 1;
+ vector SlxEnvPar_ival(1,nslx_envpardim);
+ vector SlxEnvPar_lb(1,nslx_envpardim);
+ vector SlxEnvPar_ub(1,nslx_envpardim);
+ ivector SlxEnvPar_phz(1,nslx_envpardim);
+ 
+ !!if (nslx_envpars > 0)
+ !! {
+ !!  for (int i = 1; i<=nslx_envpars; i++)
+ !!   *(ad_comm::global_datafile) >> SlxEnvPar_ival(i) >> SlxEnvPar_lb(i) >> SlxEnvPar_ub(i) >> SlxEnvPar_phz(i);
+ !! }
+ !!else // fake parameters
+ !! {
+ !!  SlxEnvPar_ival(1) = 0;
+ !!  SlxEnvPar_lb(1) = -1;
+ !!  SlxEnvPar_ub(1) = 1;
+ !!  SlxEnvPar_phz(1) = -1;
+ !!  selenvnames1(1) = "Dummy_sel_env_par"; 
+ !! }
+ 
+ !! gmacs_ctl << "# Number of environmental parameters" << endl;
+ !! if (nslx_envpars > 0)
+ !!  {
+ !!   gmacs_ctl << "# Initial lower_bound upper_bound phase" << endl;
+ !!   for (int i=1;i<=nslx_envpars;i++)
+ !!    gmacs_ctl << SlxEnvPar_ival(i) << " " << SlxEnvPar_lb(i) << " " << SlxEnvPar_ub(i) << " " << SlxEnvPar_phz(i) << endl;
+ !!  }
+
+ int nslx_devpardim;
+ !! nslx_devpardim = nslx_devpars;
+ !! if (nslx_devpardim==0) nslx_devpardim = 1;
+ vector SlxDevPar_ival(1,nslx_devpardim);
+ ivector SlxDevPar_phz(1,nslx_devpardim);
+ 
+ init_int devParPhase;
+ !! gmacs_ctl << "# DevParPhase" << endl;
+ !! gmacs_ctl << devParPhase << endl;
+ 
+ !!if (nslx_devpars > 0)
+ !! {
+ !!  for (int i = 1; i<=nslx_devpars; i++)
+ !!   { SlxDevPar_ival(i) =0 ;  SlxDevPar_phz(i) = devParPhase; }
+ !! }
+ !!else // fake parameters
+ !! {
+ !!  SlxDevPar_ival(1) = 0;
+ !!  SlxDevPar_phz(1) = -1;
+ !!  seldevnames1(1) = "Dummy_sel_dev_par";
+ !! }
 
   // --------------------------------------------------------------------------------------------------------------------------------------
   // |---------------------------------------------------------|
@@ -2907,7 +3064,7 @@ DATA_SECTION
    if (q_RW(ii)!=0) 
     {
      n_devvars += 1;
-     devpoints(n_devvars,1) = 4; devpoints(n_devvars,2) = ii; devpoints(n_devvars,3) = n_deviations+1;
+     devpoints(n_devvars,1) = 1; devpoints(n_devvars,2) = ii; devpoints(n_devvars,3) = n_deviations+1;
      if (q_RW_blk(ii) <=0) { cout << "Error: There needs to a block for random walk - survey: " << ii <<endl;  exit(1); }
      if (q_RW_blk(ii) > nblocks) { cout << "Error: The block for random walk survey in out of range - survey: " << ii <<endl;  exit(1); }
      for (int iblk=1;iblk<=blocks(q_RW_blk(ii));iblk++)
@@ -3027,7 +3184,7 @@ DATA_SECTION
    if (add_cv_RW(ii)!=0) 
     {
      n_devvars += 1;
-     devpoints(n_devvars,1) = 5; devpoints(n_devvars,2) = ii; devpoints(n_devvars,3) = n_deviations+1;
+     devpoints(n_devvars,1) = 2; devpoints(n_devvars,2) = ii; devpoints(n_devvars,3) = n_deviations+1;
      if (add_cv_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii <<endl;  exit(1); }
      if (add_cv_RW_blk(ii) > nblocks) { cout << "Error: The block for random walk survey in out of range - survey: " << ii <<endl;  exit(1); }
      for (int iblk=1;iblk<=blocks(add_cv_RW_blk(ii));iblk++)
@@ -3370,6 +3527,127 @@ DATA_SECTION
   ilike_vector(5) = nsex;
  END_CALCS
 
+  // |-------------------------------------|
+  // | OPTIONS FOR NATURAL MORTALITY RATES |
+  // |-------------------------------------|
+  !! cout << " * Natural mortality controls" << endl;
+  int nMdev;
+  !! gmacs_ctl << "# Type of M specification" << endl;
+  !! gmacs_ctl << "## 1: Time-invariant M" << endl;
+  !! gmacs_ctl << "## 2: Default random walk M" << endl;
+  !! gmacs_ctl << "## 3: Cubic spline with time M" << endl;
+  !! gmacs_ctl << "## 4: Blocked changes in  M" << endl;
+  !! gmacs_ctl << "## 5: Blocked changes in  M (type 2)" << endl;
+  !! gmacs_ctl << "## 6: Blocked changes in  M (returns to default)" << endl;
+  init_int m_type;
+  !! WriteCtl(m_type);
+  int MrelFem;//TODO: should be initialized even if nsex==1
+  !! if (nsex>1)
+  !!  {
+  !!   *(ad_comm::global_datafile) >> MrelFem;
+  !!   if (MrelFem != YES && MrelFem != NO)
+  !!    { cout << "MrelFem can only be 0[No; absolute] or 1[Relative]; STOPPING" << endl; exit(1); }
+  !!   gmacs_ctl << "# How does M for females relate to that for males (0 absolute; 1 relative)"<< endl << MrelFem << endl;
+  !!  }
+
+  init_int Mdev_phz_def;
+  !! WriteCtl(Mdev_phz_def);
+  init_number m_stdev;
+  !! WriteCtl(m_stdev);
+  init_ivector m_nNodes_sex(1,nsex);
+  !! gmacs_ctl << "# m_nNode_sex" << endl;
+  !! for (int isex=1;isex<=nsex;isex++) gmacs_ctl << m_nNodes_sex(isex) << " # " << sexes(isex)  << endl;
+  !! echoinput << "# m_nNode_sex" << endl;
+  !! for (int isex=1;isex<=nsex;isex++) echoinput << m_nNodes_sex(isex) << " # " << sexes(isex)  << endl;
+  init_imatrix m_nodeyear_sex(1,nsex,1,m_nNodes_sex);
+  !! gmacs_ctl << "# Start of the blocks in which M changes (one row for each sex) - the first block starts in " << syr << endl;
+  !! gmacs_ctl << "# Note: there is one less year than there are blocks" << endl;
+  !! for (int isex=1;isex<=nsex;isex++) gmacs_ctl << m_nodeyear_sex(isex) << " # " << sexes(isex)  << endl;
+  !! echoinput << "# Start of the blocks in which M changes (one row for each sex) - the first block starts in " << syr << endl;
+  !! echoinput << "# Note: there is one less year than there are blocks" << endl;
+  !! for (int isex=1;isex<=nsex;isex++) echoinput << m_nodeyear_sex(isex) << " # " << sexes(isex)  << endl;
+  init_int nSizeDevs;
+  !! WriteCtl(nSizeDevs);
+  init_ivector m_size_nodeyear(1,nSizeDevs);
+  !! gmacs_ctl << "# Start of the size-class blocks in which M changes (one row for each sex) - the first block start at size-class 1" << endl;
+  !! gmacs_ctl << "# Note: there is one less size-class than there are blocks (no input implies M is independent of size" << endl;
+  !! echoinput << "# Start of the size-class blocks in which M changes (one row for each sex) - the first block start at size-class 1" << endl;
+  !! echoinput << "# Note: there is one less size-class than there are blocks (no input implies M is independent of size" << endl;
+  !! WriteCtl(m_size_nodeyear);
+  init_int Init_Mdev;
+  !! WriteCtl(Init_Mdev);
+  
+  ivector nMdev_par_cnt(1,nsex);
+
+ LOC_CALCS
+  nMdev_par_cnt.initialize();
+  switch ( m_type )
+   {
+    case M_CONSTANT:
+     nMdev = 0;
+     Mdev_phz_def = -1;
+     break;
+    case M_RANDOM:
+     nMdev = nsex*(nyr - syr);
+     nMdev_par_cnt(1) = (nyr - syr);
+     if (nsex > 0) nMdev_par_cnt(2) = (nyr - syr);
+     break;
+    case M_CUBIC_SPLINE:
+     nMdev = sum(m_nNodes_sex);
+     nMdev_par_cnt(1) =  m_nNodes_sex(1);
+     if (nsex>1) nMdev_par_cnt(2) = m_nNodes_sex(2);
+     break;
+    case M_BLOCKED_CHANGES:
+     nMdev = sum(m_nNodes_sex);
+     nMdev_par_cnt(1) =  m_nNodes_sex(1);
+     if (nsex>1) nMdev_par_cnt(2) = m_nNodes_sex(2);
+     break;
+    case M_TIME_BLOCKS1:                 //added by Jie Zheng
+     nMdev = sum(m_nNodes_sex)/2;
+     nMdev_par_cnt(1) =  m_nNodes_sex(1)/2;
+     if (nsex>1) nMdev_par_cnt(2) = m_nNodes_sex(2)/2;
+     break;
+    case M_TIME_BLOCKS2:
+     nMdev = sum(m_nNodes_sex);
+	 if(nmature>1) nMdev += sum(m_nNodes_sex);
+     nMdev_par_cnt(1) =  m_nNodes_sex(1);
+	 if(nmature>1) nMdev_par_cnt(1) +=  m_nNodes_sex(1);
+     if (nsex>1)
+	 {
+		nMdev_par_cnt(2) = m_nNodes_sex(2);
+	 	if(nmature>1) nMdev_par_cnt(2) +=  m_nNodes_sex(2);
+	 }
+	 break;
+   }
+ END_CALCS
+  !! nMdev += nSizeDevs;
+  vector Mdev_ival(1,nMdev);
+  vector Mdev_lb(1,nMdev);
+  vector Mdev_ub(1,nMdev);
+  ivector Mdev_phz(1,nMdev);
+  ivector Mdev_spec(1,nMdev);
+ LOC_CALCS
+  if (Init_Mdev==YES)
+   {
+      WriteCtlStr("# Init_MDev==YES");
+    for (int I = 1; I <=nMdev; I++)
+     {
+      *(ad_comm::global_datafile) >> Mdev_ival(I) >> Mdev_lb(I)>> Mdev_ub(I) >> Mdev_phz(I)  >> Mdev_spec(I);
+      gmacs_ctl << "# " << "M parameters" << "\n" << " " << Mdev_ival(I) << " " << Mdev_lb(I) << " " << Mdev_ub(I) << " " << Mdev_phz(I)  << " " << Mdev_spec(I) << endl;
+      echoinput << "# " << "M parameters" << "\n" << " " << Mdev_ival(I) << " " << Mdev_lb(I) << " " << Mdev_ub(I) << " " << Mdev_phz(I)  << " " << Mdev_spec(I) << endl;
+      if (Mdev_spec(I) < 0) Mdev_phz(I) = -1;
+     }
+   }
+  else
+   {
+    WriteCtlStr("# Init_MDev==NO");
+    for (int I = 1; I <=nMdev; I++)
+    { Mdev_ival(I) = 0; Mdev_lb(I) = -3; Mdev_ub(I) = 3; Mdev_phz(I) = Mdev_phz_def; }
+   }
+  for (int I = 1; I <=nMdev; I++)
+   mdevname1(I) = "M_dev_est_par_"+str(I);
+ END_CALCS
+
   // |---------------------------------------------------------|
   // | TAGGING CONTROLS                                        |
   // |---------------------------------------------------------|
@@ -3379,6 +3657,79 @@ DATA_SECTION
   !! gmacs_ctl << tag_emphasis << " # tag_emphasis" << endl;
   !! echoinput << tag_emphasis << " # tag_emphasis" << endl;
   
+  // |---------------------------------------------------------|
+  // | Immature/mature natural mortality                        |
+  // |---------------------------------------------------------|
+  !! cout << " * Immature/mature M controls" << endl;
+  !! ECHOSTR(" * Immature/mature M controls");
+  init_int m_maturity;
+  int n_mat_m;
+  !! n_mat_m = nsex;
+  
+  init_matrix m_mat_controls(1,nsex,1,7);//TODO: should probably be dim'd by n_mat_m, not nsex
+  !! WriteCtlStr("# maturity specific natural mortality? (yes = 1; no = 0; only for use if nmature > 1)");
+  !! WriteCtl(m_maturity);
+  !! WriteCtlStr("# Initial Lower_bound Upper_bound Phase Prior_type Prior_1 Prior_2");
+  !! gmacs_ctl << m_mat_controls << endl;
+  !! echoinput << m_mat_controls << endl;
+
+  vector m_mat_ival(1,nsex);
+  vector m_mat_lb(1,nsex);
+  vector m_mat_ub(1,nsex);
+  ivector prior_m_mat_type(1,nsex);
+  vector prior_m_mat_p1(1,nsex);
+  vector prior_m_mat_p2(1,nsex);
+  ivector m_mat_phz(1,nsex);
+
+  vector log_m_mat_ival(1,nsex);
+  vector log_m_mat_lb(1,nsex);
+  vector log_am_mat_ub(1,nsex);
+
+ LOC_CALCS
+  m_mat_ival       = column(m_mat_controls,1);
+  m_mat_lb         = column(m_mat_controls,2);
+  m_mat_ub         = column(m_mat_controls,3);
+  m_mat_phz        = ivector(column(m_mat_controls,4));
+  prior_m_mat_type = ivector(column(m_mat_controls,5));
+  prior_m_mat_p1   = column(m_mat_controls,6);
+  prior_m_mat_p2   = column(m_mat_controls,7);
+
+  for ( int k = 1; k <= nsex; k++ )
+   {
+    // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
+    if ( prior_m_mat_type(k) == UNIFORM_PRIOR )
+     {
+      prior_m_mat_p1(k) = m_mat_lb(k);
+      prior_m_mat_p2(k) = m_mat_ub(k);
+     }
+   }
+  ECHO(prior_m_mat_type); ECHO(prior_m_mat_p1); ECHO(prior_m_mat_p2);
+ END_CALCS
+
+ 
+ 
+  // maturity specific natural mortality
+  // init_int m_maturity;
+  // int n_mat_m;
+  // !! n_mat_m = nsex;
+  
+  // vector m_mat_ival(1,n_mat_m);
+  // vector m_mat_lb(1,n_mat_m);
+  // vector m_mat_ub(1,n_mat_m);
+  // ivector m_mat_phz(1,n_mat_m);
+ 
+ // LOC_CALCS
+  // if(m_maturity == 1)
+  // {
+   // for (int I = 1; I <=n_mat_m; I++)
+   // {
+    // *(ad_comm::global_datafile) >> m_mat_ival(I) >> m_mat_lb(I)>> m_mat_ub(I) >> m_mat_phz(I);
+     // gmacs_ctl << "# " << "#M_mat_parameters" << "\n" << " " << m_mat_ival(I) << " " << m_mat_lb(I) << " " << m_mat_ub(I) << " " << m_mat_phz(I)  << endl;
+    // }
+  // }
+ // END_CALCS
+ 
+           
   !! cout << "## Emphasis Factors (Catch) ##" << endl;
   !! WriteCtlStr("## Emphasis Factors (Catch: number of catch dataframes) ##");
   init_vector catch_emphasis(1,nCatchDF);                  ///> Weights on catches
@@ -3423,29 +3774,16 @@ DATA_SECTION
   !!   { deviations_ival(i) =0 ;  deviations_phz(i) = devParPhase; }
   !!  int ndev_cnt;
   !!  ndev_cnt = 0;
-  !!  cout << n_devvars <<endl;
   !!  for (int is=1;is<=n_devvars;is++)
   !!   {
-  !!    for (int iblk=1;iblk<=blocks(devpoints(is,5));iblk++)
+  !!    for (int iblk=1;iblk<=devpoints(n_devvars,6);iblk++)
   !!     {
-  !!     for (int iyr=blocklimits(devpoints(is,5),iblk,1);iyr<=blocklimits(devpoints(is,5),iblk,2);iyr++)
+  !!     for (int iyr=blocklimits(devpoints(n_devvars,5),iblk,1);iyr<=blocklimits(devpoints(n_devvars,5),iblk,2);iyr++)
   !!       {
   !!        ndev_cnt += 1;
-  !!        if (devpoints(n_devvars,1)==1) 
-  !!         {
-  !!          if (devpoints(is,7)==1) anystring = "Growth_increment_";
-  !!          if (devpoints(is,7)==1) anystring = "Molt_probability_";
-  !!          if (devpoints(is,7)==1) anystring = "Prob_mature_";
-  !!          devnames1(ndev_cnt) = anystring       +str(devpoints(is,2))+"_par_"+str(devpoints(is,6))+"_dev_for_year_"+str(iyr);
-  !!         }
-  !!        if (devpoints(n_devvars,1)==2) devnames1(ndev_cnt) = "M_"            +str(devpoints(is,2))+"_par_1"+"_dev_for_year_"+str(iyr);
-  !!        if (devpoints(n_devvars,1)==3) 
-  !!         { 
-  !!          anystring = seltypes(devpoints(is,7)) + "_" + sexes(devpoints(is,8)) + "_" + fleetname(devpoints(is,9));
-  !!          devnames1(ndev_cnt) = "Selectivity_"  +anystring+"_par_"+str(devpoints(is,6))+"_dev_for_year_"+str(iyr);
-  !!         }
-  !!        if (devpoints(n_devvars,1)==4) devnames1(ndev_cnt) = "q_survey_"     +str(devpoints(is,2))+"_par_1"+"_dev_for_year_"+str(iyr);
-  !!        if (devpoints(n_devvars,1)==5) devnames1(ndev_cnt) = "add_cv_survey_"+str(devpoints(is,2))+"_par_1"+"_dev_for_year_"+str(iyr);
+  !!        if (devpoints(n_devvars,1)==1) devnames1(ndev_cnt) = "q_survey_"+str(devpoints(is,2))+"_par_1"+"_dev_for_year_"+str(iyr);
+  !!        if (devpoints(n_devvars,1)==2) devnames1(ndev_cnt) = "add_cv_survey_"+str(devpoints(is,2))+"_par_1"+"_dev_for_year_"+str(iyr);
+  //!!        devnames1(ndev_cnt) = "q_survey_"+str(devpoints(is,2)+"_par_1"+str(j)+"_dev_for_year_"+str(slx_styr_RdWalk(j)+ii-1);
   !!       }
   !!     }
   !!   }
@@ -3745,11 +4083,15 @@ DATA_SECTION
   for (Ipar=1;Ipar<=ntheta; Ipar++) if (theta_phz(Ipar) > TurnOffPhase) theta_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > TurnOffPhase) G_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > TurnOffPhase) M_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > TurnOffPhase) S_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nslx_pars; Ipar++) if (slx_phzm(Ipar) > TurnOffPhase) slx_phzm(Ipar) = -1;
+  for (Ipar=1;Ipar<=NumAsympRet; Ipar++) if (AsympSel_phz(Ipar) > TurnOffPhase) AsympSel_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nslx_envpardim; Ipar++) if (SlxEnvPar_phz(Ipar) > TurnOffPhase) SlxEnvPar_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nslx_devpardim; Ipar++) if (SlxDevPar_phz(Ipar) > TurnOffPhase) SlxDevPar_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > TurnOffPhase) f_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > TurnOffPhase) foff_phz(Ipar) = -1;
   if (rdv_phz > TurnOffPhase) rdv_phz = -1;
   if (rec_prop_phz > TurnOffPhase) rec_prop_phz = -1;
+  for (Ipar=1;Ipar<=nMdev; Ipar++) if (Mdev_phz(Ipar) > TurnOffPhase) Mdev_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (nvn_phz(Ipar) > TurnOffPhase) nvn_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > TurnOffPhase) q_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase) cv_phz(Ipar) = -1;
@@ -3757,13 +4099,18 @@ DATA_SECTION
   for (Ipar=1;Ipar<=ntheta; Ipar++) if (theta_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > 0) NVarPar += 1;
-  for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=nslx_pars; Ipar++) if (slx_phzm(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=NumAsympRet; Ipar++) if (AsympSel_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=nslx_envpardim; Ipar++) if (SlxEnvPar_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=nslx_devpardim; Ipar++) if (SlxDevPar_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > 0) NVarPar += nFparams(Ipar);
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > 0) NVarPar += nYparams(Ipar);
   if (rdv_phz > 0) NVarPar += (rdv_eyr-rdv_syr+1);
   if (rec_prop_phz > 0) NVarPar += (rdv_eyr-rdv_syr+1);
+  for (Ipar=1;Ipar<=nMdev; Ipar++) if (Mdev_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=n_mat_m; Ipar++) if (m_mat_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (nvn_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > 0) NVarPar += 1;
@@ -3791,7 +4138,8 @@ DATA_SECTION
   PhaseGrowthPar = 10000;                                  ///> Lowest phase for a growth parameter
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > 0 && G_phz(Ipar) < PhaseGrowthPar) PhaseGrowthPar = G_phz(Ipar);
   PhaseSelexPar = 10000;
-  for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > 0 && S_phz(Ipar) < PhaseSelexPar) PhaseSelexPar = S_phz(Ipar);
+  for (Ipar=1;Ipar<=nslx; Ipar++) if (slx_phzm(Ipar) > 0 && slx_phzm(Ipar) < PhaseSelexPar) PhaseSelexPar = slx_phzm(Ipar);
+  for (Ipar=1;Ipar<=NumAsympRet; Ipar++) if (AsympSel_phz(Ipar) > 0 && AsympSel_phz(Ipar) < PhaseSelexPar) PhaseSelexPar = AsympSel_phz(Ipar);
  END_CALCS
 
   int NfunCall;
@@ -3804,12 +4152,16 @@ INITIALIZATION_SECTION
    theta               theta_ival;
    G_pars_est          G_ival;
    M_pars_est          M_ival;
-   S_pars_est          S_ival;
+   Asymret             AsympSel_ival;
    log_fbar            log_pen_fbar;
    log_vn              log_nvn_ival;
    survey_q            q_ival;
    logit_rec_prop_est  init_sex_ratio;
    log_add_cv          log_add_cv_ival;
+   m_dev_est           Mdev_ival;
+   log_slx_pars        log_slx_pars_init;
+   slx_env_pars        SlxEnvPar_ival;
+   sel_devs            SlxDevPar_ival;
    par_devs            deviations_ival;
 
 // ================================================================================================
@@ -3905,14 +4257,27 @@ PARAMETER_SECTION
   // logN0     = theta(12,...)
   init_bounded_number_vector theta(1,ntheta,theta_lb,theta_ub,theta_phz);
   !! ECHO(theta);
+ // Growth and molting probability parameters (sex-specific)
+ // AEP
+ // init_bounded_number_vector Grwth(1,nGrwth,Grwth_lb,Grwth_ub,Grwth_phz);
+ // !!ECHO(Grwth);
   init_bounded_number_vector G_pars_est(1,n_Gpar,G_lb,G_ub,G_phz);
   !!ECHO(G_pars_est);
-  // M parameters 
+ // M parameters 
   init_bounded_number_vector M_pars_est(1,n_Mpar,M_lb,M_ub,M_phz);
   !!ECHO(M_pars_est);
   // Selectivity parameters
-  init_bounded_number_vector S_pars_est(1,n_Spar,S_lb,S_ub,S_phz);
-  !!ECHO(M_pars_est);
+  init_bounded_number_vector log_slx_pars(1,nslx_pars,slx_lb,slx_ub,slx_phzm);
+  !! if (usepinfile==0) for (int i=1;i<=nslx_pars;i++) log_slx_pars(i) = log_slx_pars_init(i);
+  !!ECHO(log_slx_pars);
+  // Asymptotic retention
+  init_bounded_number_vector Asymret(1,NumAsympRet,AsympSel_lb,AsympSel_ub,AsympSel_phz);
+  !!ECHO(Asymret);
+  // Selectivity devs
+  init_bounded_number_vector slx_env_pars(1,nslx_envpardim,SlxEnvPar_lb,SlxEnvPar_ub,SlxEnvPar_phz);
+  !!ECHO(slx_env_pars);
+  init_bounded_number_vector sel_devs(1,nslx_devpardim,-12.0,12.0,SlxDevPar_phz);
+  !!ECHO(sel_devs);
 
   // Fishing mortality rate parameters
   init_bounded_number_vector log_fbar(1,nfleet,fbar_lb,fbar_ub,f_phz);       ///> Male mean fishing mortality.
@@ -3935,6 +4300,21 @@ PARAMETER_SECTION
   init_bounded_dev_vector logit_rec_prop_est(rdv_syr,rdv_eyr,-100,100,rec_prop_phz); ///> recruitment deviations
   !! ECHO(logit_rec_prop_est);
   vector logit_rec_prop(syr,nyrRetro);
+
+  // Time-varying natural mortality rate devs.
+  init_bounded_number_vector m_dev_est(1,nMdev,Mdev_lb,Mdev_ub,Mdev_phz);      ///> natural mortality deviations
+  !! ECHO(nMdev);
+  vector m_dev(1,nMdev);
+  !! ECHO(nsex);
+  !! ECHO(nMdev_par_cnt);
+  matrix m_dev_sex(1,nsex,1,nMdev_par_cnt);                                    ///> natural mortality deviations
+  !! ECHO(m_dev_sex);
+  vector Msize(1,nclass);
+  !! ECHO(Msize);
+
+  // maturity specific natural mortality multipliers
+  init_bounded_number_vector m_mat_mult(1,nsex,m_mat_lb,m_mat_ub,m_mat_phz);      ///> natural mortality deviations
+  !! ECHO(m_mat_mult);
 
   // Effective sample size parameter for multinomial
   init_number_vector log_vn(1,nSizeComps,nvn_phz);
@@ -3966,6 +4346,7 @@ PARAMETER_SECTION
 
   objective_function_value objfun;
 
+  vector M0(1,nsex);                                       ///> natural mortality rate
   number logR0;                                            ///> logarithm of unfished recruits
   number logRbar;                                          ///> logarithm of average recruits(syr+1,nyr)
   number logRini;                                          ///> logarithm of initial recruitment(syr)
@@ -3991,7 +4372,6 @@ PARAMETER_SECTION
   matrix mature_cv(1,nsex,1,nMoltVaries);                  ///> CV in maturing probabilility
 
   matrix rec_pass(1,nsex,1,nclass);                        ///> passing into update routine 
-  vector totrecruits(syr,nyrRetro);                        ///> vector of estimated recruits (total)
   matrix recruits(1,nsex,syr,nyrRetro);                    ///> vector of estimated recruits
   vector res_recruit(syr,nyrRetro);                        ///> vector of estimated recruits
   vector xi(syr,nyrRetro);                                 ///> vector of residuals for SRR
@@ -4013,7 +4393,6 @@ PARAMETER_SECTION
   3darray ProbMolt(1,nsex,1,nclass,1,nclass);                               ///> Diagonal matrix of molt probabilities
   4darray growth_transition(1,nsex,1,maxSizeIncVaries,1,nclass,1,nclass);   ///> The time-dependent growth transition matrix
 
-  matrix S_pars(1,100,1,nclass);                                          ///> Extracted selectivity parameters
   4darray log_slx_capture(1,nfleet,1,nsex,syr,nyrRetro+1,1,nclass);       ///> capture selectivity
   4darray log_slx_retaind(1,nfleet,1,nsex,syr,nyrRetro+1,1,nclass);       ///> probability of retention
   4darray log_slx_discard(1,nfleet,1,nsex,syr,nyrRetro+1,1,nclass);       ///> probabilty of disards
@@ -4186,11 +4565,30 @@ PRELIMINARY_CALCS_SECTION
       randu.fill_randn(rng2);
       G_pars_est(ipar) = GenJitter(IsJittered,G_ival(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu);
      }
-    for (int ipar=1;ipar<=n_Spar;ipar++)
+    for (int ipar=1;ipar<=nslx_pars;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      S_pars_est(ipar) = GenJitter(IsJittered,S_ival(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu);
+      log_slx_pars(ipar) = GenJitter(IsJittered,log_slx_pars_init(ipar),slx_lb(ipar),slx_ub(ipar),slx_phzm(ipar),sdJitter,rands,randu);
+     }
+    for (int ipar=1;ipar<=NumAsympRet;ipar++)
+     {
+      rands.fill_randn(rng2);
+      randu.fill_randn(rng2);
+      Asymret(ipar) = GenJitter(IsJittered,AsympSel_ival(ipar),AsympSel_lb(ipar),AsympSel_ub(ipar),AsympSel_phz(ipar),sdJitter,rands,randu);
+     }
+    for (int ipar=1;ipar<=nslx_envpardim;ipar++)
+     {
+      rands.fill_randn(rng2);
+      randu.fill_randn(rng2);
+      slx_env_pars(ipar) = GenJitter(IsJittered,SlxEnvPar_ival(ipar),SlxEnvPar_lb(ipar),SlxEnvPar_ub(ipar),SlxEnvPar_phz(ipar),sdJitter,rands,randu);
+     }
+    // Don't jitter devpars
+    for (int ipar=1;ipar<=nfleet;ipar++)
+     {
+      rands.fill_randn(rng2);
+      randu.fill_randn(rng2);
+      log_fbar(ipar) = GenJitter(IsJittered,log_pen_fbar(ipar),fbar_lb(ipar),fbar_ub(ipar),f_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nFparams(ipar); jpar++)
@@ -4223,6 +4621,12 @@ PRELIMINARY_CALCS_SECTION
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
       logit_rec_prop_est(ipar) = GenJitter(IsJittered,init_sex_ratio,-100.0,100.0,rec_prop_phz,sdJitter,rands,randu);
+     }
+    for (int ipar=1;ipar<=nMdev;ipar++)
+     {
+      rands.fill_randn(rng2);
+      randu.fill_randn(rng2);
+      m_dev_est(ipar) = GenJitter(IsJittered,Mdev_ival(ipar),Mdev_lb(ipar),Mdev_ub(ipar),Mdev_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nSizeComps;ipar++)
      {
@@ -4285,7 +4689,7 @@ PROCEDURE_SECTION
   //cout << Grwth << endl;
   //cout << log_slx_pars << endl;
   //exit(1);
-   
+
   // penalty for selectivity deviations
   logDevPenal = 0;
 
@@ -4324,14 +4728,11 @@ PROCEDURE_SECTION
   calc_initial_numbers_at_length();                        if ( verbose >= 3 ) cout << "Ok after calc_initial_numbers_at_length ..." << endl;
   update_population_numbers_at_length();                   if ( verbose >= 3 ) cout << "Ok after update_population_numbers_at_length ..." << endl;
   if (Term_molt == 0)
-   {
-    calc_stock_recruitment_relationship();                 if ( verbose >= 3 ) cout << "Ok after calc_stock_recruitment_relationship ..." << endl;
-   } 
-  else 
-   {												   
-    if ( verbose >= 3 ) cout << "Terminal molting option has been selected - calc_stock_recruitment_relationship isn't called in the procedure ..." << endl;
-    calc_stock_recruitment_relationship();                 if ( verbose >= 3 ) cout << "Ok after calc_stock_recruitment_relationship ..." << endl;
-   }
+  {
+	calc_stock_recruitment_relationship();                 if ( verbose >= 3 ) cout << "Ok after calc_stock_recruitment_relationship ..." << endl;
+  } else {												   if ( verbose >= 3 )
+  cout << "Terminal molting option has been selected - calc_stock_recruitment_relationship isn't called in the procedure ..." << endl;
+  }
 
   // observation models ...
   calc_predicted_catch();                                  if ( verbose >= 3 ) cout << "Ok after calc_predicted_catch ..." << endl;
@@ -4344,7 +4745,7 @@ PROCEDURE_SECTION
   calc_objective_function();                               if ( verbose >= 3 ) cout << "Ok after calc_objective_function ..." << endl;
 
   // sd_report variables
-  if ( sd_phase() || StopAfterFnCall==1)
+  if ( sd_phase() )
    {
       if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
   // Save the estimates parameters to ParsOut (used for variance estimation)
@@ -4352,7 +4753,10 @@ PROCEDURE_SECTION
   for (ii=1;ii<=ntheta;ii++) if (theta_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = theta(ii); }
   for (ii=1;ii<=n_Gpar; ii++) if (G_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = G_pars_est(ii); }
   for (ii=1;ii<=n_Mpar; ii++) if (M_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = M_pars_est(ii); }
-  for (ii=1;ii<=n_Spar; ii++) if (S_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = S_pars_est(ii); }
+  for (ii=1;ii<=nslx_pars; ii++) if (slx_phzm(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_slx_pars(ii); }
+  for (ii=1;ii<=NumAsympRet; ii++) if (AsympSel_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = Asymret(ii); }
+  for (ii=1;ii<=nslx_envpardim; ii++) if (SlxEnvPar_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = slx_env_pars(ii); }
+  for (ii=1;ii<=nslx_devpardim; ii++) if (SlxDevPar_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = sel_devs(ii); }
   for (ii=1;ii<=nfleet; ii++) if (f_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_fbar(ii); }
   for (ii=1;ii<=nfleet; ii++)
    for (jj=1;jj<=nFparams(ii);jj++) if (f_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_fdev(ii,jj); }
@@ -4364,6 +4768,8 @@ PROCEDURE_SECTION
    }
     for (ii=rdv_syr;ii<=rdv_eyr; ii++) if (rdv_phz > 0) {Ipnt +=1; ParsOut(Ipnt) = rec_dev_est(ii); }
   for (ii=rdv_syr;ii<=rdv_eyr; ii++) if (rec_prop_phz > 0) {Ipnt +=1; ParsOut(Ipnt) = logit_rec_prop_est(ii); }
+  for (ii=1;ii<=nMdev; ii++) if (Mdev_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = m_dev_est(ii); }
+  for (ii=1;ii<=nsex; ii++) if (m_mat_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = m_mat_mult(ii); }
   for (ii=1;ii<=nSizeComps; ii++) if (nvn_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_vn(ii); }
   for (ii=1;ii<=n_qpar; ii++) if (q_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = survey_q(ii); }
   for (ii=1;ii<=n_addcv_par; ii++) if (cv_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_add_cv(ii); }
@@ -4400,7 +4806,14 @@ FUNCTION initialize_model_parameters
   if (verbose >= 3) cout<<"starting initialize_model_parameters";
 
   // Get parameters from theta control matrix:
-  Jpnt = 1; 
+  M0(1)      = theta(1);
+  Jpnt = 2;
+  if (nsex>1)
+   {
+    if (MrelFem==YES) M0(2) = M0(1)*exp(theta(2)); 
+    if (MrelFem==NO) M0(2) = theta(2); 
+    Jpnt = 3;
+   }
   logR0     = theta(Jpnt);
   logRini   = theta(Jpnt+1);
   logRbar   = theta(Jpnt+2);
@@ -4521,12 +4934,6 @@ FUNCTION initialize_model_parameters
        beta(h,igrow)    = G_pars(2);
        gscale(h,igrow)  = G_pars(3);
       }
-     if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL)
-      {
-       alpha(h,igrow)   = G_pars(1);
-       beta(h,igrow)    = G_pars(2);
-       gscale(h,igrow)  = G_pars(3);
-      }
      if (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)
       {
        for (int l=1; l<=nclass;l++) molt_increment(h,igrow,l) = G_pars(l);
@@ -4613,8 +5020,8 @@ FUNCTION initialize_model_parameters
         for (int l=1; l<=nclass;l++) molt_probability_in(h,igrow,l) = G_pars(1);
        } 
       } //-- h & igrow
-      
-   // Extract Growth parameter   
+    
+    
    int icnt = 0;
    for ( int h = 1; h <= nsex; h++ )
     if (bUseCustomMatureProbability2(h) != FIXED_PROB_MATURE)
@@ -4633,10 +5040,10 @@ FUNCTION initialize_model_parameters
        for (int ipar=1;ipar<=nclass+1;ipar++)
         if (GrowPnt(irow,ipar) != 0)
          {
-          RefParNo = GrowPnt(irefrow,ipar);
           if (GrowPnt(irow,ipar) >0 & GrowPnt(irow,ipar) < 10000)
            {
             ParNo = GrowPnt(irow,ipar);
+            RefParNo = GrowPnt(irefrow,ipar);
             if (igrow==1) G_pars(ipar) = G_pars_est(ParNo);
             if (igrow>0 & G_relative(ParNo)==0) G_pars(ipar) = G_pars_est(ParNo);
             if (igrow>0 & G_relative(ParNo)==1) G_pars(ipar) = G_pars_est(RefParNo)*exp(G_pars_est(ParNo));
@@ -4671,65 +5078,41 @@ FUNCTION initialize_model_parameters
         {
          for (int l=1; l<=nclass;l++) mature_probability_in(h,igrow,l) = G_pars(1);
         } 
-      } //-- h & Igrow
+       } //-- h & Igrow
      
-   // Get selectivity parameters
-   nsel_use = 0;
-   S_pars.initialize();
-   for (int it=1;it<=2;it++)
-    for (int h=1;h<=nsex;h++)
-     for (int k=1;k<=nfleet;k++)
-     if ( nparSs(it,(h-1)*nfleet+k) > 0)
-      {
-       int is = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-       for ( int isel = 1; isel<=nSelVaries(is); isel++)
-        {
-         nsel_use += 1;
-         int OK; int irow; int irefrow; int iyr;
-         OK = 0; irow = 0;
-         int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
+   // high grade factors
+   log_high_grade.initialize();
+   int fleet; int sex; int year;
+   for (int i=1;i<=NumAsympRet;i++)
+    {
+     fleet = AsympSel_fleet(i);
+     sex = AsympSel_sex(i);
+     year = AsympSel_year(i);
+     log_high_grade(fleet,sex,year) = log(1.0-Asymret(i));
+    }
 
-         for (int ivec=1;ivec<=nyrRetro+1-syr+1;ivec++)
-          if (SelPnt(ipnt3+ivec,nclass+6)==isel & OK==0) { OK=1; irow=ipnt3+ivec; }
-         iyr = SelPnt(irow,nclass+5);
-         if (isel==1) irefrow = irow;
-         sel_patterns2(nsel_use) = irow;
+   // m_dev parameters
 
-        // Extract parameters 
-        int ParNo; int RefParNo;
-        for (int ipar=1;ipar<=nclass+1;ipar++)
-         if (SelPnt(irow,ipar) != 0)
-          {
-           RefParNo = SelPnt(irefrow,ipar);
-           if (SelPnt(irow,ipar) >0 & SelPnt(irow,ipar) < 10000)
-            {
-             ParNo = SelPnt(irow,ipar);
-             if (isel==1) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
-             if (isel>0 & S_relative(ParNo)==0) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
-             if (isel>0 & S_relative(ParNo)==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(S_pars_est(ParNo));
-            }
-           else
-            {
-             if (SelPnt(irow,ipar) > 0)
-              {
-               int EnvLinkVar = SelPnt(irow,ipar) - int(SelPnt(irow,ipar)/100.0)*100;
-               int EnvLink = int(SelPnt(irow,ipar)/100) - int(SelPnt(irow,ipar)/10000)*100;
-               int ParNo = int(SelPnt(irow,ipar)/10000) - int(SelPnt(irow,ipar)/1000000)*100;
-               if (EnvLink==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) + S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
-               if (EnvLink==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
-               if (EnvLink==3) S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar)); 
-              }
-             else
-              {
-               int SelPnt2 = -1*SelPnt(irow,ipar);
-               int Devpar = SelPnt2  - int(SelPnt2/100.0)*100;
-               S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(par_devs(Devpar)); 
-              }
-            }
-          } //--ipar
-        } //-is  
-      }//- it, h, k    
-  
+   for (int I = 1; I <=nMdev-nSizeDevs; I++)
+    {
+     // Size specific mortality
+     if (Mdev_spec(I) >=0)
+      m_dev(I) = m_dev_est(I);
+     else
+      m_dev(I) = m_dev_est(-Mdev_spec(I));
+     if (I <= nMdev_par_cnt(1))
+      { m_dev_sex(1,I) =  m_dev(I); }
+     else
+      { m_dev_sex(2,I-nMdev_par_cnt(1)) =  m_dev(I); }
+    }
+
+   // M multiplier
+   for (int l=1;l<=nclass;l++) Mmult(l) = 1;
+   if (nSizeDevs >= 1)
+    for (int ii=1;ii<=nSizeDevs;ii++)                                ///> Loop over changes in size
+     for (int l = m_size_nodeyear(ii);l <= nclass; l++)
+      Mmult(l) = m_dev_est(nMdev-nSizeDevs+ii);
+
    // Natural mortality
    dvar_matrix M_out(syr,nyrRetro,1,nclass);
    for (int h=1;h<=nsex;h++)
@@ -4917,6 +5300,7 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
     {
      OK = 0;
      for (int kpnt=jpnt+1;kpnt<=npars & OK==0;kpnt++) if (parpoints(kpnt)==ipar) { jpnt = kpnt; OK = 1; }
+     cout << envpar << endl;
      for (int iblk=1;iblk<=blocks(RW_blk);iblk++)
       {
        if (env_link==1) for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++) tpar(i) +=envpar*EnvData(i,env_var);
@@ -4975,97 +5359,106 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
   **/
 // =======================================================================================================================================
 FUNCTION init_selectivities
+  int h,k, k2;
   dvar_vector pv;
   dvar_vector temp_slx1(1,nclass);
   dvariable p1, p2, p3, p4;
 
   //create pointer array
   if (ppSLX){
-      for (int k=0;k<nsel_use;k++) delete ppSLX[k];
+      for (int k=0;k<nslx;k++) delete ppSLX[k];
       delete ppSLX; ppSLX=0;
   }
-  ppSLX = new class gsm::Selex<dvar_vector>*[nsel_use];
+  ppSLX = new class gsm::Selex<dvar_vector>*[nslx];
 
   // Specify non-mirrored selectivity
   class gsm::Selex<dvar_vector> *pSLX;
-  for (int is=1; is<= nsel_use; is++)
+  int j = 1;
+
+  for ( int k = 1; k <= nslx; k++ )
+   if (slx_type(k) < 0) {ppSLX[k-1]=0; j++;} else
    {
-    int ipnt = sel_patterns2(is);
-    int it = SelPnt(ipnt, nclass+2);
-    int h = SelPnt(ipnt, nclass+3);
-    int k = SelPnt(ipnt, nclass+4);
-    int iyr = SelPnt(ipnt, nclass+5);
-    //cout << is << " " << it << " " << h << " " << k << " " << iyr << endl;
-    int ipnt2 = (it-1)*nsex+h;
-    if (slx_type_in(ipnt2,k) < 0 || (h==2 && slx_bsex_in(it,k) ==0)) 
-     {ppSLX[is-1]=0;} 
-    else
+    //class gsm::Selex<dvar_vector> *pSLX;
+    dvar_vector temp_slx2(1,slx_extra(k));
+    dvar_vector knots(1,slx_extra(k));
+    switch ( slx_type(k) )
      {
-      dvar_vector temp_slx2(1,slx_extra_in(ipnt2,k));
-      dvar_vector knots(1,slx_extra_in(ipnt2,k));
-      switch ( slx_type_in(ipnt2,k) )
-       {
-        case SELEX_PARAMETRIC:                               ///> parametric
-         for (int i = 1; i <= nclass; i++) { temp_slx1(i) = S_pars(is,i); }
-         pv = temp_slx1;
-         pSLX = new class gsm::ParameterPerClass<dvar_vector>(pv);
-         break;
-        case SELEX_COEFFICIENTS:                             ///> coefficients
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) { temp_slx2(i) = S_pars(is,i); }
-         pSLX = new class gsm::SelectivityCoefficients<dvar_vector>(temp_slx2);
-         break;
-        case SELEX_STANLOGISTIC:                             ///> logistic
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         pSLX = new class gsm::LogisticCurve<dvar_vector,dvariable>(p1,p2);
-         break;
-        case SELEX_5095LOGISTIC:                             ///> logistic95
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         pSLX = new class gsm::LogisticCurve95<dvar_vector,dvariable>(p1,p2);
-         break;
-        case SELEX_ONE_PAR_LOGISTIC:                          ///> logistic with one parameter
-         p1 = mfexp(S_pars(is,1));
-         pSLX = new class gsm::LogisticCurveOne<dvar_vector,dvariable>(p1);
-         break;
-        case SELEX_DECLLOGISTIC:                             ///> declining logistic
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) { temp_slx2(i) = S_pars(is,2+i);  }
-         pSLX = new class gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>(p1,p2,temp_slx2);
-         break;
-        case SELEX_DOUBLENORM:                               ///> double normal
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         p3 = mfexp(S_pars(is,3));
-         pSLX = new class gsm::DoubleNormal<dvar_vector,dvariable>(p1,p2,p3);
-         break;
-        case SELEX_DOUBLENORM4:                               ///> double normal4
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         p3 = mfexp(S_pars(is,3));
-         p4 = mfexp(S_pars(is,4));
-         pSLX = new class gsm::DoubleNormal4<dvar_vector,dvariable>(p1,p2,p3,p4);
-         break;
-        case SELEX_UNIFORM1:                                  ///> uniform 1
-         pSLX = new class gsm::UniformCurve<dvar_vector>;
-         break;
-        case SELEX_UNIFORM0:                                  ///> uniform 0
-         pSLX = new class gsm::Uniform0Curve<dvar_vector>;
-         break;
-        case SELEX_CUBIC_SPLINE:                             ///> cubic spline
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) knots(i) = mfexp(S_pars(is,i)); 
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) temp_slx2(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); 
-         //need to set y_vals and x_vals below appropriately
-         //y_vals are values at knots (a dvar_vector)
-         //x_vals are knots           (a dvar_vector)
-         pSLX = new class gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
-         break;
-       
-       } // switch
-      ppSLX[is-1] = pSLX;//save pointer to the instantiated selectivity object
-      } //-- else   
-   }
+      case SELEX_PARAMETRIC:                               ///> parametric
+       for (int i = 1; i <= nclass; i++) { temp_slx1(i) = log_slx_pars(j); j++; }
+       pv = temp_slx1;
+       pSLX = new class gsm::ParameterPerClass<dvar_vector>(pv);
+       break;
+      case SELEX_COEFFICIENTS:                             ///> coefficients
+       for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+       pSLX = new class gsm::SelectivityCoefficients<dvar_vector>(temp_slx2);
+       break;
+      case SELEX_STANLOGISTIC:                             ///> logistic
+       p1 = mfexp(log_slx_pars(j));
+       j++;
+       p2 = mfexp(log_slx_pars(j));
+       j++;
+       pSLX = new class gsm::LogisticCurve<dvar_vector,dvariable>(p1,p2);
+       break;
+      case SELEX_5095LOGISTIC:                             ///> logistic95
+        p1 = mfexp(log_slx_pars(j));
+        j++;
+        p2 = mfexp(log_slx_pars(j));
+        j++;
+        pSLX = new class gsm::LogisticCurve95<dvar_vector,dvariable>(p1,p2);
+      break;
+      case SELEX_ONE_PAR_LOGISTIC:                          ///> logistic with one parameter
+       p1 = mfexp(log_slx_pars(j));
+       j++;
+       pSLX = new class gsm::LogisticCurveOne<dvar_vector,dvariable>(p1);
+       break;
+      case SELEX_DECLLOGISTIC:                             ///> declining logistic
+        p1 = mfexp(log_slx_pars(j));
+        j++;
+        p2 = mfexp(log_slx_pars(j));
+        j++;
+        for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+        pSLX = new class gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>(p1,p2,temp_slx2);
+      break;
+      case SELEX_DOUBLENORM:                               ///> double normal
+       p1 = mfexp(log_slx_pars(j));
+       j++;
+       p2 = mfexp(log_slx_pars(j));
+       j++;
+       p3 = mfexp(log_slx_pars(j));
+       j++;
+       pSLX = new class gsm::DoubleNormal<dvar_vector,dvariable>(p1,p2,p3);
+       break;
+      case SELEX_DOUBLENORM4:                               ///> double normal4
+       p1 = mfexp(log_slx_pars(j));
+       j++;
+       p2 = mfexp(log_slx_pars(j));
+       j++;
+       p3 = mfexp(log_slx_pars(j));
+       j++;
+       p4 = mfexp(log_slx_pars(j));
+       j++;
+       pSLX = new class gsm::DoubleNormal4<dvar_vector,dvariable>(p1,p2,p3,p4);
+       break;
+      case SELEX_UNIFORM1:                                  ///> uniform 1
+	   j++;
+       pSLX = new class gsm::UniformCurve<dvar_vector>;
+       break;
+      case SELEX_UNIFORM0:                                  ///> uniform 0
+	   j++;
+       pSLX = new class gsm::Uniform0Curve<dvar_vector>;
+       break;
+      case SELEX_CUBIC_SPLINE:                             ///> cubic spline
+       for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
+       for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+       // Buck
+       //need to set y_vals and x_vals below appropriately
+       //y_vals are values at knots (a dvar_vector)
+       //x_vals are knots           (a dvar_vector)
+       pSLX = new class gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
+       break;
+     } // switch
+     ppSLX[k-1] = pSLX;//save pointer to the instantiated selectivity object
+   } //k
 
 // =======================================================================================================================================
 // =======================================================================================================================================
@@ -5087,202 +5480,329 @@ FUNCTION init_selectivities
    *  -# Loop over years and block-in the log_selectivity at mid points.
    *
    * Need to deprecate the abstract class for selectivity, 7X slower.
-  **/ 
-    
+  **/
 FUNCTION calc_selectivities
   if (verbose >= 3) cout<<"starting calc_selectivities"<<endl;
-  //int h,i,k, k2;
+  int h,i,k, k2;
   int jstore, estore, sd;
   dvar_vector pv;
   dvar_vector temp_slx1(1,nclass);
+  dvar_matrix SelDevs(1,nslx_pars,syr,nyr); /// matrix of deviations (environmnetal & random walk)
   dvariable p1, p2, p3, p4;
-  dvar_vector selx(1,nclass);
-  dvar_matrix sel_store(1,nsel_use,1,nclass);
-
   log_slx_capture.initialize();
-  log_slx_retaind.initialize();
   log_slx_discard.initialize();
+  log_slx_retaind.initialize();
+  class gsm::Selex<dvar_vector> *pSLX;
+
+  //cout << slx_type << endl;
+  //cout << slx_styr << endl;
+  //cout << slx_edyr << endl;
+  //cout << slx_timeVar << endl;
+  //cout << slx_RdWalk_dev_type << endl;
+  //cout << slx_envlink<< endl;
+  //cout << slx_dev_sigma<< endl;
+  //cout << slx_styr_RdWalk<< endl;
+  //cout << slx_edyr_RdWalk<< endl;
+  //cout << slx_dev_sigma<< endl;
 
   // Specify non-mirrored selectivity
-  class gsm::Selex<dvar_vector> *pSLX;
-  for (int is=1; is<= nsel_use; is++)
-   {
-    int ipnt = sel_patterns2(is);
-    int it = SelPnt(ipnt, nclass+2);
-    int h = SelPnt(ipnt, nclass+3);
-    int k = SelPnt(ipnt, nclass+4);
-    int iyr = SelPnt(ipnt, nclass+5);
-    //cout << is << " " << it << " " << h << " " << k << " " << iyr << endl;
-    int ipnt2 = (it-1)*nsex+h;
-    if (slx_type_in(ipnt2,k) < 0 || (h==2 && slx_bsex_in(it,k) ==0)) 
-     {int ipnt = 1; } 
-    else
-     {
-      dvar_vector temp_slx2(1,slx_extra_in(ipnt2,k));
-      dvar_vector knots(1,slx_extra_in(ipnt2,k));
-      switch ( slx_type_in(ipnt2,k) )
-       {
-        case SELEX_PARAMETRIC:                               ///> parametric
-         for (int i = 1; i <= nclass; i++) { temp_slx1(i) = S_pars(is,i); }
-         ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[is-1])->SetSelparms(temp_slx1);
-         pSLX = ppSLX[is-1];
-         break;
-        case SELEX_COEFFICIENTS:                             ///> coefficients
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) { temp_slx2(i) = S_pars(is,i); }
-         ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[is-1])->SetSelCoeffs(temp_slx2);
-         pSLX = ppSLX[is-1];
-        break;
-        case SELEX_STANLOGISTIC:                             ///> logistic
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2);
-          pSLX = ppSLX[is-1];
-         break;
-        case SELEX_5095LOGISTIC:                             ///> logistic95
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         ((gsm::LogisticCurve95<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2);
-         pSLX = ppSLX[is-1];
-         break;
-        case SELEX_ONE_PAR_LOGISTIC:                          ///> logistic with one parameter
-         p1 = mfexp(S_pars(is,1));
-         ((gsm::LogisticCurveOne<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1);
-         pSLX = ppSLX[is-1];
-         break;       
-        case SELEX_DECLLOGISTIC:                             ///> declining logistic
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) { temp_slx2(i) = S_pars(is,2+i);  }
-         ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[is-1])->SetParams(p1,p2,temp_slx2);
-         pSLX = ppSLX[is-1];
-         break;
-        case SELEX_DOUBLENORM:                               ///> double normal
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         p3 = mfexp(S_pars(is,3));
-         ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3);
-         pSLX = ppSLX[is-1];
-        case SELEX_DOUBLENORM4:                               ///> double normal4
-         p1 = mfexp(S_pars(is,1));
-         p2 = mfexp(S_pars(is,2));
-         p3 = mfexp(S_pars(is,3));
-         p4 = mfexp(S_pars(is,4));
-         ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3,p4);
-         pSLX = ppSLX[is-1];
-        case SELEX_UNIFORM1:                                  ///> uniform 1
-         pSLX = ppSLX[is-1];//gsm::UniformCurve<dvar_vector>
-         break;
-        case SELEX_UNIFORM0:                                  ///> uniform 0
-         pSLX = ppSLX[is-1];//gsm::Uniform0Curve<dvar_vector>
-         break;
-        case SELEX_CUBIC_SPLINE:                             ///> cubic spline
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) knots(i) = mfexp(S_pars(is,i)); 
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) temp_slx2(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); 
-         //need to set y_vals and x_vals below appropriately
-         //y_vals are values at knots (a dvar_vector)
-         //x_vals are knots           (a dvar_vector)
-         ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[is-1])->initSpline(temp_slx2,knots);
-         pSLX = ppSLX[is-1];
-         dvector knots2(1,slx_extra_in(ipnt2,k));
-	 dvar_vector vals(1,slx_extra_in(ipnt2,k));
-	 for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { knots2(i)=(value(mfexp(S_pars(is,i)))-mid_points(1))/(mid_points(nclass)-mid_points(1));  }
-	 for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { vals(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); }
-	 dvector jyr(1,nclass);
-	 jyr.fill_seqadd(0, 1.0 / (nclass - 1));
-	 vcubic_spline_function csf(knots2, vals);
-	 selx = csf(jyr);
-         break;
-       
-       } // switch
-      if (slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE) selx = pSLX->logSelectivity(dvar_mid_points);  
-      if (ret_max_in(ipnt2,k)>0) selx += S_pars(is,3);
-      if (slx_max_at_1_in(ipnt2,k)==1) selx -= selx(nclass);
-      if (slx_max_at_1_in(ipnt2,k)==0 && slx_1_at_size(ipnt2,k)!=0) selx -= selx(slx_1_at_size(ipnt2,k));
-      sel_store(is) = selx;
-      if (it==1) log_slx_capture(k,h,iyr) = selx;
-      if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
-     } //-- else   
-   }
-  
-  int nsel_pnt = 0;
-  for (int it=1;it<=2;it++)
-   for (int h=1;h<=nsex;h++)
-    for (int k=1;k<=nfleet;k++)
-      {
-       int ipnt2 = (it-1)*nsex+h;
-        switch ( slx_type_in(ipnt2,k) )
-        {
-         case SELEX_UNIFORM1:                                  ///> uniform 1
-          for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-           {
-            if (it==1) for (int i=1;i<=nclass;i++) log_slx_capture(k,h,iyr,i) = log(1.0-TINY);
-            if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(1.0-TINY); log_slx_discard(k,h,iyr,i) = log(TINY); }
-           }
-          break;
-         case SELEX_UNIFORM0:                                  ///> uniform 1
-          for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-           {
-            if (it==1) for (int i=1;i<=nclass;i++) log_slx_capture(k,h,iyr,i) = -100;
-            if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = -100; log_slx_discard(k,h,iyr,i) = log(1-TINY); }
-           }
-          break;
-         default:
-          // Mirror case
-          if (slx_type_in(ipnt2,k) < 0)
-           {
-            for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-             {
-             if (it==1) log_slx_capture(k,h,iyr) = log_slx_capture(-slx_type_in(ipnt2,k),h,iyr);
-             if (it==2) { log_slx_retaind(k,h,iyr) =log_slx_retaind(-slx_type_in(ipnt2,k),h,iyr); 
-                          log_slx_discard(k,h,iyr) = log_slx_discard(-slx_type_in(ipnt2,k),h,iyr); }
-             }              
-           }
-          else
-           {
-            int ipnt1 = (it-1)*nsex+h;
-            int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-            if (h==1 || slx_bsex_in(it,k)==1)
-             {
-              for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-               {
-                int isel_vec = nsel_pnt+iYrsSelChanges(ipnt2,iyr);
-                selx = sel_store(isel_vec);
-                if (it==1) log_slx_capture(k,h,iyr) = selx;
-                if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
-               }
-              nsel_pnt += nSelVaries(ipnt2);
-              }
-            else
-             {
-              for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-               {
-                if (it==1) selx = log_slx_capture(k,1,iyr);
-                if (it==2) selx = log_slx_retaind(k,1,iyr);
-                if (it==1) log_slx_capture(k,h,iyr) = selx;
-                if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
-               }
-             } //--if  
-            } //-if
-         } //-- switch
-      } //-- it,h,k
-   
-  // Check for one fleet inside another 
-  for (int it=1;it<=1;it++)
-   for (int h=1;h<=nsex;h++)
-    for (int k=1;k<=nfleet;k++)
-     if (slx_include_in(1,k) > 0)
-      {
-       for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-        log_slx_capture(k,h,iyr) += log_slx_capture(slx_include_in(1,k),h,iyr);
-      }
-    
-  //echoinput << "log_slx_capture" << endl;
-  //echoinput << exp(log_slx_capture) << endl;
-  //echoinput << "log_slx_retaind" << endl;
-  //echoinput << exp(log_slx_retaind) << endl;
-  //echoinput << "log_slx_discard" << endl;
-  //echoinput << exp(log_slx_discard) << endl;
- 	
+  if (verbose >= 3) cout<<"evaluating non-mirrored selectivities"<<endl;
+  int j = 1; int ee = 1; sd = 1;
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_type(k) < 0){
+      pSLX=0; 
+      j++;
+    } else {
+      if (verbose == 5) cout<<"retrieving selex for k = "<<k<<endl;
+      dvar_vector temp_slx2(1,slx_extra(k));
+      dvar_vector knots(1,slx_extra(k));
+
+      // Save parameter points we will need then
+      jstore = j; estore = ee;
+      // initialize SelDevs (Cumulative (Env + Random walk) deviations for selectivity)
+      SelDevs.initialize();
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }     ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; } ///> females only
+      for ( h = h1; h <= h2; h++ ) {
+        if (verbose == 5) cout<<"h = "<<h<<" for slx_isex(k)"<<endl;
+        // Set the time-varying dev for this fleet x sex
+        if (slx_timeVar(k)==1) {
+          for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
+            j = jstore; ee= estore; 
+            switch ( slx_type(k) ) {
+              case SELEX_PARAMETRIC:                               ///> parametric
+                if (verbose== 5) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
+                for (int i = 1; i <= nclass; i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+                if (verbose == 5) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
+                break;
+              case SELEX_COEFFICIENTS:                             ///> coefficients
+                if (verbose>3) cout<<"SELEX_COEFFICIENTS"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+                break;
+              case SELEX_STANLOGISTIC:                             ///> logistic
+                if (verbose == 5) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (verbose == 5) cout<<"--1"<<j<<endl;
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (verbose == 5) cout<<"--2"<<j<<endl;
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  if (verbose == 5) cout<<"--3"<<j<<endl;
+                  j++;
+                } 
+                break;
+              case SELEX_5095LOGISTIC:                             ///> logistic95
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
+                if (verbose == 5) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
+                if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                j++;
+                break;
+              case SELEX_DECLLOGISTIC:                             ///> declining logistic
+                if (verbose == 5) cout<<"SELEX_DECLOGISTIC"<<endl;
+                for (int i=1;i<=2;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_DOUBLENORM:                               ///> double normal
+                for (int i=1;i<=3;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_DOUBLENORM4:                               ///> double normal4
+                if (verbose == 5) cout<<"SELEX_DOUBLENORM4"<<endl;
+                for (int i=1;i<=4;i++) {
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                } 
+                break;
+              case SELEX_UNIFORM1: // uniform 1
+                break;
+              case SELEX_UNIFORM0: // uniform 0
+                break;
+              case SELEX_CUBIC_SPLINE:                             ///> coefficients
+                if (verbose == 5) cout<<"creating SelectivitySpline class"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  if (slx_RdWalk_dev_type(j) == 1 && iy > slx_styr_RdWalk(j) && iy<= slx_edyr_RdWalk(j)) { SelDevs(j,iy) = SelDevs(j,iy-1) + sel_devs(sd)*slx_dev_sigma(j); logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_RdWalk_dev_type(j) == 2 && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) {SelDevs(j,iy) = sel_devs(sd)*slx_dev_sigma(j);  logDevPenal +=  sel_devs(sd)*sel_devs(sd); sd++; }
+                  if (slx_envlink(j) !=0  && iy >= slx_styr_RdWalk(j) && iy <= slx_edyr_RdWalk(j)) { SelDevs(j,iy) += EnvData(iy,int(slx_envvar(j))) * slx_env_pars(ee); ee++; }
+                  j++;
+                }
+            } // switch
+          } // iy
+        }
+        if (verbose== 5)  cout << "Done stage 1: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
+
+        // Now the actual deal
+        if (verbose >= 5) cout<<"starting calc_selectivities"<<endl;
+        for (int iy = slx_styr(k); iy <= slx_edyr(k); iy++ ) {
+          if (iy==slx_styr(k) || slx_timeVar(k)==1) {
+            j = jstore; /// ee= estore; 
+            switch ( slx_type(k) ) {
+              case SELEX_PARAMETRIC:                               ///> parametric
+                if (verbose == 5) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << endl;
+                for (int i = 1; i <= nclass; i++) { 
+                  temp_slx1(i) = log_slx_pars(j); 
+                  if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx1(i) += SelDevs(j,iy); }
+                  j++; 
+                }
+                if (verbose == 5) cout<<"SELEX_PARAMETRIC " << k << " " << h << " " << j << " " << sd << " " << ee << endl;
+                ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[k-1])->SetSelparms(temp_slx1);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_COEFFICIENTS:                             ///> coefficients
+                if (verbose == 5) cout<<"SELEX_COEFFICIENTS"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { 
+                  temp_slx2(i) = log_slx_pars(j); 
+                  if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) { temp_slx2(i) += SelDevs(j,iy); }
+                  j++; 
+                }
+                ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[k-1])->SetSelCoeffs(temp_slx2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_STANLOGISTIC:                             ///> logistic
+                if (verbose == 5) cout<<"SELEX_LOGISTIC "<< k << " " << h << " " << iy << endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_5095LOGISTIC:                             ///> logistic95
+                if (verbose == 5) cout<<"SELEX_LOGISTIC95"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurve95<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_ONE_PAR_LOGISTIC:                         ///> logisticOne
+                if (verbose == 5) cout<<"SELEX_ONE_PAR_LOGISTIC"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                ((gsm::LogisticCurveOne<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DECLLOGISTIC:                             ///> declining logistic
+                if (verbose == 5) cout<<"SELEX_DECLOGISTIC"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p1 *= exp(SelDevs(j,iy)); 
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                if (slx_envlink(j)!=0 || slx_RdWalk_dev_type(j) != 0) p2 *= exp(SelDevs(j,iy)); 
+                j++;
+                for (i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+                ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[k-1])->SetParams(p1,p2,temp_slx2);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DOUBLENORM:                               ///> double normal
+                if (verbose == 5) cout<<"SELEX_DOUBLENORM"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                j++;
+                p3 = mfexp(log_slx_pars(j));
+                j++;
+                ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_DOUBLENORM4:                               ///> double normal4
+                if (verbose == 5) cout<<"SELEX_DOUBLENORM4"<<endl;
+                p1 = mfexp(log_slx_pars(j));
+                j++;
+                p2 = mfexp(log_slx_pars(j));
+                j++;
+                p3 = mfexp(log_slx_pars(j));
+                j++;
+                p4 = mfexp(log_slx_pars(j));
+                j++;
+                ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[k-1])->SetParams(p1,p2,p3,p4);
+                pSLX = ppSLX[k-1];
+                break;
+              case SELEX_UNIFORM1: // uniform 1
+                j++;
+                if (verbose == 5) cout<<"SELEX_UNIFORM1"<<endl;
+                pSLX = ppSLX[k-1];//gsm::UniformCurve<dvar_vector>
+                break;
+              case SELEX_UNIFORM0: // uniform 0
+                j++;
+                if (verbose == 5) cout<<"SELEX_UNIFORM0"<<endl;
+                pSLX = ppSLX[k-1];//gsm::Uniform0Curve<dvar_vector>
+                break;
+              case SELEX_CUBIC_SPLINE:                             ///> coefficients
+                if (verbose == 5) cout<<"creating SelectivitySpline class"<<endl;
+                for (int i = 1; i <= slx_extra(k); i++) { knots(i) = mfexp(log_slx_pars_init(j)); j++; }
+                for (int i = 1; i <= slx_extra(k); i++) { temp_slx2(i) = log_slx_pars(j); j++; }
+                // Buck
+                //need to set y_vals and x_vals below appropriately
+                //y_vals are values at knots (a dvar_vector)
+                //x_vals are knots           (a dvar_vector)
+                ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[k-1])->initSpline(temp_slx2,knots);
+                pSLX = ppSLX[k-1];//gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
+                //break;
+            } //--switch
+          } //--if (iy==slx_styr(k) || slx_timeVar(k)==1) 
+
+          int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
+          if ( slx_gear(k) > 0 ) {                                           ///> capture selectivity
+            log_slx_capture(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
+            if (slx_type(k)==SELEX_PARAMETRIC || slx_type(k)==SELEX_COEFFICIENTS || slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
+              if( slx_max_at_1(k) == 1)
+                log_slx_capture(kk,h,iy) -= log_slx_capture(kk,h,iy,nclass);
+            //cout << kk << " " << h << " " << i << " " << slx_type(k) << " " << log_slx_capture(kk,h,i) << " " << exp(log_slx_capture(kk,h,i)) << endl;
+          } else {                                                              ///> discard (because the gear is NEGATIVE)
+            log_slx_retaind(kk,h,iy) = pSLX->logSelectivity(dvar_mid_points);
+            if (slx_type(k)==SELEX_STANLOGISTIC || slx_type(k)==SELEX_5095LOGISTIC)
+              log_slx_retaind(kk,h,iy) -= log_slx_retaind(kk,h,iy,nclass);
+            log_slx_retaind(kk,h,iy) += log_high_grade(kk,h,iy);
+            log_slx_discard(kk,h,iy) = log(1.0 - exp(log_slx_retaind(kk,h,iy)) + TINY);
+            //cout << kk << " " << h << " " << iy << " " << slx_type(k) << " " << log_slx_retaind(kk,h,iy) << endl;
+          }
+        } //--iy loop
+        if (verbose == 5) cout << "Done stage 2: " << k << " "<< j << " " << ee << " " << sd << " " << endl;
+      } //--h loop
+      if (verbose == 5) cout<<"done selecting SLX"<<endl;
+      //do NOT "delete pSLX;"
+    }//--if (slx_type(k) < 0)
+   //exit(1);
+  }//--k loop
+
+  // Mirror mirrow in the file
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_type(k) < 0) {
+      int kk = abs(slx_gear(k));                                        ///> fleet index (negative for retention)
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }     ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; } ///> females only
+      if ( slx_gear(k) > 0 ) {
+        for ( i = syr; i <= nyrRetro; i++ )
+          for ( h = h1; h <= h2; h++ )
+            log_slx_capture(kk,h,i) = log_slx_capture(-slx_type(k),h,i);
+      } else {
+        //slx_gear(k) < 0
+        for ( i = syr; i <= nyrRetro; i++ ) {
+          for ( h = h1; h <= h2; h++ ){
+            log_slx_retaind(kk,h,i) = log_slx_retaind(-slx_type(k),h,i);
+            log_slx_discard(kk,h,i) = log_slx_discard(-slx_type(k),h,i);
+          }//--h loop
+        }//--i loop
+      }//--if ( slx_gear(k) > 0 )
+    }//--if (slx_type(k) < 0)
+  }//--k loop
+
+	// Sometimes one selectivity pattern is embedded in another
+  for ( int k = 1; k <= nslx; k++ ){
+    if (slx_incl(k) > 0 && slx_gear(k) > 0){                                 ///> only for capture selectivity
+      int h1 = 1;
+      int h2 = nsex;
+      if ( slx_isex(k) == MALES ) { h2 = MALES; }    ///> males (or single/combined-sex) only
+      if ( slx_isex(k) == FEMALES ) { h1 = FEMALES; }///> females only
+      for ( h = h1; h <= h2; h++ ) {
+        int kk = abs(slx_gear(k));
+        k2 = slx_incl(k);
+        for ( i = slx_styr(k); i <= slx_edyr(k); i++ )
+          for (int j=1;j<=nclass;j++) log_slx_capture(kk,h,i,j) += log_slx_capture(k2,h,i,j);
+      }//--h loop
+    }//--if
+  }//--k loop
+//--end of function
+	
 // --------------------------------------------------------------------------------------------------
 
   /**
@@ -5334,7 +5854,7 @@ FUNCTION calc_fishing_mortality
           ft(k,h,i,j) = mfexp(log_ftmp);
           xi  = dmr(i,k);                                            ///> Discard mortality rate
           sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;               ///> Capture selectivity
-          ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);  ///> Retention
+          ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(h,k);       ///> Retension
           vul = elem_prod(sel, ret + (1.0 - ret) * xi);              ///> Vulnerability
           F(h,i,j) += ft(k,h,i,j) * vul;                             ///> Fishing mortality
           F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Contact mortality
@@ -5352,6 +5872,87 @@ FUNCTION calc_fishing_mortality
   **/
 
 FUNCTION calc_natural_mortality
+
+  // reset M by sex, year and time
+  M.initialize();
+
+  // Add random walk to natural mortality rate
+  dvar_vector delta(syr+1,nyrRetro);
+
+  // Sex
+  for( int m = 1; m <= nmature; m++)
+  for (int h=1;h<=nsex;h++)
+   {
+    M(h,m) = M0(h);
+	// adjusts for maturity specific natural mortality (immature gets a multplier)
+    if(m_maturity==1 && m==2)
+	 M(h,m) = M0(h) * mfexp(m_mat_mult(h));
+    delta.initialize();
+    switch( m_type )
+	{
+      // case 0 (M_CONSTANT) not here as this is not evaluated if m_dev is not active
+      case M_RANDOM:                                         ///> random walk in natural mortality
+       for (int iy=syr+1;iy<=nyrRetro;iy++) delta(iy) = m_dev_sex(h,iy)-m_dev_sex(h,iy-1);
+       break;
+      case M_CUBIC_SPLINE:                                   ///> cubic splines
+       {
+        dvector iyr = (m_nodeyear_sex(h) - syr) / (nyrRetro - syr);
+        dvector jyr(syr+1,nyrRetro);
+        jyr.fill_seqadd(0, 1.0 / (nyrRetro - syr - 1));
+        vcubic_spline_function csf(iyr, m_dev_sex(1));
+        delta = csf(jyr);
+       }
+       break;
+      case M_BLOCKED_CHANGES:                                ///> Specific break points
+     for ( int idev = 1; idev <= nMdev_par_cnt(h); idev++ )
+      delta(m_nodeyear_sex(1,idev)) = m_dev_sex(h,idev);
+     break;
+    // Modifying by Jie Zheng for specific time blocks
+    case M_TIME_BLOCKS1: // time blocks
+     for ( int idev = 1; idev <= nMdev_par_cnt(h); idev++ )
+      {
+       // Is this syntax for split sex?
+       for ( int i = m_nodeyear_sex(h,1+(idev-1)*2); i <= m_nodeyear_sex(h,2+(idev-1)*2); i++ )
+        M(h,m)(i) = mfexp(m_dev_sex(h,idev));
+      }
+     break;
+
+	// Case for specific years
+    case M_TIME_BLOCKS3: // time blocks
+     for ( int idev = 1; idev <= nMdev_par_cnt(h); idev++ ) delta(m_nodeyear_sex(h,idev)) = m_dev_sex(1,idev);
+     for ( int i = syr+1; i <= nyrRetro; i++ )
+       M(h,m)(i) = M(h,m)(syr) * mfexp(delta(i)); // Deltas are devs from base value (not a walk)
+     break;
+
+	case M_TIME_BLOCKS2: // time blocks
+	 if(nmature<2)
+	 {
+     for ( int idev = 1; idev <= nMdev_par_cnt(h)-1; idev++ )
+      {
+       for ( int i = m_nodeyear_sex(h,idev); i < m_nodeyear_sex(h,idev+1); i++ )
+         M(h,m)(i) = M(h,m)(i)*mfexp(m_dev_sex(h,idev));
+      }
+	 }
+	 // because of how the parameters are counted, this just divides the parcount by 2 to deal with immature/mature status
+	 if(nmature==2)
+	 {
+     for ( int idev = 1; idev <= (nMdev_par_cnt(h)/2)-1; idev++ )
+      {
+       for ( int i = m_nodeyear_sex(h,idev); i < m_nodeyear_sex(h,idev+1); i++ )
+	   {
+         M(h,m)(i) = M(h,m)(i)*mfexp(m_dev_sex(h,(m-1)*(nMdev_par_cnt(h)/2)+idev));
+	   }
+      }
+	 }
+	 break;
+    } // end  switch(m_type)
+   // Update M by year.
+   if ( m_type < 4 )
+    for ( int i = syr+1; i <= nyrRetro; i++ ) M(h,m)(i) = M(h,m)(i-1) * mfexp(delta(i));
+
+   for (int i = syr; i <= nyrRetro; i++)                                  ///> Account for size-specific M
+    for (int l=1;l<=nclass;l++)  M(h,m,i,l) *= Mmult(l);
+  }
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -5489,20 +6090,7 @@ FUNCTION calc_growth_increments
           for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
          }
        } // - for h     
-   } else if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL)
-   {
-     for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
-      {
-       for ( int l = 1; l <= nclass; l++ )
-        molt_increment(h,igrow,l) = exp(alpha(h,igrow) + beta(h,igrow) * log(mid_points(l))) - mid_points(l);
-       if (NfunCall==0 || NfunCall==1)
-        if (molt_increment(h,igrow,int(nclass/2)) < 0)
-         {
-         // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
-          for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
-         }
-       } // - for h     
-   }// -- if
+  } // -- if
 
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
@@ -5935,7 +6523,6 @@ FUNCTION calc_initial_numbers_at_length
    }
   for ( int h = 1; h <= nsex; h++ )
    { recruits(h)(syr) = mfexp(log_initial_recruits); }
-  totrecruits(syr) = float(nsex)*mfexp(log_initial_recruits);
 
   // Analytical equilibrium soln
   int ig;
@@ -6058,20 +6645,20 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       // Molting and growth
       z.initialize();
 //      This works
-//      if (j == season_growth) {
-//       z = elem_prod(x * growth_transition(h,isizeTrans), mature_prob_pass(h)) ; 		// molted to maturity
-//       x = elem_prod(x * growth_transition(h,isizeTrans), 1.0 - mature_prob_pass(h)) ;     // molted, but immature
-//       }
+      if (j == season_growth) {
+       z = elem_prod(x * growth_transition(h,isizeTrans), mature_prob_pass(h)) ; 		// molted to maturity
+       x = elem_prod(x * growth_transition(h,isizeTrans), 1.0 - mature_prob_pass(h)) ;     // molted, but immature
+       }
        // This does not work!
-       if (j == season_growth) {
-         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                        // did not molt
-         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew
+//       if (j == season_growth) {
+//         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                        // did not molt
+//         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew
                                                                                              // only one shell type so combine
        
-         z = elem_prod(x , mature_prob_pass(h)) ; 		                                // molted to maturity
-         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                    // did not molt to maturity (and stayed immature)
-         x = x + y;  
-         }
+//         z = elem_prod(x , mature_prob_pass(h)) ; 		                                // molted to maturity
+//         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                    // did not molt to maturity (and stayed immature)
+//         x = x + y;  
+//         }
       if (j == season_recruitment) x += rec_pass(h);
       next(ig-1) += z; next(ig) += x;
       if (Term_molt==0 & verbose==4 & i==syr) cout << "Case-B1: no terminal molt, one shell condition, and two maturity states; IMMATURE" << endl;
@@ -6251,18 +6838,16 @@ FUNCTION update_population_numbers_at_length
 
   // Specify recuitment by year
   for (int i = syr; i <= nyrRetro; i++ ){
-   for (int h = 1; h <= nsex; h++ )
-    {
-     if ( bInitializeUnfished == UNFISHEDEQN )
-      recruits(h,i) = mfexp(logR0)*float(nsex);
-     else
-      recruits(h,i) = mfexp(logRbar)*float(nsex);
+   for (int h = 1; h <= nsex; h++ ){
+    if ( bInitializeUnfished == UNFISHEDEQN )
+     recruits(h,i) = mfexp(logR0)*float(nsex);
+    else
+     recruits(h,i) = mfexp(logRbar)*float(nsex);
      // This splits recruitment out proportionately into males and females
-     totrecruits(i) = recruits(h)(i)*mfexp(rec_dev(i))/float(nsex);
      if (nsex == 1) recruits(h)(i) *= mfexp(rec_dev(i));
      if (nsex == 2 && h == MALES) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
      if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
-     }//--h
+    }//--h
   }//--i
 
   // Now loop over year and season 
@@ -6517,7 +7102,7 @@ FUNCTION calc_predicted_catch
          {
           sel.initialize(); ret.initialize(); vul.initialize();
           sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;                          // Selectivity
-          ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);             // Retention
+          ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(h,k);                  // Retension
           xi  = dmr(i,k);          
           vul = elem_prod(sel, ret + (1.0 - ret) * xi);                         // Vulnerability
           selret = elem_prod(sel,ret);
@@ -7153,48 +7738,44 @@ FUNCTION calc_stock_recruitment_relationship
   dvar_matrix _A(1,nclass,1,nclass);
   dvar_matrix _S(1,nclass,1,nclass);
 
-  if (nmature == 1)
+  // Reset the probability of molting to first year value
+  ProbMolt.initialize();
+  for (int h = 1; h <= nsex; h++ )
+   for (int l=1;l<=nclass;l++)
+    ProbMolt(h,l,l) = molt_probability(h,syr,l);
+
+  // get unfished mature male biomass per recruit.
+  phiB = 0.0;
+  _A.initialize();
+  _S.initialize();
+  for( int h = 1; h <= nsex; h++ )
    {
+    for ( int l = 1; l <= nclass; ++l )  _S(l,l) = mfexp(-M(h,1)(syr)(l));
+    _A = growth_transition(h,1);
+    dvar_vector x(1,nclass);
+    dvar_vector y(1,nclass);
 
-    // Reset the probability of molting to first year value
-    ProbMolt.initialize();
-    for (int h = 1; h <= nsex; h++ )
-     for (int l=1;l<=nclass;l++)
-      ProbMolt(h,l,l) = molt_probability(h,syr,l);
+    h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
 
-    // get unfished mature male biomass per recruit.
-    phiB = 0.0;
-    _A.initialize();
-    _S.initialize();
-    for( int h = 1; h <= nsex; h++ )
+    // Single shell condition
+    if ( nshell == 1 && nmature == 1 )
      {
-      for ( int l = 1; l <= nclass; ++l )  _S(l,l) = mfexp(-M(h,1)(syr)(l));
-      _A = growth_transition(h,1);
-      dvar_vector x(1,nclass);
-      dvar_vector y(1,nclass);
+      calc_equilibrium(x,_A,_S,rec_sdd(h));
+      phiB += lam * x * elem_prod(mean_wt(h,nmature)(syr), maturity(h));
+     }
+    // Continuous molt (newshell/oldshell)
+    if ( nshell == 2 && nmature == 1 )
+     {
+      calc_equilibrium(x,y,_A,_S,ProbMolt(h),rec_sdd(h));
+      phiB += lam * x * elem_prod(mean_wt(h,nmature)(syr), maturity(h)) +  lam * y * elem_prod(mean_wt(h,nmature)(syr), maturity(h));
+     }
+    // Insert terminal molt case here
 
-      h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
+  }
+  dvariable bo = ro * phiB;
 
-      // Single shell condition
-      if ( nshell == 1 && nmature == 1 )
-       {
-        calc_equilibrium(x,_A,_S,rec_sdd(h));
-        phiB += lam * x * elem_prod(mean_wt(h,nmature)(syr), maturity(h));
-       }
-      // Continuous molt (newshell/oldshell)
-      if ( nshell == 2 && nmature == 1 )
-       {
-        calc_equilibrium(x,y,_A,_S,ProbMolt(h),rec_sdd(h));
-        phiB += lam * x * elem_prod(mean_wt(h,nmature)(syr), maturity(h)) +  lam * y * elem_prod(mean_wt(h,nmature)(syr), maturity(h));
-       }
-      // Insert terminal molt case here
-
-    }
-    dvariable bo = ro * phiB;
-
-    so = reck * ro / bo;
-    bb = (reck - 1.0) / bo;
-   } 
+  so = reck * ro / bo;
+  bb = (reck - 1.0) / bo;
 
   dvar_vector ssb = calc_ssb().shift(syr+1);
   dvar_vector rhat = elem_div(so * ssb , 1.0 + bb* ssb);
@@ -7210,17 +7791,17 @@ FUNCTION calc_stock_recruitment_relationship
     case 0: // NO SRR
 	if ( bInitializeUnfished == UNFISHEDEQN )
 	{
-		res_recruit(syr) = log(totrecruits(syr)) - 1.0 * logR0 + sig2R;
-		res_recruit(byr,nyrRetro) = log(totrecruits(byr,nyrRetro)) - (1.0-rho) * logR0 - rho * log(++totrecruits(byr-1,nyrRetro-1)) + sig2R;
+		res_recruit(syr) = log(recruits(1)(syr)) - 1.0 * logR0 + sig2R;
+		res_recruit(byr,nyrRetro) = log(recruits(1)(byr,nyrRetro)) - (1.0-rho) * logR0 - rho * log(++recruits(1)(byr-1,nyrRetro-1)) + sig2R;
 	}
 	if ( bInitializeUnfished != UNFISHEDEQN )
 	{
-		res_recruit(syr) = log(totrecruits(syr)) - 1.0 * logRbar + sig2R;
-		res_recruit(byr,nyrRetro) = log(totrecruits(byr,nyrRetro)) - (1.0-rho) * logRbar - rho * log(++totrecruits(byr-1,nyrRetro-1)) + sig2R;
+		res_recruit(syr) = log(recruits(1)(syr)) - 1.0 * logR0 + sig2R;
+		res_recruit(byr,nyrRetro) = log(recruits(1)(byr,nyrRetro)) - (1.0-rho) * logRbar - rho * log(++recruits(1)(byr-1,nyrRetro-1)) + sig2R;
 	}
      break;
     case 1: // SRR model
-     res_recruit(byr,nyrRetro) = log(totrecruits(byr,nyrRetro)) - (1.0-rho) * log(rhat(byr,nyrRetro)) - rho * log(++totrecruits(byr-1,nyrRetro-1)) + sig2R;
+     res_recruit(byr,nyrRetro) = log(recruits(1)(byr,nyrRetro)) - (1.0-rho) * log(rhat(byr,nyrRetro)) - rho * log(++recruits(1)(byr-1,nyrRetro-1)) + sig2R;
      break;
    }
 
@@ -7308,11 +7889,12 @@ FUNCTION calc_prior_densities
     if ( G_phz(i) > 0 && G_phz(i) <= current_phase() )
      {
       //AEP check
+      cout << iprior << " " << i << " " << G_phz(i) << " " << n_Gpar << endl;
       itype = int(prior_Gtype(i));
       p1 = prior_G_p1(i);
       p2 = prior_G_p2(i);
+      cout << itype << " " << p1 << " " << p2 << endl;
       dvariable x = G_pars_est(i);
-      //cout << i << " " << itype << " " << iprior << " " << x << " " << p1 << " " << p2 << " " << priorDensity(iprior) << endl;
       if ( itype == 3 )
        { lb = G_lb(i); ub = G_ub(i); x = (x - lb) / (ub - lb); }
       priorDensity(iprior) = get_prior_pdf(itype, x, p1, p2);
@@ -7329,33 +7911,44 @@ FUNCTION calc_prior_densities
       p1 = prior_M_p1(i);
       p2 = prior_M_p2(i);
       dvariable x = M_pars_est(i);
-      //cout << i << " " << itype << " " << iprior << " " << x << " " << p1 << " " << p2 << " " << priorDensity(iprior) << endl;
       if ( itype == 3 )
-       { lb = M_lb(i); ub = M_ub(i); x = (x - lb) / (ub - lb); }
+       { lb = prior_M_p1(i); ub = prior_M_p2(i); x = (x - lb) / (ub - lb); }
       priorDensity(iprior) = get_prior_pdf(itype, x, p1, p2);
-      iprior+=1;
+      iprior += 1;
      }
    } //-- i
 
   // Selectivity parameter priors
-  for ( int i = 1; i <= n_Spar; i++ )
+  int j = 1;
+  for ( int k = 1; k <= nslx; k++ )
+   for ( int i = 1; i <= slx_cols(k); i++ )
     {
-     if ( S_phz(i) > 0 && S_phz(i) <= current_phase() )
+     if ( slx_phzm(j) > 0 && slx_phzm(j) <= current_phase() )
       {
-       itype = prior_Stype(i);
-       p1 = prior_S_p1(i);
-       p2 = prior_S_p2(i);
-       dvariable x = S_pars_est(i);
-       if (StoIG(i,3)==0) { p1 = exp(p1); p2=exp(p2); x = exp(x); }
-       if ( itype == 3 )
-        { lb = prior_S_p1(i); ub = prior_S_p2(i); x = (x - lb) / (ub - lb); }
+       itype = int(slx_priors(k,i,1));
+       p1 = slx_priors(k,i,2);
+       p2 = slx_priors(k,i,3);
+       x = mfexp(log_slx_pars(j));
        priorDensity(iprior) = get_prior_pdf(itype, x, p1, p2);
        if ( verbose >= 2 ) cout << " Prior no, val, dens " << iprior << " " << x << " " << priorDensity(iprior) << endl;
-       //cout << i << " " << iprior << " " << S_pars_est(i) << " " << p1 << " " << p2 << " " << priorDensity(iprior) << endl;
-       iprior+=1;
+       iprior++;
       }
+     j++;
     }
 
+  // Asymptotic retention
+  for ( int i = 1; i <= NumAsympRet; i++ )
+   {
+    if ( AsympSel_phz(i) > 0 && AsympSel_phz(i) <= current_phase() )
+     {
+      itype = 0;
+      p1 = AsympSel_lb(i);
+      p2 = AsympSel_ub(i);
+      dvariable x = Asymret(i);
+      priorDensity(iprior) = get_prior_pdf(itype, x, p1, p2);
+      iprior += 1;
+     }
+   }
 
   // No priors on fbar and foff
   for (int i=1; i<=nfleet; i++) if (f_phz(i) > 0 && f_phz(i) <= current_phase()) iprior += 1;
@@ -7367,7 +7960,21 @@ FUNCTION calc_prior_densities
   if (rdv_phz > 0 && rdv_phz <= current_phase()) iprior += (rdv_eyr-rdv_syr+1);
   if (rec_prop_phz > 0 && rec_prop_phz <= current_phase()) iprior += (rdv_eyr-rdv_syr+1);
 
-  // No priors for effective sample sizes
+  // Natural mortality
+  for ( int i = 1; i <= nMdev; i++ )
+   {
+    if ( Mdev_phz(i) > 0 && Mdev_phz(i) <= current_phase() )
+     {
+      itype = 0;
+      p1 = Mdev_lb(i);
+      p2 = Mdev_ub(i);
+      dvariable x = m_dev_est(i);
+      priorDensity(iprior) = get_prior_pdf(itype, x, p1, p2);
+      iprior += 1;
+     }
+   }
+
+  // No priors for effectine sample sizes
   for (int i=1;i<=nSizeComps; i++) if (nvn_phz(i) > 0 && nvn_phz(i) <= current_phase()) iprior += 1;
 
   // Catchability parameter priors
@@ -7399,6 +8006,27 @@ FUNCTION calc_prior_densities
         p2 = prior_add_cv_p2(i);
        }
       priorDensity(iprior) = get_prior_pdf(itype, mfexp(log_add_cv(i)), p1, p2);
+      iprior += 1;
+     }
+   }
+
+  // IMmature/mature natural mortality parameter priors
+  for ( int i = 1; i <= nsex; i++ )
+   {
+    if ( m_mat_phz(i) > 0 && m_mat_phz(i) <= current_phase() )
+     {
+      itype = int(prior_m_mat_type(i));
+      if (itype == 0)
+       {
+        p1 = m_mat_lb(i);
+        p2 = m_mat_ub(i);
+       }
+      else
+       {
+        p1 = prior_m_mat_p1(i);
+        p2 = prior_m_mat_p2(i);
+       }
+      priorDensity(iprior) = get_prior_pdf(itype, m_mat_mult(i), p1, p2);
       iprior += 1;
      }
    }
@@ -7524,19 +8152,12 @@ FUNCTION recruitment_likelihood
       break;
     }
   if ( active(logit_rec_prop_est) )                                  ///> Sex-ratio devs
-   nloglike(4,3) = dnorm(logit_rec_prop_est, 2.0);
+   nloglike(4,3) += dnorm(logit_rec_prop_est, 2.0);
   if ( verbose >= 3 ) cout << "Ok after recruitment likelihood ..." << endl;
-  cout << nloglike(4) << endl;
 
   // 5) Likelihood for growth increment data #1
   // AEP
   if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
-    {
-    // Predictions are for matrix 1
-    dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
-    nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
-   }
-  if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
     {
     // Predictions are for matrix 1
     dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
@@ -7657,9 +8278,8 @@ FUNCTION calc_objective_function
    if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
 
   // 3) Penalty to constrain M in random walk
-  //AEP
-  //if (nMdev > 0)
-  // nlogPenalty(3) += dnorm(m_dev_est, m_stdev);
+  if (nMdev > 0)
+   nlogPenalty(3) += dnorm(m_dev_est, m_stdev);
 
   // 5-6) Penalties on recruitment devs.
   //if ( !last_phase() )
@@ -7684,15 +8304,14 @@ FUNCTION calc_objective_function
      nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
   if (verbose >= 3) cout<<"finished Smoothness penalty on molting probability"<<endl;
    
-   //AEP
    // 9) Smoothness penalty on free selectivity
-  //for ( int k = 1; k <= nslx; k++ ) {
-  //  if( slx_type(k) == SELEX_PARAMETRIC) {
-  //	  int kk = abs(slx_gear(k));  
-  //	  for(int h =1; h<=nsex;h++)
-  //	    nlogPenalty(9) += dnorm(first_difference(log_slx_capture(kk,h,syr)), 1.0); 
-  //  }//--if( slx_type(k) == SELEX_PARAMETRIC)
-  //}//--k
+  for ( int k = 1; k <= nslx; k++ ) {
+    if( slx_type(k) == SELEX_PARAMETRIC) {
+  	  int kk = abs(slx_gear(k));  
+  	  for(int h =1; h<=nsex;h++)
+  	    nlogPenalty(9) += dnorm(first_difference(log_slx_capture(kk,h,syr)), 1.0); 
+    }//--if( slx_type(k) == SELEX_PARAMETRIC)
+  }//--k
   if (verbose >= 3) cout<<"Finished smoothness penalty on free selectivity"<<endl;
 
   // 10) Smoothness penalty on initial numbers at length
@@ -7974,10 +8593,10 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
        for (int iy=YrRefSel1; iy<=YrRefSel2;iy++)
         {
          sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
-         ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
+         ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(h,k);                  // Retension
          xi  = dmr(iy,k);          
          sel += sel1;                                                            // Selectivity
-         ret += ret1;                                                            // Retention
+         ret += ret1;                                                            // Retension
          vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi);                       // Vulnerability
         }
        sel /= float(YrRefSel2-YrRefSel1+1);
@@ -8383,10 +9002,10 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
        for (int iy=YrRefSel1; iy<=YrRefSel2;iy++)
         {
          sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
-         ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
+         ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(h,k);                  // Retension
          xi  = dmr(iy,k);          
          sel += sel1;                                                            // Selectivity
-         ret += ret1;                                                            // Retention
+         ret += ret1;                                                            // Retension
          vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi);                       // Vulnerability
         }
        sel /= float(YrRefSel2-YrRefSel1+1);
@@ -8495,10 +9114,10 @@ FUNCTION dvar_vector calc_predicted_project(const int YrRef2, const int YrRefGro
         for (int iy=YrRefSel1; iy<=YrRefSel2;iy++)
          {
           sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
-          ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
+          ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(h,k);                  // Retension
           xi  = dmr(iy,k);          
           sel += sel1;                                                            // Selectivity
-          ret += ret1;                                                            // Retention
+          ret += ret1;                                                            // Retension
           vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi);                       // Vulnerability
          }
 	sel /= float(YrRefSel2-YrRefSel1+1);
@@ -8635,6 +9254,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
   for ( int k = 1; k <= nfleet; k++ )
    for ( int h = 1; h <= nsex; h++ )
     for ( int j = 1; j <= nseason; j++ )
+     // AEP CORRECT
      if ( fhitfut(j,k)==1 )
       {
        log_ftmp = log_fimpbarOFL(k);
@@ -8644,10 +9264,10 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
        for (int iy=YrRefSel1; iy<=YrRefSel2;iy++)
         {
          sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
-         ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
+         ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(h,k);                  // Retension
          xi  = dmr(iy,k);          
          sel += sel1;                                                            // Selectivity
-         ret += ret1;                                                            // Retention
+         ret += ret1;                                                            // Retension
          vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi);                       // Vulnerability
         }
        sel /= float(YrRefSel2-YrRefSel1+1);
@@ -8656,7 +9276,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
        _F1(h,j) += _ft(k,h,j) * vul;
        _F2(h,j) += _ft(k,h,j) * sel;
      }
-   
+
   // computer the total mortality
   _Z1.initialize();  _Z2.initialize(); SS_pass.initialize();
   for( int m = 1; m <=nmature; m++)
@@ -8764,7 +9384,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
   equilibrium_numbers = calc_brute_equilibrium(spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
   ssbF0 = ssb_pass;
-  if (verbose>=3) cout << ssbF0 << endl;
 
   // Solve for F35% and hence the Fmsy proxy (Tier 3 analysis)
   if (OFLTier==3)
@@ -8809,7 +9428,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
    {
     // BMSY is the mean SSB over a set of years
     Bmsy = mean(calc_ssb()(spr_syr,spr_nyr));
-    Fmsy = OFLgamma * M_pars_est(1);
+    Fmsy = OFLgamma * M0(1);
     for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log(Fave(k));
     for (int k=1;k<=nfleet;k++)
      if (Ffixed(k) != 1) log_fimpbar(k) = log(Fmsy);
@@ -8819,7 +9438,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   for (int k=1;k<=nfleet;k++) sd_fmsy(k) = mfexp(log_fimpbar(k));
   if (OutRefPars==YES)
    for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+k) = sd_fmsy(k);
-  if (verbose >=3) cout << sd_fmsy << endl;
 
   // Store reference points
   Fmsy = 1;
@@ -8827,12 +9445,10 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 
   // Store the N from the last year
   for ( int ig = 1; ig <= n_grp; ig++ ) d4_Npass(ig) = d4_N(ig)(nyrRetro+1)(1);
-  if (verbose >=3) cout << d4_Npass << endl;
   
   // Check if above Bmsy when F=FOFL 
   log_fimpbarOFL = log(sd_fmsy);
   Bproj = project_biomass_OFL(1,nyrRetro, spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr, spr_rbar, iproj,d4_Npass);
-  if (verbose>=3) cout << Bproj << endl;
   if (ssb_pass > Bmsy)
    {
     spr_fofl = 1.0;
@@ -8844,7 +9460,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     FF = 1.0e-10;
     for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
     Bproj = project_biomass_OFL(1,nyrRetro,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar,iproj,d4_Npass);
-    if (verbose>=3) cout << Bproj << endl;
    
     // Even under zero F the OFL is zero 
     if (ssb_pass < OFLbeta * Bmsy)
@@ -8875,14 +9490,12 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   for (int k=1;k<=nfleet;k++) sd_fofl(k) = mfexp(log_fimpbarOFL(k));
   if (OutRefPars==YES)
    for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+nfleet+k) = sd_fofl(k);
-  if (verbose >=3) cout << sd_fofl << endl;
 
   // save the OFL
   spr_cofl = ofltot_pass;
   spr_cofl_ret = oflret_pass;
   if (OutRefPars==YES)
    for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+k+2*nfleet) = OFLoutpass(k+2);
-  if (verbose >=3) cout << OFLoutpass << endl;
  
   // Continue only calc_MSY is YES
   if (Calc_MSY == YES && (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT))
@@ -9462,7 +10075,7 @@ FUNCTION CreateOutput
      }
     OutFile1 << endl;
    }
-   for (Ipar=1;Ipar<=n_Mpar;Ipar++)
+  for (Ipar=1;Ipar<=n_Mpar;Ipar++)
    {
     Npar +=1;
     OutFile1 << Npar << " " << parname1(Npar)<< " : " << M_pars_est(Ipar) << " " << M_phz(Ipar) << " ";
@@ -9474,15 +10087,54 @@ FUNCTION CreateOutput
      }
     OutFile1 << endl;
    }
-  for (Ipar=1;Ipar<=n_Spar;Ipar++)
+  for (Ipar=1;Ipar<=nslx_pars;Ipar++)
    {
     Npar +=1;
-    OutFile1 << Npar << " " << parname1(Npar)<< " : " << S_pars_est(Ipar) << " " << S_phz(Ipar) << " ";
-    if (S_phz(Ipar) > 0 && S_phz(Ipar) <= current_phase()) 
+    OutFile1 << Npar << " " << selname1(Ipar)<< " : " << log_slx_pars(Ipar) << " " << slx_phzm(Ipar) << " ";
+    if (slx_phzm(Ipar) > 0 && slx_phzm(Ipar) <= current_phase()) 
      { 
-      NparEst +=1; CheckBounds(S_pars_est(Ipar),S_lb(Ipar),S_ub(Ipar));  
+      NparEst +=1; CheckBounds(log_slx_pars(Ipar),slx_lb(Ipar),slx_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << S_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << selname1(Ipar) << " " << log_slx_pars(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+     }
+    OutFile1 << endl;
+   }
+  for (Ipar=1;Ipar<=NumAsympRet;Ipar++)
+   {
+    Npar +=1;
+    anystring = "AsympRet_fleet_"+fleetname(AsympSel_fleet(Ipar))+"_sex_"+ sexes(AsympSel_sex(Ipar))+"_year_"+str(AsympSel_year(Ipar));
+    OutFile1 << Npar << " " << anystring << " : " << Asymret(Ipar) << " " << AsympSel_phz(Ipar) << " ";
+    if (AsympSel_phz(Ipar) > 0 && AsympSel_phz(Ipar) <= current_phase()) 
+     { 
+      NparEst +=1; CheckBounds(Asymret(Ipar),AsympSel_lb(Ipar),AsympSel_ub(Ipar));  
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << Asymret(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+     }
+    OutFile1 << endl;
+   }
+ if (nslx_envpardim>0) 
+  for (Ipar=1;Ipar<=nslx_envpardim;Ipar++)
+   {
+    Npar +=1;
+    OutFile1 << Npar << " " << selenvnames1(Ipar)<< " : " << slx_env_pars(Ipar) << " " << SlxEnvPar_phz(Ipar) << " ";
+    if (SlxEnvPar_phz(Ipar) > 0 && SlxEnvPar_phz(Ipar) <= current_phase()) 
+     { 
+      NparEst +=1; CheckBounds(slx_env_pars(Ipar),SlxEnvPar_lb(Ipar),SlxEnvPar_ub(Ipar));  
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile5 << Npar << " " << NparEst << " " << selenvnames1(Ipar) << " " << slx_env_pars(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+     }
+    OutFile1 << endl;
+   }
+ if  (nslx_devpardim>0) 
+  for (Ipar=1;Ipar<=nslx_devpardim;Ipar++)
+   {
+    Npar +=1;
+    OutFile1 << Npar << " " << seldevnames1(Ipar) << " : " << sel_devs(Ipar) << " " << SlxDevPar_phz(Ipar) << " ";
+    if (SlxDevPar_phz(Ipar) > 0 && SlxDevPar_phz(Ipar) <= current_phase()) 
+     { 
+      NparEst +=1; CheckBounds(sel_devs(Ipar),-12.0,12.0);  
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile5 << Npar << " " << NparEst << " " << seldevnames1(Ipar) << " " << sel_devs(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
    }
@@ -9578,6 +10230,18 @@ FUNCTION CreateOutput
      }
     OutFile1 << endl;
    }
+  for (Ipar=1;Ipar<=nMdev;Ipar++)
+   {
+    Npar +=1;
+    OutFile1 << Npar << " " << mdevname1(Ipar) << " : " << m_dev_est(Ipar) << " " << Mdev_phz(Ipar) << " ";
+    if (Mdev_phz(Ipar) > 0 && Mdev_phz(Ipar) <= current_phase()) 
+     { 
+      NparEst +=1; CheckBounds(m_dev_est(Ipar),Mdev_lb(Ipar),Mdev_ub(Ipar));  
+      OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      OutFile5 << Npar << " " << NparEst << " " <<  mdevname1(Ipar) << " " << m_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+     }
+    OutFile1 << endl;
+   }
   for (Ipar=1;Ipar<=nSizeComps;Ipar++)
    {
     Npar +=1;
@@ -9617,6 +10281,7 @@ FUNCTION CreateOutput
      }
     OutFile1 << endl;
    }
+   if  (nslx_devpardim>0) 
   for (Ipar=1;Ipar<=n_deviations_est;Ipar++)
    {
     Npar +=1;
@@ -9787,7 +10452,7 @@ FUNCTION CreateOutput
        cpue_cv_add(k) = sqrt(exp(square(cpue_sd(k) * 1.0 / cpue_lambda(i))) - 1.0);
      else
        cpue_cv_add(k) = cpue_cv(k) + value(mfexp(AddVarQT(i,j)));
-     OutFile1 << i << " " <<  int(dSurveyData(k,1)) << " " << fleetname(dSurveyData(k,3)) << " " << int(dSurveyData(k,2));
+      OutFile1 << i << " " <<  int(dSurveyData(k,1)) << " " << fleetname(dSurveyData(k,3)) << " " << int(dSurveyData(k,2));
      if (dSurveyData(k,4)==1) OutFile1 << " Male ";
      if (dSurveyData(k,4)==2) OutFile1 << " Female ";
      if (dSurveyData(k,4)==0) OutFile1 << " Both ";
@@ -9898,15 +10563,15 @@ FUNCTION CreateOutput
 
   OutFile1 << "#slx_capture" << endl;
   OutFile1 << "#Year Sex Fleet Selectivity" << endl;
-  for ( int i = syr; i <= nyrRetro+1; i++ ) for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
+  for ( int i = syr; i <= nyrRetro; i++ ) for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
     OutFile1 << i << " " << sexes(h) << " " << fleetname(j) << " " << setw(12) << setprecision(8) << setfixed() << mfexp(log_slx_capture(j,h,i)) << endl;
   OutFile1 << "#slx_retaind" << endl;
   OutFile1 << "#Year Sex Fleet Retention" << endl;
-  for ( int i = syr; i <= nyrRetro+1; i++ ) for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
+  for ( int i = syr; i <= nyrRetro; i++ ) for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
     OutFile1 << i << " " << sexes(h) << " " << fleetname(j) << " " << setw(12) << setprecision(8) << setfixed() << mfexp(log_slx_retaind(j,h,i)) << endl;
   OutFile1 << "#slx_discard" << endl;
   OutFile1 << "#Year Sex Fleet Discard" << endl;
-  for ( int i = syr; i <= nyrRetro+1; i++ ) for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
+  for ( int i = syr; i <= nyrRetro; i++ ) for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
     OutFile1 << i << " " << sexes(h) << " " << fleetname(j) << " " << setw(12) << setprecision(8) << setfixed() << mfexp(log_slx_discard(j,h,i)) << endl;
   OutFile1 << endl;
 
@@ -9923,15 +10588,14 @@ FUNCTION CreateOutput
     
   
   // Outout the selex controls 
-  //AEP
-  //OutFile1 << "# Select_control" << endl;
-  //OutFile1 << "# Selex_no first_par_no Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW" << endl;  
-  //for (int i=1;i<=nslx;i++)
-  // {
-  //  OutFile1 <<  slx_control(i,1) << " " << slx_control(i,2);
-  //  for (int j=11;j<=nslx_cols_in;j++) OutFile1 << " " << slx_control(i,j); 
-  //  OutFile1 << endl;
-  // }
+  OutFile1 << "# Select_control" << endl;
+  OutFile1 << "# Selex_no first_par_no Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW" << endl;  
+  for (int i=1;i<=nslx;i++)
+   {
+    OutFile1 <<  slx_control(i,1) << " " << slx_control(i,2);
+    for (int j=11;j<=nslx_cols_in;j++) OutFile1 << " " << slx_control(i,j); 
+    OutFile1 << endl;
+   }
     
   OutFile2 << endl << "Selectivity" << endl; 
   for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
@@ -10487,7 +11151,6 @@ FUNCTION WriteFiles
   OutInpFile1 << "## 1: Linear" << endl;
   OutInpFile1 << "## 2: Individual" << endl;
   OutInpFile1 << "## 3: Individual (Same as 2)" << endl;
-  OutInpFile1 << "## 4: Power law model for mean post-molt size" << endl;
   OutInpFile1 << "# Growth increment model matrix option" << endl;
   OutInpFile1 << bUseGrowthIncrementModel2 << endl;
   OutInpFile1 << "# molt probability function (0=pre-specified; 1=flat;2=declining logistic)" << endl;
@@ -10544,34 +11207,34 @@ FUNCTION WriteFiles
   anystring = "# ";
   for ( int kk = 1; kk <= nfleet; kk++ ) anystring = anystring + " " + fleetname(kk);
   OutInpFile1 << anystring << endl;
-  //OutInpFile1 << slx_nsel_period_in;
-  //OutInpFile1 << " # selectivity periods" << endl;
-  //OutInpFile1 << slx_bsex_in;
-  //OutInpFile1 << " # sex specific selectivity (1=Yes, 0=No)" << endl;
-  //OutInpFile1 << slx_type_in;
-  //OutInpFile1 << " # selectivity type (by sex)" << endl;
-  //OutInpFile1 << slx_include_in;
-  //OutInpFile1 << " # selectivity within another gear" << endl;
-  //OutInpFile1 << slx_extra_in;
-  //OutInpFile1 << " # extra parameters for each pattern" << endl;
+  OutInpFile1 << slx_nsel_period_in;
+  OutInpFile1 << " # selectivity periods" << endl;
+  OutInpFile1 << slx_bsex_in;
+  OutInpFile1 << " # sex specific selectivity (1=Yes, 0=No)" << endl;
+  OutInpFile1 << slx_type_in;
+  OutInpFile1 << " # selectivity type (by sex)" << endl;
+  OutInpFile1 << slx_include_in;
+  OutInpFile1 << " # selectivity within another gear" << endl;
+  OutInpFile1 << slx_extra_in;
+  OutInpFile1 << " # extra parameters for each pattern" << endl;
   
-  //OutInpFile1 << endl << "# Retention specifications" << endl;
-  //anystring = "# ";
-  //for ( int kk = 1; kk <= nfleet; kk++ ) anystring = anystring + " " + fleetname(kk);
-  //OutInpFile1 << anystring << endl;
-  //OutInpFile1 << ret_nret_period_in;
-  //OutInpFile1 << " # retention periods " << endl;
-  //OutInpFile1 << ret_bsex_in;
-  //OutInpFile1 << " # sex specific retention (1=Yes, 0=No)" << endl;
-  //OutInpFile1 << ret_type_in;
-  //OutInpFile1 << " # retention type (by sex)" << endl;
-  //OutInpFile1 << slx_nret;
-  //OutInpFile1 << " # retention flag" << endl;
-  //OutInpFile1 << ret_extra_in;
-  //OutInpFile1 << " # extra parameters for each pattern" << endl;
-  //OutInpFile1 << slx_max_at_1_in;
-  //OutInpFile1 << " # Is maximum selectivity at size is forced to equal 1 or not" << endl;
-  //OutInpFile1 << " " << endl;
+  OutInpFile1 << endl << "# Retention specifications" << endl;
+  anystring = "# ";
+  for ( int kk = 1; kk <= nfleet; kk++ ) anystring = anystring + " " + fleetname(kk);
+  OutInpFile1 << anystring << endl;
+  OutInpFile1 << ret_nret_period_in;
+  OutInpFile1 << " # retention periods " << endl;
+  OutInpFile1 << ret_bsex_in;
+  OutInpFile1 << " # sex specific retention (1=Yes, 0=No)" << endl;
+  OutInpFile1 << ret_type_in;
+  OutInpFile1 << " # retention type (by sex)" << endl;
+  OutInpFile1 << slx_nret;
+  OutInpFile1 << " # retention flag" << endl;
+  OutInpFile1 << ret_extra_in;
+  OutInpFile1 << " # extra parameters for each pattern" << endl;
+  OutInpFile1 << slx_max_at_1_in;
+  OutInpFile1 << " # Is maximum selectivity at size is forced to equal 1 or not" << endl;
+  OutInpFile1 << " " << endl;
 
   OutInpFile1 << "# Selectivity parameters" << endl;
   OutInpFile1 << "## Fleet: The index of the fleet  (positive for capture selectivity; negative for retention)" << endl;
@@ -10595,37 +11258,36 @@ FUNCTION WriteFiles
   OutInpFile1 << "## End_year_RW: End year of the random walk" << endl;
   OutInpFile1 << "## Sigma_RW: Sigma used for the random walk" << endl;
   
-  //AEP
-  //OutInpFile1 << "# Fleet Index Parameter_no Sex Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW" << endl;
-  //for (int i=1;i<=nslx_rows_in;i++)
-  // {
-  //  for (int ip=1;ip <=4; ip++) OutInpFile1 << slx_control_in(i,ip) << " ";
-  //  OutInpFile1 << exp(log_slx_pars(i)) << " ";
-  //  for (int ip=6;ip <=nslx_cols_in; ip++) OutInpFile1 << slx_control_in(i,ip) << " ";
-  //  OutInpFile1 << " # " << selname1(i) << endl;
-  // }
-  //OutInpFile1 << endl << "#Number of asymptotic retention parameters" << endl;
-  //OutInpFile1 << NumAsympRet << endl;
-  //OutInpFile1 << "# Fleet   Sex     Year       ival   lb   ub    phz" << endl;
-  //for (int i=1;i<=NumAsympRet;i++)
-  // {
-  //  anystring = "AsympRet_fleet_"+fleetname(AsympSel_fleet(i))+"_sex_"+ sexes(AsympSel_sex(i))+"_year_"+str(AsympSel_year(i));
-  //  for (int ip=1;ip <=3; ip++) OutInpFile1 << AsympSel_control(i,ip) << " ";
-  //  OutInpFile1 << Asymret(i) << " ";
-  //  for (int ip=5;ip <=7; ip++) OutInpFile1 << AsympSel_control(i,ip) << " ";
-  //  OutInpFile1 << " # " << anystring << endl;
-  // }
+  OutInpFile1 << "# Fleet Index Parameter_no Sex Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW" << endl;
+  for (int i=1;i<=nslx_rows_in;i++)
+   {
+    for (int ip=1;ip <=4; ip++) OutInpFile1 << slx_control_in(i,ip) << " ";
+    OutInpFile1 << exp(log_slx_pars(i)) << " ";
+    for (int ip=6;ip <=nslx_cols_in; ip++) OutInpFile1 << slx_control_in(i,ip) << " ";
+    OutInpFile1 << " # " << selname1(i) << endl;
+   }
+  OutInpFile1 << endl << "#Number of asymptotic retention parameters" << endl;
+  OutInpFile1 << NumAsympRet << endl;
+  OutInpFile1 << "# Fleet   Sex     Year       ival   lb   ub    phz" << endl;
+  for (int i=1;i<=NumAsympRet;i++)
+   {
+    anystring = "AsympRet_fleet_"+fleetname(AsympSel_fleet(i))+"_sex_"+ sexes(AsympSel_sex(i))+"_year_"+str(AsympSel_year(i));
+    for (int ip=1;ip <=3; ip++) OutInpFile1 << AsympSel_control(i,ip) << " ";
+    OutInpFile1 << Asymret(i) << " ";
+    for (int ip=5;ip <=7; ip++) OutInpFile1 << AsympSel_control(i,ip) << " ";
+    OutInpFile1 << " # " << anystring << endl;
+   }
   
-  //OutInpFile1 << endl << "# Environmental link parameters" << endl;
-  //if (nslx_envpars > 0)
-  // {
-  //  OutInpFile1 << "# Initial lower_bound upper_bound phase" << endl;
-  //  for (int i=1;i<=nslx_envpardim;i++)
-  //   {
-  //    OutInpFile1 << slx_env_pars(i) << " " << SlxEnvPar_lb(i) << " " << SlxEnvPar_ub(i) << " " << SlxEnvPar_phz(i);
-  //    OutInpFile1 << " # " << selenvnames1(i) << endl;
-  //   }
-  // }
+  OutInpFile1 << endl << "# Environmental link parameters" << endl;
+  if (nslx_envpars > 0)
+   {
+    OutInpFile1 << "# Initial lower_bound upper_bound phase" << endl;
+    for (int i=1;i<=nslx_envpardim;i++)
+     {
+      OutInpFile1 << slx_env_pars(i) << " " << SlxEnvPar_lb(i) << " " << SlxEnvPar_ub(i) << " " << SlxEnvPar_phz(i);
+      OutInpFile1 << " # " << selenvnames1(i) << endl;
+     }
+   }
   OutInpFile1 << endl << "# Deviation parameter phase" << endl;
   OutInpFile1 << devParPhase << endl;
 
@@ -10689,10 +11351,60 @@ FUNCTION WriteFiles
   OutInpFile1 << lf_catch_in << " # Set to 2 for survey-like predictions; 1 for catch-like predictions" << endl;
   OutInpFile1 << lf_lambda_in << " # LAMBDA" << endl;
   OutInpFile1 << lf_emphasis_in << " # Emphasis AEP" << endl;
- 
+
+  OutInpFile1 << endl; 
+  OutInpFile1 << "## ------------------------------------------------------------------------------------ ##" << endl;
+  OutInpFile1 << "##  TIME  VARYING  NATURAL  MORTALIIY  RATES  ##" << endl;
+  OutInpFile1 << "##  ----------------------------------------------------------------------------------- ##" << endl;
+  OutInpFile1 << "## Type: 0 = constant natural mortality                                                 ##" << endl;
+  OutInpFile1 << "##       1 = Random walk (deviates constrained by variance in M)                        ##" << endl;
+  OutInpFile1 << "##       2 = Cubic Spline (deviates constrained by nodes & node-placement)              ##" << endl;
+  OutInpFile1 << "##       3 = Blocked changes (deviates constrained by variance at specific knots)       ##" << endl;
+  OutInpFile1 << "##       4 = Changes in pre-specified blocks                                            ##" << endl;
+  OutInpFile1 << "##       5 = Changes in some knots                                                      ##" << endl;
+  OutInpFile1 << "##       6 = Changes in Time blocks                                                     ##" << endl;
+
+  OutInpFile1 << "# type of time-varying M" << endl;
+  OutInpFile1 << m_type << endl;
+  OutInpFile1 << "# Phase of estimation" << endl;
+  OutInpFile1 << Mdev_phz_def << endl;
+  OutInpFile1 << "# STDEV in m_dev for Random walk" << endl;
+  OutInpFile1 << m_stdev << endl;
+  OutInpFile1 << "# Number of nodes for cubic spline or number of step-changes for option 3" << endl;
+  OutInpFile1 << m_nNodes_sex << endl;
+  OutInpFile1 << "# Year position of the knots (vector must be equal to the number of nodes)" << endl;
+  OutInpFile1 << m_nodeyear_sex << endl;
+  OutInpFile1 << "# number of breakpoints in M by size" << endl;
+  OutInpFile1 << nSizeDevs << endl;
+  OutInpFile1 << "# Start of the size-class blocks in which M changes (one row for each sex) - the first block start at size-class 1" << endl;
+  OutInpFile1 << "# Note: there is one less size-class than there are blocks (no input implies M is independent of size" << endl;
+  OutInpFile1 << m_size_nodeyear << endl;
+  OutInpFile1 << "# Specific initial values for the natural mortality devs (0-no, 1=yes)" << endl;
+  OutInpFile1 << Init_Mdev << endl;
+  OutInpFile1 << "# ival        lb        ub        phz    extra" << endl;
+  if (Init_Mdev==YES)
+   {
+    OutInpFile1 << "# Init_MDev==YES" << endl;
+    for (int I = 1; I <=nMdev; I++)
+     {
+      OutInpFile1 << m_dev_est(I) << "\t " << Mdev_lb(I) << "\t " << Mdev_ub(I) << "\t " << Mdev_phz(I)  << "\t " << Mdev_spec(I) << "\t ";
+      OutInpFile1 << "# " << mdevname1(I) << endl;    
+     }
+   }
+  else
+   { OutInpFile1 << "# Init_MDev==NO" << endl; }
+
   OutInpFile1 << endl << "# Emphasis on tagging data" << endl;
   OutInpFile1 << tag_emphasis << endl;
   OutInpFile1 <<  endl << "# maturity specific natural mortality? (yes = 1; no = 0; only for use if nmature > 1)" << endl;
+  OutInpFile1 << m_maturity << endl;
+  OutInpFile1 << "# ival        lb        ub        phz      prior     p1      p2 " << endl;
+  for (int i=1;i<=nsex;i++)
+   {
+    OutInpFile1 << m_mat_mult(i) << "\t ";
+    for (int ip=2; ip<=7; ip++) OutInpFile1 << m_mat_controls(i,ip) << "\t ";
+    OutInpFile1 << "#" << sexes(i) << endl;
+   }
   
 
   OutInpFile1 << endl << "## EMPHASIS FACTORS (CATCH)" << endl;
@@ -11009,8 +11721,6 @@ GLOBALS_SECTION
   #define INDIVIDUAL_GROWTHMODEL1 2
   #undef INDIVIDUAL_GROWTHMODEL2
   #define INDIVIDUAL_GROWTHMODEL2 3
-  #undef PWRLAW_GROWTHMODEL
-  #define PWRLAW_GROWTHMODEL 4
 
   #undef M_CONSTANT
   #define M_CONSTANT 0
@@ -11059,7 +11769,6 @@ GLOBALS_SECTION
   adstring anystring;
   adstring_array fleetname;
   adstring_array sexes;
-  adstring_array seltypes;
   adstring TheHeader;
   
   // Open output files using ofstream
@@ -11212,7 +11921,7 @@ FINAL_SECTION
     if (ppSLX) {
         //clean up pointer array--probably unnecessary
         cout<<"deleting ppSLX";
-        for (int k=0;k<nsel_patterns;k++) delete ppSLX[k];
+        for (int k=0;k<nslx;k++) delete ppSLX[k];
         delete ppSLX;
         cout<<"Finished deleting ppSLX"<<endl;
     }
@@ -11335,6 +12044,5 @@ FINAL_SECTION
 // 2024-03-07 ** AEP. (Updated GMACS to versions 2.10.03) (a) Moved the read-in of the general controls to the start of the CTL file, and (b) replaced the read-in of ntheta by its calculation
 // 2024-03-08 ** AEP. (Updated GMACS to versions 2.10.04) (a) Improved speed for the Hessian inversion stage by making loops more efficient, and (b) corrected the projection component of the code
 // 2024-03-12 ** AEP. (Updated GMACS to versions 2.10.05) Changed read-in for q and add_cv to allow for generic parameter structure
-// 2024-03-26 ** AEP. Fixed stock-recruitment bug for two sex models and models with terminal molt
-// 2024-03-28 ** WTS. Added PWRLAW_GROWTHMODEL as alternative to LINEAR_GROWTHMODEL
+
 
