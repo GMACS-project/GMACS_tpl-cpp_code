@@ -1325,7 +1325,6 @@ DATA_SECTION
   !! ECHOSTR("+----------------------+");
   !! ECHOSTR("| Reading control file |");
   !! ECHOSTR("+----------------------+");
-  !! gmacs_ctl << TheHeader << endl << endl;
 
   // |---------------------------------------------------------|
   // | BLOCK SET UP                                            |
@@ -1446,18 +1445,18 @@ DATA_SECTION
   devParPhase         = int(model_controls(12));  
   
   gmacs_ctl << endl << "# Extra controls" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
-  gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(8) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(9)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(11)) << " # Years to compute equilibria" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(12)) << " # Phase for deviation parameters" << endl;
+  gmacs_ctl << model_controls(1) << " # First year of recruitment estimation" << endl;
+  gmacs_ctl << model_controls(2) << " # Last year of recruitment estimation" << endl;
+  gmacs_ctl << model_controls(3) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+  gmacs_ctl << model_controls(4) << " # Phase for recruitment estimation" << endl;
+  gmacs_ctl << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
+  gmacs_ctl << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
+  gmacs_ctl << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
+  gmacs_ctl << model_controls(8) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+  gmacs_ctl << model_controls(9) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+  gmacs_ctl << model_controls(10) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+  gmacs_ctl << model_controls(11) << " # Years to compute equilibria" << endl;
+  gmacs_ctl << model_controls(12) << " # Phase for deviation parameters" << endl;
   gmacs_ctl << endl;
   echoinput << endl << "# Extra controls" << endl;
   echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
@@ -1504,7 +1503,7 @@ DATA_SECTION
   if (bInitializeUnfished == FREEPARSSCALED) nthetatest = (nclass*nsex*nmature*nshell-1);
   ntheta += nthetatest;
   cout << "Expecting " << ntheta << " theta parameters" << endl;
-  gmacs_ctl << "# Expecting " << ntheta << " theta parameters" << endl;
+  gmacs_ctl << "Expecting " << ntheta << " theta parameters" << endl;
   echoinput << "Expecting " << ntheta<< " theta parameters" << endl;
   echoinput << "Thetas" << endl;
   echoinput << 3 << " for log(R0), log(Rini), and log(Rbar)" << endl;
@@ -1557,6 +1556,7 @@ DATA_SECTION
  END_CALCS
 
 
+  !! WriteCtl(TheHeader);
   !! cout << " * Key parameter controls" << endl;
   !! ECHOSTR(" * Key parameter controls");
   init_matrix theta_control(1,ntheta,1,7);                 ///> The specifications for the controls
@@ -1570,15 +1570,15 @@ DATA_SECTION
   !! gmacs_ctl << "## 2: Lognormal - parameters are the mean and sd of the log" << endl;
   !! gmacs_ctl << "## 3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
   !! gmacs_ctl << "## 4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
-  !! gmacs_ctl << "# Initial_value    Lower_bound    Upper_bound Phase Prior_type        Prior_1        Prior_2" << endl;
+  !! gmacs_ctl << "# Initial_value Lower_bound Upper_bound Phase Prior_type Prior_1 Prior_2" << endl;
   !! for (int i=1;i<=ntheta;i++) {
-  !!    gmacs_ctl << setw(15) << setprecision(8) <<  setfixed() << theta_control(i,1) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,2) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,3) << " ";
-  !!    gmacs_ctl << setw(5) << setfixed() << (int) theta_control(i,4) << " ";
-  !!    gmacs_ctl << setw(10) << setfixed() << (int) theta_control(i,5) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,6) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,7) << endl;
+  !!    gmacs_ctl << theta_control(i,1) << " ";
+  !!    gmacs_ctl << theta_control(i,2) << " ";
+  !!    gmacs_ctl << theta_control(i,3) << " ";
+  !!    gmacs_ctl << (int) theta_control(i,4) << " ";
+  !!    gmacs_ctl << (int) theta_control(i,5) << " ";
+  !!    gmacs_ctl << theta_control(i,6) << " ";
+  !!    gmacs_ctl << theta_control(i,7) << endl;
   !! }
   vector theta_ival(1,ntheta);
   vector theta_lb(1,ntheta);
@@ -1715,6 +1715,7 @@ DATA_SECTION
   init_matrix legal(1,nsex,1,nclass);
   !! gmacs_ctl << legal << endl;
   
+
   // --------------------------------------------------------------------------------------------------------------------------------------
   // |----------------------------|
   // | GROWTH PARAMETER CONTROLS  |
@@ -1740,13 +1741,9 @@ DATA_SECTION
   ivector bUseGrowthIncrementModel2(1,nsex);                                       // Option for molt increment
   ivector bUseCustomMoltProbability2(1,nsex);                                      // Option for molt probability
   ivector bUseCustomMatureProbability2(1,nsex);                                    // Option for probability of maturing
-  !! bUseCustomGrowthMatrix2.initialize();
-  !! bUseGrowthIncrementModel2.initialize();
-  !! bUseCustomMoltProbability2.initialize();
-  !! bUseCustomMatureProbability2.initialize();
+  !!bUseCustomMatureProbability2.initialize();
 
-  imatrix Growth_controls(1,3*nsex,1,3);
-  !! Growth_controls.initialize();
+  matrix Growth_controls(1,3*nsex,1,3);
   !! gmacs_ctl << "# Growth transition" << endl;
   !! gmacs_ctl << "##Type_1: Options for the growth matrix" << endl;
   !! gmacs_ctl << "#  1: Pre-specified growth transition matrix (requires molt probability)" << endl;
@@ -1763,20 +1760,20 @@ DATA_SECTION
   !! gmacs_ctl << "#  3: Individual (Same as 2)" << endl;
   !! gmacs_ctl << "#  4: Power law for mean post-molt size" << endl;
   !! gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
-  !! gmacs_ctl << "## Type_1 Type_2  Block" << endl;
-  !! echoinput << "## Type_1 Type_2  Block" << endl;
+  !! gmacs_ctl << "## Type_1 Type_2   Block" << endl;
+  !! echoinput << "## Type_1 Type_2   Block" << endl;
   !! for (int ig=1;ig<=nsex;ig++) *(ad_comm::global_datafile) >> Growth_controls(ig); 
-  !!  for (int ig=1;ig<=nsex;ig++) { gmacs_ctl << "   "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(6) << setfixed() << Growth_controls(ig,ii) << " "; gmacs_ctl << endl; }
+  !! for (int ig=1;ig<=nsex;ig++) gmacs_ctl << Growth_controls(ig) << endl;
   !! for (int ig=1;ig<=nsex;ig++) echoinput << Growth_controls(ig) << endl;
   !! for (int ig=1;ig<=nsex;ig++) 
   !!  {
-  !!   bUseCustomGrowthMatrix2(ig) = Growth_controls(ig,1);
+  !!   bUseCustomGrowthMatrix2(ig) = int(Growth_controls(ig,1));
   !!   if (bUseCustomGrowthMatrix2(ig) < 1 || bUseCustomGrowthMatrix2(ig) > 8)
   !!    { cout << "growth matrix type can only be 1-8; STOPPING" << endl; exit(1); }
   !!   }
   !! for (int ig=1;ig<=nsex;ig++) 
   !!   {
-  !!    bUseGrowthIncrementModel2(ig) = Growth_controls(ig,2);
+  !!    bUseGrowthIncrementModel2(ig) = int(Growth_controls(ig,2));
   !!    if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYK) bUseGrowthIncrementModel2(ig) = GROWTH_VARYK;
   !!    if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYLINF) bUseGrowthIncrementModel2(ig) = GROWTH_VARYLINF;
   !!    if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYKLINF) bUseGrowthIncrementModel2(ig) = GROWTH_VARYKLINF;
@@ -1794,12 +1791,12 @@ DATA_SECTION
   !! for (int ig=1;ig<=nsex;ig++) 
   !! { *(ad_comm::global_datafile) >> Growth_controls(nsex+ig,1) >> Growth_controls(nsex+ig,3); }
   !! for (int ig=1;ig<=nsex;ig++) 
-  !!    { gmacs_ctl << "  " << setw(5) << setfixed() << Growth_controls(nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(nsex+ig,3) << " "; gmacs_ctl << endl; }
+  !! { gmacs_ctl << Growth_controls(nsex+ig,1) << " " << Growth_controls(nsex+ig,3) << " "; gmacs_ctl << endl; }
   !! for (int ig=1;ig<=nsex;ig++) 
   !! { echoinput << Growth_controls(nsex+ig,1) << " " << Growth_controls(nsex+ig,3) << " "; echoinput << endl; }
   !! for (int ig=1;ig<=nsex;ig++) 
   !!  {
-  !!   bUseCustomMoltProbability2(ig) = Growth_controls(ig+nsex,1);
+  !!   bUseCustomMoltProbability2(ig) = int(Growth_controls(ig+nsex,1));
   !!   if (bUseCustomGrowthMatrix2(ig) == GROWTH_FIXEDSIZETRANS && bUseCustomMoltProbability2(ig) != CONSTANT_PROB_MOLT)
   !!    { cout << "If a custom size transition matrix is provided, the probability of molting must be set constant and equal to 1; STOPPING" << endl; exit(1); }
   !!  }
@@ -1818,12 +1815,12 @@ DATA_SECTION
   !!   for (int ig=1;ig<=nsex;ig++) 
   !!    { *(ad_comm::global_datafile) >> Growth_controls(2*nsex+ig,1)>> Growth_controls(2*nsex+ig,3); }
   !!   for (int ig=1;ig<=nsex;ig++) 
-  !!    { gmacs_ctl << "  " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,3) << " "; gmacs_ctl << endl; }
+  !!    { gmacs_ctl << Growth_controls(2*nsex+ig,1) << " " << Growth_controls(2*nsex+ig,3) << " "; gmacs_ctl << endl; }
   !!   for (int ig=1;ig<=nsex;ig++) 
   !!    { echoinput << Growth_controls(2*nsex+ig,1) << " " << Growth_controls(2*nsex+ig,3) << " "; echoinput << endl; }
   !!   for (int ig=1;ig<=nsex;ig++) 
   !!    {
-  !!     bUseCustomMatureProbability2(ig) = Growth_controls(ig+2*nsex,1);
+  !!     bUseCustomMatureProbability2(ig) = int(Growth_controls(ig+2*nsex,1));
   !!    }
   !!  } //-- if (nmature==2)
   !!  echoinput << "Growth_controls\n" << Growth_controls << endl;
@@ -1834,7 +1831,7 @@ DATA_SECTION
   vector G_RW_sigma(1,3*nsex);
  LOC_CALCS
   n_Gpar = 0; int nparG; nparGs.initialize();
-  G_block    = column(Growth_controls,3);
+  G_block    = ivector(column(Growth_controls,3));
   for (int ig=1;ig<=3*nsex;ig++)
    {
     nparG = 0;
@@ -1897,7 +1894,7 @@ DATA_SECTION
    for (int ig=1;ig<=3*nsex;ig++)
     {
      if (nparGs(ig) > 0) gmacs_ctl << "# Inputs for sex * type " << ig << endl;
-     if (nparGs(ig) > 0) gmacs_ctl << "# MAIN PARS: Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
+     if (nparGs(ig) > 0) gmacs_ctl << "# MAIN PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Block Block_fn Env_L EnvL_var RW RW_Block RW_Sigma" << endl;
      n_Gpar2 = n_Gpar;
      if (nsex==1) h = 1;
      if (nsex==2 & (ig==1 | ig==3)) h = 1;
@@ -1910,6 +1907,7 @@ DATA_SECTION
      for (int ipar=1; ipar<=nparGs(ig);ipar++)
       {
        n_Gpar += 1;
+       cout << "ipar " << n_Gpar << endl;
        GtoIG(n_Gpar,1) = ig;
        GtoIG(n_Gpar,2) = ipar;
        GtoIG(n_Gpar,3) = 0;
@@ -1921,7 +1919,6 @@ DATA_SECTION
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-
        if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
         if (ipar <=nclass)
          anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
@@ -1943,16 +1940,12 @@ DATA_SECTION
        if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h)+"_period_"+str(iblock);
        if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h)+"_period_"+str(iblock);
        if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) anystring = "Mature_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-       gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
-       gmacs_ctl << setw(10) << setfixed() << int(Gpar_control(n_Gpar,4)) << " ";
-       for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
-       for (int ii=7;ii<=13;ii++) gmacs_ctl << setw(6) << setfixed() << int(Gpar_control(n_Gpar,ii)) << " ";
-       gmacs_ctl << setw(8) << setprecision(4) << setfixed() << Gpar_control(n_Gpar,14) << " # " << anystring; gmacs_ctl << endl;
+       for (int ii=1;ii<=14;ii++) gmacs_ctl << Gpar_control(n_Gpar,ii) << " "; gmacs_ctl << "# " << anystring; gmacs_ctl << endl;
        for (int ii=1;ii<=14;ii++) echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << "# " << anystring; echoinput << endl;
        parname1(PPnt+1) = anystring;
        PPnt += 1;
       }
-     if (nparGs(ig) > 0)  gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase Reltve " << endl;
+     if (nparGs(ig) > 0)  gmacs_ctl << "# EXTRA PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Relative " << endl;
      for (int iyr=syr;iyr<=nyrRetro;iyr++)
       for (int ipar=1; ipar<=nparGs(ig);ipar++)  GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar2+ipar;
      
@@ -1969,6 +1962,7 @@ DATA_SECTION
        float SigmaRW = Gpar_control(jpar,15);
        if (IgBlock !=0)
         {
+         cout << "Block" << " " << IgBlock << " " << blocks(IgBlock) << " " << ipar << endl;
          // Environmental link
          if (IgEnvLink!=0 || IgRW!=0) { cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; exit(1); } 
          if (IgBlock<0 & IgBlock>nblocks) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
@@ -1984,37 +1978,33 @@ DATA_SECTION
            for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
             GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
-	   if (ipar <=nclass)
-	    anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-	   else 
-	    anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
-	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h)+"_period_"+str(iblock);
-	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h)+"_period_"+str(iblock);
-	   if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) anystring = "Molt_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+           if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
+           if (ipar <=nclass)
+            anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+           else 
+            anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h)+"_period_"+str(iblock);
+           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h)+"_period_"+str(iblock);
+           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h)+"_period_"+str(iblock);
+           if ((ig>nsex & ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) anystring = "Molt_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
            if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h)+"_period_"+str(iblock);
            if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h)+"_period_"+str(iblock);
            if ((ig>2*nsex & ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) anystring = "Mature_probability_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-           gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
-	   gmacs_ctl << setw(10) << setfixed() << int(Gpar_control(n_Gpar,4)) << " ";
-	   for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
-	   for (int ii=7;ii<=8;ii++) gmacs_ctl << setw(6) << setfixed() << int(Gpar_control(n_Gpar,ii)) << " ";
-	   gmacs_ctl << "# " << anystring; gmacs_ctl << endl;
+           for (int ii=1;ii<=7;ii++) gmacs_ctl << Gpar_control(n_Gpar,ii) << " "; gmacs_ctl << Gpar_control(n_Gpar,15) << " # " << anystring << endl;
            for (int ii=1;ii<=7;ii++) echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << Gpar_control(n_Gpar,15) << " # " << anystring <<  endl;
            parname1(PPnt+1) = anystring;
            PPnt += 1;
@@ -2190,6 +2180,7 @@ DATA_SECTION
       if (ig > nsex & ig <=2*nsex) nMoltVaries(ig-nsex) = inew;
       if (ig > 2*nsex & ig <=3*nsex) nMatureVaries(ig-2*nsex) = inew;
       if (ig <= nsex) 
+      if (ig <= nsex) 
        for (int iyr=syr;iyr<=nyrRetro;iyr++)
         iYrsIncChanges(ig,iyr) = ipointer2(iyr);
       if (ig > nsex & ig <= 2*nsex) 
@@ -2220,14 +2211,14 @@ DATA_SECTION
   !!for (int ig=1;ig<=nsex;ig++)
   !! if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDGROWTHTRANS || bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDSIZETRANS)
   !!  {
-  !!   if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDGROWTHTRANS) WriteCtlStr("\n# Using custom growth matrix");
-  !!   if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDSIZETRANS)   WriteCtlStr("\n# Using custom size transition matrix");
+  !!   if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDGROWTHTRANS) WriteCtlStr("Using custom growth matrix");
+  !!   if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDSIZETRANS)   WriteCtlStr("Using custom size transition matrix");
   !!   for (int i=1;i<=nSizeIncVaries(ig);i++)
   !!     {
   !!      for (int class1=1;class1<= nSizeSex(ig);class1++)
   !!       for (int class2=1;class2<= nSizeSex(ig);class2++)
   !!       *(ad_comm::global_datafile) >>  CustomGrowthMatrix(ig,i,class2,class1);
-  !!      gmacs_ctl << setw(6) << setprecision(4) << setfixed() << trans(CustomGrowthMatrix(ig,i)) << endl;
+  !!      WriteCtl( trans(CustomGrowthMatrix(ig,i)) );
   !!     }
   !!  }
 
@@ -2236,13 +2227,13 @@ DATA_SECTION
   !! for (int ig=1;ig<=nsex;ig++)
   !!  if (bUseCustomMoltProbability2(ig)==FIXED_PROB_MOLT)
   !!   {
-  !!    WriteCtlStr("\n# Using custom molt probability");
+  !!    WriteCtlStr("Using custom molt probability");
   !!    for (int i=1;i<=nMoltVaries(ig);i++)
   !!     for (int l=1;l<= nSizeSex(ig);l++) *(ad_comm::global_datafile) >>  CustomMoltProbabilityMatrix(ig,i,l);
   !!    gmacs_ctl << "#Pre-specified molt probability" << endl;;
   !!    for (int i=1;i<=nMoltVaries(ig);i++)
   !!     {
-  !!      for (int l=1;l<= nSizeSex(ig);l++) gmacs_ctl << setw(6) << setprecision(4) << setfixed() << CustomMoltProbabilityMatrix(ig,i,l) << " ";
+  !!      for (int l=1;l<= nSizeSex(ig);l++) gmacs_ctl << CustomMoltProbabilityMatrix(ig,i,l) << " ";
   !!      gmacs_ctl << endl;
   !!     }
   !!   }
@@ -2252,13 +2243,13 @@ DATA_SECTION
   !! for (int ig=1;ig<=nsex;ig++)
   !!  if (nmature==2 & bUseCustomMatureProbability2(ig)==FIXED_PROB_MATURE)
   !!   {
-  !!    WriteCtlStr("\n# Using custom mature probability");
+  !!    WriteCtlStr("Using custom mature probability");
   !!    for (int i=1;i<=nMatureVaries(ig);i++)
   !!     for (int l=1;l<= nSizeSex(ig);l++) *(ad_comm::global_datafile) >>  CustomMatureProbabilityMatrix(ig,i,l);
   !!    gmacs_ctl << "#Pre-specified mature probability" << endl;;
   !!    for (int i=1;i<=nMatureVaries(ig);i++)
   !!     {
-  !!      for (int l=1;l<= nSizeSex(ig);l++)  gmacs_ctl << setw(6) << setprecision(4) << setfixed() << CustomMatureProbabilityMatrix(ig,i,l) << " ";
+  !!      for (int l=1;l<= nSizeSex(ig);l++)  gmacs_ctl << CustomMatureProbabilityMatrix(ig,i,l) << " ";
   !!      gmacs_ctl << endl;
   !!     }
   !!   }
@@ -2271,17 +2262,16 @@ DATA_SECTION
   !! ECHOSTR(" * Natural mortality parameter controls");
   init_matrix M_controls(1,nmature*nsex,1,13);
   !! ECHO(M_controls);
-  !! gmacs_ctl <<  setw(14) << setprecision(8) << setfixed() << endl;
+  !! gmacs_ctl <<  setw(12) << setprecision(2) << setfixed() << endl;
   !! gmacs_ctl << endl;
   !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## NATURAL MORTALITIY PARAMETER CONTROLS                                                ##" << endl;
+  !! gmacs_ctl <<"## NATURAL MORTALITIY RATES                                                             ##" << endl;
   !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
   !! gmacs_ctl <<"## " << endl;
   !! gmacs_ctl <<"# Relative: 0 - absolute values; 1+ - based on another M-at-size vector (indexed by ig)" << endl;
   !! gmacs_ctl <<"# Type: 0 for standard; 1: Spline" << endl;
   !! gmacs_ctl <<"#  For spline: set extra to the number of knots, the parameters are the knots (phase -1) and the log-differences from base M" << endl;
-  !! gmacs_ctl <<"# Extra: control the number of knots for splines" << endl;
-  !! gmacs_ctl <<"# Brkpts: number of changes in M by size" << endl;
+  !! gmacs_ctl <<"# Brkpnts: number of changes in M by size" << endl;
   !! gmacs_ctl <<"# Mirror: Mirror M-at-size over to that for another partition (indexed by ig)" << endl;
   !! gmacs_ctl <<"# Block: Block number for time-varying M-at-size" << endl;
   !! gmacs_ctl <<"# Block_fn: 0:absolute values; 1:exponential" << endl;
@@ -2291,13 +2281,8 @@ DATA_SECTION
   !! gmacs_ctl <<"# RW_blk: Block number for random walks" << endl;
   !! gmacs_ctl <<"# Sigma_RW: Sigma for the random walk parameters" << endl;
   !! gmacs_ctl <<"# Mirror_RW: Should time-varying aspects be mirrored (Indexed by ig)" << endl;
-  !! gmacs_ctl <<"## Relative?   Type   Extra  Brkpts  Mirror   Block  Blk_fn Env_L   EnvL_Vr      RW  RW_blk Sigma_RW Mirr_RW" << endl;
-  !! for (int b=1; b<=nmature*nsex;b++)
-  !!  {
-  !!   gmacs_ctl << "    ";for (int ii=1;ii<=11;ii++) gmacs_ctl << setw(7) << setfixed() << int(M_controls(b,ii)) << " " ;
-  !!   gmacs_ctl << setw(8) << setprecision(4) << setfixed() << M_controls(b,12) << " ";
-  !!   gmacs_ctl << setw(7) << setfixed() << int(M_controls(b,13)) << endl;
-  !!  }
+  !! gmacs_ctl <<"## Relative? Type Brkpts Mirror Block Env_L EnvL_Var  RW RW_blk Sigma_RW Mirror_RW" << endl;
+  !! gmacs_ctl << M_controls << endl;
   
   ivector M_relative(1,nmature*nsex);
   ivector M_type(1,nmature*nsex);
@@ -2372,22 +2357,21 @@ DATA_SECTION
           n_devvars += 1;
           devpoints(n_devvars,1) = 2; devpoints(n_devvars,2) = ig; devpoints(n_devvars,3) = n_deviations+1;
           if (M_RW_blk(ig) <=0) { cout << "Error: There needs to a block for random walk - sex*maturity state " << h << " & " << m << endl;  exit(1); }
-          if (M_RW_blk(ig) > nblocks) { cout << "Error: The block for random walk survey in out of range - sex*maturity state " << sexes(h) << " & " << m << endl;  exit(1); }
+          if (M_RW_blk(ig) > nblocks) { cout << "Error: The block for random walk survey in out of range - sex*maturity state " << h << " & " << m << endl;  exit(1); }
           for (int iblk=1;iblk<=blocks(M_RW_blk(ig));iblk++)
            n_deviations += (blocklimits(M_RW_blk(ig),iblk,2)-blocklimits(M_RW_blk(ig),iblk,1)+1);
           devpoints(n_devvars,4) = n_deviations; devpoints(n_devvars,5) = M_RW_blk(ig);
           devpoints(n_devvars,6) = blocks(M_RW_blk(ig));
           rdevpoints(n_devvars,1) = M_RW_sigma(ig);
          }
-        if (M_mirror_RW(ig)<0 || M_mirror_RW(ig)>=ig)  { cout << "Error: random walk mirror pointer out of range - sex*maturity state " << sexes(h) << " & " << m << endl; exit(1); }        
+        if (M_mirror_RW(ig)<0 || M_mirror_RW(ig)>=ig)  { cout << "Error: random walk mirror pointer out of range - sex*maturity state " << h << " & " << m << endl; exit(1); }        
         if (M_mirror_RW(ig) != 0 & (M_block(ig)>0 | M_RW(ig) >0 | M_env_link(ig)>0)) { cout << "Error: mirrow_RW requires no blocks, environmenal links or random walks - sex*maturity state " << h << " & " << m << endl; exit(1); }        
       } //--Mirror 
     } //--ig
-   
+  cout << "M_pars " << n_Mpar << endl;  
  END_CALCS
 
   imatrix Mbreaks(1,nsex*nmature,1,MaxMbreaks);
-  !! if (MaxMbreaks > 0) gmacs_ctl <<"# MaxMbreaks" << endl;
  LOC_CALCS
    for (h=1;h<=nsex;h++)
     for (m=1;m<=nmature;m++)
@@ -2395,7 +2379,6 @@ DATA_SECTION
       int ig = (h-1)*nmature+m;
       if (M_size_breakpnts(ig) > 0)
       for (int ii=1;ii<=M_size_breakpnts(ig);ii++) *(ad_comm::global_datafile) >> Mbreaks(ig,ii); 
-      for (int ii=1;ii<=M_size_breakpnts(ig);ii++) gmacs_ctl << Mbreaks(ig,ii) << " "; gmacs_ctl << " # sex*maturity state: " << sexes(h) << " & " << m << endl;
      } 
  END_CALCS   
 
@@ -2437,14 +2420,8 @@ DATA_SECTION
 
  LOC_CALCS
   gmacs_ctl << endl;
-  gmacs_ctl << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=n_Mpar;b++)
-   {
-    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << M_pars(b,ii) << " ";
-    gmacs_ctl << setw(11) << setfixed() << int(M_pars(b,4)) << " ";
-    for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << M_pars(b,ii) << " ";
-    gmacs_ctl << setw(6) << setfixed() << int(M_pars(b,7)) << " " << endl;;
-   }
+  gmacs_ctl << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
+  gmacs_ctl << M_pars << endl;
   echoinput << endl;
   echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
   echoinput << M_pars << endl;
@@ -2481,6 +2458,7 @@ DATA_SECTION
   // | SELECTIVITY PARAMETER CONTROLS |
   // |--------------------------------|
   !! cout << " * Selectivity parameter controls" << endl;
+  !! WriteCtlStr(" * Selectivity parameter controls");
  
   imatrix slx_bsex_in(1,2,1,nfleet);                    //> boolean for sex-specific selex
   imatrix slx_type_in(1,2*nsex,1,nfleet);               //> integer for selectivity type (e.g. logistic, double normal)
@@ -2495,11 +2473,11 @@ DATA_SECTION
  LOC_CALCS 
   gmacs_ctl << endl;
   gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  gmacs_ctl <<"## SELECTIVITY PARAMETERS CONTROLS                                                      ##" << endl;
+  gmacs_ctl <<"## SELECTIVITY PARAMETERS OPTIONS                                                       ##" << endl;
   gmacs_ctl <<"## ==================================================================================== ##" << endl;
   gmacs_ctl <<"## " << endl;
   anystring = "";
-  WriteCtlStr("## Selectivity parameter controls");
+  WriteCtlStr("\n## Selectivity parameter controls");
   WriteCtlStr("## Selectivity (and retention) types");
   WriteCtlStr("##  <0: Mirror selectivity");
   WriteCtlStr("##   0: Nonparametric selectivity (one parameter per class)");
@@ -2554,7 +2532,7 @@ DATA_SECTION
   for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> slx_extra_in(nsex+h);
   for (int h=1;h<=nsex;h++) gmacs_ctl << slx_extra_in(nsex+h)  << " # " << sexes(h) << " extra parameters for each pattern"  << endl;
   for (int h=1;h<=nsex;h++) *(ad_comm::global_datafile) >> ret_max_in(nsex+h);
-  for (int h=1;h<=nsex;h++) gmacs_ctl << ret_max_in(nsex+h)  << " # " << sexes(h) << " - should maximum retention be estimated for " <<sexes(h) << "s (1=Yes; 0=No)" << endl;
+  for (int h=1;h<=nsex;h++) gmacs_ctl << ret_max_in(nsex+h)  << " # " << sexes(h) << " # should maximum retention be estimated for " <<sexes(h) << "s (1=Yes; 0=No)" << endl;
   gmacs_ctl << endl;
  END_CALCS
 
@@ -2589,6 +2567,12 @@ DATA_SECTION
        nparSs(it,(h-1)*nfleet+k) = nparS;
       } //-- h
     } //-- k
+   cout << "slx_type_in" << endl;
+   cout << slx_type_in << endl;
+   cout << "slx_type_npar" << endl;
+   cout << slx_type_npar << endl;
+   cout << "nparSs" << endl;
+   cout << nparSs << endl;
  END_CALCS;
 
   // Storage by year
@@ -2630,7 +2614,7 @@ DATA_SECTION
        int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
        int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
        if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# Inputs for type*sex*fleet: " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl;
-       if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
+       if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# MAIN PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Block Block_fn Env_L EnvL_var RW RW_Block Sigma RW" << endl;
        n_Spar2 = n_Spar;
        for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
         {
@@ -2640,11 +2624,13 @@ DATA_SECTION
          SelPnt(ipnt3+iyr-syr+1,nclass+4) = k;
          SelPnt(ipnt3+iyr-syr+1,nclass+5) = iyr;
         }
+       cout << "here" << endl;
        int ExtraStuff;
        ExtraStuff = 0;
        for (int ipar=1;ipar<=nparSs(it,ipnt1);ipar++)
         {
          n_Spar += 1;
+         cout << "ipar " << n_Spar << endl;
          StoIG(n_Spar,1) = ipnt2;
          StoIG(n_Spar,2) = ipar;
          StoIG(n_Spar,3) = 0;
@@ -2652,17 +2638,14 @@ DATA_SECTION
          for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii);
          if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(iblock)+"_par_"+str(ipar);
          if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(iblock)+"_par_"+str(ipar);
-	 gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
-	 gmacs_ctl << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
-	 for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
-	 for (int ii=7;ii<=13;ii++) gmacs_ctl << setw(6) << setfixed() << int(Spar_control(n_Spar,ii)) << " ";
-	 gmacs_ctl << setw(8) << setprecision(4) << setfixed() << Spar_control(n_Spar,14) << " # " << anystring; gmacs_ctl << endl;
+	 for (int ii=1;ii<=14;ii++) gmacs_ctl << Spar_control(n_Spar,ii) << " "; gmacs_ctl << "# " << anystring << endl;
 	 for (int ii=1;ii<=14;ii++) echoinput << Spar_control(n_Spar,ii) << " "; echoinput << "# " << anystring << endl;
 	 if (int(Spar_control(n_Spar,8)) > 0 || int(Spar_control(n_Spar,10)) > 0 || int(Spar_control(n_Spar,12)) > 0) ExtraStuff = 1;
+         cout << anystring << endl;
          parname1(PPnt+1) += anystring;
          PPnt += 1;
         }
-       if (ExtraStuff==1) gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase Reltve " << endl;
+       if (ExtraStuff==1) gmacs_ctl << "# EXTRA PARS: Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase Relative " << endl;
        for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
         for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)  SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar2+ipar;
        for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)
@@ -2678,6 +2661,7 @@ DATA_SECTION
          float SigmaRW = Spar_control(jpar,14);
          if (IgBlock !=0)
           {
+           cout << "Block" << " " << IgBlock << " " << blocks(IgBlock) << " " << ipar << endl;
            // Environmental link
            if (IgEnvLink!=0 || IgRW!=0) { cout << "Error: you can't have blocks and RWs at the same time - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); } 
            if (IgBlock<0 & IgBlock>nblocks) { cout << "Error: block out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
@@ -2695,11 +2679,7 @@ DATA_SECTION
              cout << ipnt3 << " " << ipar << " " << n_Spar << endl;
              if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(iblock)+"_par_"+str(ipar);
              if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_period_"+str(iblock)+"_par_"+str(ipar);
-             gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
-	     gmacs_ctl << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
-	     for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Gpar,ii) << " ";
-	     for (int ii=7;ii<=8;ii++) gmacs_ctl << setw(6) << setfixed() << int(Spar_control(n_Spar,ii)) << " ";
-  	     gmacs_ctl << "# " << anystring; gmacs_ctl << endl;
+             for (int ii=1;ii<=7;ii++) gmacs_ctl << Spar_control(n_Spar,ii) << " "; gmacs_ctl << Spar_control(n_Spar,15) << " # " << anystring << endl;
              for (int ii=1;ii<=7;ii++) echoinput << Spar_control(n_Spar,ii) << " "; echoinput << Spar_control(n_Spar,15) << " # " << anystring << endl;
              cout << anystring << endl;
              parname1(PPnt+1) += anystring;
@@ -2876,18 +2856,12 @@ DATA_SECTION
   ECHO(S_ival) 
   ECHO(prior_Stype); ECHO(prior_S_p1); ECHO(prior_S_p2); ECHO(S_phz);ECHO(S_relative);
  END_CALCS
-  
-  // --------------------------------------------------------------------------------------------------------------------------------------
-  // |----------------------------------|
-  // | CATCHABILITY PARAMETER CONTROLS  |
-  // |----------------------------------|
-  !! cout << " * Catchability parameter controls" << endl;
-  !! gmacs_ctl << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## CATCHABILITY PARAMETER CONTROLS                                                      ##" << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## " << endl;
 
+  // --------------------------------------------------------------------------------------------------------------------------------------
+  // |---------------------------------------------------------|
+  // | PRIORS FOR CATCHABILITIES OF SURVEYS/INDICES            |
+  // |---------------------------------------------------------|
+  !! cout << " * Catchability parameter controls" << endl;
   !! ECHOSTR(" * Catchability parameter controls");
   !! ECHO(nSurveys);
   init_matrix q_controls(1,nSurveys,1,10);
@@ -2904,25 +2878,9 @@ DATA_SECTION
   vector q_RW_sigma(1,nSurveys);
   int n_qpar;
  LOC_CALCS
-  gmacs_ctl << "# Catchability (specifications)" << endl;
-  gmacs_ctl <<"# Analytic: should q be estimated analytically (1) or not (0)" << endl;
-  gmacs_ctl <<"# Lambda: the weight lambda" << endl;
-  gmacs_ctl <<"# Emphasis: the weighting emphasis" << endl;
-  gmacs_ctl <<"# Block: Block number for time-varying M-at-size" << endl;
-  gmacs_ctl <<"# Block_fn: 0:absolute values; 1:exponential" << endl;
-  gmacs_ctl <<"# Env_L: Environmental link - options are 0: none; 1:additive; 2:multiplicative; 3:exponential" << endl;;
-  gmacs_ctl <<"# EnvL_var: Environmental variable" << endl;
-  gmacs_ctl <<"# RW: 0 for no random walk changes; 1 otherwise" << endl;
-  gmacs_ctl <<"# RW_blk: Block number for random walks" << endl;
-  gmacs_ctl <<"# Sigma_RW: Sigma for the random walk parameters" << endl;
-
-  gmacs_ctl << "## Analytic  Lambda Emphass  Mirror   Block   Env_L EnvL_Vr      RW  RW_blk Sigma_RW" << endl;
-  for (int b=1; b<=nSurveys;b++)
-   {
-    gmacs_ctl << "    ";for (int ii=1;ii<=9;ii++) gmacs_ctl << setw(7) << setfixed() << int(q_controls(b,ii)) << " " ;
-    gmacs_ctl << setw(8) << setprecision(4) << setfixed() << q_controls(b,10) << " " << endl;;
-   }
-  echoinput << "# Catchability  (specifications)" << endl;
+  gmacs_ctl << "# Catchability" << endl;
+  gmacs_ctl << q_controls << endl;
+  echoinput << "# Catchability" << endl;
   echoinput << q_controls << endl;
   q_anal        = ivector(column(q_controls,1));
   cpue_lambda   = column(q_controls,2);
@@ -2975,21 +2933,8 @@ DATA_SECTION
    }
   ECHO(qToSurv);
  END_CALCS
-
+  
   init_matrix q_pars(1,n_qpar,1,7);
-  !! gmacs_ctl << "# Catchability (parameters)" << endl;
-  !!  gmacs_ctl << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  !!  for (int b=1; b<=n_qpar;b++)
-  !!   {
-  !!    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
-  !!    gmacs_ctl << setw(11) << setfixed() << int(q_pars(b,4)) << " ";
-  !!    for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
-  !!    gmacs_ctl << setw(6) << setfixed() << int(q_pars(b,7)) << " " << endl;;
-  !!   }
-  !! echoinput << "# Catchability (parameters)" << endl;
-  !! echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
-  !! echoinput << q_pars << endl;
-
   vector q_ival(1,n_qpar);
   vector q_lb(1,n_qpar);
   vector q_ub(1,n_qpar);
@@ -2998,6 +2943,12 @@ DATA_SECTION
   vector prior_p1(1,n_qpar);
   vector prior_p2(1,n_qpar);
  LOC_CALCS
+  gmacs_ctl << "#Catchability" << endl;
+  gmacs_ctl << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
+  gmacs_ctl << q_controls << endl;
+  echoinput << "#Catchability" << endl;
+  echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
+  echoinput << q_controls << endl;
   q_ival        = column(q_pars,1);
   q_lb          = column(q_pars,2);
   q_ub          = column(q_pars,3);
@@ -3032,31 +2983,14 @@ DATA_SECTION
   // |---------------------------------------------------------|
   // | ADDITIONAL SURVEY CV CONTROLS                           |
   // |---------------------------------------------------------|
-  !! gmacs_ctl << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## ADDITIONAL CV PARAMETER CONTROLS                                                     ##" << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## " << endl;
   !! cout << " * Additional CV controls" << endl;
   !! ECHOSTR(" * Additional CV controls");
   init_matrix add_cv_controls(1,nSurveys,1,7);
-  !! gmacs_ctl << "# Catchability (specifications)" << endl;
-  !! gmacs_ctl <<"# Mirror: should additional variance be mirrored (value > 1) or not (0)?" << endl;
-  !! gmacs_ctl <<"# Block: Block number for time-varying M-at-size" << endl;
-  !! gmacs_ctl <<"# Block_fn: 0:absolute values; 1:exponential" << endl;
-  !! gmacs_ctl <<"# Env_L: Environmental link - options are 0: none; 1:additive; 2:multiplicative; 3:exponential" << endl;;
-  !! gmacs_ctl <<"# EnvL_var: Environmental variable" << endl;
-  !! gmacs_ctl <<"# RW: 0 for no random walk changes; 1 otherwise" << endl;
-  !! gmacs_ctl <<"# RW_blk: Block number for random walks" << endl;
-  !! gmacs_ctl <<"# Sigma_RW: Sigma for the random walk parameters" << endl;
-  !! gmacs_ctl << "##   Mirror   Block   Env_L EnvL_Vr     RW   RW_blk Sigma_RW" << endl;
-  !! for (int b=1; b<=nSurveys;b++)
-  !!  {
-  !!   gmacs_ctl << "    ";for (int ii=1;ii<=6;ii++) gmacs_ctl << setw(7) << setfixed() << int(add_cv_controls(b,ii)) << " " ;
-  !!   gmacs_ctl << setw(8) << setprecision(4) << setfixed() << add_cv_controls(b,7) << " " << endl;;
-  !! }
-  !! echoinput << "# Additional Index CV" << endl;
-  !! gmacs_ctl << "## Mirror Block Env_L EnvL_Var  RW RW_blk Sigma_RW" << endl;
+  !! gmacs_ctl << "# Index CV" << endl;
+  !! gmacs_ctl << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase block Env_L EnvL_Var  RW RW_blk Sigma_RW" << endl;
+  !! gmacs_ctl << add_cv_controls << endl;
+  !! echoinput << "# Index CV" << endl;
+  !! echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase block Env_L EnvL_Var  RW RW_blk Sigma_RW" << endl;
   !! echoinput << add_cv_controls << endl;
 
   ivector add_cv_mirror(1,nSurveys);
@@ -3129,62 +3063,51 @@ DATA_SECTION
   ivector cv_phz(1,n_addcv_par);
 
   init_matrix add_cv_pars(1,n_addcv_par,1,7);
-  !! gmacs_ctl << "# Additional variance (parameters)" << endl;
-  !!  gmacs_ctl << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  !!  for (int b=1; b<=n_addcv_par;b++)
-  !!   {
-  !!    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << add_cv_pars(b,ii) << " ";
-  !!    gmacs_ctl << setw(11) << setfixed() << int(add_cv_pars(b,4)) << " ";
-  !!    for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << add_cv_pars(b,ii) << " ";
-  !!    gmacs_ctl << setw(6) << setfixed() << int(add_cv_pars(b,7)) << " " << endl;;
-  !!   }
+  !! gmacs_ctl << "# Index CV" << endl;
+  !! gmacs_ctl << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase block Env_L EnvL_Var  RW RW_blk Sigma_RW" << endl;
+  !! gmacs_ctl << add_cv_pars << endl;
   !! echoinput << "# Index CV" << endl;
-  !! echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
+  !! echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase block Env_L EnvL_Var  RW RW_blk Sigma_RW" << endl;
   !! echoinput << add_cv_pars << endl;
 
   vector log_add_cv_ival(1,n_addcv_par);
   vector log_add_cv_lb(1,n_addcv_par);
   vector log_add_cv_ub(1,n_addcv_par);
   
-  !! add_cv_ival       = column(add_cv_pars,1);
-  !! add_cv_lb         = column(add_cv_pars,2);
-  !! add_cv_ub         = column(add_cv_pars,3);
-  !! prior_add_cv_type = ivector(column(add_cv_pars,4));
-  !! prior_add_cv_p1   = column(add_cv_pars,5);
-  !! prior_add_cv_p2   = column(add_cv_pars,6);
-  !! cv_phz            = ivector(column(add_cv_pars,7));
+  !!  add_cv_ival       = column(add_cv_pars,1);
+  !!  add_cv_lb         = column(add_cv_pars,2);
+  !!  add_cv_ub         = column(add_cv_pars,3);
+  !!  prior_add_cv_type = ivector(column(add_cv_pars,4));
+  !!  prior_add_cv_p1   = column(add_cv_pars,5);
+  !!  prior_add_cv_p2   = column(add_cv_pars,6);
+  !!  cv_phz            = ivector(column(add_cv_pars,7));
   
-  !! for ( int k = 1; k <= nSurveys; k++ )
-  !!  {
-  !!   // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
-  !!   if ( prior_add_cv_type(k) == UNIFORM_PRIOR )
-  !!    {
-  !!     prior_add_cv_p1(k) = add_cv_lb(k);
-  !!     prior_add_cv_p2(k) = add_cv_ub(k);
-  !!    }
-  !!  }
-  !! // code to transform the initial values and turn off additional variance
-  !! for (int k = 1; k <= nSurveys; k++)
-  !!  {
-  !!   for (int ipar=1;ipar<=n_addcv_par;ipar++)
-  !!    {
-  !!     if (AddcvToSurv(k)==k & AddcvType(k)==0) 
-  !!      { log_add_cv_ival(ipar) = log(add_cv_ival(ipar)); log_add_cv_lb(ipar) = log(add_cv_lb(ipar)); log_add_cv_ub(ipar) = log(add_cv_ub(ipar)); }
-  !!     if (AddcvToSurv(k)==k & AddcvType(k)==1) 
-  !!      { log_add_cv_ival(ipar) = add_cv_ival(ipar); log_add_cv_lb(ipar) = add_cv_lb(ipar); log_add_cv_ub(ipar) = add_cv_ub(ipar); }
-  !!    }
+  !!  for ( int k = 1; k <= nSurveys; k++ )
+  !!   {
+  !!    // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
+  !!    if ( prior_add_cv_type(k) == UNIFORM_PRIOR )
+  !!     {
+  !!      prior_add_cv_p1(k) = add_cv_lb(k);
+  !!      prior_add_cv_p2(k) = add_cv_ub(k);
+  !!     }
+  !!   }
+  !!  // code to transform the initial values and turn off additional variance
+  !!  for (int k = 1; k <= nSurveys; k++)
+  !!   {
+  !!    for (int ipar=1;ipar<=n_addcv_par;ipar++)
+  !!     {
+  !!      if (AddcvToSurv(k)==k & AddcvType(k)==0) 
+  !!       { log_add_cv_ival(ipar) = log(add_cv_ival(ipar)); log_add_cv_lb(ipar) = log(add_cv_lb(ipar)); log_add_cv_ub(ipar) = log(add_cv_ub(ipar)); }
+  !!      if (AddcvToSurv(k)==k & AddcvType(k)==1) 
+  !!       { log_add_cv_ival(ipar) = add_cv_ival(ipar); log_add_cv_lb(ipar) = add_cv_lb(ipar); log_add_cv_ub(ipar) = add_cv_ub(ipar); }
+  !!     }
   !!   } 
-  !! ECHO(prior_add_cv_type); ECHO(prior_add_cv_p1); ECHO(prior_add_cv_p2);  ECHO(cv_phz);
+  !!  ECHO(prior_add_cv_type); ECHO(prior_add_cv_p1); ECHO(prior_add_cv_p2);  ECHO(cv_phz);
 
   // |---------------------------------------------------------|
   // | PENALTIES FOR MEAN FISHING MORTALITY RATE FOR EACH GEAR |
   // |---------------------------------------------------------|
   !! cout << " * Fishing mortality controls" << endl;
-  !! gmacs_ctl << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## CONTROLS ON F                                                                        ##" << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## " << endl;
   !! ECHOSTR(" * Fishing mortality controls");
   init_matrix f_controls(1,nfleet,1,12);
   ivector f_phz(1,nfleet);
@@ -3199,51 +3122,40 @@ DATA_SECTION
   vector fdev_ub(1,nfleet);
   vector foff_lb(1,nfleet)
   vector foff_ub(1,nfleet);
+ LOC_CALCS
+   gmacs_ctl << "# Controls on F" << endl;
+   gmacs_ctl << "# Initial_male_f Initial_female_F Penalty_SD (early phase) Penalty_SD (later Phase) Phase_mean_F_male Phase_mean_F_female Lower_bound_mean_F Upper_bound_mean_F Lower_bound_annual_male_F Upper_bound_annual_male_F Lower_bound_annual_female_F Upper_bound_annual_female_F" << endl;
+   gmacs_ctl << f_controls << endl;
+   echoinput << "# Controls on F" << endl;
+   echoinput << "# Initial_male_f Initial_female_F Penalty_SD (early phase) Penalty_SD (later Phase) Phase_mean_F_male Phase_mean_F_female Lower_bound_mean_F Upper_bound_mean_F Lower_bound_annual_male_F Upper_bound_annual_male_F Lower_bound_annual_female_F Upper_bound_annual_female_F" << endl;
+   echoinput << f_controls << endl;
+   pen_fbar = column(f_controls,1);
+   log_pen_fbar = log(pen_fbar + 1.0e-14);
+   log_pen_fbar_foff = column(f_controls,2);
+   log_pen_fbar_foff = log(log_pen_fbar_foff + 1.0e-14);
+   for ( int i = 1; i <= 2; i++ ) pen_fstd(i) = trans(f_controls)(i+2);//TODO: use column extractor here
+   f_phz = ivector(column(f_controls,5));
+   foff_phz = ivector(column(f_controls,6));
+   ECHO(f_phz);
+   ECHO(foff_phz);
+   fbar_lb = column(f_controls,7);
+   fbar_ub = column(f_controls,8);
+   ECHO(fbar_lb);
+   ECHO(fbar_ub);
+   fdev_lb = column(f_controls,9);
+   fdev_ub = column(f_controls,10);
+   ECHO(fdev_lb);
+   ECHO(fdev_ub);
+   foff_lb = column(f_controls,11);
+   foff_ub = column(f_controls,12);
+   ECHO(foff_lb);
+   ECHO(foff_ub);
+ END_CALCS
 
-  !! gmacs_ctl << "# Controls on F" << endl;
-  !! gmacs_ctl << "#   Initial_male_F Initial_fema_F Pen_SD (early) Pen_SD (later) Phz_mean_F_mal Phz_mean_F_fem   Lower_mean_F   Upper_mean_F Low_ann_male_F  Up_ann_male_F    Low_ann_f_F     Up_ann_f_F" << endl;
-  !! for (int b=1; b<=nfleet;b++)
-  !!  {
-  !!   gmacs_ctl << "    ";for (int ii=1;ii<=12;ii++) gmacs_ctl << setw(14) << setprecision(6) << setfixed() << f_controls(b,ii) << " " ;
-  !!   gmacs_ctl << " # " << fleetname(b) << endl;
-  !!  //gmacs_ctl << setw(4) << setprecision(6) << setfixed() << M_controls(b,12) << " ";
-  !!  //gmacs_ctl << setw(7) << setfixed() << int(M_controls(b,13)) << endl;
-  !! }
-  !! echoinput << "# Controls on F" << endl;
-  !! echoinput << "# Initial_male_f Initial_female_F Penalty_SD (early phase) Penalty_SD (later Phase) Phase_mean_F_male Phase_mean_F_female Lower_bound_mean_F Upper_bound_mean_F Lower_bound_annual_male_F Upper_bound_annual_male_F Lower_bound_annual_female_F Upper_bound_annual_female_F" << endl;
-  !! echoinput << f_controls << endl;
-  !! pen_fbar = column(f_controls,1);
-  !! log_pen_fbar = log(pen_fbar + 1.0e-14);
-  !! log_pen_fbar_foff = column(f_controls,2);
-  !! log_pen_fbar_foff = log(log_pen_fbar_foff + 1.0e-14);
-  !! for ( int i = 1; i <= 2; i++ ) pen_fstd(i) = trans(f_controls)(i+2);//TODO: use column extractor here
-  !! f_phz = ivector(column(f_controls,5));
-  !! foff_phz = ivector(column(f_controls,6));
-  !! ECHO(f_phz);
-  !! ECHO(foff_phz);
-  !! fbar_lb = column(f_controls,7);
-  !! fbar_ub = column(f_controls,8);
-  !! ECHO(fbar_lb);
-  !! ECHO(fbar_ub);
-  !! fdev_lb = column(f_controls,9);
-  !! fdev_ub = column(f_controls,10);
-  !! ECHO(fdev_lb);
-  !! ECHO(fdev_ub);
-  !! foff_lb = column(f_controls,11);
-  !! foff_ub = column(f_controls,12);
-  !! ECHO(foff_lb);
-  !! ECHO(foff_ub);
- 
   // |-----------------------------------|
   // | OPTIONS FOR SIZE COMPOSITION DATA |
   // |-----------------------------------|
   !! cout << " * Size composition controls" << endl;
-  !! gmacs_ctl << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## SIZE COMPOSITIONS OPTIONS                                                            ##" << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## " << endl;
-
   !! ECHOSTR(" * Size composition controls");
   init_ivector nAgeCompType_in(1,nSizeComps_in);                     ///> Size-comp likelihood
   !! for (int k =1; k<=nSizeComps_in; k++)
@@ -3254,8 +3166,8 @@ DATA_SECTION
   !!       exit(1); 
   !!   }
   init_ivector bTailCompression_in(1,nSizeComps_in);                 ///> option for tail compression
-  //init_vector nvn_ival_in(1,nSizeComps_in);                          ///> initial value for effective sample size
-  //init_ivector nvn_phz_in(1,nSizeComps_in);                          ///> Phase for effective sample size
+  init_vector nvn_ival_in(1,nSizeComps_in);                          ///> initial value for effective sample size
+  init_ivector nvn_phz_in(1,nSizeComps_in);                          ///> Phase for effective sample size
   init_ivector iCompAggregator(1,nSizeComps_in);                     ///> should data be aggregated
   init_ivector lf_catch_in(1,nSizeComps_in);                         ///> Survey-like predictions or catch-like predictions
   init_vector lf_lambda_in(1,nSizeComps_in);                         ///> Lambda for effect N
@@ -3267,18 +3179,11 @@ DATA_SECTION
   ivector nSizeCompCols(1,nSizeComps);
   ivector nAgeCompType(1,nSizeComps);
   ivector bTailCompression(1,nSizeComps);
+  vector log_nvn_ival(1,nSizeComps);
+  ivector nvn_phz(1,nSizeComps);
   vector lf_catch(1,nSizeComps);
   vector lf_lambda(1,nSizeComps);
   vector lf_emphasis(1,nSizeComps);
-
-  init_matrix log_vn_pars(1,nSizeComps_in,1,7);
-  vector log_vn_ival(1,nSizeComps_in);
-  vector log_vn_lb(1,nSizeComps_in);
-  vector log_vn_ub(1,nSizeComps_in);
-  ivector log_vn_phz(1,nSizeComps_in);
-  vector prior_log_vn_type(1,nSizeComps_in);
-  vector prior_log_vn_p1(1,nSizeComps_in);
-  vector prior_log_vn_p2(1,nSizeComps_in);
 
  LOC_CALCS
   gmacs_ctl <<"# Options when fitting size-composition data" << endl;
@@ -3326,12 +3231,14 @@ DATA_SECTION
   gmacs_ctl << anystring << endl;
   ECHOSTR(anystring);
 
-  gmacs_ctl << setw(6) << setfixed() << nAgeCompType_in     << " # Type of likelihood" <<  endl;
-  gmacs_ctl << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression (pmin)" <<  endl;
-  gmacs_ctl << setw(6) << setfixed() << iCompAggregator    << " # Composition aggregator codes" << endl;
-  gmacs_ctl << setw(6) << setfixed() << lf_catch_in        << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
-  gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_lambda_in        << " # Lambda for effective sample size" << endl;
-  gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
+  gmacs_ctl << nAgeCompType_in     << " # Type of likelihood" <<  endl;
+  gmacs_ctl << bTailCompression_in << " # Auto tail compression (pmin)" <<  endl;
+  gmacs_ctl << nvn_ival_in         << " # Initial value for effective sample size multiplier" << endl;
+  gmacs_ctl << nvn_phz_in          << " # Phz for estimating effective sample size (if appl.)" << endl;
+  gmacs_ctl << iCompAggregator     << " # Composition aggregator codes" << endl;
+  gmacs_ctl << lf_catch_in         << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
+  gmacs_ctl << lf_lambda_in        << " # Lambda for effective sample size" << endl;
+  gmacs_ctl << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
   nSizeCompCols.initialize();
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
@@ -3343,54 +3250,12 @@ DATA_SECTION
     // Again, we are using only the last specification here, may want to add a check to ensure the user specifies that these are the same and throw an error if not.
     nAgeCompType(k) = nAgeCompType_in(kk);
     bTailCompression(k) = bTailCompression_in(kk);
+    log_nvn_ival(k) = log(nvn_ival_in(kk));
+    nvn_phz(k) = nvn_phz_in(kk);
     lf_catch(k) = lf_catch_in(kk);
     lf_lambda(k) = lf_lambda_in(kk);
     lf_emphasis(k) = lf_emphasis_in(kk);
    }
-
-  gmacs_ctl << endl;
-  gmacs_ctl << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=nSizeComps_in;b++)
-   {
-    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
-    gmacs_ctl << setw(11) << setfixed() << int(log_vn_pars(b,4)) << " ";
-    for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
-    gmacs_ctl << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " " << endl;;
-   }
-  echoinput << endl;
-  echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
-  echoinput << log_vn_pars << endl;
-  
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
-    int k = iCompAggregator(kk);
-    log_vn_ival(k)        = log(log_vn_pars(kk,1));
-    log_vn_lb(k)          = log(log_vn_pars(kk,2));
-    log_vn_ub(k)          = log(log_vn_pars(kk,3));
-    prior_log_vn_type(k)  = int(log_vn_pars(kk,4));
-    prior_log_vn_p1(k)    = log(log_vn_pars(kk,5));
-    prior_log_vn_p2(k)    = log(log_vn_pars(kk,6));
-    log_vn_phz(k)         = int(log_vn_pars(kk,7));
-   }
-   
-  for ( int k = 1; k <= nSizeComps; k++ )
-   {
-    // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
-    if ( prior_log_vn_type(k) == UNIFORM_PRIOR )
-     {
-      prior_log_vn_p1(k) = log_vn_lb(k);
-      prior_log_vn_p2(k) = log_vn_ub(k);
-     }
-   }
-  ECHO(prior_log_vn_type); ECHO(prior_log_vn_p1); ECHO(prior_log_vn_p2); ECHO(log_vn_phz);
-  
-  // Names of parameters
-  for ( int ii=1;ii<=nSizeComps;ii++ )
-   {
-    PPnt += 1;
-    parname1(PPnt) = "Log_vn_"+str(ii); 
-   }
-  
   // Do the checks mentioned above
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
@@ -3410,12 +3275,12 @@ DATA_SECTION
       cout << "Error: mismatch in auto tail compression for size-compositions being aggregated" << endl;
       exit(1);
      }
-    if ( log_vn_ival(k) != log(log_vn_pars(kk,1)) )
+    if ( log_nvn_ival(k) != log(nvn_ival_in(kk)) )
      {
       cout << "Error: mismatch in initial value of effective sample size for size-compositions being aggregated" << endl;
       exit(1);
      }
-    if ( log_vn_phz(k) != int(log_vn_pars(kk,7)) )
+    if ( nvn_phz(k) != nvn_phz_in(kk) )
      {
       cout << "Error: mismatch in phase for estimation of effective sample size for size-compositions being aggregated" << endl;
       exit(1);
@@ -3509,48 +3374,39 @@ DATA_SECTION
   // | TAGGING CONTROLS                                        |
   // |---------------------------------------------------------|
   !! cout << " * Tagging controls" << endl;
-  !! gmacs_ctl << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## EMPHASIS FACTORS                                                                     ##" << endl;
-  !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
   !! ECHOSTR(" * Tagging controls");
   init_number tag_emphasis
-  !! gmacs_ctl << "\n" << setw(6) << setprecision(4) << setfixed() << tag_emphasis << " # Emphasis on tagging data" << endl;
+  !! gmacs_ctl << tag_emphasis << " # tag_emphasis" << endl;
   !! echoinput << tag_emphasis << " # tag_emphasis" << endl;
   
+  !! cout << "## Emphasis Factors (Catch) ##" << endl;
+  !! WriteCtlStr("## Emphasis Factors (Catch: number of catch dataframes) ##");
   init_vector catch_emphasis(1,nCatchDF);                  ///> Weights on catches
-  !! gmacs_ctl << "\n" << setw(6) << setprecision(4) << setfixed() << catch_emphasis << " # Emphasis on Catch: (by catch dataframes)" << endl;
-
+  !! WriteCtl(catch_emphasis);
   !! cout << "## Emphasis Factors (Fdev Penalties) ##" << endl;
+  !! WriteCtlStr("## Emphasis Factors (Fdev Penalties; number of fleets) ##");
   init_matrix Penalty_fdevs(1,nfleet,1,4);                 ///> Fleet-species weights
-  !! gmacs_ctl << "\n# AFdev_total | Fdov_total | Fdev_year | Fdov_year" << endl;
-  !! for (int b=1;b<=nfleet;b++)
-  !!  {
-  !!   gmacs_ctl <<setw(8) << setprecision(4) << setfixed() << Penalty_fdevs(b);
-  !!   gmacs_ctl << " # " << fleetname(b) << endl;
-  !!  }
+  !! WriteCtl(Penalty_fdevs);
   !! cout << "## Emphasis Factors (Priors/Penalties) ##" << endl;
-  !! WriteCtlStr("\n## Emphasis Factors (Priors/Penalties: 13 values) ##");
-  
+  !! WriteCtlStr("## Emphasis Factors (Priors/Penalties: 13 values) ##");
   init_vector Penalty_emphasis(1,13);                       ///> Weights on penalties
  LOCAL_CALCS
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(1)<<"\t#--Log_fdevs"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(2)<<"\t#--MeanF"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(3)<<"\t#--Mdevs"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(4)<<"\t#--Rec_devs"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(5)<<"\t#--Initial_devs"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(6)<<"\t#--Fst_dif_dev"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(7)<<"\t#--Mean_sex_ratio"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(8)<<"\t#--Molt_prob"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(9)<<"\t#--free selectivity"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(10)<<"\t#--Init_n_at_len"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(11)<<"\t#--Fvecs"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(12)<<"\t#--Fdovss"<<endl;
-  gmacs_ctl<< setw(11) << setprecision(4) << setfixed() <<Penalty_emphasis(13)<<"\t#--Random walk in selectivity"<<endl;
+  gmacs_ctl<<Penalty_emphasis(1)<<"\t#--Log_fdevs"<<endl;
+  gmacs_ctl<<Penalty_emphasis(2)<<"\t#--MeanF"<<endl;
+  gmacs_ctl<<Penalty_emphasis(3)<<"\t#--Mdevs"<<endl;
+  gmacs_ctl<<Penalty_emphasis(4)<<"\t#--Rec_devs"<<endl;
+  gmacs_ctl<<Penalty_emphasis(5)<<"\t#--Initial_devs"<<endl;
+  gmacs_ctl<<Penalty_emphasis(6)<<"\t#--Fst_dif_dev"<<endl;
+  gmacs_ctl<<Penalty_emphasis(7)<<"\t#--Mean_sex_ratio"<<endl;
+  gmacs_ctl<<Penalty_emphasis(8)<<"\t#--Molt_prob"<<endl;
+  gmacs_ctl<<Penalty_emphasis(9)<<"\t#--free selectivity"<<endl;
+  gmacs_ctl<<Penalty_emphasis(10)<<"\t#--Init_n_at_len"<<endl;
+  gmacs_ctl<<Penalty_emphasis(11)<<"\t#--Fvecs"<<endl;
+  gmacs_ctl<<Penalty_emphasis(12)<<"\t#--Fdovss"<<endl;
+  gmacs_ctl<<Penalty_emphasis(13)<<"\t#--Random walk in selectivity"<<endl;
  END_CALCS
 
   init_int eof_ctl;
-  !! gmacs_ctl << endl;
   !! WriteCtl(eof_ctl);
   !! if ( eof_ctl != 9999 ){cout << "Error reading control file" << endl; exit(1);}
   !! cout << "end of control section" << endl;
@@ -3894,7 +3750,7 @@ DATA_SECTION
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > TurnOffPhase) foff_phz(Ipar) = -1;
   if (rdv_phz > TurnOffPhase) rdv_phz = -1;
   if (rec_prop_phz > TurnOffPhase) rec_prop_phz = -1;
-  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > TurnOffPhase) log_vn_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (nvn_phz(Ipar) > TurnOffPhase) nvn_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > TurnOffPhase) q_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase) cv_phz(Ipar) = -1;
 
@@ -3908,7 +3764,7 @@ DATA_SECTION
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > 0) NVarPar += nYparams(Ipar);
   if (rdv_phz > 0) NVarPar += (rdv_eyr-rdv_syr+1);
   if (rec_prop_phz > 0) NVarPar += (rdv_eyr-rdv_syr+1);
-  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (nvn_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_deviations_est; Ipar++) if (deviations_phz(Ipar) > 0) NVarPar += 1;
@@ -3950,7 +3806,7 @@ INITIALIZATION_SECTION
    M_pars_est          M_ival;
    S_pars_est          S_ival;
    log_fbar            log_pen_fbar;
-   log_vn              log_vn_ival;
+   log_vn              log_nvn_ival;
    survey_q            q_ival;
    logit_rec_prop_est  init_sex_ratio;
    log_add_cv          log_add_cv_ival;
@@ -4081,7 +3937,7 @@ PARAMETER_SECTION
   vector logit_rec_prop(syr,nyrRetro);
 
   // Effective sample size parameter for multinomial
-  init_bounded_number_vector log_vn(1,nSizeComps,log_vn_lb,log_vn_ub,log_vn_phz);
+  init_number_vector log_vn(1,nSizeComps,nvn_phz);
   !! ECHO(log_vn);
 
   // Catchability coefficient (q)
@@ -4372,7 +4228,7 @@ PRELIMINARY_CALCS_SECTION
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_vn(ipar) = GenJitter(IsJittered,log_vn_ival(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu);
+      log_vn(ipar) = GenJitter(IsJittered,log_nvn_ival(ipar),-10.0,10.0,nvn_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_qpar;ipar++)
      {
@@ -4508,7 +4364,7 @@ PROCEDURE_SECTION
    }
     for (ii=rdv_syr;ii<=rdv_eyr; ii++) if (rdv_phz > 0) {Ipnt +=1; ParsOut(Ipnt) = rec_dev_est(ii); }
   for (ii=rdv_syr;ii<=rdv_eyr; ii++) if (rec_prop_phz > 0) {Ipnt +=1; ParsOut(Ipnt) = logit_rec_prop_est(ii); }
-  for (ii=1;ii<=nSizeComps; ii++) if (log_vn_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_vn(ii); }
+  for (ii=1;ii<=nSizeComps; ii++) if (nvn_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_vn(ii); }
   for (ii=1;ii<=n_qpar; ii++) if (q_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = survey_q(ii); }
   for (ii=1;ii<=n_addcv_par; ii++) if (cv_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_add_cv(ii); }
   for (ii=1;ii<=n_deviations_est; ii++) if (deviations_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = par_devs(ii); }
@@ -5620,36 +5476,34 @@ FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ive
 FUNCTION calc_growth_increments
 
   for ( int h = 1; h <= nsex; h++ )
+   if (bUseGrowthIncrementModel2(h)==LINEAR_GROWTHMODEL)
+    {
+     for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
+      {
+       for ( int l = 1; l <= nclass; l++ )
+        molt_increment(h,igrow,l) = alpha(h,igrow) - beta(h,igrow) * mid_points(l);
+       if (NfunCall==0 || NfunCall==1)
+        if (molt_increment(h,igrow,int(nclass/2)) < 0)
+         {
+         // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
+          for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
+         }
+       } // - for h     
+   } else if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL)
    {
-    if (bUseGrowthIncrementModel2(h)==LINEAR_GROWTHMODEL)
-     {
-      for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
-       {
-        for ( int l = 1; l <= nclass; l++ )
-         molt_increment(h,igrow,l) = alpha(h,igrow) - beta(h,igrow) * mid_points(l);
-         if (NfunCall==0 || NfunCall==1)
-         if (molt_increment(h,igrow,int(nclass/2)) < 0)
-          {
-          // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
-           for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
-          }
-         } // - for h     
-      } 
-    if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL)
-     {
-       for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
-        {
-         for ( int l = 1; l <= nclass; l++ )
-          molt_increment(h,igrow,l) = exp(alpha(h,igrow) + beta(h,igrow) * log(mid_points(l))) - mid_points(l);
-         if (NfunCall==0 || NfunCall==1)
-          if (molt_increment(h,igrow,int(nclass/2)) < 0)
-           {
-           // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
-            for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
-           }
-         } // - for h     
-      }// -- if
-     } //--h
+     for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
+      {
+       for ( int l = 1; l <= nclass; l++ )
+        molt_increment(h,igrow,l) = exp(alpha(h,igrow) + beta(h,igrow) * log(mid_points(l))) - mid_points(l);
+       if (NfunCall==0 || NfunCall==1)
+        if (molt_increment(h,igrow,int(nclass/2)) < 0)
+         {
+         // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
+          for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
+         }
+       } // - for h     
+   }// -- if
+
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -7514,8 +7368,7 @@ FUNCTION calc_prior_densities
   if (rec_prop_phz > 0 && rec_prop_phz <= current_phase()) iprior += (rdv_eyr-rdv_syr+1);
 
   // No priors for effective sample sizes
-  //AEP
-  for (int i=1;i<=nSizeComps; i++) if (log_vn_phz(i) > 0 && log_vn_phz(i) <= current_phase()) iprior += 1;
+  for (int i=1;i<=nSizeComps; i++) if (nvn_phz(i) > 0 && nvn_phz(i) <= current_phase()) iprior += 1;
 
   // Catchability parameter priors
   for ( int i = 1; i <= nSurveys; i++ )
@@ -7673,6 +7526,23 @@ FUNCTION recruitment_likelihood
   if ( active(logit_rec_prop_est) )                                  ///> Sex-ratio devs
    nloglike(4,3) = dnorm(logit_rec_prop_est, 2.0);
   if ( verbose >= 3 ) cout << "Ok after recruitment likelihood ..." << endl;
+  cout << nloglike(4) << endl;
+
+  // 5) Likelihood for growth increment data #1
+  // AEP
+  if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
+    {
+    // Predictions are for matrix 1
+    dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
+    nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
+   }
+  if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
+    {
+    // Predictions are for matrix 1
+    dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
+    nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
+   }
+  if ( verbose >= 3 ) cout << "Ok after increment likelihood 1 ..." << endl;
 
 // --------------------------------------------------------------------------------------------------
 // Label 405: growth_likelihood
@@ -7718,17 +7588,6 @@ FUNCTION growth_likelihood
      }
    } // Growth data
   if ( verbose >= 3 ) cout << "Ok after increment likelihood 2 ..." << endl;
-
-  // 5) Likelihood for growth increment data #1
-  // AEP - move this out
-  if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
-    {
-    // Predictions are for matrix 1
-    dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
-    nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
-   }
-  if ( verbose >= 3 ) cout << "Ok after increment likelihood 1 ..." << endl;
-
 
 // --------------------------------------------------------------------------------------------------
   /**
@@ -9023,7 +8882,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   spr_cofl_ret = oflret_pass;
   if (OutRefPars==YES)
    for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+k+2*nfleet) = OFLoutpass(k+2);
-  if (verbose >=3) cout << NRefPars+6+2*nfleet << endl;
   if (verbose >=3) cout << OFLoutpass << endl;
  
   // Continue only calc_MSY is YES
@@ -9724,10 +9582,10 @@ FUNCTION CreateOutput
    {
     Npar +=1;
     anystring = "Log_vn_comp_"+str(Ipar);
-    OutFile1 << Npar << " " << anystring << " :  " << log_vn(Ipar) << " " << log_vn_phz(Ipar) << " ";
-    if (log_vn_phz(Ipar) > 0 && log_vn_phz(Ipar) <= current_phase()) 
+    OutFile1 << Npar << " " << anystring << " :  " << log_vn(Ipar) << " " << nvn_phz(Ipar) << " ";
+    if (nvn_phz(Ipar) > 0 && nvn_phz(Ipar) <= current_phase()) 
      { 
-      NparEst +=1; CheckBounds(log_vn(Ipar),log_vn_lb(Ipar),log_vn_ub(Ipar));  
+      NparEst +=1; CheckBounds(log_vn(Ipar),-1000.0,1000.0);  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_vn(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
@@ -10825,8 +10683,8 @@ FUNCTION WriteFiles
   OutInpFile1 << "##  ----------------------------------------------------------------------------------  ##" << endl;
   OutInpFile1 << nAgeCompType << " # Type of likelihood" << endl;
   OutInpFile1 << bTailCompression_in << " # Auto tail compression (pmin)" << endl;
-  //OutInpFile1 << exp(log_vn) << " # Initial value for effective sample size multiplier" << endl;
-  //OutInpFile1 << nvn_phz_in << " # Phz for estimating effective sample size (if appl.)" << endl;
+  OutInpFile1 << exp(log_vn) << " # Initial value for effective sample size multiplier" << endl;
+  OutInpFile1 << nvn_phz_in << " # Phz for estimating effective sample size (if appl.)" << endl;
   OutInpFile1 << iCompAggregator << " # Composition splicer" << endl;
   OutInpFile1 << lf_catch_in << " # Set to 2 for survey-like predictions; 1 for catch-like predictions" << endl;
   OutInpFile1 << lf_lambda_in << " # LAMBDA" << endl;
@@ -11479,5 +11337,4 @@ FINAL_SECTION
 // 2024-03-12 ** AEP. (Updated GMACS to versions 2.10.05) Changed read-in for q and add_cv to allow for generic parameter structure
 // 2024-03-26 ** AEP. Fixed stock-recruitment bug for two sex models and models with terminal molt
 // 2024-03-28 ** WTS. Added PWRLAW_GROWTHMODEL as alternative to LINEAR_GROWTHMODEL
-
 
