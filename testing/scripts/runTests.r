@@ -169,3 +169,9 @@ if (FALSE) {
                      verbose=100);
 }
 
+if (FALSE) {
+  dirThs = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  results = runTests("SnowCrab_20240328",cleanup=FALSE,usePin=FALSE,compareWithPin=FALSE,
+                     testdir=file.path(dirThs,"testing/runs"),
+                     verbose=0);
+}

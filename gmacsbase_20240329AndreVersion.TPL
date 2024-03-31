@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.02; ** WTS **; Compiled 2024-03-31");
+ !! TheHeader = adstring("## GMACS Version 2.20.01; ** AEP **; Compiled 2024-03-29");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -522,11 +522,7 @@ DATA_SECTION
       for (int f=fleetname.indexmin();f<=fleetname.indexmax();f++)
         if (flt==fleetname[f]) id = f;
       return id;
-      cout<<"Problem assigning fleetID to '"<< flt <<"'."<< endl;
-      cout<<"Allowed values are ";
-      for (int f=fleetname.indexmin();f<fleetname.indexmax();f++)
-        cout<<"'"<<fleetname[f]<<"', ";
-      cout<<"or '"<<fleetname[fleetname.indexmax()]<<"'."<< endl;
+      cout<<"Problem assigning fleetID to "<< flt << endl;
       exit(-1);
     }
     int catchTypeID(adstring& str){
@@ -536,8 +532,7 @@ DATA_SECTION
       if (strp=="discard")   return(DISCARDED);
       if (strp=="discarded") return(DISCARDED);
       if (strp=="total")     return(TOTALCATCH);
-      cout<<"Problem assigning catchTypeID to '"<< str <<"'."<< endl;
-      cout<<"Allowed values are 'retained', 'discard', 'discarded' or 'total'."<< endl;
+      cout<<"Problem assigning catchTypeID to "<< str << endl;
       exit(-1);
       return(id);
     }
@@ -545,9 +540,8 @@ DATA_SECTION
       int id = -1;
       adstring strp = to_lower(str);
       if (strp=="abundance")  return(ABUNDANCE);
-      if (strp=="biomass")    return(BIOMASS);
-      cout<<"Problem assigning unitsTypeID to '"<< str <<"'."<< endl;
-      cout<<"Allowed values are 'abundance' or 'biomass'."<< endl;
+      if (strp=="biomass")   return(BIOMASS);
+      cout<<"Problem assigning unitsTypeID to "<< str << endl;
       exit(-1);
       return(id);
     }
@@ -556,8 +550,7 @@ DATA_SECTION
       adstring strp = to_lower(str);
       if (strp=="sel")     return(1);
       if (strp=="sel+ret") return(2);
-      cout<<"Problem assigning indexTypeID to '"<< str <<"'."<< endl;
-      cout<<"Allowed values are 'sel' or 'sel+ret'."<< endl;
+      cout<<"Problem assigning indexTypeID to "<< str << endl;
       exit(-1);
       return(id);
     }
@@ -570,8 +563,7 @@ DATA_SECTION
       if (strp=="female")       return(FEMALES);
       if (strp=="undetermined") return(UNDET_SEX);
       return(id);
-      cout<<"Problem assigning sexID to '"<< str <<"'."<< endl;
-      cout<<"Allowed values are 'male', 'males', 'female', 'females', or 'undetermined'."<< endl;
+      cout<<"Problem assigning sexID to "<< str << endl;
       exit(-1);
     }
     int matID(adstring& str){
@@ -580,8 +572,7 @@ DATA_SECTION
       if (strp=="immature")     return(IMMATURE);
       if (strp=="mature")       return(MATURE);
       if (strp=="undetermined") return(UNDET_MATURE);
-      cout<<"Problem assigning matID to '"<< str << endl;
-      cout<<"Allowed values are 'immature' or 'mature'."<< endl;
+      cout<<"Problem assigning matID to "<< str << endl;
       exit(-1);
       return(id);
     }
@@ -589,12 +580,9 @@ DATA_SECTION
       int id = -1;
       adstring strp = to_lower(str);
       if (strp=="new shell")    return(NEW_SHELL);
-      if (strp=="new_shell")    return(NEW_SHELL);
       if (strp=="old shell")    return(OLD_SHELL);
-      if (strp=="old_shell")    return(OLD_SHELL);
       if (strp=="undetermined") return(UNDET_SHELL);
-      cout<<"Problem assigning shellID to '"<< str <<"'."<< endl;
-      cout<<"Allowed values are 'new shell', 'new_shell', 'old shell', 'old_shell', or 'undetermined'."<< endl;
+      cout<<"Problem assigning shellID to "<< str << endl;
       exit(-1);
       return(id);
     }
@@ -908,8 +896,8 @@ DATA_SECTION
       for (int idf = 1;idf<=nSurveys;idf++){
         gmacs_data << "#----------------" << endl;
         gmacs_data << "# relative abundance dataframe number " << idf << endl;
-        (*pGD) >> unitsType;  idUnits(idf) = substStuff.unitsTypeID(unitsType);
         (*pGD) >> indexType;  idIndex(idf) = substStuff.indexTypeID(indexType);
+        (*pGD) >> unitsType;  idUnits(idf) = substStuff.unitsTypeID(unitsType);
         (*pGD) >> fleet;      idFlt(idf) = substStuff.fleetID(fleet,fleetname);
         (*pGD) >> sexType;    idSex(idf) = substStuff.sexID(sexType);
         (*pGD) >> matType;    idMat(idf) = substStuff.matID(matType);
@@ -1315,7 +1303,7 @@ DATA_SECTION
   init_int eof;
   !! gmacs_data << "# eof" << endl;
   !! gmacs_data << eof << endl;
-  !! if ( eof != 9999 ) {cout << "EOF not '9999'. Error reading data" << endl; exit(1);}
+  !! if ( eof != 9999 ) {cout << "Error reading data" << endl; exit(1);}
   !! cout << "end of data section" << endl;
 
   // Integer pass variables
@@ -1402,7 +1390,7 @@ DATA_SECTION
   init_vector model_controls(1,12);
   int rdv_syr;                                             ///> First year of estimates devs
   int rdv_eyr;                                             ///> First year of estimates devs
-  int Term_molt;                                           ///> Consider terminal molting?
+  int Term_molt;					   ///> Consider terminal molting?
   int rdv_phz;                                             ///> Estimated rec_dev phase
 
   int bInitializeUnfished;                                 ///> Flag to initialize at unfished conditions
@@ -1412,7 +1400,7 @@ DATA_SECTION
   int rec_prop_phz;                                        ///> Phase for sex ratios
   int ntheta;                                              ///> Number of theta parameters
   number init_sex_ratio;                                   ///> Sex ratio input
-  int BRP_rec_sexR;                                        ///> Way average recruitment for reference points is calculated (0= used the End year - 1=Use an average sex ratio) 
+  int BRP_rec_sexR;					   ///> Way average recruitment for reference points is calculated (0= used the End year - 1=Use an average sex ratio) 
   int NyrEquil;                                            ///> NUmber of years to project when computing equilbria
   int devParPhase;                                         ///> Phase for the deviation parameters 
   
@@ -11482,6 +11470,5 @@ FINAL_SECTION
 // 2024-03-28 ** WTS. Added PWRLAW_GROWTHMODEL as alternative to LINEAR_GROWTHMODEL
 // 2024-03-29 ** AEP. (Updated GMACS to version 2.20.00) Updated read-in for selectivity, M, growth, additional variance, Q and overdispersion
 // 2024-03-29 ** AEP. (Updated GMACS to version 2.20.01) Standardized how priors are handled
-// 2024-03-31 ** WTS. Added extra info to error messages when using alternative dat file format.
 
 
