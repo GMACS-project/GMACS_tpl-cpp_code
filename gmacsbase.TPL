@@ -1366,12 +1366,13 @@ DATA_SECTION
   !! blocklimits(0,0,1) = syr; blocklimits(0,0,2) = nyrRetro;
   !! for (int ii=1;ii<=nblocks;ii++) 
   !!  {
+  !!   gmacs_ctl << "#Block " << ii << ": "<< endl;
   !!   for (int j=1;j<=blocks(ii);j++)
   !!    {
   !!     *(ad_comm::global_datafile) >> blocklimits(ii,j,1) ;
   !!     *(ad_comm::global_datafile) >> blocklimits(ii,j,2); if (blocklimits(ii,j,2)==0) blocklimits(ii,j,2) = nyrRetro; 
   !!     echoinput << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << " ";
-  !!     gmacs_ctl << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << " ";
+  !!     gmacs_ctl << "    " << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << "  #--" << j << endl;
   !!    }
   !!    blocklimits(ii,0,1) = syr; blocklimits(ii,0,2) = blocklimits(ii,1,1)-1;
   !!    gmacs_ctl << endl; echoinput << endl;  
@@ -1770,6 +1771,7 @@ DATA_SECTION
   imatrix Growth_controls(1,3*nsex,1,3);
   !! Growth_controls.initialize();
   !! gmacs_ctl << "# Growth transition" << endl;
+  !! echoinput << "# Growth transition" << endl;
   !! gmacs_ctl << "##Type_1: Options for the growth matrix" << endl;
   !! gmacs_ctl << "#  1: Pre-specified growth transition matrix (requires molt probability)" << endl;
   !! gmacs_ctl << "#  2: Pre-specified size transition matrix (molt probability is ignored)" << endl;
@@ -1805,6 +1807,7 @@ DATA_SECTION
   !!   }
  
   !! gmacs_ctl << "# Molt probability" << endl;
+  !! echoinput << "# Molt probability" << endl;
   !! gmacs_ctl << "# Type: Options for the molt probability function" << endl;
   !! gmacs_ctl << "#  0: Pre-specified" << endl;
   !! gmacs_ctl << "#  1: Constant at 1" << endl;
@@ -1829,6 +1832,7 @@ DATA_SECTION
   !! if (nmature==2)
   !!  {
   !!   gmacs_ctl << "# Mature probability" << endl;
+  !!   echoinput << "# Mature probability" << endl;
   !!   gmacs_ctl << "# Type: Options for the mature probability function" << endl;
   !!   gmacs_ctl << "#  0: Pre-specified" << endl;
   !!   gmacs_ctl << "#  1: Constant at 1" << endl;
@@ -1882,13 +1886,15 @@ DATA_SECTION
      }
     nparGs(ig) = nparG; 
    } //-ig 
-  cout << "nparGs" << nparGs << endl;
+  cout      << "nparGs" << nparGs << endl;
+  echoinput << "nparGs" << nparGs << endl;
  END_CALCS
  
   // Storage by year
   imatrix GrowPnt(1,3*nsex*Nyears,1,nclass+5);
 
   matrix Gpar_control(1,1000,1,15);
+  !!Gpar_control = -999;
   imatrix GtoIG(1,1000,1,4);
  LOC_CALCS 
   {
@@ -1898,6 +1904,7 @@ DATA_SECTION
    gmacs_ctl << endl;
    echoinput << endl;
    gmacs_ctl << "## General parameter specificiations " << endl;
+   echoinput << "## General parameter specificiations " << endl;
    gmacs_ctl << "##  Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
    gmacs_ctl << "##  Lower & Upper: Range for the parameter" << endl;
    gmacs_ctl << "##  Prior type:"  << endl;
@@ -1920,7 +1927,9 @@ DATA_SECTION
     {
      if (nparGs(ig) > 0) gmacs_ctl << "# Inputs for sex * type " << ig << endl;
      if (nparGs(ig) > 0) gmacs_ctl << "# MAIN PARS: Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
-     n_Gpar2 = n_Gpar;
+     if (nparGs(ig) > 0) echoinput << "# Inputs for sex * type " << ig << endl;
+     if (nparGs(ig) > 0) echoinput << "# MAIN PARS: Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
+      n_Gpar2 = n_Gpar;
      if (nsex==1) h = 1;
      if (nsex==2 & (ig==1 | ig==3)) h = 1;
      if (nsex==2 & (ig==2 | ig==4)) h = 2;
@@ -1935,8 +1944,10 @@ DATA_SECTION
        GtoIG(n_Gpar,1) = ig;
        GtoIG(n_Gpar,2) = ipar;
        GtoIG(n_Gpar,3) = 0;
+       echoinput << "ig = "<<ig<<"  ipar = "<<ipar<<"  n_Gpar = "<<n_Gpar<<endl;
        iblock = 1;
        for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
+       for (int ii=1;ii<=14;ii++) {echoinput << Gpar_control(n_Gpar,ii) <<" ";} echoinput << endl;
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
@@ -2006,11 +2017,11 @@ DATA_SECTION
            for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
             GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_period_"+str(iblock);
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h)+"_period_"+str(iblock);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock);
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_period_"+str(iblock)+"(ln-scale)";
 	   if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
 	   if (ipar <=nclass)
 	    anystring = "Molt_increment_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
@@ -2069,7 +2080,7 @@ DATA_SECTION
         n_devvars += 1;
         devpoints(n_devvars,1) = 1; devpoints(n_devvars,2) = ig; devpoints(n_devvars,3) = n_deviations+1;
         if (IgRWBlock <=0) { cout << "Error: There needs to a block for random walk - growth line " << ig << " par " << ipar <<   endl;  exit(1); }
-        if (IgRWBlock > nblocks) { cout << "Error: The block for random walk survey in out of range - growth line " << ig << " par " << ipar <<  endl;  exit(1); }
+        if (IgRWBlock > nblocks) { cout << "Error: The block for random walk survey is out of range - growth line " << ig << " par " << ipar <<  endl;  exit(1); }
         for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++)
          for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
            GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
@@ -4671,7 +4682,7 @@ FUNCTION initialize_model_parameters
       {
        alpha(h,igrow)   = G_pars(1);
        beta(h,igrow)    = G_pars(2);
-       gscale(h,igrow)  = G_pars(3);
+       gscale(h,igrow)  = exp(G_pars(3));
       }
      if (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)
       {
@@ -11483,5 +11494,8 @@ FINAL_SECTION
 // 2024-03-29 ** AEP. (Updated GMACS to version 2.20.00) Updated read-in for selectivity, M, growth, additional variance, Q and overdispersion
 // 2024-03-29 ** AEP. (Updated GMACS to version 2.20.01) Standardized how priors are handled
 // 2024-03-31 ** WTS. Added extra info to error messages when using alternative dat file format.
+// 2024-04-01 ** WTS. For the PWRLAW_GROWTHMODEL, the input definition for the parameter corresponding to gscale is on the ln-scale, 
+//                    so it is exponentiated when assigning G_pars(3) to gscale. 
+//                    Changed format of output of block_limits to gmacs_ctl to column form.
 
 

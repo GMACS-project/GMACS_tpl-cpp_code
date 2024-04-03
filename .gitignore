@@ -12,3 +12,7 @@ gmacsbase_20240304.TPL
 gmacsbaseOLD.TPL
 testing/input_files/gmacs1.par
 testing/input_files/gmacs2.par
+testing/input_files/NewCTLformat_20240401/gmacs_out.ctl
+testing/input_files/NewCTLformat_20240401/gmacs_in1.ctl
+testing/input_files/NewCTLformat_20240401/gmacs_in.ctl
+testing/input_files/AndreLatest/
