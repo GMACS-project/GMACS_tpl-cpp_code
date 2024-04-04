@@ -1955,9 +1955,9 @@ DATA_SECTION
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+" (ln-scale)";
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+" (ln-scale)";
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
 
        if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
         if (ipar <=nclass)
@@ -2023,9 +2023,9 @@ DATA_SECTION
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
 	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
 	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+" (ln-scale)";
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+" (ln-scale)";
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
 	   if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
 	   if (ipar <=nclass)
 	    anystring = "Molt_increment_"+sexes(h)+"_class_"+str(ipar);
@@ -10701,7 +10701,6 @@ FUNCTION WriteFiles
  
   OutInpFile1  << "# The blocks" << endl;
   for (int ii=1;ii<=nblocks;ii++) 
-   for (int j=1;j<=blocks(ii);j++) OutInpFile1 << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << " # block_group_"<< ii << "_block_" << j << endl;
    {
     OutInpFile1 << "#Block " << ii << ": "<< endl;
     for (int j=1;j<=blocks(ii);j++) OutInpFile1 << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << " # block_group_"<< ii << "_block_" << j << endl;
