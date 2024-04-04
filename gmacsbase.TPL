@@ -11985,6 +11985,7 @@ FINAL_SECTION
 // 2024-04-02 ** AEP. (Updated GMACS to version 2.20.05) Added new pre-specified selectivity option (11)
 // 2024-04-03 ** AEP. (Updated GMACS to version 2.20.06) Added a smoothness penalty to spline selectivity and now output Fs and recruitent to gmacs_out.ctl
 // 2024-04-03 ** WTS. Growth transition matrix scale parameter is on l-scale when molt bUseGrowthIncrementModel2==PWRLAW_GROWTHMODEL
+// 2024-04-04 ** AEP. Added exit(1) condition when M_relative(ig==1)!=0 after flagging error condition (M specification for first group can't be relative).
 
 // To-do list
 // 1 - Bias ramp for recruitment
