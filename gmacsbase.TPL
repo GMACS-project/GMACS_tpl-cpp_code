@@ -3057,44 +3057,49 @@ DATA_SECTION
   q_RW_blk      = ivector(column(q_controls,9));
   q_RW_sigma    = column(q_controls,10);
   n_qpar = nSurveys; 
+  for (int ii=1;ii<=nSurveys;ii++) if(q_mirror(ii)>0) --n_qpar; //--decrement parameter count for mirrored surveys
   for (int ii=1;ii<=nSurveys;ii++)
-   if (q_block(ii)>0) n_qpar += blocks(q_block(ii)); 
+   if (q_mirror(ii)==0)
+    if (q_block(ii)>0) n_qpar += blocks(q_block(ii)); 
   for (int ii=1;ii<=nSurveys;ii++)
-   if (q_env_link(ii)!=0) 
-    {
-     if (q_env_link(ii) != 1 & q_env_link(ii) != 2) { cout << "Error: Environmental links can only be 1 or 2 - survey: " << ii << endl; exit(1); } 
-     if (q_env_var(ii) <= 0 || q_env_var(ii) > NenvIndics) { cout << "Error: Environmental variable outside range - survey: " << ii << endl; exit(1); } 
-     if (q_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii << endl; exit(1); }
-     n_qpar += 1; 
+   if (q_mirror(ii)==0)
+    if (q_env_link(ii)!=0)
+      {
+      if (q_env_link(ii) != 1 & q_env_link(ii) != 2) { cout << "Error: Environmental links can only be 1 or 2 - survey: " << ii << endl; exit(1); } 
+      if (q_env_var(ii) <= 0 || q_env_var(ii) > NenvIndics) { cout << "Error: Environmental variable outside range - survey: " << ii << endl; exit(1); } 
+      if (q_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii << endl; exit(1); }
+      n_qpar += 1; 
+      }
+  for (int ii=1;ii<=nSurveys;ii++)
+   if (q_mirror(ii)==0)
+    if (q_RW(ii)!=0)
+      {
+      n_devvars += 1;
+      devpoints(n_devvars,1) = 4; devpoints(n_devvars,2) = ii; devpoints(n_devvars,3) = n_deviations+1;
+      if (q_RW_blk(ii) <=0) { cout << "Error: There needs to a block for random walk - survey: " << ii <<endl;  exit(1); }
+      if (q_RW_blk(ii) > nblocks) { cout << "Error: The block for random walk survey in out of range - survey: " << ii <<endl;  exit(1); }
+      for (int iblk=1;iblk<=blocks(q_RW_blk(ii));iblk++)
+        n_deviations += (blocklimits(q_RW_blk(ii),iblk,2)-blocklimits(q_RW_blk(ii),iblk,1)+1);
+      devpoints(n_devvars,4) = n_deviations; devpoints(n_devvars,5) = q_RW_blk(ii);
+      devpoints(n_devvars,6) = blocks(q_RW_blk(ii));
+      rdevpoints(n_devvars,1) = q_RW_sigma(ii);
     }
-  for (int ii=1;ii<=nSurveys;ii++)
-   if (q_RW(ii)!=0) 
-    {
-     n_devvars += 1;
-     devpoints(n_devvars,1) = 4; devpoints(n_devvars,2) = ii; devpoints(n_devvars,3) = n_deviations+1;
-     if (q_RW_blk(ii) <=0) { cout << "Error: There needs to a block for random walk - survey: " << ii <<endl;  exit(1); }
-     if (q_RW_blk(ii) > nblocks) { cout << "Error: The block for random walk survey in out of range - survey: " << ii <<endl;  exit(1); }
-     for (int iblk=1;iblk<=blocks(q_RW_blk(ii));iblk++)
-      n_deviations += (blocklimits(q_RW_blk(ii),iblk,2)-blocklimits(q_RW_blk(ii),iblk,1)+1);
-     devpoints(n_devvars,4) = n_deviations; devpoints(n_devvars,5) = q_RW_blk(ii);
-     devpoints(n_devvars,6) = blocks(q_RW_blk(ii));
-     rdevpoints(n_devvars,1) = q_RW_sigma(ii);
-   }
-    
+  echoinput << "final number of catchability parameters: " << n_qpar << endl;
  END_CALCS
-  ivector qToSurv(1,n_qpar);
+  ivector qToSurv(1,n_qpar);//--map from q index to non-mirrored survey index
   ivector qType(1,n_qpar);
-  ivector qPoint(1,n_qpar);
+  ivector qPoint(1,n_qpar); //--TODO: this is used nowhere
  LOC_CALCS
   int iq; iq = 0;
-  for (int ii=1;ii<=nSurveys;ii++)
-   {
-    iq +=1; qToSurv(iq) = ii; qType(iq) = 0; qPoint(ii) = iq;
-    if (q_block(ii)>0) 
-     for (int j=1;j<=blocks(q_block(ii));j++) { iq += 1; qToSurv(iq) = ii; qType(iq) = 0; }
-    if (q_env_link(ii)!=0)
-     { iq += 1; qToSurv(iq) = ii; qType(iq) = 1; }
-   }
+  for (int ii=1;ii<=nSurveys;ii++) 
+   if (q_mirror(ii)==0)
+    {
+      iq +=1; qToSurv(iq) = ii; qType(iq) = 0; qPoint(iq) = iq; //--was qPoint(ii) = iq; TODO: qPoint is not used anywhere!!
+      if (q_block(ii)>0) 
+       for (int j=1;j<=blocks(q_block(ii));j++) { iq += 1; qToSurv(iq) = ii; qType(iq) = 0; }
+      if (q_env_link(ii)!=0)
+       { iq += 1; qToSurv(iq) = ii; qType(iq) = 1; }
+    }
   ECHO(qToSurv);
  END_CALCS
 
@@ -3106,7 +3111,7 @@ DATA_SECTION
   !!    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
   !!    gmacs_ctl << setw(11) << setfixed() << int(q_pars(b,4)) << " ";
   !!    for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
-  !!    gmacs_ctl << setw(6) << setfixed() << int(q_pars(b,7)) << " # Survey_q_survey_"+str(b) << endl;
+  !!    gmacs_ctl << setw(6) << setfixed() << int(q_pars(b,7)) << " # Survey_q_parameter_"+str(b) << endl;
   !!   }
   !! echoinput << "# Catchability (parameters)" << endl;
   !! echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
@@ -3198,29 +3203,35 @@ DATA_SECTION
   int n_addcv_par;
  LOC_CALCS
   n_addcv_par = nSurveys; 
+  for (int ii=1;ii<=nSurveys;ii++) if (add_cv_mirror(ii)>0) n_addcv_par--;
+  echoinput << "n_addcv_par: " << n_addcv_par << endl;
   for (int ii=1;ii<=nSurveys;ii++)
-   if (add_cv_block(ii)>0) n_addcv_par += blocks(add_cv_block(ii)); 
+   if (add_cv_mirror(ii)==0)
+    if (add_cv_block(ii)>0) n_addcv_par += blocks(add_cv_block(ii)); 
   for (int ii=1;ii<=nSurveys;ii++)
-   if (add_cv_env_link(ii)!=0)
-    { 
-     if (add_cv_env_link(ii) != 1 & add_cv_env_link(ii) != 2) { cout << "Error: Environmental links can only be 1 or 2 - survey: " << ii << endl; exit(1); } 
-     if (add_cv_env_var(ii) <= 0 || add_cv_env_var(ii) > NenvIndics) { cout << "Error: Environmental variable outside range - survey: " << ii <<  endl; exit(1);} 
-     if (add_cv_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii <<endl;  exit(1); }
-     n_addcv_par += 1; 
+   if (add_cv_mirror(ii)==0)
+    if (add_cv_env_link(ii)!=0)
+      { 
+      if (add_cv_env_link(ii) != 1 & add_cv_env_link(ii) != 2) { cout << "Error: Environmental links can only be 1 or 2 - survey: " << ii << endl; exit(1); } 
+      if (add_cv_env_var(ii) <= 0 || add_cv_env_var(ii) > NenvIndics) { cout << "Error: Environmental variable outside range - survey: " << ii <<  endl; exit(1);} 
+      if (add_cv_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii <<endl;  exit(1); }
+      n_addcv_par += 1; 
+      }
+  for (int ii=1;ii<=nSurveys;ii++)
+   if (add_cv_mirror(ii)==0)
+    if (add_cv_RW(ii)!=0) 
+      {
+      n_devvars += 1;
+      devpoints(n_devvars,1) = 5; devpoints(n_devvars,2) = ii; devpoints(n_devvars,3) = n_deviations+1;
+      if (add_cv_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii <<endl;  exit(1); }
+      if (add_cv_RW_blk(ii) > nblocks) { cout << "Error: The block for random walk survey in out of range - survey: " << ii <<endl;  exit(1); }
+      for (int iblk=1;iblk<=blocks(add_cv_RW_blk(ii));iblk++)
+        n_deviations += (blocklimits(add_cv_RW_blk(ii),iblk,2)-blocklimits(add_cv_RW_blk(ii),iblk,1)+1);
+      devpoints(n_devvars,4) = n_deviations; devpoints(n_devvars,5) = add_cv_RW_blk(ii);
+      devpoints(n_devvars,6) = blocks(add_cv_RW_blk(ii));
+      rdevpoints(n_devvars,1) = q_RW_sigma(ii);
     }
-  for (int ii=1;ii<=nSurveys;ii++)
-   if (add_cv_RW(ii)!=0) 
-    {
-     n_devvars += 1;
-     devpoints(n_devvars,1) = 5; devpoints(n_devvars,2) = ii; devpoints(n_devvars,3) = n_deviations+1;
-     if (add_cv_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii <<endl;  exit(1); }
-     if (add_cv_RW_blk(ii) > nblocks) { cout << "Error: The block for random walk survey in out of range - survey: " << ii <<endl;  exit(1); }
-     for (int iblk=1;iblk<=blocks(add_cv_RW_blk(ii));iblk++)
-      n_deviations += (blocklimits(add_cv_RW_blk(ii),iblk,2)-blocklimits(add_cv_RW_blk(ii),iblk,1)+1);
-     devpoints(n_devvars,4) = n_deviations; devpoints(n_devvars,5) = add_cv_RW_blk(ii);
-     devpoints(n_devvars,6) = blocks(add_cv_RW_blk(ii));
-     rdevpoints(n_devvars,1) = q_RW_sigma(ii);
-   }
+  echoinput << "n_addcv_par (final) = " << n_addcv_par << endl;
   ECHO(devpoints);
   ECHO(rdevpoints);
   ECHO(n_deviations);
@@ -3230,13 +3241,15 @@ DATA_SECTION
  LOC_CALCS
   int iaddcv; iaddcv = 0;
   for (int ii=1;ii<=nSurveys;ii++)
-   {
-    iaddcv +=1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 0;
-    if (add_cv_block(ii)>0) 
-     for (int j=1;j<=blocks(add_cv_block(ii));j++) { iaddcv += 1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 0; }
-    if (add_cv_env_link(ii)!=0)
-     { iaddcv += 1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 1; }
-   }
+   if (add_cv_mirror(ii)==0)
+    {
+      iaddcv +=1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 0;
+      if (add_cv_block(ii)>0) 
+      for (int j=1;j<=blocks(add_cv_block(ii));j++) { iaddcv += 1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 0; }
+      if (add_cv_env_link(ii)!=0)
+      { iaddcv += 1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 1; }
+    }
+  echoinput << "iaddcv (final) = " << iaddcv << endl;
  END_CALCS
 
   vector add_cv_ival(1,n_addcv_par);
@@ -3255,7 +3268,7 @@ DATA_SECTION
   !!    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << add_cv_pars(b,ii) << " ";
   !!    gmacs_ctl << setw(11) << setfixed() << int(add_cv_pars(b,4)) << " ";
   !!    for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << add_cv_pars(b,ii) << " ";
-  !!    gmacs_ctl << setw(6) << setfixed() << int(add_cv_pars(b,7)) << " # Add_cv_survey_"+str(b) << endl;
+  !!    gmacs_ctl << setw(6) << setfixed() << int(add_cv_pars(b,7)) << " # Add_cv_parameter_"+str(b) << endl;
   !!   }
   !! echoinput << "# Index CV" << endl;
   !! echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
@@ -3274,19 +3287,26 @@ DATA_SECTION
   !! cv_phz            = ivector(column(add_cv_pars,7));
   
   !! // code to transform the initial values and turn off additional variance
-  !! for (int k = 1; k <= nSurveys; k++)
+  !! echoinput << "starting 1" <<endl;
+  !! int k = 0;
+  !! for (int ks = 1; ks <= nSurveys; ks++)
+  !!  if (add_cv_mirror(ks)==0)
   !!  {
+  !!   k++;
+  !!   echoinput << "ks = "<<ks<< " k = "<<k<< endl;
   !!   for (int ipar=1;ipar<=n_addcv_par;ipar++)
   !!    {
-  !!     if (AddcvToSurv(k)==k & AddcvType(k)==0) 
-  !!      { log_add_cv_ival(ipar) = log(add_cv_ival(ipar)); log_add_cv_lb(ipar) = log(add_cv_lb(ipar)); log_add_cv_ub(ipar) = log(add_cv_ub(ipar)); }
-  !!     if (AddcvToSurv(k)==k & AddcvType(k)==1) 
-  !!      { log_add_cv_ival(ipar) = add_cv_ival(ipar); log_add_cv_lb(ipar) = add_cv_lb(ipar); log_add_cv_ub(ipar) = add_cv_ub(ipar); }
+  !!     echoinput << "ipar = "<<ipar<< " n_addcv_par = " << n_addcv_par << endl;
+  !!     if (AddcvToSurv(k)==ks & AddcvType(k)==0) 
+  !!      { echoinput << 2 << endl; log_add_cv_ival(ipar) = log(add_cv_ival(ipar)); log_add_cv_lb(ipar) = log(add_cv_lb(ipar)); log_add_cv_ub(ipar) = log(add_cv_ub(ipar)); }
+  !!     if (AddcvToSurv(k)==ks & AddcvType(k)==1) 
+  !!      { echoinput << 3 << endl; log_add_cv_ival(ipar) = add_cv_ival(ipar); log_add_cv_lb(ipar) = add_cv_lb(ipar); log_add_cv_ub(ipar) = add_cv_ub(ipar); }
   !!     // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
   !!     if ( prior_add_cv_type(k) == UNIFORM_PRIOR )
-  !!      {  prior_add_cv_p1(k) = add_cv_lb(k); prior_add_cv_p2(k) = add_cv_ub(k); }
+  !!      {  echoinput << 4 << endl; prior_add_cv_p1(k) = add_cv_lb(k); prior_add_cv_p2(k) = add_cv_ub(k); }
   !!    }
   !!   } 
+  !! echoinput << "finished 1" <<endl;
   !! ECHO(prior_add_cv_type); ECHO(prior_add_cv_p1); ECHO(prior_add_cv_p2);  ECHO(cv_phz);
 
   // |---------------------------------------------------------|
@@ -3372,6 +3392,7 @@ DATA_SECTION
 
   int nSizeComps;
   !! nSizeComps = max(iCompAggregator);                              ///> Number of length comps after aggregation
+  !! echoinput << "nSizeComps from iCompAggregator: " << nSizeComps << endl;
   ivector nSizeCompRows(1,nSizeComps);
   ivector nSizeCompCols(1,nSizeComps);
   ivector nAgeCompType(1,nSizeComps);
@@ -3404,33 +3425,33 @@ DATA_SECTION
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
-    if (d3_SizeComps_in(kk,1,-4)==UNDET_SEX)        anystring = anystring +" male+female";
-    if (d3_SizeComps_in(kk,1,-4)==MALES)            anystring = anystring +" male";
-    if (d3_SizeComps_in(kk,1,-4)==FEMALES)          anystring = anystring +" female";
+    if (d3_SizeComps_in(kk,1,-4)==UNDET_SEX)        anystring = anystring +" M+F ";
+    if (d3_SizeComps_in(kk,1,-4)==MALES)            anystring = anystring +"  M  ";
+    if (d3_SizeComps_in(kk,1,-4)==FEMALES)          anystring = anystring +"  F  ";
    }
   gmacs_ctl << anystring << endl;
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
-    if (d3_SizeComps_in(kk,1,-3)==TOTALCATCH)       anystring = anystring +" total";
-    if (d3_SizeComps_in(kk,1,-3)==RETAINED)         anystring = anystring +" retained";
-    if (d3_SizeComps_in(kk,1,-3)==DISCARDED)        anystring = anystring +" discard";
+    if (d3_SizeComps_in(kk,1,-3)==TOTALCATCH)       anystring = anystring +" tot ";
+    if (d3_SizeComps_in(kk,1,-3)==RETAINED)         anystring = anystring +" ret ";
+    if (d3_SizeComps_in(kk,1,-3)==DISCARDED)        anystring = anystring +" dsc ";
    }
   gmacs_ctl << anystring << endl;
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
-    if (d3_SizeComps_in(kk,1,-2)==UNDET_SHELL)      anystring = anystring +" all_shell";
-    if (d3_SizeComps_in(kk,1,-2)==NEW_SHELL)        anystring = anystring +" newshell";
-    if (d3_SizeComps_in(kk,1,-2)==OLD_SHELL)        anystring = anystring +" oldshell";
+    if (d3_SizeComps_in(kk,1,-2)==UNDET_SHELL)      anystring = anystring +" N+S ";
+    if (d3_SizeComps_in(kk,1,-2)==NEW_SHELL)        anystring = anystring +" NS  ";
+    if (d3_SizeComps_in(kk,1,-2)==OLD_SHELL)        anystring = anystring +" OS  ";
    }
   gmacs_ctl << anystring << endl;
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
-    if (d3_SizeComps_in(kk,1,-1)==UNDET_MATURE)       anystring = anystring +" immature+mature";
-    if (d3_SizeComps_in(kk,1,-1)==IMMATURE)         anystring = anystring +" immature";
-    if (d3_SizeComps_in(kk,1,-1)==MATURE)           anystring = anystring +" mature";
+    if (d3_SizeComps_in(kk,1,-1)==UNDET_MATURE)     anystring = anystring +" I+M ";
+    if (d3_SizeComps_in(kk,1,-1)==IMMATURE)         anystring = anystring +" imm ";
+    if (d3_SizeComps_in(kk,1,-1)==MATURE)           anystring = anystring +" mat ";
    }
   gmacs_ctl << anystring << endl;
   ECHOSTR(anystring);
@@ -5015,7 +5036,7 @@ FUNCTION initialize_model_parameters
       SurveyQT(is) = timevarparV(1,is, nyrRetro+1, q_block(is), q_env_link(is), q_env_var(is), 
                               q_RW(is), q_RW_blk(is), n_qpar, qToSurv,survey_q); 
      else
-      SurveyQT(is) = SurveyQT(q_mirror(is));
+      SurveyQT(is) = SurveyQT(q_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
     }
    if (verbose >= 3) cout<<"--finished survey Q"<<endl;
    
@@ -5026,7 +5047,7 @@ FUNCTION initialize_model_parameters
         AddVarQT(is) = timevarparV(2,is, nyrRetro+1, add_cv_block(is), add_cv_env_link(is), add_cv_env_var(is), 
                                    add_cv_RW(is), add_cv_RW_blk(is), n_addcv_par, AddcvToSurv, log_add_cv); 
      else
-      AddVarQT(is) = AddVarQT(add_cv_mirror(is));
+      AddVarQT(is) = AddVarQT(add_cv_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
     }
    if (verbose >= 3) cout<<"--finished AddV"<<endl;
    //exit(1);
@@ -11989,6 +12010,7 @@ FINAL_SECTION
 // 2024-04-03 ** AEP. (Updated GMACS to version 2.20.06) Added a smoothness penalty to spline selectivity and now output Fs and recruitent to gmacs_out.ctl
 // 2024-04-03 ** WTS. Growth transition matrix scale parameter is on l-scale when molt bUseGrowthIncrementModel2==PWRLAW_GROWTHMODEL
 // 2024-04-04 ** AEP. Added exit(1) condition when M_relative(ig==1)!=0 after flagging error condition (M specification for first group can't be relative).
+// 2024-04-04 ** WTS. Fixed issues with parameter specification when mirroring survey catchability and/or additional survey cv.
 
 // To-do list
 // 1 - Bias ramp for recruitment
