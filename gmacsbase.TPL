@@ -10701,7 +10701,6 @@ FUNCTION WriteFiles
  
   OutInpFile1  << "# The blocks" << endl;
   for (int ii=1;ii<=nblocks;ii++) 
-   for (int j=1;j<=blocks(ii);j++) OutInpFile1 << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << " # block_group_"<< ii << "_block_" << j << endl;
    {
     OutInpFile1 << "#Block " << ii << ": "<< endl;
     for (int j=1;j<=blocks(ii);j++) OutInpFile1 << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << " # block_group_"<< ii << "_block_" << j << endl;
