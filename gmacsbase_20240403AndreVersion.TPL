@@ -1371,7 +1371,6 @@ DATA_SECTION
   !! blocklimits(0,0,1) = syr; blocklimits(0,0,2) = nyrRetro;
   !! for (int ii=1;ii<=nblocks;ii++) 
   !!  {
-  !!   gmacs_ctl << "#Block " << ii << ": "<< endl;
   !!   for (int j=1;j<=blocks(ii);j++)
   !!    {
   !!     *(ad_comm::global_datafile) >> blocklimits(ii,j,1) ;
@@ -1780,7 +1779,6 @@ DATA_SECTION
   imatrix Growth_controls(1,3*nsex,1,3);
   !! Growth_controls.initialize();
   !! gmacs_ctl << "# Growth transition" << endl;
-  !! echoinput << "# Growth transition" << endl;
   !! gmacs_ctl << "##Type_1: Options for the growth matrix" << endl;
   !! gmacs_ctl << "#  1: Pre-specified growth transition matrix (requires molt probability)" << endl;
   !! gmacs_ctl << "#  2: Pre-specified size transition matrix (molt probability is ignored)" << endl;
@@ -1816,7 +1814,6 @@ DATA_SECTION
   !!   }
  
   !! gmacs_ctl << "# Molt probability" << endl;
-  !! echoinput << "# Molt probability" << endl;
   !! gmacs_ctl << "# Type: Options for the molt probability function" << endl;
   !! gmacs_ctl << "#  0: Pre-specified" << endl;
   !! gmacs_ctl << "#  1: Constant at 1" << endl;
@@ -1912,7 +1909,6 @@ DATA_SECTION
    gmacs_ctl << endl;
    echoinput << endl;
    gmacs_ctl << "## General parameter specificiations " << endl;
-   echoinput << "## General parameter specificiations " << endl;
    gmacs_ctl << "##  Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
    gmacs_ctl << "##  Lower & Upper: Range for the parameter" << endl;
    gmacs_ctl << "##  Prior type:"  << endl;
@@ -1955,9 +1951,9 @@ DATA_SECTION
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+" (ln-scale)";
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+" (ln-scale)";
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
 
        if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
         if (ipar <=nclass)
@@ -2023,9 +2019,9 @@ DATA_SECTION
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
 	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
 	   if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+" (ln-scale)";
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
-           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+" (ln-scale)";
+           if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
 	   if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
 	   if (ipar <=nclass)
 	    anystring = "Molt_increment_"+sexes(h)+"_class_"+str(ipar);
@@ -2380,7 +2376,7 @@ DATA_SECTION
         // Initial checks
         if (ig==1) 
          {
-          if (M_relative(ig)!=0) {cout << "Error: M_relative for the first sex*maturity state must be 0" << endl; exit(1);}
+          if (M_relative(ig)!=0) cout << "Error: M_relative for the first sex*maturity state must be 0" << endl;
          }
         if (ig >1)
          {
@@ -4775,7 +4771,7 @@ FUNCTION initialize_model_parameters
       {
        alpha(h,igrow)   = G_pars(1);
        beta(h,igrow)    = G_pars(2);
-       gscale(h,igrow)  = exp(G_pars(3));
+       gscale(h,igrow)  = G_pars(3);
       }
      if (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)
       {
@@ -11977,14 +11973,10 @@ FINAL_SECTION
 // 2024-03-29 ** AEP. (Updated GMACS to version 2.20.00) Updated read-in for selectivity, M, growth, additional variance, Q and overdispersion
 // 2024-03-29 ** AEP. (Updated GMACS to version 2.20.01) Standardized how priors are handled
 // 2024-03-31 ** WTS. (Updated GMACS to version 2.20.02) Added extra info to error messages when using alternative dat file format.
-// 2024-04-01 ** WTS. For the PWRLAW_GROWTHMODEL, the input definition for the parameter corresponding to gscale is on the ln-scale, 
-//                    so it is exponentiated when assigning G_pars(3) to gscale. 
-//                    Changed format of output of block_limits to gmacs_ctl to column form.
 // 2024-04-01 ** AEP. (Updated GMACS to version 2.20.03) Tidied up output labels (GMACS_IN and GMACS_OUT).
 // 2024-04-02 ** AEP. (Updated GMACS to version 2.20.04) Tidied up penalties (added back one that was commented out)
 // 2024-04-02 ** AEP. (Updated GMACS to version 2.20.05) Added new pre-specified selectivity option (11)
 // 2024-04-03 ** AEP. (Updated GMACS to version 2.20.06) Added a smoothness penalty to spline selectivity and now output Fs and recruitent to gmacs_out.ctl
-// 2024-04-03 ** WTS. Growth transition matrix scale parameter is on l-scale when molt bUseGrowthIncrementModel2==PWRLAW_GROWTHMODEL
 
 // To-do list
 // 1 - Bias ramp for recruitment
