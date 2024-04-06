@@ -9655,6 +9655,29 @@ FUNCTION CreateOutput
   cout << "+--------------------------+" << endl;
   cout << "| Beginning report section |" << endl;
   cout << "+--------------------------+" << endl;
+  //--Note on formatting Gmacsall.out (OutputFile1)---------------
+  //--This output is formatted for human readability and R functionality. 
+  //--All lines starting with "#" will be regarded in R as comments and dropped
+  //--Scalars and short vectors should be written with the format
+  //      OutFile1 << "descriptive name:    " << values << endl; 
+  //--Long vectors should be written with the format (might be a bit more readable)
+  //      OutFile1 << "descriptive name: vector" << endl;
+  //      OutFile1 << values << endl;
+  //--Matrices shiould be written with the format
+  //      OutFile1 << "descriptive name: matrix" << endl;
+  //      for (int r=1; r<=nrows; r++) OutFile1 << values(r) << endl;
+  //      OutFile1 << ">EOM<" << endl; 
+  //--Dataframes (mixed text and numbers) should be written with the format
+  //      OutFile1 << "descriptive name: dataframe" << endl;
+  //      for (int c=1; r<=ncols; c++) {OutFile1 << column_names(c) << " ";} OutFile1 << endl;
+  //      for (int r=1; r<=nrows; r++) OutFile1 << values(r) << endl;
+  //      OutFile1 << ">EOD<" << endl; 
+  //--Lists of scalars, vectors, matrices, dataframes, and other lists can be achieved using the format
+  //      OutFile1 << "descriptive name: list" << endl;
+  //        statements to write scalars, vectors, etc. 
+  //      OutFile1 << ">EOL<" << endl;
+  //--Note that the appropriate termination indicator (">EOM<", ">EOD<", or ">EOL<") must be written 
+  //--to the line folllowing the end of each matrix, dataframe, or list to inidcate the end of the object.
   OutFile1.close();
   OutFile1.open("Gmacsall.out");
   OutFile2.close();
@@ -9682,15 +9705,19 @@ FUNCTION CreateOutput
   
   OutFile1 << "Stock being assessed: " << StockName << endl << endl;
   OutFile1 << "#--General information" << endl;
+  OutFile1 << "Weight unit:                \t " << weightunit << endl;
+  OutFile1 << "Numbers unit:               \t " << numbersunit << endl;
   OutFile1 << "Year_range:                 \t " << syr << " " << nyrRetro << " # actual data file end year is " << nyr << endl;
   OutFile1 << "Number of seasons:          \t " << nseason << endl;
   OutFile1 << "Number_of_fleets:           \t " << nfleet << endl;
   OutFile1 << "Fleets:                     \t "; for (int k=1;k<=nfleet;k++) OutFile1 << fleetname(k) << " "; OutFile1 << endl;
-  OutFile1 << "Number of sexes             \t " << nsex << endl;
+  OutFile1 << "Number of sexes:            \t " << nsex << endl;
   OutFile1 << "Number of shell conditions: \t " << nshell << endl;
   OutFile1 << "Number of maturity states:  \t " << nmature << endl;
-  OutFile1 << "Weight unit:                \t " << weightunit << endl;
-  OutFile1 << "Numbers unit:               \t " <<numbersunit << endl;
+  OutFile1 << "Number of size classes:     \t " << nclass << endl;
+  OutFile1 << "Max size classes:           \t " << nSizeSex << endl;
+  OutFile1 << "size_breaks:                \t " << size_breaks << endl;
+  OutFile1 << "size_midpoints:             \t " << mid_points << endl;
   
   // Likelihood summary
   OutFile1 << endl << "#--Likelihoods-by-type (raw and weighted)" << endl;
@@ -10108,7 +10135,7 @@ FUNCTION CreateOutput
   OutFile4 << "# pre_catch" << endl;
   OutFile4 << pre_catch << endl;
 
-  REPORT(log_q_catch,"");
+  REPORT(log_q_catch,": vector");
   
   // index data
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
@@ -12143,7 +12170,7 @@ FINAL_SECTION
 //                    Fixed issues with prior density calculations when mirroring q's or additional cv's.
 //                    Added additional diagnostics for verbose>10.
 //                    (Updated GMACS to version 2.20.07). 
-// 2024-04-05 ** WTS. Revised Gmacsall.out formats to play nice with R. Also developed R code to read and create list object.
+// 2024-04-05 ** WTS. Revised Gmacsall.out formats to play nice with R. Also developed R code to read and create a list object from the .out file.
 //
 // To-do list
 // 1 - Bias ramp for recruitment
