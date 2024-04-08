@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.07; ** AEP & WTS **; Compiled 2024-04-05");
+ !! TheHeader = adstring("## GMACS Version 2.20.08; ** AEP & WTS **; Compiled 2024-04-08");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -3376,12 +3376,12 @@ DATA_SECTION
   !! gmacs_ctl <<"## " << endl;
 
   !! ECHOSTR(" * Size composition controls");
-  init_ivector nAgeCompType_in(1,nSizeComps_in);                     ///> Size-comp likelihood
+  init_ivector iSizeCompType_in(1,nSizeComps_in);                     ///> Size-comp likelihood
   !! for (int k =1; k<=nSizeComps_in; k++)
-  !!  if (nAgeCompType_in(k) != 0 && nAgeCompType_in(k) != 1 && nAgeCompType_in(k) != 2 && nAgeCompType_in(k) != 5)
+  !!  if (iSizeCompType_in(k) != 0 && iSizeCompType_in(k) != 1 && iSizeCompType_in(k) != 2 && iSizeCompType_in(k) != 5)
   !!   { cout << "Size comp type must be 0, 1, 2 or 5" << endl; 
   !!       ECHOSTR("Size comp type must be 0, 1, 2 or 5"); 
-  !!       echoinput<<"k = "<<k<<" nAgeCompType_in(k) = "<<nAgeCompType_in(k)<<endl;
+  !!       echoinput<<"k = "<<k<<" iSizeCompType_in(k) = "<<iSizeCompType_in(k)<<endl;
   !!       exit(1); 
   !!   }
   init_ivector bTailCompression_in(1,nSizeComps_in);                 ///> option for tail compression
@@ -3395,20 +3395,21 @@ DATA_SECTION
   !! echoinput << "nSizeComps from iCompAggregator: " << nSizeComps << endl;
   ivector nSizeCompRows(1,nSizeComps);
   ivector nSizeCompCols(1,nSizeComps);
-  ivector nAgeCompType(1,nSizeComps);
+  ivector iSizeCompType(1,nSizeComps);
   ivector bTailCompression(1,nSizeComps);
   vector lf_catch(1,nSizeComps);
   vector lf_lambda(1,nSizeComps);
   vector lf_emphasis(1,nSizeComps);
 
-  init_matrix log_vn_pars(1,nSizeComps_in,1,7);
-  vector log_vn_ival(1,nSizeComps_in);
-  vector log_vn_lb(1,nSizeComps_in);
-  vector log_vn_ub(1,nSizeComps_in);
-  ivector log_vn_phz(1,nSizeComps_in);
-  vector prior_log_vn_type(1,nSizeComps_in);
-  vector prior_log_vn_p1(1,nSizeComps_in);
-  vector prior_log_vn_p2(1,nSizeComps_in);
+  //--read the information for the effective sample size parameters 
+  init_matrix log_vn_pars(1,nSizeComps,1,7);
+  vector log_vn_ival(1,nSizeComps);
+  vector log_vn_lb(1,nSizeComps);
+  vector log_vn_ub(1,nSizeComps);
+  ivector log_vn_phz(1,nSizeComps);
+  vector prior_log_vn_type(1,nSizeComps);
+  vector prior_log_vn_p1(1,nSizeComps);
+  vector prior_log_vn_p2(1,nSizeComps);
 
  LOC_CALCS
   gmacs_ctl <<"# Options when fitting size-composition data" << endl;
@@ -3456,7 +3457,7 @@ DATA_SECTION
   gmacs_ctl << anystring << endl;
   ECHOSTR(anystring);
 
-  gmacs_ctl << setw(6) << setfixed() << nAgeCompType_in     << " # Type of likelihood" <<  endl;
+  gmacs_ctl << setw(6) << setfixed() << iSizeCompType_in     << " # Type of likelihood" <<  endl;
   gmacs_ctl << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression (pmin)" <<  endl;
   gmacs_ctl << setw(6) << setfixed() << iCompAggregator    << " # Composition aggregator codes" << endl;
   gmacs_ctl << setw(6) << setfixed() << lf_catch_in        << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
@@ -3471,7 +3472,7 @@ DATA_SECTION
     // We are appending the arrays horizontally.
     nSizeCompCols(k) += nSizeCompCols_in(kk);
     // Again, we are using only the last specification here, may want to add a check to ensure the user specifies that these are the same and throw an error if not.
-    nAgeCompType(k) = nAgeCompType_in(kk);
+    iSizeCompType(k) = iSizeCompType_in(kk);
     bTailCompression(k) = bTailCompression_in(kk);
     lf_catch(k) = lf_catch_in(kk);
     lf_lambda(k) = lf_lambda_in(kk);
@@ -3479,28 +3480,28 @@ DATA_SECTION
    }
 
   gmacs_ctl << endl;
+  gmacs_ctl << "Effective sample size parameters (number matches max(Composition Aggregator code)) " << endl;
   gmacs_ctl << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=nSizeComps_in;b++)
+  for (int b=1; b<=nSizeComps;b++)
    {
     for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
     gmacs_ctl << setw(11) << setfixed() << int(log_vn_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
-    gmacs_ctl << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << endl;;
+    gmacs_ctl << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << "(possibly extended)" << endl;;
    }
   echoinput << endl;
   echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
   echoinput << log_vn_pars << endl;
   
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
+  for ( int k = 1; k <= nSizeComps; k++ )
    {
-    int k = iCompAggregator(kk);
-    log_vn_ival(k)        = log(log_vn_pars(kk,1));
-    log_vn_lb(k)          = log(log_vn_pars(kk,2));
-    log_vn_ub(k)          = log(log_vn_pars(kk,3));
-    prior_log_vn_type(k)  = int(log_vn_pars(kk,4));
-    prior_log_vn_p1(k)    = log(log_vn_pars(kk,5));
-    prior_log_vn_p2(k)    = log(log_vn_pars(kk,6));
-    log_vn_phz(k)         = int(log_vn_pars(kk,7));
+    log_vn_ival(k)        = log(log_vn_pars(k,1));
+    log_vn_lb(k)          = log(log_vn_pars(k,2));
+    log_vn_ub(k)          = log(log_vn_pars(k,3));
+    prior_log_vn_type(k)  = int(log_vn_pars(k,4));
+    prior_log_vn_p1(k)    = log(log_vn_pars(k,5));
+    prior_log_vn_p2(k)    = log(log_vn_pars(k,6));
+    log_vn_phz(k)         = int(log_vn_pars(k,7));
    }
    
   for ( int k = 1; k <= nSizeComps; k++ )
@@ -3527,7 +3528,7 @@ DATA_SECTION
       cout << "Error: dimension mismatch in size-compositions being aggregated " << kk << " " << k << " " << nSizeCompRows_in(kk) << " "<<  nSizeCompRows(k) << endl;
       exit(1);
      }
-    if ( nAgeCompType(k) != nAgeCompType_in(kk) )
+    if ( iSizeCompType(k) != iSizeCompType_in(kk) )
      {
       cout << "Error: mismatch in type of likelihood for size-compositions being aggregated" << endl;
       exit(1);
@@ -3535,16 +3536,6 @@ DATA_SECTION
     if ( bTailCompression(k) != bTailCompression_in(kk) )
      {
       cout << "Error: mismatch in auto tail compression for size-compositions being aggregated" << endl;
-      exit(1);
-     }
-    if ( log_vn_ival(k) != log(log_vn_pars(kk,1)) )
-     {
-      cout << "Error: mismatch in initial value of effective sample size for size-compositions being aggregated" << endl;
-      exit(1);
-     }
-    if ( log_vn_phz(k) != int(log_vn_pars(kk,7)) )
-     {
-      cout << "Error: mismatch in phase for estimation of effective sample size for size-compositions being aggregated" << endl;
       exit(1);
      }
    }
@@ -4186,39 +4177,47 @@ PARAMETER_SECTION
   !!ECHO(M_pars_est);
   // Selectivity parameters
   init_bounded_number_vector S_pars_est(1,n_Spar,S_lb,S_ub,S_phz);
-  !!ECHO(M_pars_est);
+  !!ECHO(S_pars_est);
 
   // Fishing mortality rate parameters
-  init_bounded_number_vector log_fbar(1,nfleet,fbar_lb,fbar_ub,f_phz);       ///> Male mean fishing mortality.
   !! ECHO(f_phz);
+  init_bounded_number_vector log_fbar(1,nfleet,fbar_lb,fbar_ub,f_phz);       ///> Male mean fishing mortality.
   !! ECHO(log_fbar);
   init_bounded_vector_vector log_fdev(1,nfleet,1,nFparams,fdev_lb,fdev_ub,f_phz);   ///> Male f devs
   !! ECHO(nFparams);
   !! for (int I=1;I<=nfleet;I++) { ECHO(log_fdev(I)); }
+  !! ECHO(foff_phz);
   init_bounded_number_vector log_foff(1,nfleet,foff_lb,foff_ub,foff_phz);    ///> Female F offset to Male F.
   !! ECHO(log_foff);
-  !! ECHO(foff_phz);
-  init_bounded_vector_vector log_fdov(1,nfleet,1,nYparams,-10,10,foff_phz);    ///> Female F offset to Male F
   !!ECHO(nYparams);
+  init_bounded_vector_vector log_fdov(1,nfleet,1,nYparams,-10,10,foff_phz);    ///> Female F offset to Male F
   !! for (int I=1;I<=nfleet;I++) { ECHO(log_fdov(I)); }
 
   // Recruitment deviation parameters
+  !! ECHO(rdv_syr); ECHO(rdv_eyr);
    init_bounded_vector rec_dev_est(rdv_syr,rdv_eyr,-12.0,12.0,rdv_phz);       ///> recruitment deviations
   !! ECHO(rec_dev_est);
   vector rec_dev(syr,nyrRetro);
-  init_bounded_dev_vector logit_rec_prop_est(rdv_syr,rdv_eyr,-100,100,rec_prop_phz); ///> recruitment deviations
+  init_bounded_dev_vector logit_rec_prop_est(rdv_syr,rdv_eyr,-100,100,rec_prop_phz); ///> recruitment proportions deviations
   !! ECHO(logit_rec_prop_est);
   vector logit_rec_prop(syr,nyrRetro);
 
   // Effective sample size parameter for multinomial
+  !! ECHO(nSizeComps)
+  !! ECHO(log_vn_ival);
+  !! ECHO(log_vn_lb);
+  !! ECHO(log_vn_ub);
+  !! ECHO(log_vn_phz);
   init_bounded_number_vector log_vn(1,nSizeComps,log_vn_lb,log_vn_ub,log_vn_phz);
   !! ECHO(log_vn);
 
   // Catchability coefficient (q)
+  !! ECHO(n_qpar)
   init_bounded_number_vector survey_q(1,n_qpar,q_lb,q_ub,q_phz);
   !! ECHO(survey_q);
 
   // Addtional CV for surveys/indices
+  !!ECHO(log_add_cv_ival);
   init_bounded_number_vector log_add_cv(1,n_addcv_par,log_add_cv_lb,log_add_cv_ub,cv_phz);
   !! ECHO(log_add_cv);
 
@@ -7822,7 +7821,7 @@ FUNCTION length_likelihood
     bool bCmp = bTailCompression(ii);
     class acl::negativeLogLikelihood *ploglike;                                               ///> Negative log-likelihood
 
-    switch ( nAgeCompType(ii) )                                                               ///> Select option for size-comp data
+    switch ( iSizeCompType(ii) )                                                               ///> Select option for size-comp data
      {
       case 0:                                                                                 ///> ignore composition data in model fitting.
        ploglike = NULL;
@@ -11473,23 +11472,23 @@ FUNCTION WriteFiles
    }
   OutInpFile1 << anystring << endl;
  
-  OutInpFile1 << setw(6) << setfixed() << nAgeCompType_in     << " # Type of likelihood" <<  endl;
+  OutInpFile1 << setw(6) << setfixed() << iSizeCompType_in     << " # Type of likelihood" <<  endl;
   OutInpFile1 << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression (pmin)" <<  endl;
-  OutInpFile1 << setw(6) << setfixed() << iCompAggregator    << " # Composition aggregator codes" << endl;
+  OutInpFile1 << setw(6) << setfixed() << iCompAggregator    << " # Composition aggregator index" << endl;
   OutInpFile1 << setw(6) << setfixed() << lf_catch_in        << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
   OutInpFile1 << setw(6) << setprecision(4) << setfixed()    << lf_lambda_in        << " # Lambda for effective sample size" << endl;
   OutInpFile1 << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
 
   OutInpFile1 << endl;
+  OutInpFile1 << "# The number of following parameters must match max(Composition Aggregaor Index) " << endl;
   OutInpFile1 << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=nSizeComps_in;b++)
+  for (int b=1; b<=nSizeComps;b++)
    {
-    int k = iCompAggregator(b);
-    OutInpFile1 << setw(14) << setprecision(8) << setfixed() << exp(log_vn(k)) << " ";
+    OutInpFile1 << setw(14) << setprecision(8) << setfixed() << exp(log_vn(b)) << " ";
     for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
     OutInpFile1 << setw(11) << setfixed() << int(log_vn_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
-    OutInpFile1 << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << endl;;
+    OutInpFile1 << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << " (possibly extended)" << endl;;
    }
 
   OutInpFile1 << endl;
@@ -12171,6 +12170,10 @@ FINAL_SECTION
 //                    Added additional diagnostics for verbose>10.
 //                    (Updated GMACS to version 2.20.07). 
 // 2024-04-05 ** WTS. Revised Gmacsall.out formats to play nice with R. Also developed R code to read and create a list object from the .out file.
+// 2024-05-08 ** WTS. Changed leading dimension of log_vn_pars, log_vn_lb, log_vn_ub, log_vn_phz, prior_log_vn_type, prior_log_vn_p1, and 
+//                    prior_log_vn_p2 from nSizeComps_in (the number of input size comps) to nSizeComps (the number of size comps 
+//                    after "aggregation") to better match the number of effective sample size parameters. nAgeCompType_in and 
+//                    nAgeCompType were renamed iSizeCompType_in and iSizeCompType, respectively. (Updated GMACS to version 2.20.08)
 //
 // To-do list
 // 1 - Bias ramp for recruitment
