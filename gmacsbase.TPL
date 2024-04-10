@@ -191,16 +191,28 @@ DATA_SECTION
   rseed = 0;
   int opt,on;
 
-  sexes += "male";
-  sexes += "female";
+  sexes(0) = "undetermined";
+  sexes(1) = "male";
+  sexes(2) = "female";
   
+  maturestate(0) = "undetermined";
+  maturestate(1) = "mature";
+  maturestate(2) = "immature";
+
+  shellstate(0) = "undetermined";
+  shellstate(1) = "new";
+  shellstate(2) = "old";
+
+  catchtypes(0) = "total";
+  catchtypes(1) = "retained";
+  catchtypes(2) = "discarded";
+
+  unitstypes += "biommass";
+  unitstypes += "numbers";
+
   seltypes += "selectivity";
   seltypes += "retention";
   
-  maturestate += "mature";
-  maturestate += "immature";
-  shellstate += "new";
-  shellstate += "old";
 
 
   /**
@@ -1623,9 +1635,9 @@ DATA_SECTION
 
   // Some combinations of options don't work
   if ( bInitializeUnfished == UNFISHEDEQN && theta_phz(2) > 0 )
-   { cout << "Error: cannot LogRini when unfished steady state is selected" << endl;  exit(1); }
+   { cout << "Error: cannot estimate LogRini when unfished steady state is selected" << endl;  exit(1); }
   if ( bInitializeUnfished == FISHEDEQN && theta_phz(1) > 0 )
-   { cout << "Error: cannot LogR0 when fished steady state is selected" << endl;  exit(1); }
+   { cout << "Error: cannot estimate LogR0 when fished steady state is selected" << endl;  exit(1); }
   if ( bInitializeUnfished == FREEPARS && theta_phz(1) > 0 )
    {
     cout << "Error: cannot estimate LogR0 when individual parameters are estimated" << endl;
@@ -1955,9 +1967,9 @@ DATA_SECTION
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+" (ln-scale)";
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+"_(ln-scale)";
        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+" (ln-scale)";
+       if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
 
        if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
         if (ipar <=nclass)
@@ -2548,7 +2560,7 @@ DATA_SECTION
   WriteCtlStr("##  <0: Mirror selectivity");
   WriteCtlStr("##   0: Nonparametric selectivity (one parameter per class)");
   WriteCtlStr("##   1: Nonparametric selectivity (one parameter per class, constant from last specified class)");
-  WriteCtlStr("##   2: Logistic selectivity (inflection point and slope)");
+  WriteCtlStr("##   2: Logistic selectivity (inflection point and width (i.e. 1/slope))");
   WriteCtlStr("##   3: Logistic selectivity (50% and 95% selection)");
   WriteCtlStr("##   4: Double normal selectivity (3 parameters)");
   WriteCtlStr("##   5: Flat equal to zero (1 parameter; phase must be negative)");
@@ -3322,9 +3334,9 @@ DATA_SECTION
   init_matrix f_controls(1,nfleet,1,12);
   ivector f_phz(1,nfleet);
   ivector foff_phz(1,nfleet);
-  vector pen_fbar(1,nfleet);
-  vector log_pen_fbar(1,nfleet);
-  vector log_pen_fbar_foff(1,nfleet);
+  vector init_fbar(1,nfleet);
+  vector log_init_fbar(1,nfleet);
+  vector log_init_fbar_foff(1,nfleet);
   matrix pen_fstd(1,2,1,nfleet);
   vector fbar_lb(1,nfleet)
   vector fbar_ub(1,nfleet);
@@ -3343,10 +3355,9 @@ DATA_SECTION
   !! echoinput << "# Controls on F" << endl;
   !! echoinput << "# Initial_male_f Initial_female_F Penalty_SD (early phase) Penalty_SD (later Phase) Phase_mean_F_male Phase_mean_F_female Lower_bound_mean_F Upper_bound_mean_F Lower_bound_annual_male_F Upper_bound_annual_male_F Lower_bound_annual_female_F Upper_bound_annual_female_F" << endl;
   !! echoinput << f_controls << endl;
-  !! pen_fbar = column(f_controls,1);
-  !! log_pen_fbar = log(pen_fbar + 1.0e-14);
-  !! log_pen_fbar_foff = column(f_controls,2);
-  !! log_pen_fbar_foff = log(log_pen_fbar_foff + 1.0e-14);
+  !! init_fbar = column(f_controls,1);
+  !! log_init_fbar = log(init_fbar + 1.0e-14);
+  !! log_init_fbar_foff = log(column(f_controls,2) + 1.0e-14);
   !! for ( int i = 1; i <= 2; i++ ) pen_fstd(i) = trans(f_controls)(i+2);//TODO: use column extractor here
   !! f_phz = ivector(column(f_controls,5));
   !! foff_phz = ivector(column(f_controls,6));
@@ -3480,7 +3491,7 @@ DATA_SECTION
    }
 
   gmacs_ctl << endl;
-  gmacs_ctl << "Effective sample size parameters (number matches max(Composition Aggregator code)) " << endl;
+  gmacs_ctl << "# Effective sample size parameters (number matches max(Composition Aggregator code)) " << endl;
   gmacs_ctl << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
   for (int b=1; b<=nSizeComps;b++)
    {
@@ -4070,7 +4081,7 @@ INITIALIZATION_SECTION
    G_pars_est          G_ival;
    M_pars_est          M_ival;
    S_pars_est          S_ival;
-   log_fbar            log_pen_fbar;
+   log_fbar            log_init_fbar;
    log_vn              log_vn_ival;
    survey_q            q_ival;
    logit_rec_prop_est  init_sex_ratio;
@@ -4315,6 +4326,7 @@ PARAMETER_SECTION
   matrix AddVarQT(1,nSurveys,syr,nyrRetro+1);                       ///> Additional variance
   vector pre_cpue(1,nSurveyRows);                                   ///> predicted relative abundance index
   vector res_cpue(1,nSurveyRows);                                   ///> relative abundance residuals
+  vector res_cpue_stdzd(1,nSurveyRows);                             ///> standardized relative abundance residuals
 
   // Observed and predicted catch-at-size and results
   3darray d3_pre_size_comps_in(1,nSizeComps_in,1,nSizeCompRows_in,1,nSizeCompCols_in);
@@ -5383,23 +5395,20 @@ FUNCTION calc_selectivities
 
   // Specify non-mirrored selectivity
   class gsm::Selex<dvar_vector> *pSLX;
-  for (int is=1; is<= nsel_use; is++)
-   {
+  for (int is=1; is<= nsel_use; is++) {
     int ipnt = sel_patterns2(is);
-    int it = SelPnt(ipnt, nclass+2);
-    int h = SelPnt(ipnt, nclass+3);
-    int k = SelPnt(ipnt, nclass+4);
-    int iyr = SelPnt(ipnt, nclass+5);
+    int it   = SelPnt(ipnt, nclass+2);
+    int h    = SelPnt(ipnt, nclass+3);
+    int k    = SelPnt(ipnt, nclass+4);
+    int iyr  = SelPnt(ipnt, nclass+5);
     //cout << is << " " << it << " " << h << " " << k << " " << iyr << endl;
     int ipnt2 = (it-1)*nsex+h;
-    if (slx_type_in(ipnt2,k) < 0 || (h==2 && slx_bsex_in(it,k) ==0)) 
+    if ((slx_type_in(ipnt2,k) < 0) || ((h==2) && (slx_bsex_in(it,k) ==0))) 
      {int ipnt = 1; } 
-    else
-     {
+    else {
       dvar_vector temp_slx2(1,slx_extra_in(ipnt2,k));
       dvar_vector knots(1,slx_extra_in(ipnt2,k));
-      switch ( slx_type_in(ipnt2,k) )
-       {
+      switch ( slx_type_in(ipnt2,k) ) {
         case SELEX_PARAMETRIC:                               ///> parametric
          for (int i = 1; i <= nclass; i++) { temp_slx1(i) = S_pars(is,i); }
          ((gsm::ParameterPerClass<dvar_vector>*) ppSLX[is-1])->SetSelparms(temp_slx1);
@@ -5409,12 +5418,12 @@ FUNCTION calc_selectivities
          for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) { temp_slx2(i) = S_pars(is,i); }
          ((gsm::SelectivityCoefficients<dvar_vector>*)ppSLX[is-1])->SetSelCoeffs(temp_slx2);
          pSLX = ppSLX[is-1];
-        break;
+         break;
         case SELEX_STANLOGISTIC:                             ///> logistic
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
          ((gsm::LogisticCurve<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2);
-          pSLX = ppSLX[is-1];
+         pSLX = ppSLX[is-1];
          break;
         case SELEX_5095LOGISTIC:                             ///> logistic95
          p1 = mfexp(S_pars(is,1));
@@ -5462,13 +5471,13 @@ FUNCTION calc_selectivities
          ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[is-1])->initSpline(temp_slx2,knots);
          pSLX = ppSLX[is-1];
          dvector knots2(1,slx_extra_in(ipnt2,k));
-	 dvar_vector vals(1,slx_extra_in(ipnt2,k));
-	 for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { knots2(i)=(value(mfexp(S_pars(is,i)))-mid_points(1))/(mid_points(nclass)-mid_points(1));  }
-	 for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { vals(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); }
-	 dvector jyr(1,nclass);
-	 jyr.fill_seqadd(0, 1.0 / (nclass - 1));
-	 vcubic_spline_function csf(knots2, vals);
-	 selx = csf(jyr);
+         dvar_vector vals(1,slx_extra_in(ipnt2,k));
+         for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { knots2(i)=(value(mfexp(S_pars(is,i)))-mid_points(1))/(mid_points(nclass)-mid_points(1));  }
+         for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { vals(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); }
+         dvector jyr(1,nclass);
+         jyr.fill_seqadd(0, 1.0 / (nclass - 1));
+         vcubic_spline_function csf(knots2, vals);
+         selx = csf(jyr);
          break;
        
        } // switch
@@ -6638,7 +6647,7 @@ FUNCTION calc_predicted_catch
                 sel = mfexp(sel);
                 break;
                }
-             nal.initialize();                                        ///> Computer numbers
+             nal.initialize();                                        ///> Compute numbers
              for ( int m = 1; m <= nmature; m++ )
               for ( int o = 1; o <= nshell; o++ )
                {
@@ -7792,7 +7801,8 @@ FUNCTION index_likelihood
        int i = dSurveyData(jj,1);
        cvadd2 = log(1.0 + square(mfexp(AddVarQT(k,i))));
        cvobs2 = log(1.0 + square(cpue_cv(jj)))/ cpue_lambda(k);
-        dvariable stdtmp = sqrt(cvobs2 + cvadd2);
+       dvariable stdtmp = sqrt(cvobs2 + cvadd2);
+       res_cpue_stdzd(jj) = (res_cpue(jj) / stdtmp);
        nloglike(2,k) += log(stdtmp) + 0.5 * square(res_cpue(jj) / stdtmp);
       }
    }
@@ -7981,10 +7991,10 @@ FUNCTION calc_objective_function
    {
     // Jim made penalty apply only to season 2 for Fbar ft(1,nfleet,1,nsex,syr,nyrRetro,1,nseason);            ///> Fishing mortality by gear
     fbar = mean( trans(ft(k,1))(2) );
-    if ( pen_fbar(k) > 0 && fbar != 0 )
+    if ( init_fbar(k) > 0 && fbar != 0 )
      {
       ln_fbar = log(fbar);
-      nlogPenalty(2) += dnorm(ln_fbar, log(pen_fbar(k)), pen_fstd(irow,k));
+      nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
      }
    }
    if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
@@ -9632,6 +9642,47 @@ FUNCTION dvector calc_Francis_weights()
    * @param predicted proportions
   **/
 
+// -------------------------------------------------------------------------------------------------------------------------------------------------
+  /**
+  * Function to format a double using 'g'-type fprmatting in sprintf().
+  * 
+  * @param d
+  * @return g-formatted adstring representation of d
+  */
+FUNCTION adstring strg(double d)
+      char  buffer[50];
+      sprintf(buffer,"%g",d);
+      adstring tmp(buffer);
+      return tmp;
+
+  /**
+  * Convert dvector to string of unquoted, space-separated values
+  * @param v - dvector to format as csv string
+  * @return - adstring
+  */
+FUNCTION adstring to_str(const dvector& v)
+      int g=1;
+      int mn = v.indexmin();
+      int mx = v.indexmax();
+      adstring s;
+      if (g){
+          s = strg(v(mn));
+          for (int i=mn;i<mx;i++) s = s+" "+strg(v(i+1));
+      } else {
+          s = str(v(mn));
+          for (int i=mn;i<mx;i++) s = s+" "+str(v(i+1));
+      }
+      return s;
+  /**
+  * Convert dvar_vector to string of unquoted, space-separated values
+  * @param v - dvar_vector to format as csv string
+  * @return - adstring
+  */
+FUNCTION adstring to_str(const dvar_vector& v)
+      dvector vp = value(v);
+      adstring s = to_str(vp);
+      return s;
+
 // =====================================================================================================================================
 
 // Label 600: CreateOutput
@@ -9648,6 +9699,7 @@ FUNCTION CreateOutput
   minute = long(elapsed_time)%3600/60;
   second = (long(elapsed_time)%3600)%60;
 
+  adstring strMidpoints = to_str(mid_points);    ///> string with space-separated size bin midpoints
 
   get_all_sdnr_MAR();                                                ///> Output specific to diagnostics
 
@@ -9677,10 +9729,18 @@ FUNCTION CreateOutput
   //      OutFile1 << ">EOL<" << endl;
   //--Note that the appropriate termination indicator (">EOM<", ">EOD<", or ">EOL<") must be written 
   //--to the line folllowing the end of each matrix, dataframe, or list to inidcate the end of the object.
+  //--
+  //--The macros REPVEC and REPMAT can be used to simplify writing a scalar or vector (REPVEC) or matrix (REPMAT) 
+  //--"simultaneously" to OutFile1 (Gmacsall.out), OutFile2 (gmacs.rep), and RepFile1 (gmacs.rep1) as 
+  //       REPVEC(object) or REPMAT(object) 
+  //--These macros automatically add the ": vector" or ": matrix" and ">EOM<" notations to the output to 
+  //--OutFile1 and RepFile1.
   OutFile1.close();
   OutFile1.open("Gmacsall.out");
   OutFile2.close();
   OutFile2.open("gmacs.rep");
+  RepFile1.close();
+  RepFile1.open("gmacs.rep1");
   OutFile3.close();
   OutFile3.open("personal.rep");
   OutFile4.close();
@@ -9690,6 +9750,7 @@ FUNCTION CreateOutput
   
   // The header material
   OutFile1 << TheHeader << endl << endl;;
+  RepFile1 << TheHeader << endl << endl;;
   OutFile1 << "#--Start time: " << ctime(&start) << endl;
   OutFile1 << "#--Finish time: " << ctime(&finish) << endl;
   OutFile1 << "#--Runtime: ";
@@ -9698,6 +9759,7 @@ FUNCTION CreateOutput
   OutFile1 << "#*******************************************" << endl;
  
   OutFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
+  RepFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
   // The header material
   OutFile5 << TheHeader << endl;
   OutFile5 << "Par_No Est_No Paramter Estimate Standard Error" << endl;
@@ -9717,6 +9779,22 @@ FUNCTION CreateOutput
   OutFile1 << "Max size classes:           \t " << nSizeSex << endl;
   OutFile1 << "size_breaks:                \t " << size_breaks << endl;
   OutFile1 << "size_midpoints:             \t " << mid_points << endl;
+
+  RepFile1 << "Stock being assessed: " << StockName << endl << endl;
+  RepFile1 << "#--General information" << endl;
+  RepFile1 << "Weight unit:                \t " << weightunit << endl;
+  RepFile1 << "Numbers unit:               \t " << numbersunit << endl;
+  RepFile1 << "Year_range:                 \t " << syr << " " << nyrRetro << " # actual data file end year is " << nyr << endl;
+  RepFile1 << "Number of seasons:          \t " << nseason << endl;
+  RepFile1 << "Number_of_fleets:           \t " << nfleet << endl;
+  RepFile1 << "Fleets:                     \t "; for (int k=1;k<=nfleet;k++) RepFile1 << fleetname(k) << " "; RepFile1 << endl;
+  RepFile1 << "Number of sexes:            \t " << nsex << endl;
+  RepFile1 << "Number of shell conditions: \t " << nshell << endl;
+  RepFile1 << "Number of maturity states:  \t " << nmature << endl;
+  RepFile1 << "Number of size classes:     \t " << nclass << endl;
+  RepFile1 << "Max size classes:           \t " << nSizeSex << endl;
+  RepFile1 << "size_breaks:                \t " << size_breaks << endl;
+  RepFile1 << "size_midpoints:             \t " << mid_points << endl;
   
   // Likelihood summary
   OutFile1 << endl << "#--Likelihoods-by-type (raw and weighted)" << endl;
@@ -9786,69 +9864,102 @@ FUNCTION CreateOutput
   // Estimated parameters
   // ====================
   OutFile1 << "--Estimated parameters: dataframe" << endl;
-  OutFile1 << "Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Penalty Gradient Standard_error Estimated_parameter_count" << endl;
+  OutFile1 << "Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Status Penalty Gradient Standard_error Estimated_parameter_count" << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Estimated parameters: dataframe" << endl;
+  RepFile1 << "par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
 
   Npar = 0; NparEst = 0;
   for (Ipar=1;Ipar<=ntheta;Ipar++)
    {
     Npar +=1;
-    OutFile1 << Npar << " " << parname1(Npar)<< ": " << theta(Ipar) << " " << theta_phz(Ipar) << " ";
+    OutFile1 << Npar << " " << parname1(Npar) << ": " << theta(Ipar) << " " << theta_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << parname1(Npar) << "  " << theta(Ipar) << " " << theta_phz(Ipar) << " ";
+    if ((theta_phz(Ipar) < 0) || (theta_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if ((theta_phz(Ipar) > 0) && (theta_phz(Ipar) <= current_phase())) 
      { 
       NparEst +=1; CheckBounds(theta(Ipar),theta_lb(Ipar),theta_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << theta(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=n_Gpar;Ipar++)
    {
     Npar +=1;
     OutFile1 << Npar << " " << parname1(Npar)<< ": " << G_pars_est(Ipar) << " " << G_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << parname1(Npar)<< "  " << G_pars_est(Ipar) << " " << G_phz(Ipar) << " ";
+    if ((G_phz(Ipar) < 0) || (G_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if ((G_phz(Ipar) > 0) && (G_phz(Ipar) <= current_phase())) 
      { 
       NparEst +=1; CheckBounds(G_pars_est(Ipar),G_lb(Ipar),G_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << G_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
    for (Ipar=1;Ipar<=n_Mpar;Ipar++)
    {
     Npar +=1;
     OutFile1 << Npar << " " << parname1(Npar)<< ": " << M_pars_est(Ipar) << " " << M_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << parname1(Npar)<< "  " << M_pars_est(Ipar) << " " << M_phz(Ipar) << " ";
+    if ((M_phz(Ipar) < 0) || (M_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (M_phz(Ipar) > 0 && M_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(M_pars_est(Ipar),M_lb(Ipar),M_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << M_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=n_Spar;Ipar++)
    {
     Npar +=1;
     OutFile1 << Npar << " " << parname1(Npar)<< ": " << S_pars_est(Ipar) << " " << S_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << parname1(Npar)<< "  " << S_pars_est(Ipar) << " " << S_phz(Ipar) << " ";
+    if ((S_phz(Ipar) < 0) || (S_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (S_phz(Ipar) > 0 && S_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(S_pars_est(Ipar),S_lb(Ipar),S_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << S_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=nfleet;Ipar++)
    {
     Npar +=1;
     anystring = "Log_fbar_"+fleetname(Ipar);
     OutFile1 << Npar << " " << anystring << ": " << log_fbar(Ipar) << " " << f_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << anystring << "  " << log_fbar(Ipar) << " " << f_phz(Ipar) << " ";
+    if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(log_fbar(Ipar),-1000.0,1000.0);  
       OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fbar(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=nfleet;Ipar++)
    {
@@ -9861,13 +9972,19 @@ FUNCTION CreateOutput
         Npar +=1;
         anystring = "Log_fdev_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
         OutFile1 << Npar << " " << anystring << ": " << log_fdev(Ipar,Jpar) << " " << f_phz(Ipar) << " ";
+        RepFile1 << Npar << " " << anystring << "  " << log_fdev(Ipar,Jpar) << " " << f_phz(Ipar) << " ";
+        if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
+          RepFile1 << "NA NA NA NA NA NA NA " << endl;
+        }
         if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) 
          { 
           NparEst +=1; CheckBounds(log_fdev(Ipar,Jpar),-1000.0,1000.0);  
           OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+          RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
           OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
          }
         OutFile1 << endl;
+        RepFile1 << endl;
       }  
     }
   for (Ipar=1;Ipar<=nfleet;Ipar++)
@@ -9875,13 +9992,19 @@ FUNCTION CreateOutput
     Npar +=1;
     anystring = "Log_foff_"+fleetname(Ipar);
     OutFile1 << Npar << " " << anystring << ": " << log_foff(Ipar) << " " << foff_phz(Ipar) << " ";
-    if (foff_phz(Ipar) > 0 && foff_phz(Ipar) <= current_phase()) 
+    RepFile1 << Npar << " " << anystring << "  " << log_foff(Ipar) << " " << foff_phz(Ipar) << " ";
+    if ((foff_phz(Ipar) < 0) || (foff_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
+    if ((foff_phz(Ipar) > 0) && (foff_phz(Ipar) <= current_phase())) 
      { 
       NparEst +=1; CheckBounds(log_foff(Ipar),-1000.0,1000.0);  
       OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_foff(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=nfleet;Ipar++)
    {
@@ -9894,13 +10017,19 @@ FUNCTION CreateOutput
         Npar +=1;
         anystring = "Log_fdov_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
         OutFile1 << Npar << " " << anystring << ": " << log_fdov(Ipar,Jpar) << " " << foff_phz(Ipar) << " ";
+        RepFile1 << Npar << " " << anystring << "  " << log_fdov(Ipar,Jpar) << " " << foff_phz(Ipar) << " ";
+        if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
+          RepFile1 << "NA NA NA NA NA NA NA " << endl;
+        }
         if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) 
          { 
           NparEst +=1; CheckBounds(log_fdov(Ipar,Jpar),-1000.0,1000.0);  
           OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+          RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
           OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
          }
         OutFile1 << endl;
+        RepFile1 << endl;
       }  
     }
   if (Jpar!=sum(nYparams))  
@@ -9909,79 +10038,117 @@ FUNCTION CreateOutput
    {
     Npar +=1;
     OutFile1 << Npar << " Rec_dev_est_" << Ipar << ": " << rec_dev_est(Ipar) << " " << rdv_phz << " ";
+    RepFile1 << Npar << " Rec_dev_est_" << Ipar << "  " << rec_dev_est(Ipar) << " " << rdv_phz << " ";
+    if ((rdv_phz < 0) || (rdv_phz > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (rdv_phz > 0 && rdv_phz <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(rec_dev_est(Ipar),-8.0,8.0);  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << "Rec_dev_est_"+str(Ipar) << " " << rec_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++)
    {
     Npar +=1;
     OutFile1 << Npar << " Logit_rec_prop_est_" << Ipar << ": " << logit_rec_prop_est(Ipar) << " " << rec_prop_phz << " ";
+    RepFile1 << Npar << " Logit_rec_prop_est_" << Ipar << "  " << logit_rec_prop_est(Ipar) << " " << rec_prop_phz << " ";
+    if ((rec_prop_phz < 0) || (rec_prop_phz > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (rec_prop_phz > 0 && rec_prop_phz <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(logit_rec_prop_est(Ipar),-100.0,100.0);  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << "Logit_rec_prop_est_"+str(Ipar) << " " << logit_rec_prop_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=nSizeComps;Ipar++)
    {
     Npar +=1;
     anystring = "Log_vn_size_comp_"+str(Ipar);
     OutFile1 << Npar << " " << anystring << " :  " << log_vn(Ipar) << " " << log_vn_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << anystring << "    " << log_vn(Ipar) << " " << log_vn_phz(Ipar) << " ";
+    if ((log_vn_phz(Ipar) < 0) || (log_vn_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (log_vn_phz(Ipar) > 0 && log_vn_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(log_vn(Ipar),log_vn_lb(Ipar),log_vn_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_vn(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=n_qpar;Ipar++)
    {
     Npar +=1;
     anystring = "Survey_q_survey_"+str(Ipar);
     OutFile1 << Npar << " " << anystring << ": " << survey_q(Ipar) << " " << q_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << anystring << "  " << survey_q(Ipar) << " " << q_phz(Ipar) << " ";
+    if ((q_phz(Ipar) < 0) || (q_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (q_phz(Ipar) > 0 && q_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(survey_q(Ipar),q_lb(Ipar),q_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << survey_q(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=n_addcv_par;Ipar++)
    {
     Npar +=1;
     anystring = "Log_add_cvt_survey_"+str(Ipar);
     OutFile1 << Npar << " " << anystring << ": " << log_add_cv(Ipar) << " " << cv_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << anystring << "  " << log_add_cv(Ipar) << " " << cv_phz(Ipar) << " ";
+    if ((cv_phz(Ipar) < 0) || (cv_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (cv_phz(Ipar) > 0 && cv_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(log_add_cv(Ipar),log_add_cv_lb(Ipar),log_add_cv_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_add_cv(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   for (Ipar=1;Ipar<=n_deviations_est;Ipar++)
    {
     Npar +=1;
     OutFile1 << Npar << " " << devnames1(Ipar) << ": " << par_devs(Ipar) << " " << deviations_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << devnames1(Ipar) << "  " << par_devs(Ipar) << " " << deviations_phz(Ipar) << " ";
+    if ((deviations_phz(Ipar) < 0) || (deviations_phz(Ipar) > current_phase())) {
+      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+    }
     if (deviations_phz(Ipar) > 0 && deviations_phz(Ipar) <= current_phase()) 
      { 
       NparEst +=1; CheckBounds(par_devs(Ipar),-12.0,12.0);  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       OutFile5 << Npar << " " << NparEst << " " << devnames1(Ipar) << " " << par_devs(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
+    RepFile1 << endl;
    }
   OutFile1 << endl;
   OutFile1 << ">EOD<" <<endl;
+  RepFile1 << endl;
+  RepFile1 << ">EOD<" <<endl;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
 
   // Derived quantities
@@ -10063,6 +10230,7 @@ FUNCTION CreateOutput
 
   // Big summary
   OutFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Overall_summary" << endl;
   calc_predicted_catch_out();
   dvector ssb = value(calc_ssb());
@@ -10075,41 +10243,93 @@ FUNCTION CreateOutput
   for (int k=1;k<=nfleet;k++) OutFile1 << fleetname(k) << " ";
   OutFile1 << "Rec_dev logit_rec_prop res_recruit ";
   OutFile1 << endl;
+  RepFile1 << "Summary: dataframe" << endl;
+  RepFile1 << "year SSB log(SSB) SD(log(SSB)) SSA DynB0 log(DynB0) SD(log(DynB0)) ";
+  for (int h=1;h<=nsex;h++) RepFile1 << "rec_" << sexes(h) << " log(rec_" << sexes(h) << ") SD(log(rec_" << sexes(h) << "))" << " ";
+  RepFile1 << "log(f)  SD(log(f)) ";
+  RepFile1 << "ret_mortality  tot_mortality ";
+  for (int k=1;k<=nfleet;k++) RepFile1 << fleetname(k) << " ";
+  RepFile1 << "rec_dev logit_rec_prop res_rec ";
+  RepFile1 << endl;
   for (int i=syr;i<=nyrRetro;i++)
    {
     OutFile1 << i << " " << ssb(i) << " " << SummaryTable(i,3) << " " << SummaryTableSD(i,3) << " " << ssba(i) << " ";
     OutFile1 << dyn_Bzero(i) << " " << SummaryTable(i,5) << " " << SummaryTableSD(i,5) << " ";
     for (int h=1;h<=nsex;h++) OutFile1 << recruits(h,i) << " " << SummaryTable(i,h) << " " << SummaryTableSD(i,h) << " ";
     OutFile1 << SummaryTable(i,4) << " " << SummaryTableSD(i,4) << " ";
-    
     for (int k=1;k<=2+nfleet;k++) OutFile1 << histcat(k,i) << " ";
     OutFile1 << rec_dev(i) << " " << logit_rec_prop(i) << " " << res_recruit(i);
     OutFile1 << endl;
+
+    RepFile1 << i << " " 
+             << ssb(i) << " " 
+             << SummaryTable(i,3) << " " 
+             << SummaryTableSD(i,3) << " " 
+             << ssba(i) << " "
+             << dyn_Bzero(i) << " " 
+             << SummaryTable(i,5) << " " 
+             << SummaryTableSD(i,5) << " ";
+    for (int h=1;h<=nsex;h++) RepFile1 << recruits(h,i) << " " << SummaryTable(i,h) << " " << SummaryTableSD(i,h) << " ";
+    RepFile1 << SummaryTable(i,4) << " " 
+             << SummaryTableSD(i,4) << " ";
+    for (int k=1;k<=2+nfleet;k++) RepFile1 << histcat(k,i) << " ";
+    RepFile1 << rec_dev(i) << " " 
+             << logit_rec_prop(i) << " " 
+             << res_recruit(i)
+             << endl;
    }
    OutFile1 << ">EOD<" << endl;
+   RepFile1 << ">EOD<" << endl;
+
+//=========================================================================================================================
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "R_z: dataframe" << endl;
+  RepFile1 << "sex size est " << endl;
+  for (int h=1;h<=nsex;h++) 
+    for (int k = 1; k<=nclass;k++)
+      RepFile1 << sexes(h) << " " << mid_points(k) << " " << rec_sdd(h,k) << endl;
+  RepFile1 << ">EOD<" << endl;
+  RepFile1 << "R_y: dataframe" << endl;
+  RepFile1 << "year   est " << endl;
+  for (int i=syr;i<=nyrRetro;i++) 
+    RepFile1 << i << " " << totrecruits(i) << endl;
+  RepFile1 << ">EOD<" << endl;
+  RepFile1 << "R_yx: dataframe" << endl;
+  RepFile1 << "year  sex  est " << endl;
+  for (int i=syr;i<=nyrRetro;i++) 
+   for (int h=1;h<=nsex;h++)
+    RepFile1 << i << " " << sexes(h) << " " << recruits(h,i) << endl;
+  RepFile1 << ">EOD<" << endl;
 
 //=========================================================================================================================
    
   OutFile1 << endl;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "BiomassByXM: dataframe" << endl;
-  OutFile1 << endl << "Sex Maturity Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
-  OutFile1 << "#                  " << mid_points << endl;
+  OutFile1 << endl << "Sex Maturity Year " << strMidpoints << endl; 
+  OutFile1 << "#                  "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "#--the following individual crab weights are in kg" << endl;
+  RepFile1 << "IndivWeightByXM: dataframe" << endl;
+  RepFile1 << "Sex Maturity Year " << strMidpoints << endl; 
   for (int h=1;h<=nsex;h++)
    for (int m=1;m<=nmature;m++)
-    for (int i=syr;i<=nyrRetro;i++)
+    for (int i=syr;i<=nyrRetro;i++){
      OutFile1 << sexes(h) << " " << m << " " << i << " " << mean_wt(h,m,i) << endl;
+     RepFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << 1000000*mean_wt(h,m,i) << endl;
+    }
   OutFile1 << ">EOD<" << endl;
+  RepFile1 << ">EOD<" << endl;
 
-  REPORT(maturity,": matrix");
-  OutFile1 << ">EOM<" << endl;
+  REPMAT(maturity);
 
 //=========================================================================================================================
 
   // catches
   OutFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "Catch_fit_summary: dataframe" << endl;
-  OutFile1 << "Series Year Fleet Season Sex Catch CV Type Units Mult Effort CV Predicted Residual" << endl;
+  OutFile1 << "Series Year Fleet Season Sex Catch CV Type Units Mult Effort HM Predicted Residual" << endl;
   for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++)
    for (int irow=1;irow<=nCatchRows(iCatOut); irow++)
     if (int(dCatchData(iCatOut,irow,1)) >= syr && int(dCatchData(iCatOut,irow,1)) <= nyrRetro)
@@ -10130,16 +10350,42 @@ FUNCTION CreateOutput
     } // -- iCatOut and irow
   OutFile1 << ">EOD<" << endl;
   
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Catch_fit_summary: dataframe" << endl;
+  RepFile1 << "series year fleet season sex obs cv type units mult effort HM prd rsd" << endl;
+  for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++)
+   for (int irow=1;irow<=nCatchRows(iCatOut); irow++)
+    if ((int(dCatchData(iCatOut,irow,1)) >= syr) && int(dCatchData(iCatOut,irow,1)) <= nyrRetro)
+    {
+     RepFile1 << iCatOut << " " << int(dCatchData(iCatOut,irow,1)) << " " 
+                                << fleetname(dCatchData(iCatOut,irow,3)) << " "
+                                << int(dCatchData(iCatOut,irow,2)) << " "
+                                << sexes(dCatchData(iCatOut,irow,4)) << " "
+                                << dCatchData(iCatOut,irow,5) << " " 
+                                << dCatchData(iCatOut,irow,6) << " "
+                                << catchtypes(dCatchData(iCatOut,irow,7)) << " "
+                                << unitstypes(dCatchData(iCatOut,irow,8)) << " "
+                                << dCatchData(iCatOut,irow,9) << " " 
+                                << dCatchData(iCatOut,irow,10) << " " 
+                                << dCatchData(iCatOut,irow,11) << " "
+                                << pre_catch(iCatOut,irow) << " " 
+                                << res_catch(iCatOut,irow) << endl;
+    } // -- iCatOut and irow
+  RepFile1 << ">EOD<" << endl;
+  
   OutFile4 <<  setw(25) << setprecision(10) << setfixed() << endl;
   OutFile4 << "# pre_catch" << endl;
   OutFile4 << pre_catch << endl;
 
-  REPORT(log_q_catch,": vector");
+  REPVEC(log_q_catch);
   
   // index data
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "Index_fit_summary: dataframe" << endl;
-  OutFile1 << "#Series Year Fleet Season Sex Maturity Index base_CV actual_CV Units q  Time Predicted" << endl;
+  OutFile1 << "Series Year Fleet Season Sex Maturity Index base_CV actual_CV Units q  Time Predicted" << endl;
+  RepFile1 << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Index_fit_summary: dataframe" << endl;
+  RepFile1 << "series year fleet season sex maturity obs base_CV actual_CV units q  time prd prsn_res" << endl;  
   for ( int k = 1; k <= nSurveyRows; k++ )
    if (((dSurveyData(k,1) <= nyrRetro) || ((dSurveyData(k,1) == nyrRetro+1) && (dSurveyData(k,2) == 1))) && dSurveyData(k,1) >= syr)
     {
@@ -10149,27 +10395,43 @@ FUNCTION CreateOutput
        cpue_cv_add(k) = sqrt(exp(square(cpue_sd(k) * 1.0 / cpue_lambda(i))) - 1.0);
      else
        cpue_cv_add(k) = cpue_cv(k) + value(mfexp(AddVarQT(i,j)));
-     OutFile1 << i << " " <<  int(dSurveyData(k,1)) << " " << fleetname(dSurveyData(k,3)) << " " << int(dSurveyData(k,2));
-     if (dSurveyData(k,4)==1) OutFile1 << " Male ";
-     if (dSurveyData(k,4)==2) OutFile1 << " Female ";
-     if (dSurveyData(k,4)==0) OutFile1 << " Both ";
-     if (dSurveyData(k,5)==1) OutFile1 << " Mature ";
-     if (dSurveyData(k,5)==2) OutFile1 << " Immature ";
-     if (dSurveyData(k,5)==0) OutFile1 << " All ";
-     OutFile1 << dSurveyData(k,6) << " " << cpue_cv(k) << " " << cpue_cv_add(k) << " ";
-     if (dSurveyData(k,8)==1) OutFile1 << " Biomass ";
-     if (dSurveyData(k,8)==2) OutFile1 << " Numbers ";
-     OutFile1 << SurveyQT(i,j) << " ";
-     OutFile1 << dSurveyData(k,9) << " " << pre_cpue(k) << endl;
+     OutFile1 << i << " " 
+              << int(dSurveyData(k,1)) << " " 
+              << fleetname(dSurveyData(k,3)) << " " 
+              << int(dSurveyData(k,2))   << " "
+              << sexes(dSurveyData(k,4)) << " "
+              << maturestate(dSurveyData(k,5)) << " "
+              << dSurveyData(k,6) << " " 
+              << cpue_cv(k) << " " 
+              << cpue_cv_add(k) << " "
+              << unitstypes(dSurveyData(k,8)) << " "
+              << SurveyQT(i,j) << " "
+              << dSurveyData(k,9) << " " 
+              << pre_cpue(k) << endl;
+     RepFile1 << i << " " 
+              << int(dSurveyData(k,1)) << " " 
+              << fleetname(dSurveyData(k,3)) << " " 
+              << int(dSurveyData(k,2))   << " "
+              << sexes(dSurveyData(k,4)) << " "
+              << maturestate(dSurveyData(k,5)) << " "
+              << dSurveyData(k,6) << " " 
+              << cpue_cv(k) << " " 
+              << cpue_cv_add(k) << " "
+              << unitstypes(dSurveyData(k,8)) << " "
+              << SurveyQT(i,j) << " "
+              << dSurveyData(k,9) << " " 
+              << pre_cpue(k) << " " 
+              << res_cpue_stdzd(k) << " "
+              << endl;
    }
   OutFile1 << ">EOD<" << endl;
+  RepFile1 << ">EOD<" << endl;
 
   OutFile4 <<  setw(25) << setprecision(10) << setfixed() << endl;
   OutFile4 << "# pre_cpue" << endl;
   OutFile4 << pre_cpue << endl;
 
-  REPORT(sdnr_MAR_cpue,": matrix");
-  OutFile1 << ">EOM<" << endl;
+  REPMAT(sdnr_MAR_cpue);
 
   // size data
   adstring MatName;
@@ -10177,7 +10439,6 @@ FUNCTION CreateOutput
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "Size_fit_summary: dataframe" << endl;
   OutFile1 << "Original_series Modified_series Year Fleet  Season Sex  Type Shell  Maturity  Nsamp  DataVec_(obs) DataVec_(pred)" << endl;
-
   int oldk = 0;
   for (int ii=1; ii<=nSizeComps_in;ii++)
    {
@@ -10186,30 +10447,28 @@ FUNCTION CreateOutput
      for (int jj=1;jj<=nSizeCompRows_in(ii);jj++)
       if (d3_SizeComps_in(ii,jj,-7) <= nyrRetro || (d3_SizeComps_in(ii,jj,-7) == nyrRetro+1 && d3_SizeComps_in(ii,jj,-6) == 1) )
        {
-        OutFile1 << ii << " " << k << " " << int(d3_SizeComps_in(ii,jj,-7)) << " " << fleetname(int(d3_SizeComps_in(ii,jj,-5))) << " " << int(d3_SizeComps_in(ii,jj,-6));
-        if (d3_SizeComps_in(ii,jj,-4)==1) OutFile1 << " Male ";
-        if (d3_SizeComps_in(ii,jj,-4)==2) OutFile1 << " Female ";
-        if (d3_SizeComps_in(ii,jj,-4)==0) OutFile1 << " Both ";
-        if (d3_SizeComps_in(ii,jj,-3)==1) OutFile1 << " Retained ";
-	if (d3_SizeComps_in(ii,jj,-3)==2) OutFile1 << " Discarded ";
-	if (d3_SizeComps_in(ii,jj,-3)==0) OutFile1 << " All ";
-        if (d3_SizeComps_in(ii,jj,-2)==1) ShellName = " New ";
-	if (d3_SizeComps_in(ii,jj,-2)==2) ShellName = " Old ";
-	if (d3_SizeComps_in(ii,jj,-2)==0) ShellName = " All ";
-        if (d3_SizeComps_in(ii,jj,-1)==1) MatName = " Mature ";
-	if (d3_SizeComps_in(ii,jj,-1)==2) MatName = " Immature ";
-	if (d3_SizeComps_in(ii,jj,-1)==0) MatName = " All ";
-	for (int kk=1;kk<=nSizeComps_in;kk++)
-	 if (kk!=ii && k == iCompAggregator(kk)) 
-	  {
-	   if (d3_SizeComps_in(kk,jj,-2)!=d3_SizeComps_in(ii,jj,-2)) ShellName = " All ";
-	   if (d3_SizeComps_in(kk,jj,-1)!=d3_SizeComps_in(ii,jj,-1)) MatName = " All ";
-	  }
-	OutFile1 << ShellName << MatName;  
-      
-        OutFile1 << size_comp_sample_size(k,jj) << "   ";
-        OutFile1 << d3_obs_size_comps(k,jj) << "   ";
-        OutFile1 << d3_pre_size_comps(k,jj) << endl;
+        OutFile1 << ii << " " 
+                 << k << " " 
+                 << int(d3_SizeComps_in(ii,jj,-7)) << " " 
+                 << fleetname(int(d3_SizeComps_in(ii,jj,-5))) << " " 
+                 << int(d3_SizeComps_in(ii,jj,-6)) << " "
+                 << sexes(d3_SizeComps_in(ii,jj,-4)) << " "
+                 << catchtypes(d3_SizeComps_in(ii,jj,-3)) << " "
+                 << shellstate(d3_SizeComps_in(ii,jj,-2)) << " "
+                 << maturestate(d3_SizeComps_in(ii,jj,-1)) << " ";
+        ShellName = shellstate(d3_SizeComps_in(ii,jj,-2));
+        MatName   = maturestate(d3_SizeComps_in(ii,jj,-1));
+        for (int kk=1;kk<=nSizeComps_in;kk++)
+          if (kk!=ii && k == iCompAggregator(kk)) 
+          {
+            if (d3_SizeComps_in(kk,jj,-2)!=d3_SizeComps_in(ii,jj,-2)) ShellName = shellstate(0);
+            if (d3_SizeComps_in(kk,jj,-1)!=d3_SizeComps_in(ii,jj,-1)) MatName   = maturestate(0);
+          }
+        OutFile1 << ShellName << " " 
+                 << MatName << "  " 
+                 << size_comp_sample_size(k,jj) << "   " 
+                 << d3_obs_size_comps(k,jj) << "   " 
+                 << d3_pre_size_comps(k,jj) << endl;
        }
       oldk = k;
     }
@@ -10251,9 +10510,9 @@ FUNCTION CreateOutput
    }
   
   OutFile1 << "#Size data: standard deviation and median" << endl;
-  REPORT(sdnr_MAR_lf,": matrix"); OutFile1 << ">EOM<" << endl;
+  REPMAT(sdnr_MAR_lf); 
   OutFile1 << "#Size data: Francis multipliers" << endl;
-  REPORT(Francis_weights,"");
+  REPVEC(Francis_weights);
 
   // Selectivity-related outouts
   OutFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
@@ -10289,6 +10548,18 @@ FUNCTION CreateOutput
     OutFile2 << i << " " << sexes(h) << " " << fleetname(j) << " " << mfexp(log_slx_discard(j,h,i)) << endl;
   OutFile2 << endl;
     
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "selfcns: dataframe" << endl;
+  RepFile1 << "type year sex fleet " << strMidpoints << endl;
+  for ( int i = syr; i <= nyrRetro; i++ ) 
+    for ( int h = 1; h <= nsex; h++ ) 
+      for ( int j = 1; j <= nfleet; j++ ) {
+        RepFile1 << "capture "  << i << " " << sexes(h) << " " << fleetname(j) << " " << mfexp(log_slx_capture(j,h,i)) << endl;
+        RepFile1 << "retained " << i << " " << sexes(h) << " " << fleetname(j) << " " << mfexp(log_slx_retaind(j,h,i)) << endl;
+        RepFile1 << "discard "  << i << " " << sexes(h) << " " << fleetname(j) << " " << mfexp(log_slx_discard(j,h,i)) << endl;
+      }
+  RepFile1 << ">EOD<" << endl;
+    
   
   // Outout the selex controls 
   //AEP
@@ -10321,24 +10592,36 @@ FUNCTION CreateOutput
 
   OutFile1 << endl << "Natural_mortality-by-class: dataframe" << endl;
   OutFile1 << "Year Sex Maturity "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << endl << "Natural_mortality-by-class: dataframe" << endl;
+  RepFile1 << "year sex maturity " << strMidpoints << endl;
   for (int h=1;h<=nsex;h++)
    for (int m=1;m<=nmature;m++)
-    for (int iyr=syr;iyr<=nyrRetro;iyr++)
-     { OutFile1 << iyr << " " << sexes(h) << " " << m << " " << M(h,m,iyr) << endl; }
+    for (int iyr=syr;iyr<=nyrRetro;iyr++) { 
+      OutFile1 << iyr << " " << sexes(h) << " " << maturestate(m) << " " << M(h,m,iyr) << endl; 
+      RepFile1 << iyr << " " << sexes(h) << " " << maturestate(m) << " " << M(h,m,iyr) << endl; 
+    }
   OutFile1 << ">EOD<" << endl;
+  RepFile1 << ">EOD<" << endl << endl;
 
   OutFile1 << endl << "# Fully-selected fishing mortality-by-season by sex and fishery" << endl;
   OutFile1 << "Fully-selected_FM_by_season_sex_and_fishery: dataframe" << endl;
   OutFile1 << "Sex Fleet Year "; for (int i=1;i<=nseason;i++) OutFile1 << i << " "; OutFile1 << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Fully-selected_FM_by_season_sex_and_fishery: dataframe" << endl;
+  RepFile1 << "sex fleet year "; for (int i=1;i<=nseason;i++) RepFile1 << i << " "; RepFile1 << endl;
   for (int h=1;h<=nsex;h++)
    for (int k=1;k<=nfleet;k++)
-    for (int iyr=syr;iyr<=nyrRetro;iyr++)
-     { OutFile1 << sexes(h) << " " << fleetname(k) << " " << iyr << " " << ft(k,h,iyr) << endl; } 
+    for (int iyr=syr;iyr<=nyrRetro;iyr++) { 
+      OutFile1 << sexes(h) << " " << fleetname(k) << " " << iyr << " " << ft(k,h,iyr) << endl; 
+      RepFile1 << sexes(h) << " " << fleetname(k) << " " << iyr << " " << ft(k,h,iyr) << endl; 
+    } 
   OutFile1 << ">EOD<" << endl;
+  RepFile1 << ">EOD<" << endl << endl;
 
   OutFile1 << endl << "# Fully-selected_fishing mortality by fleet" << endl;
   OutFile1 << "Fully-selected_FM_by_fleet: dataframe" << endl;
-  OutFile1 << "Sex Year Season Fleet "; for (int i=1;i<=nfleet;i++) OutFile1 << fleetname(i) << " "; OutFile1 << endl;
+  OutFile1 << "Sex Year Season "; for (int i=1;i<=nfleet;i++) OutFile1 << fleetname(i) << " "; OutFile1 << endl;
   for (int h=1;h<=nsex;h++)
    for (int i=syr;i<=nyrRetro;i++)
     for (int j=1;j<=nseason;j++)
@@ -10351,12 +10634,18 @@ FUNCTION CreateOutput
 
   OutFile1 << endl << "# Fishing mortality-at-size by sex and season (Continuous)" << endl;
   OutFile1 << "FM-at-size_by_sex_and_season_(continuous): dataframe" << endl;
-  OutFile1 << "Sex Year Season "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  OutFile1 << "Sex Year Season " << strMidpoints << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "FM-at-size_by_sex_and_season_(continuous): dataframe" << endl;
+  RepFile1 << "sex year season " << strMidpoints << endl;
   for (int h=1;h<=nsex;h++)
    for (int iyr=syr;iyr<=nyrRetro;iyr++)
-    for (int is=1;is<=nseason;is++)
-     { OutFile1 << sexes(h) << " " << iyr << " " << is << " " << F(h,iyr,is) << endl; } 
+    for (int is=1;is<=nseason;is++) { 
+      OutFile1 << sexes(h) << " " << iyr << " " << is << " " << F(h,iyr,is) << endl; 
+      RepFile1 << sexes(h) << " " << iyr << " " << is << " " << F(h,iyr,is) << endl; 
+    } 
   OutFile1 << ">EOD<" << endl;
+  RepFile1 << ">EOD<" << endl << endl;
 
   OutFile1 << endl << "# Fishing mortality-at-size by sex and season (Discrete)" << endl;
   OutFile1 << "FM-at-size_by_sex_and_season_(discrete): dataframe" << endl;
@@ -10370,13 +10659,19 @@ FUNCTION CreateOutput
   
   OutFile1 << endl << "# Total mortality by size-class (continuous)" << endl;
   OutFile1 << "TM-by-size-class_(continuous): dataframe" << endl;
-  OutFile1 << "Sex Maturity Year Season Total_mortality "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
+  OutFile1 << "Sex Maturity Year Season Total_mortality " << strMidpoints << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "TM-by-size-class_(continuous): dataframe" << endl;
+  RepFile1 << "sex maturity year season total_mortality " << strMidpoints << endl;
   for (int h=1;h<=nsex;h++)
    for(int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++)
-     for (int j=1;j<=nseason;j++)
-      OutFile1 << sexes(h) << " " << m << " " << i << " " << j << " " << Z(h,m,i,j) << endl;
+     for (int j=1;j<=nseason;j++){
+      OutFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << j << " " << Z(h,m,i,j) << endl;
+      RepFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << j << " " << Z(h,m,i,j) << endl;
+     }
   OutFile1 << ">EOD<" << endl;
+  RepFile1 << ">EOD<" << endl;
   
   OutFile1 << endl << "# Total mortality by size-class (discrete)" << endl;
   OutFile1 << "TM-by-size-class_(discrete): dataframe" << endl;
@@ -10408,6 +10703,10 @@ FUNCTION CreateOutput
   dvar_matrix N_males_imature_old(syr,nyrRetro+1,1,nclass);
   dvar_matrix N_males_mature_new(syr,nyrRetro+1,1,nclass);
   dvar_matrix N_males_mature_old(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_females_imature_new(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_females_imature_old(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_females_mature_new(syr,nyrRetro+1,1,nclass);
+  dvar_matrix N_females_mature_old(syr,nyrRetro+1,1,nclass);
   N_total.initialize();
   N_males.initialize();
   N_females.initialize();
@@ -10423,6 +10722,10 @@ FUNCTION CreateOutput
   N_males_imature_old.initialize();
   N_males_mature_new.initialize();
   N_males_mature_old.initialize();
+  N_females_imature_new.initialize();
+  N_females_imature_old.initialize();
+  N_females_mature_new.initialize();
+  N_females_mature_old.initialize();
   for ( int i = syr; i <= nyrRetro+1; i++ )
    for ( int l = 1; l <= nclass; l++ )
     for ( int k = 1; k <= n_grp; k++ )
@@ -10446,7 +10749,6 @@ FUNCTION CreateOutput
          N_males_mature_new(i,l) += d4_N(k,i,season_N,l);
         if ( imature(k) == 1 && ishell(k)==2)
          N_males_mature_old(i,l) += d4_N(k,i,season_N,l);
-         
        }
       else
        {
@@ -10459,6 +10761,14 @@ FUNCTION CreateOutput
          N_females_mature(i,l) += d4_N(k,i,season_N,l);
         if ( imature(k) == 2 )
          N_females_mature(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 2 && ishell(k)==1)
+         N_females_imature_new(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 2 && ishell(k)==2)
+         N_females_imature_old(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 1 && ishell(k)==1)
+         N_females_mature_new(i,l) += d4_N(k,i,season_N,l);
+        if ( imature(k) == 1 && ishell(k)==2)
+         N_females_mature_old(i,l) += d4_N(k,i,season_N,l);
        }
       N_total(i,l) += d4_N(k,i,season_N,l);
      }
@@ -10520,7 +10830,7 @@ FUNCTION CreateOutput
   if (nsex > 1) 
    {
     OutFile1 << endl << "# N(females_mature)" << endl;
-    OutFile1 << endl << "N(females_imature): dataframe" << endl;
+    OutFile1 << endl << "N(females_mature): dataframe" << endl;
     OutFile1 << "Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " " << N_females_mature(i) << endl;
     OutFile1 << ">EOD<" << endl;
@@ -10539,51 +10849,98 @@ FUNCTION CreateOutput
     OutFile1 << ">EOD<" << endl;
    }
   
+  OutFile1 << "N(sex_maturity_shell_con): dataframe" << endl;
+  OutFile1 << "year sex maturity shell_con " << strMidpoints << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "N_YXMSZ: dataframe" << endl;
+  RepFile1 << "year sex maturity shell_con " << strMidpoints << endl;
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==1 && imature(ig)==2)
    {
     OutFile1 << endl << "# N(males_imature_new)" << endl;
-    OutFile1 << "N(males_immature_new): dataframe" << endl;
-    OutFile1 << "Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
-    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " " << N_males_imature_new(i) << endl;
-    OutFile1 << ">EOD<" << endl;
+    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " male immature new_shell " << N_males_imature_new(i) << endl;
+    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " male immature new_shell " << N_males_imature_new(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==2 && imature(ig)==2)
    {
     OutFile1 << endl << "# N(males_imature_old)" << endl;
-    OutFile1 << "N(males_immature_old): dataframe" << endl;
-    OutFile1 << "Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
-    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " " << N_males_imature_old(i) << endl;
-    OutFile1 << ">EOD<" << endl;
+    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " male immature old_shell " << N_males_imature_old(i) << endl;
+    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " male immature old_shell " << N_males_imature_old(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==1 && imature(ig)==1)
    {
     OutFile1 << endl << "# N(males_mature_new)" << endl;
-    OutFile1 << "N(males_mature_new): dataframe" << endl;
-    OutFile1 << "Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
-    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " " << N_males_mature_new(i) << endl;
-    OutFile1 << ">EOD<" << endl;
+    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " male mature new_shell " << N_males_mature_new(i) << endl;
+    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " male mature new_shell " << N_males_mature_new(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==2 && imature(ig)==1)
    {
     OutFile1 << endl << "# N(males_mature_old)" << endl;
-    OutFile1 << "N(males_mature_old): dataframe" << endl;
-    OutFile1 << "Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl;
-    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " " << N_males_mature_old(i) << endl;
-    OutFile1 << ">EOD<" << endl;
+    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " male mature old_shell " << N_males_mature_old(i) << endl;
+    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " male mature old_shell " << N_males_mature_old(i) << endl;
    }
+  for (int ig=1;ig<=n_grp;ig++)
+   if (isex(ig)==2 && ishell(ig)==1 && imature(ig)==2)
+   {
+    OutFile1 << endl << "# N(females_imature_new)" << endl;
+    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " female immature new_shell " << N_females_imature_new(i) << endl;
+    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " female immature new_shell " << N_females_imature_new(i) << endl;
+   }
+  for (int ig=1;ig<=n_grp;ig++)
+   if (isex(ig)==1 && ishell(ig)==2 && imature(ig)==2)
+   {
+    OutFile1 << endl << "# N(females_imature_old)" << endl;
+    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " female immature old_shell " << N_females_imature_old(i) << endl;
+    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " female immature old_shell " << N_females_imature_old(i) << endl;
+   }
+  for (int ig=1;ig<=n_grp;ig++)
+   if (isex(ig)==1 && ishell(ig)==1 && imature(ig)==1)
+   {
+    OutFile1 << endl << "# N(females_mature_new)" << endl;
+    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " female mature new_shell " << N_females_mature_new(i) << endl;
+    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " female mature new_shell " << N_females_mature_new(i) << endl;
+   }
+  for (int ig=1;ig<=n_grp;ig++)
+   if (isex(ig)==1 && ishell(ig)==2 && imature(ig)==1)
+   {
+    OutFile1 << endl << "# N(females_mature_old)" << endl;
+    for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " female mature old_shell " << N_females_mature_old(i) << endl;
+    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " female mature old_shell " << N_females_mature_old(i) << endl;
+   }
+  OutFile1 << ">EOD<" << endl;
+  RepFile1 << ">EOD<" << endl;
   
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Molting and growth" << endl;
   OutFile1 << endl << "Molt probability: dataframe" << endl;
-  OutFile1 << "Sex Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl; 
+  OutFile1 << "Sex Year " << strMidpoints << endl; 
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Molt probability: dataframe" << endl;
+  RepFile1 << "sex year " << strMidpoints << endl; 
   for (int h=1; h<=nsex; h++)
-   for (int i=syr;i<=nyrRetro;i++)
+   for (int i=syr;i<=nyrRetro;i++){
     OutFile1 << sexes(h) << " " << i << " " << molt_probability(h,i) << endl;
+    RepFile1 << sexes(h) << " " << i << " " << molt_probability(h,i) << endl;
+   }
   OutFile1 << ">EOD<" << endl;
+  RepFile1 << ">EOD<" << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Mean growth: dataframe" << endl;
+  RepFile1 << "sex block premolt_size mean_increment  mean_postmolt_size" << endl; 
+  for (int h=1; h<=nsex; h++)
+   for (int k =1; k<=nSizeIncVaries(h);k++)
+    for (int l=1;l<=nclass; l++)
+      RepFile1 << sexes(h) << " " 
+               << k << " " 
+               << mid_points(l) << " "
+               << molt_increment(h,k,l) << " " 
+               << molt_increment(h,k,l) + mid_points(l) << " " 
+               << endl;
+  RepFile1 << ">EOD<" << endl;
 
   OutFile1 << endl << "# Growth_transition_matrix" << endl;
   for (int h=1; h<=nsex; h++)
@@ -10596,7 +10953,20 @@ FUNCTION CreateOutput
      OutFile2 << "#growth_matrix_" << sexes(h) << "_" << i << endl;
      OutFile2 << trans(growth_transition(h,i)) << endl;
     }
-  OutFile1 << endl << "# Size_transition_matrices" << endl;
+  OutFile1 << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "growth_matrix: dataframe" << endl;
+  RepFile1 << "sex block premolt_size " << strMidpoints <<endl; 
+  for (int h=1; h<=nsex; h++) {
+    for (int i=1;i<=nSizeIncVaries(h);i++){ 
+      for (int j=1;j<=nclass;j++)
+        RepFile1 << sexes(h) << " " << i << " " << mid_points(j) << " " << to_str(growth_transition(h,i,j)) << endl;
+    }
+  }
+  RepFile1 << ">EOD<" << endl;
+
+  OutFile1 << "# Size_transition_matrices" << endl;
   for (int h=1; h <= nsex; h++)
    for (int i=1;i<=nSizeIncVaries(h);i++)
     {
@@ -10617,16 +10987,43 @@ FUNCTION CreateOutput
       OutFile1 << ">EOM<" << endl;
     }
 
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "size_matrix: dataframe" << endl;
+  RepFile1 << "sex block premolt_size " << strMidpoints << endl;
+  for (int h=1; h <= nsex; h++)
+   for (int i=1;i<=nSizeIncVaries(h);i++)
+    {
+     for (int k1=1;k1<=nclass;k1++)
+      {
+       RepFile1 << sexes(h) << " " << i << " " << mid_points(k1) << " ";
+       for (int k2=1;k2<=nclass;k2++) 
+        if (k2<k1)
+         RepFile1 << 0 << " ";
+        else 
+         if (k2==k1)
+          RepFile1 << 1.0-molt_probability(h,syr,k1)+growth_transition(h,i,k1,k2)*molt_probability(h,syr,k1) << " ";
+         else 
+          RepFile1 << growth_transition(h,i,k1,k2)*molt_probability(h,syr,k1) << " ";
+       RepFile1 << endl;
+      }//--k1
+    }//--i, h
+    RepFile1 << ">EOD<" << endl;
+
   // Mature probability
   if (nmature==2)
    {
     OutFile1 << endl << "# Mature probability" << endl;
     OutFile1 << "mature_probability: dataframe" << endl;
-    OutFile1 << "Sex Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl; 
+    OutFile1 << "Sex Year " << strMidpoints << endl; 
+    RepFile1 << "prMature: dataframe" << endl;
+    RepFile1 << "sex year " << strMidpoints << endl; 
     for (int h=1; h<=nsex; h++)
-     for (int i=syr;i<=nyrRetro;i++)
-     OutFile1 << sexes(h) << " " << i << " " << mature_probability(h,i) << endl;
+     for (int i=syr;i<=nyrRetro;i++){
+      OutFile1 << sexes(h) << " " << i << " " << mature_probability(h,i) << endl;
+      RepFile1 << sexes(h) << " " << i << " " << mature_probability(h,i) << endl;
+     }
     OutFile1 << ">EOD<" << endl;
+    RepFile1 << ">EOD<" << endl;
    }
 
 	
@@ -10661,18 +11058,21 @@ FUNCTION CreateOutput
     OutFile1 << "#- Reference points and OFL -" << endl;
     OutFile1 << "#----------------------------" << endl;
 
-    REPORT(spr_syr,": vector");
-    REPORT(spr_nyr,": vector");
-    REPORT(spr_rbar,": vector");
-    REPORT(proj_rbar,": vector");
-    REPORT(spr_sexr,": vector");
+    REPVEC(spr_syr);
+    REPVEC(spr_nyr);
+    REPVEC(spr_rbar);
+    REPVEC(proj_rbar);
+    REPVEC(spr_sexr);
     OutFile1 << "SR_alpha_prj: ";
     OutFile1 << setw(15) << setprecision(8) << setfixed() << SR_alpha_prj << endl;
     OutFile1 << "SR_beta_prj: ";
     OutFile1 << setw(15) << setprecision(8) << setfixed() <<  SR_beta_prj << endl;
-    REPORT2(spr_fofl,": vector");
-    REPORT(spr_cofl_ret,": vector");
-    if (Compute_yield_prj==1) REPORT(spr_yield,": vector");
+    REPVEC2(spr_fofl);
+    REPVEC(spr_cofl_ret);
+    if (Compute_yield_prj==1) {
+      REPMAT(spr_yield);
+      //OutFile1 << ">EOM<" << endl;
+    }
    }
 
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
@@ -10682,8 +11082,8 @@ FUNCTION CreateOutput
     OutFile1 << "nloglike[" <<j<<"]: "<< nloglike[j] <<endl;
     OutFile2 << "nloglike[" <<j<<"]: "<< nloglike[j] <<endl;
   }
-  REPORT(nlogPenalty,": vector");
-  REPORT(priorDensity,": vector");
+  REPVEC(nlogPenalty);
+  REPVEC(priorDensity);
   OutFile1 << endl;
 
   //================================================
@@ -11155,7 +11555,7 @@ FUNCTION WriteFiles
   OutInpFile1  << "# ##  <0: Mirror selectivity" << endl;;
   OutInpFile1  << "# ##   0: Nonparametric selectivity (one parameter per class)" << endl;
   OutInpFile1  << "# ##   1: Nonparametric selectivity (one parameter per class, constant from last specified class)" << endl;
-  OutInpFile1  << "# ##   2: Logistic selectivity (inflection point and slope)" << endl;;
+  OutInpFile1  << "# ##   2: Logistic selectivity (inflection point and width (i.e. 1/slope))" << endl;;
   OutInpFile1  << "# ##   3: Logistic selectivity (50% and 95% selection)" << endl;
   OutInpFile1  << "# ##   4: Double normal selectivity (3 parameters)" << endl;
   OutInpFile1  << "# ##   5: Flat equal to zero (1 parameter; phase must be negative)" << endl;
@@ -11560,25 +11960,58 @@ GLOBALS_SECTION
   ofstream OutFile3;
   ofstream OutFile4;
   ofstream OutFile5;
+  ofstream RepFile1;
   ofstream OutInpFile1; 
 
   // Define objects for report file, echoinput, etc.
   /**
-  \def report(object)
-  Prints name and value of \a object on ADMB report %ofstream file.
+  \def REPVEC(object)
+  Prints name and value of \a vector object on ADMB report %ofstream file.
   */
-  #undef REPORT
-  #define REPORT(object,type) OutFile1 << #object << type <<"\n" << setw(8) \
+  #undef REPVEC
+  #define REPVEC(object) \
+  OutFile1 << #object << ": vector \n" << setw(8) \
   << setprecision(4) << setfixed() << object << endl; \
   OutFile2 << #object "\n" << setw(8) \
-  << setprecision(4) << setfixed() << object << endl;
+  << setprecision(4) << setfixed() << object << endl; \
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl; \
+  RepFile1 << #object << ": vector \n" << setw(8) \
+  << setprecision(4) << setfixed() << object << endl; 
 
-  #undef REPORT2
-  #define REPORT2(object,type) OutFile1 << #object << type <<"\n" << setw(12) \
+  #undef REPVEC2
+  #define REPVEC2(object) \
+  OutFile1 << #object << ": vector\n" << setw(12) \
   << setprecision(8) << setfixed() << object << endl; \
   OutFile2 << #object "\n" << setw(12) \
+  << setprecision(8) << setfixed() << object << endl; \
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl; \
+  RepFile1 << #object << ": vector\n" << setw(12) \
   << setprecision(8) << setfixed() << object << endl;
-  
+
+  /**
+  \def REPMAT(object)
+  Prints name and value of \a matrix object on ADMB report %ofstream file.
+  */
+  #undef REPMAT
+  #define REPMAT(object) \
+  OutFile1 << #object << ": matrix\n" << setw(8) \
+  << setprecision(4) << setfixed() << object << endl << ">EOM<" << endl; \
+  OutFile2 << #object "\n" << setw(8) \
+  << setprecision(4) << setfixed() << object << endl; \
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl; \
+  RepFile1 << #object << ": matrix\n" << setw(8) \
+  << setprecision(4) << setfixed() << object << endl << ">EOM<" << endl; 
+
+  #undef REPMAT2
+  #define REPMAT2(object) \
+  OutFile1 << #object << ": matrix\n" << setw(12) \
+  << setprecision(8) << setfixed() << object << endl << ">EOM<" << endl; \
+  OutFile2 << #object "\n" << setw(12) \
+  << setprecision(8) << setfixed() << object << endl; \
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl; \
+  RepFile1 << #object << ": matrix\n" << setw(12) \
+  << setprecision(8) << setfixed() << object << endl << ">EOM<" << endl;
+
   /**
    * \def COUT(object)
    * Prints object to screen during runtime.
@@ -11870,10 +12303,12 @@ GLOBALS_SECTION
   adstring_array selenvnames1(1,100);
   adstring anystring;
   adstring_array fleetname;
-  adstring_array sexes;
+  adstring_array sexes(0,2);
+  adstring_array maturestate(0,2);
+  adstring_array shellstate(0,2);
+  adstring_array catchtypes(0,2);
+  adstring_array unitstypes;
   adstring_array seltypes;
-  adstring_array maturestate;
-  adstring_array shellstate;
   adstring TheHeader;
   
   // Open output files using ofstream
@@ -11967,10 +12402,16 @@ GLOBALS_SECTION
 
    Status = 0;
    Range = upper - lower;
-   if (xx < lower+Range*0.01) Status = 1;
+   if (xx < lower+Range*0.01) Status =-1;
    if (xx > upper-Range*0.01) Status = 1;
    OutFile1 << lower << " " << upper << " ";
-   if (Status == 1) OutFile1 << "*" << " ";
+   if (Status == 0) OutFile1 << "ok" << " ";
+   if (Status ==-1) OutFile1 << "*-" << " ";
+   if (Status == 1) OutFile1 << "*+" << " ";
+
+   RepFile1 << lower << " " 
+            << upper << " "
+            << Status << " ";
 
    RETURN_ARRAYS_DECREMENT();
    return (Status);
@@ -12173,10 +12614,22 @@ FINAL_SECTION
 // 2024-05-08 ** WTS. Changed leading dimension of log_vn_pars, log_vn_lb, log_vn_ub, log_vn_phz, prior_log_vn_type, prior_log_vn_p1, and 
 //                    prior_log_vn_p2 from nSizeComps_in (the number of input size comps) to nSizeComps (the number of size comps 
 //                    after "aggregation") to better match the number of effective sample size parameters. nAgeCompType_in and 
-//                    nAgeCompType were renamed iSizeCompType_in and iSizeCompType, respectively. (Updated GMACS to version 2.20.08)
-//
+//                    nAgeCompType were renamed iSizeCompType_in and iSizeCompType, respectively. 
+//                    (Updated GMACS to version 2.20.08).
+//                    Added N for females by maturity state and shell condition to Gmacsall.out as dataframe with males.
+// 2024-05-08 ** WTS. Defined RepFile1 as outstream to "gmacs.rep1". Changed REPORT and REPORT2 macros to REPVEC and REPVEC2 macros for 
+//                    vector (or scalar) quantities and added output to RepFile1. Added REPMAT and REPMAT2 mamcros to output matrices 
+//                    to OutFile1 (Gmacsall.out), OutFile2 (gmacs.rep), and RepFile1. Added FUNCTIONs to_str and strg to create an adstring 
+//                    representation of a space-separated vector (simplifies code to write a vector to a file).
+// 2024-05-10 ** WTS. Added more output to RepFile1. Added explicit "Status" column to Summary section of Gmacsall.out to indicate whether
+//                    parameter estimate was close to lower bound ("*-"), upper bound ("*+"), or neither ("ok").
+//                    Changed "pen_fbar", "log_pen_fbar", and "log_pen_fbar_off" to "init_fbar", "log_init_fbar", and "log_init_fbar_foff"
+//                    to better clarify their purpose. 
+//                    TODO: "log_init_fbar_foff" (column 2 of F controls) is never used anywhere. It should be removed from the ctl file.
+
 // To-do list
 // 1 - Bias ramp for recruitment
+// 2 - remove column 2 from F controls and remove "log_init_fbar_foff" (formerly "log_pen_fbar_foff")?
 
 
 
