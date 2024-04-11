@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.08; ** AEP & WTS **; Compiled 2024-04-08");
+ !! TheHeader = adstring("## GMACS Version 2.20.09; ** AEP & WTS **; Compiled 2024-04-11");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -2156,8 +2156,8 @@ DATA_SECTION
       if (OK==1) { inew += 1; GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4) = inew; }
       if (OK==0) { GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4) = GrowPnt((ig-1)*Nyears+Match-syr+1,nclass+4); }
       if (ig <=nsex) iYrsIncChanges(ig,iyr) = GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4);
-      if (ig > nsex && ig <=2*nsex) iYrsMoltChanges(ig-nsex,iyr) = GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4);
-      if (ig > 2*nsex& ig <=3*nsex) iYrsMatureChanges(ig-2*nsex,iyr) = GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4);
+      if ((ig > nsex)   && (ig <=2*nsex)) iYrsMoltChanges(ig-nsex,iyr)     = GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4);
+      if ((ig > 2*nsex) && (ig <=3*nsex)) iYrsMatureChanges(ig-2*nsex,iyr) = GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4);
      } //--iyr
      if (ig <=nsex) nSizeIncVaries(ig) = inew;
      if (ig > nsex && ig <=2*nsex) nMoltVaries(ig-nsex) = inew;
@@ -3552,18 +3552,27 @@ DATA_SECTION
    }
  END_CALCS
 
+  int nMapInpToAggSizeComps;//--number of rows in map from input to aggregated size comps
  LOC_CALCS
   int rowCount;
+  nMapInpToAggSizeComps = 0;
   // This aggregates the size composition data by appending size comps horizontally
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
     rowCount = 0;
-    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
-     if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) ) rowCount += 1;
+    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ) {
+      if ((d3_SizeComps_in(kk,ii,-7) <= nyrRetro) || 
+          ((d3_SizeComps_in(kk,ii,-7) == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6) == 1)) ) {
+        rowCount += 1;
+        nMapInpToAggSizeComps += nSizeCompCols_in(kk);
+       }
+    }
     nSizeCompRows(k) = rowCount;
-   }
+  }//--kk
  END_CALCS
+
+  //--"map" from input size comps df, row, col to aggregated size comps df, row, col
+  imatrix mapInpToAggSizeComps(1,nMapInpToAggSizeComps,1,6);
 
   3darray d3_obs_size_comps(1,nSizeComps,1,nSizeCompRows,1,nSizeCompCols);
   matrix size_comp_sample_size(1,nSizeComps,1,nSizeCompRows);
@@ -3575,19 +3584,30 @@ DATA_SECTION
   int i,j;
   int oldk = 9999;
   // This aggregates the size composition data by appending size comps horizontally
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  int idx = 1;//--row index into mapInpToAggSizeComps
+  //cout << "nMapInpToAggSizeComps = " << nMapInpToAggSizeComps << endl;
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
     int k = iCompAggregator(kk);
     if ( oldk != k ) j = 0;
     oldk = k;
-    for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ )
-     {
+    for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ ) {
       j += 1;
-      for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
-       if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) )
-       { i = ii; d3_obs_size_comps(k,i,j) = d3_obs_size_comps_in(kk,i,jj); }
-     }
-   }
+      for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
+        if ((d3_SizeComps_in(kk,ii,-7) <= nyrRetro) || 
+           ((d3_SizeComps_in(kk,ii,-7) == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6)) == 1) ){
+          d3_obs_size_comps(k,ii,j) = d3_obs_size_comps_in(kk,ii,jj); 
+          //cout << idx << " inp: " << kk << " " << ii << " " << jj << " agg: " << k << " " << ii << " " << j << endl;
+          mapInpToAggSizeComps(idx)(1) = kk; //--input size comp dataframe index
+          mapInpToAggSizeComps(idx)(2) = ii; //--input size comp row
+          mapInpToAggSizeComps(idx)(3) = jj; //--input size comp column
+          mapInpToAggSizeComps(idx)(4) = k;  //--aggregated size comp "dataframe" index
+          mapInpToAggSizeComps(idx)(5) = ii; //--aggregated size comp row (redundant, yes)
+          mapInpToAggSizeComps(idx)(6) = j;  //--aggregated size comp column
+          idx++; //--increment row index into mapInpToAggSizeComps
+        }
+      }//--ii
+     }//--jj
+   }//--kk
 
    // The size composition sample sizes are calculated as the sum of the aggregated sample sizes
   size_comp_sample_size.initialize();
@@ -10155,20 +10175,36 @@ FUNCTION CreateOutput
   // ====================
   OutFile1 << "--Derived quatities: dataframe"<<endl;
   OutFile1 << "Parameter_name Estimate Standard_error Estimated_quantity_count" << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Derived quatities: dataframe"<<endl;
+  RepFile1 << "param est se qty_cnt" << endl;
   if (OutRefPars==YES)
    {
-    OutFile1 << "Male Spr_rbar : " << ParsOut(NparEst+1) << " " << ParsOut.sd(NparEst+1) << " " << NparEst+1 << endl;
+    OutFile1 << "Male Spr_rbar : "   << ParsOut(NparEst+1) << " " << ParsOut.sd(NparEst+1) << " " << NparEst+1 << endl;
     OutFile1 << "Female Spr_rbar : " << ParsOut(NparEst+2) << " " << ParsOut.sd(NparEst+2) << " " << NparEst+2 << endl;
-    OutFile1 << "SSSB/R(F=0) : " << ParsOut(NparEst+3) << " " << ParsOut.sd(NparEst+3) << " " << NparEst+3 << endl;
-    OutFile1 << "BMSY : " << ParsOut(NparEst+4) << " " << ParsOut.sd(NparEst+4) << " " << NparEst+4 << endl;
-    OutFile1 << "Bcurr/BMSY : " << ParsOut(NparEst+5) << " " << ParsOut.sd(NparEst+5) << " " << NparEst+5 << endl;
-    OutFile1 << "OFL(tot) : " << ParsOut(NparEst+6) << " " << ParsOut.sd(NparEst+6) << " " << NparEst+6 << endl;
+    OutFile1 << "SSSB/R(F=0) : "     << ParsOut(NparEst+3) << " " << ParsOut.sd(NparEst+3) << " " << NparEst+3 << endl;
+    OutFile1 << "BMSY : "            << ParsOut(NparEst+4) << " " << ParsOut.sd(NparEst+4) << " " << NparEst+4 << endl;
+    OutFile1 << "Bcurr/BMSY : "      << ParsOut(NparEst+5) << " " << ParsOut.sd(NparEst+5) << " " << NparEst+5 << endl;
+    OutFile1 << "OFL(tot) : "        << ParsOut(NparEst+6) << " " << ParsOut.sd(NparEst+6) << " " << NparEst+6 << endl;
     for (int k=1;k<=nfleet;k++)
       OutFile1 << "Fmsy (" << k <<") : " << ParsOut(NparEst+6+k)<< " " << ParsOut.sd(NparEst+6+k) << " " << NparEst+6+k << endl;
     for (int k=1;k<=nfleet;k++)
       OutFile1 << "Fofl (" << k <<") : " << ParsOut(NparEst+6+nfleet+k)<< " " << ParsOut.sd(NparEst+6+nfleet+k) << " " << NparEst+6+nfleet+k << endl;
     for (int k=1;k<=nfleet;k++)
       OutFile1 << "Ofl (" << k <<") : " << ParsOut(NparEst+6+2*nfleet+k)<< " " << ParsOut.sd(NparEst+6+2*nfleet+k) << " " << NparEst+6+2*nfleet+k << endl;
+    //NparEst += 6+3*nfleet;  
+    RepFile1 << "male_spr_rbar "   << ParsOut(NparEst+1) << " " << ParsOut.sd(NparEst+1) << " " << NparEst+1 << endl;
+    RepFile1 << "female_spr_rbar " << ParsOut(NparEst+2) << " " << ParsOut.sd(NparEst+2) << " " << NparEst+2 << endl;
+    RepFile1 << "SSSB/R(F=0) "     << ParsOut(NparEst+3) << " " << ParsOut.sd(NparEst+3) << " " << NparEst+3 << endl;
+    RepFile1 << "BMSY "            << ParsOut(NparEst+4) << " " << ParsOut.sd(NparEst+4) << " " << NparEst+4 << endl;
+    RepFile1 << "Bcurr/BMSY "      << ParsOut(NparEst+5) << " " << ParsOut.sd(NparEst+5) << " " << NparEst+5 << endl;
+    RepFile1 << "OFL(tot) "        << ParsOut(NparEst+6) << " " << ParsOut.sd(NparEst+6) << " " << NparEst+6 << endl;
+    for (int k=1;k<=nfleet;k++)
+      RepFile1 << "Fmsy(" << k <<") " << ParsOut(NparEst+6+k)         << " " << ParsOut.sd(NparEst+6+k)          << " " << NparEst+6+k << endl;
+    for (int k=1;k<=nfleet;k++)
+      RepFile1 << "Fofl(" << k <<") " << ParsOut(NparEst+6+nfleet+k)  << " " << ParsOut.sd(NparEst+6+nfleet+k)   << " " << NparEst+6+nfleet+k << endl;
+    for (int k=1;k<=nfleet;k++)
+      RepFile1 << "OFL(" << k <<") "  << ParsOut(NparEst+6+2*nfleet+k)<< " " << ParsOut.sd(NparEst+6+2*nfleet+k) << " " << NparEst+6+2*nfleet+k << endl;
     NparEst += 6+3*nfleet;  
    }
   
@@ -10222,15 +10258,17 @@ FUNCTION CreateOutput
      NparEst += IpntOut; 
    }  
   OutFile1 << ">EOD<"<<endl<<endl;
+  RepFile1 << ">EOD<"<<endl<<endl;
   dvariable sigR = mfexp(logSigmaR);
   OutFile1 << "SigmaR : " << sigR << endl;
   OutFile1 << " Weight : " << 0.5/(sigR*sigR) << endl;
+  RepFile1 << "SigmaR: " << sigR << endl;
+  RepFile1 << "Weight: " << 0.5/(sigR*sigR) << endl;
 
 //=========================================================================================================================
 
   // Big summary
   OutFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Overall_summary" << endl;
   calc_predicted_catch_out();
   dvector ssb = value(calc_ssb());
@@ -10243,6 +10281,7 @@ FUNCTION CreateOutput
   for (int k=1;k<=nfleet;k++) OutFile1 << fleetname(k) << " ";
   OutFile1 << "Rec_dev logit_rec_prop res_recruit ";
   OutFile1 << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Summary: dataframe" << endl;
   RepFile1 << "year SSB log(SSB) SD(log(SSB)) SSA DynB0 log(DynB0) SD(log(DynB0)) ";
   for (int h=1;h<=nsex;h++) RepFile1 << "rec_" << sexes(h) << " log(rec_" << sexes(h) << ") SD(log(rec_" << sexes(h) << "))" << " ";
@@ -10471,7 +10510,79 @@ FUNCTION CreateOutput
                  << d3_pre_size_comps(k,jj) << endl;
        }
       oldk = k;
-    }
+    }//--ii loop
+  
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Size_fit_summary: dataframe" << endl;
+  RepFile1 << "origID aggID year season fleet comp_type sex maturity shell_cond size inpSS inpN aggObs aggPrd aggRes" << endl;
+  for (int idx=1;idx<=nMapInpToAggSizeComps;idx++){
+    int kk = mapInpToAggSizeComps(idx)(1);//--input size comp df index
+    int ii = mapInpToAggSizeComps(idx)(2);//--input size comp df row
+    int jj = mapInpToAggSizeComps(idx)(3);//--input size comp df column
+    int k  = mapInpToAggSizeComps(idx)(4);//--corresponding aggregated size comp df index
+    int i  = mapInpToAggSizeComps(idx)(5);//--corresponding aggregated size comp df row
+    int j  = mapInpToAggSizeComps(idx)(6);//--corresponding aggregated size comp df column
+    int yr  = d3_SizeComps_in(kk,ii,-7);
+    int ssn = d3_SizeComps_in(kk,ii,-6);
+    int flt = d3_SizeComps_in(kk,ii,-5);
+    int sex = d3_SizeComps_in(kk,ii,-4);
+    int typ = d3_SizeComps_in(kk,ii,-3);
+    int shl = d3_SizeComps_in(kk,ii,-2);
+    int mat = d3_SizeComps_in(kk,ii,-1);
+    int inN = d3_SizeComps_in(kk,ii, 0);
+    RepFile1 << kk << " " << k << " " << yr << " " << ssn << " " 
+             << fleetname(flt) << " " << catchtypes(typ) << " " 
+             << sexes(sex) << " " << maturestate(mat) << " " << shellstate(shl) << " "
+             << mid_points(jj) << " "
+             << inN << " "
+             << d3_SizeComps_in(kk,ii,jj) << " "
+             << d3_obs_size_comps(k,i,j) << " "
+             << d3_pre_size_comps(k,i,j) << " "
+             << d3_res_size_comps(k,i,j) << " "
+             << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+
+//  int oldk = 0;
+//  for (int ii=1; ii<=nSizeComps_in;ii++){
+//    int iOrigSeries = ii;
+//    int k = iCompAggregator(ii);
+//    int iAggSeries = k;
+//    if ( oldk != k ){
+//      for (int jj=1;jj<=nSizeCompRows_in(ii);jj++){
+//        int yr  = int(d3_SizeComps_in(ii,jj,-7));
+//        int ssn = int(d3_SizeComps_in(ii,jj,-6));
+//        if ((yr <= nyrRetro) || ((yr == nyrRetro+1) && ssn == 1) ){
+//          RepFile1  << iOrigSeries << " " 
+//                    << iAggSeries << " " 
+//                    << yr << " " 
+//                    << fleetname(int(d3_SizeComps_in(ii,jj,-5))) << " " 
+//                    << ssn << " "
+//                    << sexes(d3_SizeComps_in(ii,jj,-4)) << " "
+//                    << catchtypes(d3_SizeComps_in(ii,jj,-3)) << " "
+//                    << shellstate(d3_SizeComps_in(ii,jj,-2)) << " "
+//                    << maturestate(d3_SizeComps_in(ii,jj,-1)) << " ";
+//          ShellName = shellstate(d3_SizeComps_in(ii,jj,-2));
+//          MatName   = maturestate(d3_SizeComps_in(ii,jj,-1));
+//          for (int kk=1;kk<=nSizeComps_in;kk++){
+//            //--loop back over size comp datasets to find whether aggregated size comp is over shell condition and/or maturity state
+//            //--skip current size comp (kk==ii) and match input size comp with same aggregatror code (k == iCompAggregator(kk))
+//            if (kk!=ii && k == iCompAggregator(kk)) {
+//              if (d3_SizeComps_in(kk,jj,-2)!=d3_SizeComps_in(ii,jj,-2)) ShellName = shellstate(0);//--must be aggregating over shell condition
+//              if (d3_SizeComps_in(kk,jj,-1)!=d3_SizeComps_in(ii,jj,-1)) MatName   = maturestate(0);//--must be aggregating over maturity
+//              //--does above imply you can't aggregate over sex?
+//            }
+//          }
+//          RepFile1 << ShellName << " " 
+//                  << MatName << "  " 
+//                  << size_comp_sample_size(k,jj) << "   " 
+//                  << d3_obs_size_comps(k,jj) << "   " 
+//                  << d3_pre_size_comps(k,jj) << endl;
+//        }//--if
+//      }//--jj
+//    }//--oldk != k
+//    oldk = k;
+//  }//--ii: loop over input size comp datasets
   
   OutFile4 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile4 << "# Size_data_summary1" << endl;
@@ -10849,69 +10960,81 @@ FUNCTION CreateOutput
     OutFile1 << ">EOD<" << endl;
    }
   
-  OutFile1 << "N(sex_maturity_shell_con): dataframe" << endl;
-  OutFile1 << "year sex maturity shell_con " << strMidpoints << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "N_YXMSZ: dataframe" << endl;
   RepFile1 << "year sex maturity shell_con " << strMidpoints << endl;
+  for (int ig=1;ig<=n_grp;ig++){
+    int ix = isex(ig); int im = imature(ig); int ic = ishell(ig);
+    for (int i=syr;i<=LastYrforN;i++)
+      RepFile1 << i << " " << sexes(ix) << " " << maturestate(im) << " " << shellstate(ic) << " " 
+               << d4_N(ig,i,season_N) << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "B_YXMSZ: dataframe" << endl;
+  RepFile1 << "year sex maturity shell_con " << strMidpoints << endl;
+  for (int ig=1;ig<=n_grp;ig++){
+    int ix = isex(ig); int im = imature(ig); int ic = ishell(ig);
+    for (int i=syr;i<=LastYrforN;i++) {
+      RepFile1 << i << " " << sexes(ix) << " " << maturestate(im) << " " << shellstate(ic) << " " 
+               << elem_prod(d4_N(ig,i,season_N),mean_wt(ix,im,i)) << endl;
+    }
+  }
+  RepFile1 << ">EOD<" << endl;
+  
+  OutFile1 << "N(sex_maturity_shell_con): dataframe" << endl;
+  OutFile1 << "year sex maturity shell_con " << strMidpoints << endl;
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==1 && imature(ig)==2)
    {
     OutFile1 << endl << "# N(males_imature_new)" << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " male immature new_shell " << N_males_imature_new(i) << endl;
-    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " male immature new_shell " << N_males_imature_new(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==2 && imature(ig)==2)
    {
     OutFile1 << endl << "# N(males_imature_old)" << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " male immature old_shell " << N_males_imature_old(i) << endl;
-    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " male immature old_shell " << N_males_imature_old(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==1 && imature(ig)==1)
    {
     OutFile1 << endl << "# N(males_mature_new)" << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " male mature new_shell " << N_males_mature_new(i) << endl;
-    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " male mature new_shell " << N_males_mature_new(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==2 && imature(ig)==1)
    {
     OutFile1 << endl << "# N(males_mature_old)" << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " male mature old_shell " << N_males_mature_old(i) << endl;
-    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " male mature old_shell " << N_males_mature_old(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==2 && ishell(ig)==1 && imature(ig)==2)
    {
     OutFile1 << endl << "# N(females_imature_new)" << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " female immature new_shell " << N_females_imature_new(i) << endl;
-    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " female immature new_shell " << N_females_imature_new(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==2 && imature(ig)==2)
    {
     OutFile1 << endl << "# N(females_imature_old)" << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " female immature old_shell " << N_females_imature_old(i) << endl;
-    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " female immature old_shell " << N_females_imature_old(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==1 && imature(ig)==1)
    {
     OutFile1 << endl << "# N(females_mature_new)" << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " female mature new_shell " << N_females_mature_new(i) << endl;
-    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " female mature new_shell " << N_females_mature_new(i) << endl;
    }
   for (int ig=1;ig<=n_grp;ig++)
    if (isex(ig)==1 && ishell(ig)==2 && imature(ig)==1)
    {
     OutFile1 << endl << "# N(females_mature_old)" << endl;
     for (int i=syr;i<=LastYrforN;i++) OutFile1 << i << " female mature old_shell " << N_females_mature_old(i) << endl;
-    for (int i=syr;i<=LastYrforN;i++) RepFile1 << i << " female mature old_shell " << N_females_mature_old(i) << endl;
    }
   OutFile1 << ">EOD<" << endl;
-  RepFile1 << ">EOD<" << endl;
+  
   
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Molting and growth" << endl;
@@ -12626,6 +12749,9 @@ FINAL_SECTION
 //                    Changed "pen_fbar", "log_pen_fbar", and "log_pen_fbar_off" to "init_fbar", "log_init_fbar", and "log_init_fbar_foff"
 //                    to better clarify their purpose. 
 //                    TODO: "log_init_fbar_foff" (column 2 of F controls) is never used anywhere. It should be removed from the ctl file.
+// 2024-05-11 ** WTS. Revised size fit summary to RepFile1 (gmacs.rep1), added mapInpToAggSizeComps matrix which provides mapping from input size comps to 
+//                    aggregated size comps (and is used in then revised size fit summary). 
+//                    (Updated GMACS version to 2.20.09.
 
 // To-do list
 // 1 - Bias ramp for recruitment
