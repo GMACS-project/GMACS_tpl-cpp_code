@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.09; ** AEP & WTS **; Compiled 2024-04-11");
+ !! TheHeader = adstring("## GMACS Version 2.20.10; ** AEP & WTS **; Compiled 2024-04-11");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -184,9 +184,11 @@ DATA_SECTION
   // | SIMULATION CONTROLS |
   // |---------------------|
 
+  int jitflag;//--jitter indicator from commandline 
   int simflag;
   int rseed;
  LOC_CALCS
+  jitflag = 0;
   simflag = 0;
   rseed = 0;
   int opt,on;
@@ -223,6 +225,15 @@ DATA_SECTION
     simflag = 1;
     rseed = atoi(ad_comm::argv[on+1]);
   }
+  /**
+  * @brief command line option for jittering parameter values (overrides gmacs.dat setting).
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-jitter",opt))>-1 )
+  {
+    jitflag = 1;
+    rseed = atoi(ad_comm::argv[on+1]);//set rseed to 0 to use start time
+  }
+
 
   if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-i",opt))>-1 )
   {
@@ -293,6 +304,7 @@ DATA_SECTION
   !!WriteFileName(StockName);
   init_int IsJittered;
   init_number sdJitter;
+  !! if (jitflag) IsJittered = 1;
   !! if (IsJittered==1) cout << "Jittering with sd: " << sdJitter << endl;
   !! WriteFileName(IsJittered);
   !! WriteFileName(sdJitter);
@@ -4474,11 +4486,18 @@ PRELIMINARY_CALCS_SECTION
     cout<<"done"<<endl;
    }
 
-  random_number_generator rng2( start ) ;
+  if (rseed==0) rseed = start;
+  random_number_generator rng2( rseed ) ;
   if (IsJittered!=0) {
     cout << "+------------------------------+" << endl;
     cout << "| Jittering                    |" << endl;
     cout << "+------------------------------+" << endl;
+    {
+      ofstream JitFile;
+      JitFile.open("jitter.txt");
+      JitFile << rseed << endl;
+      JitFile.close();
+    }
     for (int ipar=1;ipar<=ntheta;ipar++)
      {
       rands.fill_randn(rng2);
@@ -12751,7 +12770,10 @@ FINAL_SECTION
 //                    TODO: "log_init_fbar_foff" (column 2 of F controls) is never used anywhere. It should be removed from the ctl file.
 // 2024-05-11 ** WTS. Revised size fit summary to RepFile1 (gmacs.rep1), added mapInpToAggSizeComps matrix which provides mapping from input size comps to 
 //                    aggregated size comps (and is used in then revised size fit summary). 
-//                    (Updated GMACS version to 2.20.09.
+//                    (Updated GMACS version to 2.20.09.)
+// 2024-05-12 ** WTS. Added commandline option ("-jitter rseed") to override gmacs.dat setting. If rseed is 0, rseed is set based on the model start time. 
+//                    The value of rseed used to initialize the random number generator is written to "jitter.txt" to allow repeating a jittered model run. 
+//                    (Updated GMACS version to 2.20.10.)
 
 // To-do list
 // 1 - Bias ramp for recruitment
