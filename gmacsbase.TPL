@@ -4114,6 +4114,7 @@ INITIALIZATION_SECTION
    M_pars_est          M_ival;
    S_pars_est          S_ival;
    log_fbar            log_init_fbar;
+   log_foff            log_init_fbar_foff; //added 20240413 by WTS (otherwise log_foff implicitly initialized to 0)
    log_vn              log_vn_ival;
    survey_q            q_ival;
    logit_rec_prop_est  init_sex_ratio;
@@ -4230,10 +4231,10 @@ PARAMETER_SECTION
   !! ECHO(nFparams);
   !! for (int I=1;I<=nfleet;I++) { ECHO(log_fdev(I)); }
   !! ECHO(foff_phz);
-  init_bounded_number_vector log_foff(1,nfleet,foff_lb,foff_ub,foff_phz);    ///> Female F offset to Male F.
+  init_bounded_number_vector log_foff(1,nfleet,foff_lb,foff_ub,foff_phz);    ///> Female F offset to Male F.  20240413(WTS): changed lb from -10 to -20; ub from 10 to 0
   !! ECHO(log_foff);
   !!ECHO(nYparams);
-  init_bounded_vector_vector log_fdov(1,nfleet,1,nYparams,-10,10,foff_phz);    ///> Female F offset to Male F
+  init_bounded_vector_vector log_fdov(1,nfleet,1,nYparams,-10,10,foff_phz);    ///> log-scale Female F offset devs to Male F
   !! for (int I=1;I<=nfleet;I++) { ECHO(log_fdov(I)); }
 
   // Recruitment deviation parameters
@@ -5673,7 +5674,7 @@ FUNCTION calc_fishing_mortality
           ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);  ///> Retention
           vul = elem_prod(sel, ret + (1.0 - ret) * xi);              ///> Vulnerability
           F(h,i,j) += ft(k,h,i,j) * vul;                             ///> Fishing mortality
-          F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Contact mortality
+          F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Contact mortality (WTS: capture [or contact] rate, not "mortality")
          }
        } // years and seasons
     } // fleet and sex
@@ -6736,7 +6737,7 @@ FUNCTION calc_predicted_catch
 
        if ( h!=UNDET_SEX ) // sex specific
         {
-         sel = log_slx_capture(k,h,i);                                ///> Capture selectivity
+         sel = log_slx_capture(k,h,i);                                  ///> Capture selectivity
          //ret = log_slx_retaind(k,h,i);                                ///> Retention probability
          //dis = log_slx_discard(k,h,i);                                ///> Discard fraction
          switch ( type )
@@ -8035,6 +8036,15 @@ FUNCTION calc_objective_function
       ln_fbar = log(fbar);
       nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
      }
+   //20240413: following for females added by WTS
+    if (nsex==2){
+      fbar = mean( trans(ft(k,2))(2) );
+      if ( fbar != 0 )
+      {
+        ln_fbar = log(fbar);
+        nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
+      }
+    }
    }
    if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
 
@@ -10384,6 +10394,19 @@ FUNCTION CreateOutput
 
 //=========================================================================================================================
 
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "logFM_parameters: dataframe"<<endl;
+  RepFile1 << "param fleet index sex est" << endl;
+  for (int k=1;k<=nfleet;k++) {
+    RepFile1 << "log_fbar " << fleetname(k) << "  NA  " << " male " << log_fbar(k) << endl;
+    RepFile1 << "log_foff " << fleetname(k) << "  NA  " << " female " << log_foff(k) << endl;
+    for (int f=1;f<=nFparams(k);f++) 
+      RepFile1 << "log_fdev " << fleetname(k) << " " << f << " " << " male " << log_fdev(k,f) << endl;
+    for (int f=1;f<=nYparams(k);f++) 
+      RepFile1 << "log_fdov " << fleetname(k) << " " << f << " " << " female " << log_fdov(k,f) << endl;
+  }
+  RepFile1 << ">EOD<" <<endl;
+
   // catches
   OutFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "Catch_fit_summary: dataframe" << endl;
@@ -10792,7 +10815,7 @@ FUNCTION CreateOutput
   OutFile1 << "Sex Maturity Year Season Total_mortality " << strMidpoints << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "TM-by-size-class_(continuous): dataframe" << endl;
-  RepFile1 << "sex maturity year season total_mortality " << strMidpoints << endl;
+  RepFile1 << "sex maturity year season " << strMidpoints << endl;
   for (int h=1;h<=nsex;h++)
    for(int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++)
