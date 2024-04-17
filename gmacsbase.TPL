@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.10; ** AEP & WTS **; Compiled 2024-04-11");
+ !! TheHeader = adstring("## GMACS Version 2.20.11; ** AEP & WTS **; Compiled 2024-04-17");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -4231,7 +4231,7 @@ PARAMETER_SECTION
   !! ECHO(nFparams);
   !! for (int I=1;I<=nfleet;I++) { ECHO(log_fdev(I)); }
   !! ECHO(foff_phz);
-  init_bounded_number_vector log_foff(1,nfleet,foff_lb,foff_ub,foff_phz);    ///> Female F offset to Male F.  20240413(WTS): changed lb from -10 to -20; ub from 10 to 0
+  init_bounded_number_vector log_foff(1,nfleet,foff_lb,foff_ub,foff_phz);    ///> Female F offset to Male F. 
   !! ECHO(log_foff);
   !!ECHO(nYparams);
   init_bounded_vector_vector log_fdov(1,nfleet,1,nYparams,-10,10,foff_phz);    ///> log-scale Female F offset devs to Male F
@@ -12797,10 +12797,14 @@ FINAL_SECTION
 // 2024-05-12 ** WTS. Added commandline option ("-jitter rseed") to override gmacs.dat setting. If rseed is 0, rseed is set based on the model start time. 
 //                    The value of rseed used to initialize the random number generator is written to "jitter.txt" to allow repeating a jittered model run. 
 //                    (Updated GMACS version to 2.20.10.)
+// 2024-04-13 ** WTS. Added initialization of log_foff to log_init_fbar_foff in INIATIALIZATION section (otherwise it initialized to 0).
+//                    Added likelihood penalty for ln-scale mean female offset to nlogPenalty(2) similar to ln-scale mean for males (search on '20240413').
+//                    Added fishing mortality parameters output to Rep1File.  
+//                    Updated GMACS version to 2.20.11.
 
 // To-do list
 // 1 - Bias ramp for recruitment
-// 2 - remove column 2 from F controls and remove "log_init_fbar_foff" (formerly "log_pen_fbar_foff")?
+// 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
 
 
 
