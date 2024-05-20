@@ -187,10 +187,12 @@ DATA_SECTION
   int jitflag;//--jitter indicator from commandline 
   int simflag;
   int rseed;
+  int nyrRetro1; //--number of retrospective peels from commandline (overrides value from gmacs.dat file)
  LOC_CALCS
   jitflag = 0;
   simflag = 0;
   rseed = 0;
+  nyrRetro1 = -1;//--dummy value at this point
   int opt,on;
 
   sexes(0) = "undetermined";
@@ -279,9 +281,7 @@ DATA_SECTION
     cout << "  +----------------------------------------------------------+\n";
     cout << "  | Running retrospective model with " << ad_comm::argv[on+1] << " recent yrs removed |\n";
     cout << "  +----------------------------------------------------------+\n";
-    cout << "  | YET TO BE IMPLEMENTED                                    |\n";
-    cout << "  +----------------------------------------------------------+\n";
-    exit(1);
+    nyrRetro1 = atoi(ad_comm::argv[on+1]);
   }
  END_CALCS
 
@@ -319,7 +319,10 @@ DATA_SECTION
   init_int OutDynB0;
   !! WriteFileName(OutDynB0);
   init_int nyrRetro;                                        ///> Retrospective end year
-  !! WriteFileName(nyrRetro);
+ LOCAL_CALCS
+  if (nyrRetro1 > -1) nyrRetro = nyrRetro1;//--override value from gmacs.dat
+  WriteFileName(nyrRetro);
+ END_CALCS
   
   init_int TurnOffPhase;                                    ///> Maximum phase
   init_int StopAfterFnCall                                  ///> Number of function calls to stop after
@@ -12896,6 +12899,7 @@ FINAL_SECTION
 // 2024-05-10 ** WTS. Added alternative format for environmental time series data in the dat file.  
 // 2024-05-14 ** AEP. (Updated GMACS to version 2.20.12) Extended initial conditions to allow reference length to pre-specified.
 // 2024-05-16 ** AEP. (Updated GMACS to version 2.20.13) F-penalty applies to all seasons (not just season 2)
+// 2024-05-20 ** WTS. Added commandline option to make a retrospective run using "-retro XX", where XX is the number of years to peel off.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
