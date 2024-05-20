@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.13; ** AEP & WTS **; Compiled 2024-05-20");
+ !! TheHeader = adstring("## GMACS Version 2.20.14; ** AEP & WTS **; Compiled 2024-05-20");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1320,61 +1320,66 @@ DATA_SECTION
   !! cout << " * Environmental data" << endl;
   !! gmacs_data << endl << "# Environmental data" << endl;
    init_int fmtEIs_in;                                           ///> environmental indices format flag (0=old style, 1=new style)
-  !! gmacs_data << fmtEIs_in     << "   #--format flag (0=old style, 1=new style)" << endl;
-  init_int NenvIndics;                                  ///> Number of environmental indicies
+  !! ECHO(fmtEIs_in)
+  !! gmacs_data << fmtEIs_in << "   #--format flag (0=old style, 1=new style)" << endl;
+  init_int NenvIndics;                                  ///> Number of environmental indices
   !! ECHO(NenvIndics)
-  !! gmacs_data << NenvIndics << endl;
+  !! gmacs_data << NenvIndics << "   #--number of environmental indices " << endl;
   imatrix EnvYrs(1,NenvIndics,1,2);
-  adstring_array strEIs(1,NenvIndics);
+  adstring_array strEIs;
   int NenvData;
   matrix EnvDataInp; 
   matrix EnvData(syr,nyr,1,NenvIndics);
-  EnvData.initialize();
  LOCAL_CALCS
-  cifstream* pGD = ad_comm::global_datafile;
-  NenvData = 0;
-  if (fmtEIs_in==0){
-    gmacs_data << "# Year range" << endl;
-    for (int i=1;i<=NenvIndics;i++) {
-      (*pGD) >> EnvYrs(i);//--start year, end year
-      gmacs_data << EnvYrs(i) << endl;
-      strEIs(i) = ::itoa(i);
-      NenvData += EnvYrs(i)(2)-EnvYrs(i)(1)+1;
-    }
-    ECHO(EnvYrs)
-    EnvDataInp.allocate(1,NenvData,1,3); 
-    gmacs_data << "# index year value" << endl;
-    for (int i=1;i<=NenvData;i++){
-      (*pGD) >> EnvDataInp(i);//--index number, year, value
-      gmacs_data << EnvDataInp(i) << endl;
-      EnvData((int)EnvDataInp(i,2),(int) EnvDataInp(i,1)) = EnvDataInp(i,3);
-    }//--i loop
-  } else {
-    int idx;
-    gmacs_data << "# index start_year end_year  name" << endl;
-    for (int i=1;i<=NenvIndics;i++) {
-      (*pGD) >> idx;      //--index number
-      (*pGD) >> EnvYrs(i);//--start year, end year
-      (*pGD) >> strEIs(i);//--index name
-      gmacs_data << idx << " " << EnvYrs(i) << " " << strEIs(i) << endl;
-      NenvData += EnvYrs(i)(2)-EnvYrs(i)(1)+1;
-    }
-    ECHO(EnvYrs)
-    EnvDataInp.allocate(1,NenvData,1,3); 
-    adstring strEI;
-    gmacs_data << "# index year value  name" << endl;
-    for (int i=1;i<=NenvData;i++){
-      (*pGD) >> EnvDataInp(i);//--index number, year, value
-      (*pGD) >> strEI;        //--index name
-      gmacs_data << EnvDataInp(i) << " " << strEI << endl;
-      if (strEI != strEIs[EnvDataInp(i,1)]) {
-        cout<<"Mismatch in EI index number and name for row " << i << endl;
-        ad_exit(-1);
+  if (NenvIndics>0) {
+    strEIs.allocate(1,NenvIndics);
+    EnvData.initialize();
+    cifstream* pGD = ad_comm::global_datafile;
+    NenvData = 0;
+    if (fmtEIs_in==0){
+      gmacs_data << "# Year range" << endl;
+      for (int i=1;i<=NenvIndics;i++) {
+        (*pGD) >> EnvYrs(i);//--start year, end year
+        gmacs_data << EnvYrs(i) << endl;
+        strEIs(i) = str(i);
+        NenvData += EnvYrs(i)(2)-EnvYrs(i)(1)+1;
       }
-      EnvData((int)EnvDataInp(i,2),(int) EnvDataInp(i,1)) = EnvDataInp(i,3);
-    }//--i loop
-  }
- 
+      ECHO(EnvYrs)
+      EnvDataInp.allocate(1,NenvData,1,3); 
+      gmacs_data << "# index year value" << endl;
+      for (int i=1;i<=NenvData;i++){
+        (*pGD) >> EnvDataInp(i);//--index number, year, value
+        gmacs_data << EnvDataInp(i) << endl;
+        EnvData((int)EnvDataInp(i,2),(int) EnvDataInp(i,1)) = EnvDataInp(i,3);
+      }//--i loop
+    } else {
+      int idx;
+      gmacs_data << "# index start_year end_year  name" << endl;
+      for (int i=1;i<=NenvIndics;i++) {
+        (*pGD) >> idx;      //--index number
+        (*pGD) >> EnvYrs(i);//--start year, end year
+        (*pGD) >> strEIs(i);//--index name
+        gmacs_data << idx << " " << EnvYrs(i) << " " << strEIs(i) << endl;
+        NenvData += EnvYrs(i)(2)-EnvYrs(i)(1)+1;
+      }
+      ECHO(EnvYrs)
+      EnvDataInp.allocate(1,NenvData,1,3); 
+      adstring strEI;
+      gmacs_data << "# index year value  name" << endl;
+      for (int i=1;i<=NenvData;i++){
+        (*pGD) >> EnvDataInp(i);//--index number, year, value
+        (*pGD) >> strEI;        //--index name
+        gmacs_data << EnvDataInp(i) << " " << strEI << endl;
+        if (strEI != strEIs[EnvDataInp(i,1)]) {
+          cout<<"Mismatch in EI index number and name for row " << i << endl;
+          ad_exit(-1);
+        }
+        EnvData((int)EnvDataInp(i,2),(int) EnvDataInp(i,1)) = EnvDataInp(i,3);
+      }//--i loop
+    }
+  }//--if NenvIndics > 0
+ END_CALCS
+
   // |------------------|
   // | END OF DATA FILE |
   // |------------------|
@@ -11500,10 +11505,10 @@ FUNCTION WriteFiles
   OutInpFile1 << "# Number of series" << endl;
   OutInpFile1 << NenvIndics << endl;
   OutInpFile1 << "# Year ranges" << endl;
-  OutInpFile1 << EnvYrs << endl;
+  if (NenvIndics>0) OutInpFile1 << EnvYrs << endl; else OutInpFile1 << "#--none" << endl;
   OutInpFile1 << "# Indices" << endl;
   OutInpFile1 << "# Index Year Value" << endl;
-  OutInpFile1 << EnvDataInp << endl;
+  if (NenvIndics>0) OutInpFile1 << EnvDataInp << endl;  else OutInpFile1 << "#--none" << endl;
   
   OutInpFile1 << endl << "## eof" << endl;
   OutInpFile1 << 9999 << endl;
