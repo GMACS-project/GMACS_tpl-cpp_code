@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.11; ** AEP & WTS **; Compiled 2024-04-17");
+ !! TheHeader = adstring("## GMACS Version 2.20.13; ** AEP & WTS **; Compiled 2024-05-20");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1467,12 +1467,14 @@ DATA_SECTION
   !! cout << " * General controls" << endl;
   !! ECHOSTR(" * General controls");
   init_vector model_controls(1,16);
+  init_vector model_controls(1,17);
   int rdv_syr;                                             ///> First year of estimates devs
   int rdv_eyr;                                             ///> First year of estimates devs
   int Term_molt;                                           ///> Consider terminal molting?
   int rdv_phz;                                             ///> Estimated rec_dev phase
 
-  int bInitializeUnfished;                                 ///> Flag to initialize at unfished conditions
+  int bInitializeUnfished;                                 ///> Flag to initialize population size structure
+  int Refclass;                                            ///> Reference class for calculation of initial conditions
   int bSteadyState;                                        ///> Variable to store option related to initial state
   number spr_lambda;                                       ///> Proportion of mature male biomass for MMB
   int nSRR_flag;                                           ///> if nSRR_flag == 1 then use a Beverton-Holt model to compute the recruitment deviations for minimization.
@@ -1521,15 +1523,16 @@ DATA_SECTION
   init_sex_ratio = -1.0*log((1.0-init_sex_ratio)/init_sex_ratio);
 
   bInitializeUnfished = int(model_controls(7));
-  spr_lambda          = model_controls(8);
-  nSRR_flag           = int(model_controls(9));
-  BRP_rec_sexR        = int(model_controls(10));
-  NyrEquil            = int(model_controls(11));
-  devParPhase         = int(model_controls(12));  
-  bias1               = int(model_controls(13));  
-  bias2               = int(model_controls(14));  
-  bias3               = int(model_controls(15));  
-  bias4               = int(model_controls(16));  
+  Refclass            = int(model_controls(8));
+  spr_lambda          = model_controls(9);
+  nSRR_flag           = int(model_controls(10));
+  BRP_rec_sexR        = int(model_controls(11));
+  NyrEquil            = int(model_controls(12));
+  devParPhase         = int(model_controls(13));  
+  bias1               = int(model_controls(14));  
+  bias2               = int(model_controls(15));  
+  bias3               = int(model_controls(16));  
+  bias4               = int(model_controls(17));  
   
   for (int Iy=syr;Iy<=nyr;Iy++)
    if (Iy <= bias1)
@@ -1556,15 +1559,16 @@ DATA_SECTION
   gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
   gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
   gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(8) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(9)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(11)) << " # Years to compute equilibria" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(12)) << " # Phase for deviation parameters" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(13)) << " # First year of bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(14)) << " # First full bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(15)) << " # Last full bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last year of bias-correction" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(8)) << " # Reference size-class for initial conditons = 3" << endl;
+  gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(11)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(12)) << " # Years to compute equilibria" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(13)) << " # Phase for deviation parameters" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(14)) << " # First year of bias-correction" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
+  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
   gmacs_ctl << endl;
   echoinput << endl << "# Extra controls" << endl;
   echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
@@ -1574,21 +1578,23 @@ DATA_SECTION
   echoinput << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
   echoinput << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
   echoinput << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  echoinput << model_controls(8) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  echoinput << model_controls(9) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  echoinput << model_controls(10) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  echoinput << model_controls(11) << " # Years to compute equilibria" << endl;
-  echoinput << model_controls(12) << " # Phase for deviation parameters" << endl;
-  echoinput << model_controls(13) << " # First year of bias-correction" << endl;
-  echoinput << model_controls(14) << " # First full bias-correction" << endl;
-  echoinput << model_controls(15) << " # Last full bias-correction" << endl;
-  echoinput << model_controls(16) << " # Last year of bias-correction" << endl;
+  echoinput << model_controls(8) << " # Reference size-class for initial conditons = 3" << endl;
+  echoinput << model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+  echoinput << model_controls(10) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+  echoinput << model_controls(11) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+  echoinput << model_controls(12) << " # Years to compute equilibria" << endl;
+  echoinput << model_controls(13) << " # Phase for deviation parameters" << endl;
+  echoinput << model_controls(14) << " # First year of bias-correction" << endl;
+  echoinput << model_controls(15) << " # First full bias-correction" << endl;
+  echoinput << model_controls(16) << " # Last full bias-correction" << endl;
+  echoinput << model_controls(17) << " # Last year of bias-correction" << endl;
   echoinput << endl;
 
   // Default number of parameters
   ntheta = 3 + 2*nsex + 3;
   
   int Jpnt;
+  int Kpnt;
   Jpnt = 1;
   parname1(Jpnt) = "Log(R0)";
   parname1(Jpnt+1) = "Log(Rinitial)";
@@ -1646,7 +1652,7 @@ DATA_SECTION
   // Estimate initial numbers as logistic offsest
   if ( bInitializeUnfished == FREEPARSSCALED )
    {
-    int Ipnt = 0;
+    int Ipnt = 0; Kpnt = 0;
     for ( int h = 1; h <= nsex; h++ )
      for ( int m = 1; m <= nmature; m++ )
       for ( int o = 1; o <= nshell; o++ )
@@ -1654,15 +1660,16 @@ DATA_SECTION
         int Ihmo = pntr_hmo(h,m,o);
         for ( int l = 1; l <= nclass; l++ )
          {
-          if (Ipnt>0)
+          if (Kpnt!=Refclass-1)
            { 
+            Ipnt += 1;
             anystring = "Scaled_logN_for_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
             parname1(Jpnt+Ipnt) = anystring;
            }
-          Ipnt += 1;
+          Kpnt += 1; 
          }  
        }
-    PPnt += Ipnt-1;
+    PPnt += Ipnt;
    }
   }
  END_CALCS
@@ -3427,7 +3434,7 @@ DATA_SECTION
   vector foff_ub(1,nfleet);
 
   !! gmacs_ctl << "# Controls on F" << endl;
-  !! gmacs_ctl << "#   Initial_male_F Initial_fema_F Pen_SD (early) Pen_SD (later) Phz_mean_F_mal Phz_mean_F_fem   Lower_mean_F   Upper_mean_F Low_ann_male_F  Up_ann_male_F    Low_ann_f_F     Up_ann_f_F" << endl;
+  !! gmacs_ctl << "#   Initial_male_F  Initial_fem_F   Pen_SD (mal)   Pen_SD (fem) Phz_mean_F_mal Phz_mean_F_fem   Lower_mean_F   Upper_mean_F Low_ann_male_F  Up_ann_male_F    Low_ann_f_F     Up_ann_f_F" << endl;
   !! for (int b=1; b<=nfleet;b++)
   !!  {
   !!   gmacs_ctl << "    ";for (int ii=1;ii<=12;ii++) gmacs_ctl << setw(14) << setprecision(6) << setfixed() << f_controls(b,ii) << " " ;
@@ -4492,7 +4499,7 @@ PARAMETER_SECTION
 //  sdreport_number sd_last_ssb;
 
   vector gradientOut(1,NEstPars);
-  sdreport_matrix sd_log_recruits(1,nsex,syr,nyr);
+  sdreport_matrix sd_log_recruits(1,nsex,syr,nyrRetro);
   sdreport_vector ParsOut(1,NVarPar);
   vector sd_fmsy(1,nfleet);
   vector sd_fofl(1,nfleet);
@@ -4786,7 +4793,7 @@ PROCEDURE_SECTION
   **/
 
 FUNCTION initialize_model_parameters
-  int Ipnt, Jpnt, Ihmo;
+  int Ipnt, Jpnt, Kpnt, Ihmo;
 
   if (verbose >= 3) cout<<"starting initialize_model_parameters";
 
@@ -4841,7 +4848,7 @@ FUNCTION initialize_model_parameters
   TempSS = 0;
   if ( bInitializeUnfished == FREEPARSSCALED )
    {
-    Ipnt = 0;
+    Ipnt = 0; Kpnt = 0;
     for ( int h = 1; h <= nsex; h++ )
      for ( int m = 1; m <= nmature; m++ )
       for ( int o = 1; o <= nshell; o++ )
@@ -4849,13 +4856,16 @@ FUNCTION initialize_model_parameters
         Ihmo = pntr_hmo(h,m,o);
         for ( int l = 1; l <= nclass; l++ )
          {
-          if (Ipnt==0)
-           logN0(Ihmo,1) = 0;
+          if (Kpnt==Refclass-1)
+           logN0(Ihmo,l) = 0;
           else
-            { logN0(Ihmo,l) = theta(Jpnt+Ipnt);
-             if (active(theta(Jpnt+Ipnt)))  TempSS += theta(Jpnt+Ipnt)*theta(Jpnt+Ipnt); }
-          Ipnt += 1;
-         }
+           { 
+            Ipnt += 1;    
+            logN0(Ihmo,l) = theta(Jpnt+Ipnt);
+            if (active(theta(Jpnt+Ipnt)))  TempSS += theta(Jpnt+Ipnt)*theta(Jpnt+Ipnt); 
+           }
+          Kpnt += 1;    
+         } //--l
        }
    }
   if (verbose >= 3) cout<<"--finished setting initial devs()"<<endl;
@@ -8097,24 +8107,25 @@ FUNCTION calc_objective_function
   dvariable fbar;
   dvariable ln_fbar;
   for ( int k = 1; k <= nfleet; k++ )
-   {
-    // Jim made penalty apply only to season 2 for Fbar ft(1,nfleet,1,nsex,syr,nyrRetro,1,nseason);            ///> Fishing mortality by gear
-    fbar = mean( trans(ft(k,1))(2) );
-    if ( init_fbar(k) > 0 && fbar != 0 )
-     {
-      ln_fbar = log(fbar);
-      nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
-     }
-   //20240413: following for females added by WTS
-    if (nsex==2){
-      fbar = mean( trans(ft(k,2))(2) );
-      if ( fbar != 0 )
+   for ( int j = 1; j <= nseason; j++ )
+    {
+     fbar = mean( trans(ft(k,1))(j) );
+     if ( init_fbar(k) > 0 && fbar != 0 )
       {
-        ln_fbar = log(fbar);
-        nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
+       ln_fbar = log(fbar);
+       nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
       }
+     if (nsex==2)
+      {
+       fbar = mean( trans(ft(k,2))(j) );
+       if ( fbar != 0 )
+        {
+         ln_fbar = log(fbar);
+         nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
+        }
+      } 
     }
-   }
+   
    if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
 
   // 5-6) Penalties on recruitment devs.
@@ -9598,6 +9609,7 @@ FUNCTION calc_sdreport
 
   // standard deviations of assessment outcomes
   sd_log_recruits = log(recruits);
+  
   int Ipnt = NRecPar;
   if (OutRecruit==YES)
    for (int h=1;h<=nsex;h++)
@@ -9644,6 +9656,7 @@ FUNCTION calc_sdreport
   // Actual catch
   F = ftmp;
   F2 = ftmp2;
+  cout << "Here99" << endl;
   calc_total_mortality();
   calc_initial_numbers_at_length();
   update_population_numbers_at_length();
@@ -11524,15 +11537,16 @@ FUNCTION WriteFiles
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
   OutInpFile1 << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  OutInpFile1 << setw(4) << setprecision(2) << setfixed()<< model_controls(8) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(9)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(10)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(11)) << " # Years to compute equilibria" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(12)) << " # Phase for deviation parameters" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(13)) << " # First year of bias-correction" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(14)) << " # First full bias-correction" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(15)) << " # Last full bias-correction" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(16)) << " # Last year of bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(8)) << " # ILambda (proportion of mature male biomass for SPR reference points)" << endl;
+  OutInpFile1 << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(11)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(12)) << " # Years to compute equilibria" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(13)) << " # Phase for deviation parameters" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(14)) << " # First year of bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
   OutInpFile1 << endl;
 
   OutInpFile1 << "# Expecting " << ntheta << " theta parameters" << endl;
@@ -12001,7 +12015,7 @@ FUNCTION WriteFiles
   OutInpFile1 <<"## ==================================================================================== ##" << endl;
   OutInpFile1 <<"## " << endl;
   OutInpFile1 << "# Controls on F" << endl;
-  OutInpFile1 << "#   Initial_male_F Initial_fema_F Pen_SD (early) Pen_SD (later) Phz_mean_F_mal Phz_mean_F_fem   Lower_mean_F   Upper_mean_F Low_ann_male_F  Up_ann_male_F    Low_ann_f_F     Up_ann_f_F" << endl;
+  OutInpFile1 << "#   Initial_male_F Initial_fema_F   Pen_SD (mal)   Pen_SD (fem) Phz_mean_F_mal Phz_mean_F_fem   Lower_mean_F   Upper_mean_F Low_ann_male_F  Up_ann_male_F    Low_ann_f_F     Up_ann_f_F" << endl;
   for (int b=1; b<=nfleet;b++)
     {
      OutInpFile1 << "    ";for (int ii=1;ii<=12;ii++) OutInpFile1 << setw(14) << setprecision(6) << setfixed() << f_controls(b,ii) << " " ;
@@ -12849,34 +12863,35 @@ FINAL_SECTION
 //                    Added additional diagnostics for verbose>10.
 //                    (Updated GMACS to version 2.20.07). 
 // 2024-04-05 ** WTS. Revised Gmacsall.out formats to play nice with R. Also developed R code to read and create a list object from the .out file.
-// 2024-04-08 ** WTS. Changed leading dimension of log_vn_pars, log_vn_lb, log_vn_ub, log_vn_phz, prior_log_vn_type, prior_log_vn_p1, and 
+// 2024-05-08 ** WTS. Changed leading dimension of log_vn_pars, log_vn_lb, log_vn_ub, log_vn_phz, prior_log_vn_type, prior_log_vn_p1, and 
 //                    prior_log_vn_p2 from nSizeComps_in (the number of input size comps) to nSizeComps (the number of size comps 
 //                    after "aggregation") to better match the number of effective sample size parameters. nAgeCompType_in and 
 //                    nAgeCompType were renamed iSizeCompType_in and iSizeCompType, respectively. 
 //                    (Updated GMACS to version 2.20.08).
 //                    Added N for females by maturity state and shell condition to Gmacsall.out as dataframe with males.
-// 2024-04-08 ** WTS. Defined RepFile1 as outstream to "gmacs.rep1". Changed REPORT and REPORT2 macros to REPVEC and REPVEC2 macros for 
+// 2024-05-08 ** WTS. Defined RepFile1 as outstream to "gmacs.rep1". Changed REPORT and REPORT2 macros to REPVEC and REPVEC2 macros for 
 //                    vector (or scalar) quantities and added output to RepFile1. Added REPMAT and REPMAT2 mamcros to output matrices 
 //                    to OutFile1 (Gmacsall.out), OutFile2 (gmacs.rep), and RepFile1. Added FUNCTIONs to_str and strg to create an adstring 
 //                    representation of a space-separated vector (simplifies code to write a vector to a file).
-// 2024-04-10 ** WTS. Added more output to RepFile1. Added explicit "Status" column to Summary section of Gmacsall.out to indicate whether
+// 2024-05-10 ** WTS. Added more output to RepFile1. Added explicit "Status" column to Summary section of Gmacsall.out to indicate whether
 //                    parameter estimate was close to lower bound ("*-"), upper bound ("*+"), or neither ("ok").
 //                    Changed "pen_fbar", "log_pen_fbar", and "log_pen_fbar_off" to "init_fbar", "log_init_fbar", and "log_init_fbar_foff"
 //                    to better clarify their purpose. 
 //                    TODO: "log_init_fbar_foff" (column 2 of F controls) is never used anywhere. It should be removed from the ctl file.
-// 2024-04-11 ** WTS. Revised size fit summary to RepFile1 (gmacs.rep1), added mapInpToAggSizeComps matrix which provides mapping from input size comps to 
+// 2024-05-11 ** WTS. Revised size fit summary to RepFile1 (gmacs.rep1), added mapInpToAggSizeComps matrix which provides mapping from input size comps to 
 //                    aggregated size comps (and is used in then revised size fit summary). 
 //                    (Updated GMACS version to 2.20.09.)
-// 2024-04-12 ** WTS. Added commandline option ("-jitter rseed") to override gmacs.dat setting. If rseed is 0, rseed is set based on the model start time. 
+// 2024-05-12 ** WTS. Added commandline option ("-jitter rseed") to override gmacs.dat setting. If rseed is 0, rseed is set based on the model start time. 
 //                    The value of rseed used to initialize the random number generator is written to "jitter.txt" to allow repeating a jittered model run. 
 //                    (Updated GMACS version to 2.20.10.)
 // 2024-04-13 ** WTS. Added initialization of log_foff to log_init_fbar_foff in INIATIALIZATION section (otherwise it initialized to 0).
 //                    Added likelihood penalty for ln-scale mean female offset to nlogPenalty(2) similar to ln-scale mean for males (search on '20240413').
 //                    Added fishing mortality parameters output to Rep1File.  
 //                    Updated GMACS version to 2.20.11.
-// 2024-04-22 ** AEP. Added bias ramp for recruitment. 
-// 2024-5-10 ** WTS.  Added alternative format for environmental time series data in the dat file.  
-//                    Updated GMACS version to 2.20.12.
+// 2024-04-22 ** AEP. Added bias-ramp for recruitment deviations. 
+// 2024-05-10 ** WTS. Added alternative format for environmental time series data in the dat file.  
+// 2024-05-14 ** AEP. (Updated GMACS to version 2.20.12) Extended initial conditions to allow reference length to pre-specified.
+// 2024-05-16 ** AEP. (Updated GMACS to version 2.20.13) F-penalty applies to all seasons (not just season 2)
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
