@@ -1466,7 +1466,6 @@ DATA_SECTION
   // |---------------------------------------------------------|
   !! cout << " * General controls" << endl;
   !! ECHOSTR(" * General controls");
-  init_vector model_controls(1,16);
   init_vector model_controls(1,17);
   int rdv_syr;                                             ///> First year of estimates devs
   int rdv_eyr;                                             ///> First year of estimates devs
