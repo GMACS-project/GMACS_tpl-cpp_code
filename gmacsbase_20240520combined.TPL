@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.15; ** AEP & WTS **; Compiled 2024-05-20");
+ !! TheHeader = adstring("## GMACS Version 2.20.14; ** AEP & WTS **; Compiled 2024-05-20");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -3491,12 +3491,10 @@ DATA_SECTION
   !!       exit(1); 
   !!   }
   init_ivector bTailCompression_in(1,nSizeComps_in);                 ///> option for tail compression
-  init_vector bTailCompression_pmin_in(1,nSizeComps_in);             ///> extent of tail compression 
   init_ivector iCompAggregator(1,nSizeComps_in);                     ///> should data be aggregated
   init_ivector lf_catch_in(1,nSizeComps_in);                         ///> Survey-like predictions or catch-like predictions
   init_vector lf_lambda_in(1,nSizeComps_in);                         ///> Lambda for effect N
   init_vector lf_emphasis_in(1,nSizeComps_in);                       ///> Overall lambda
-  init_ivector survey_for_q_in(1,nSizeComps_in);                     ///> Survey to which this comp relates
 
   int nSizeComps;
   !! nSizeComps = max(iCompAggregator);                              ///> Number of length comps after aggregation
@@ -3566,13 +3564,11 @@ DATA_SECTION
   ECHOSTR(anystring);
 
   gmacs_ctl << setw(6) << setfixed() << iSizeCompType_in     << " # Type of likelihood" <<  endl;
-  gmacs_ctl << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression" <<  endl;
-  gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << bTailCompression_pmin_in        << " # Auto tail compression (pmin)" << endl;
+  gmacs_ctl << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression (pmin)" <<  endl;
   gmacs_ctl << setw(6) << setfixed() << iCompAggregator    << " # Composition aggregator codes" << endl;
   gmacs_ctl << setw(6) << setfixed() << lf_catch_in        << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
   gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_lambda_in        << " # Lambda for effective sample size" << endl;
   gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
-  gmacs_ctl << setw(6) << setfixed() << survey_for_q_in        << "  Survey to set Q for this comp" << endl;
   nSizeCompCols.initialize();
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
@@ -3678,64 +3674,9 @@ DATA_SECTION
   matrix size_comp_year(1,nSizeComps,1,nSizeCompRows);
   matrix size_comp_season(1,nSizeComps,1,nSizeCompRows);
   ivector ilike_vector(1,nlikes)
-  vector TempSize(1,nclass);
-  vector cumsum(1,nclass);
-  number pmin;
-  number TotalSize;
-  
-  3darray tailcompind(1,nSizeComps_in,1,nSizeCompRows_in,1,2);
 
  LOC_CALCS
   int i,j;
-   
-  // Ths does the tail compression
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ ) 
-   for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
-    {
-     // Tail compression is on
-     if (bTailCompression_in(kk) == 1)
-      {
-       pmin =bTailCompression_pmin_in(kk);
-       TempSize.initialize();
-       cout << d3_obs_size_comps_in(kk,ii) << endl;
-       for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) TempSize(jj) = d3_obs_size_comps_in(kk,ii,jj);
-       TotalSize = sum(TempSize);
-       TempSize /= TotalSize;
-       int end = 0;
-       cumsum.initialize(); 
-       for (int jj=1;jj<=nSizeCompCols_in(kk) & end==0;jj++)
-        {
-         if (jj==1) cumsum(jj) = TempSize(jj);
-         if (jj>1) cumsum(jj) = cumsum(jj-1) + TempSize(jj);
-         TempSize(jj) = 0;
-         if (cumsum(jj) > pmin) end = jj;
-        }
-       TempSize(end) = cumsum(end);
-       tailcompind(kk,ii,1) = end;
-       end = nSizeCompCols_in(kk)+1;
-       int nsizecompscols = nSizeCompCols_in(kk);
-       for (int jj=nSizeCompCols_in(kk);jj>=1;jj--)
-         {
-         if (jj==nSizeCompCols_in(kk)) cumsum(jj) = TempSize(jj);
-         if (jj<nSizeCompCols_in(kk)) cumsum(jj) = cumsum(jj+1) + TempSize(jj);
-         TempSize(jj) = 0;
-         if (cumsum(jj) > pmin) { end = jj; jj = -1; }
-        }
-       TempSize(end) = cumsum(end);
-       tailcompind(kk,ii,2) = end;
-       //--normalize to input sample size
-       for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = TempSize(jj)*size_comp_sample_size_in(kk,ii);
-       cout << d3_obs_size_comps_in(kk,ii) << endl;
-       //exit(1);
-      }
-     else
-      { //--no tail compression
-        tailcompind(kk,ii,1) = 1; tailcompind(kk,ii,2) = nSizeCompCols_in(kk); 
-        //--normalize to input sample size
-        d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*(d3_obs_size_comps_in(kk,ii)/sum(d3_obs_size_comps_in(kk,ii)));
-      }
-    }//--loops over ii and kk
-  
   int oldk = 9999;
   // This aggregates the size composition data by appending size comps horizontally
   int idx = 1;//--row index into mapInpToAggSizeComps
@@ -3749,7 +3690,7 @@ DATA_SECTION
       for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
         if ((d3_SizeComps_in(kk,ii,-7) <= nyrRetro) || 
            ((d3_SizeComps_in(kk,ii,-7) == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6)) == 1) ){
-          d3_obs_size_comps(k,ii,j) = d3_obs_size_comps_in(kk,ii,jj); //--_in now sums to input sample size over jj
+          d3_obs_size_comps(k,ii,j) = d3_obs_size_comps_in(kk,ii,jj); 
           //cout << idx << " inp: " << kk << " " << ii << " " << jj << " agg: " << k << " " << ii << " " << j << endl;
           mapInpToAggSizeComps(idx)(1) = kk; //--input size comp dataframe index
           mapInpToAggSizeComps(idx)(2) = ii; //--input size comp row
@@ -3771,7 +3712,7 @@ DATA_SECTION
     for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
      if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) )
       {
-       size_comp_sample_size(k,ii) += size_comp_sample_size_in(kk,ii);//--add up component input sample sies
+       size_comp_sample_size(k,ii) += size_comp_sample_size_in(kk,ii);
        size_comp_year(k,ii) = size_comp_year_in(kk,ii);
        size_comp_season(k,ii) = size_comp_season_in(kk,ii);
       }
@@ -3795,7 +3736,7 @@ DATA_SECTION
   for ( int k = 1; k <= nSizeComps; k++ )
    for ( int i = 1; i <= nSizeCompRows(k); i++ )
     if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) )
-     d3_obs_size_comps(k,i) /= sum(d3_obs_size_comps(k,i));//--now sums to 1 over 3rd index for "aggregated" comp
+     d3_obs_size_comps(k,i) /= sum(d3_obs_size_comps(k,i));
 
   ECHO(d3_obs_size_comps);
   ilike_vector(1) = nCatchDF;
@@ -4810,31 +4751,30 @@ PROCEDURE_SECTION
   // sd_report variables
   if ( sd_phase() || StopAfterFnCall==1)
    {
-    if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
-    // Save the estimates parameters to ParsOut (used for variance estimation)
-    Ipnt = 0;
-    for (ii=1;ii<=ntheta;ii++) if (theta_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = theta(ii); }
-    for (ii=1;ii<=n_Gpar; ii++) if (G_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = G_pars_est(ii); }
-    for (ii=1;ii<=n_Mpar; ii++) if (M_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = M_pars_est(ii); }
-    for (ii=1;ii<=n_Spar; ii++) if (S_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = S_pars_est(ii); }
-    for (ii=1;ii<=nfleet; ii++) if (f_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_fbar(ii); }
-    for (ii=1;ii<=nfleet; ii++)
-    for (jj=1;jj<=nFparams(ii);jj++) if (f_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_fdev(ii,jj); }
-    for (ii=1;ii<=nfleet; ii++) if (foff_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_foff(ii); }
-    for (ii=1;ii<=nfleet; ii++)
-    if (nYparams(ii) > 0 && foff_phz(ii) > 0)
-     {
-      for (jj=1;jj<=nYparams(ii);jj++) {Ipnt +=1; ParsOut(Ipnt) = log_fdov(ii,jj); }
-     }
+      if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
+  // Save the estimates parameters to ParsOut (used for variance estimation)
+  Ipnt = 0;
+  for (ii=1;ii<=ntheta;ii++) if (theta_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = theta(ii); }
+  for (ii=1;ii<=n_Gpar; ii++) if (G_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = G_pars_est(ii); }
+  for (ii=1;ii<=n_Mpar; ii++) if (M_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = M_pars_est(ii); }
+  for (ii=1;ii<=n_Spar; ii++) if (S_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = S_pars_est(ii); }
+  for (ii=1;ii<=nfleet; ii++) if (f_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_fbar(ii); }
+  for (ii=1;ii<=nfleet; ii++)
+   for (jj=1;jj<=nFparams(ii);jj++) if (f_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_fdev(ii,jj); }
+  for (ii=1;ii<=nfleet; ii++) if (foff_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_foff(ii); }
+  for (ii=1;ii<=nfleet; ii++)
+  if (nYparams(ii) > 0 && foff_phz(ii) > 0)
+   {
+    for (jj=1;jj<=nYparams(ii);jj++) {Ipnt +=1; ParsOut(Ipnt) = log_fdov(ii,jj); }
+   }
     for (ii=rdv_syr;ii<=rdv_eyr; ii++) if (rdv_phz > 0) {Ipnt +=1; ParsOut(Ipnt) = rec_dev_est(ii); }
-    for (ii=rdv_syr;ii<=rdv_eyr; ii++) if (rec_prop_phz > 0) {Ipnt +=1; ParsOut(Ipnt) = logit_rec_prop_est(ii); }
-    for (ii=1;ii<=nSizeComps; ii++) if (log_vn_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_vn(ii); }
-    for (ii=1;ii<=n_qpar; ii++) if (q_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = survey_q(ii); }
-    for (ii=1;ii<=n_addcv_par; ii++) if (cv_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_add_cv(ii); }
-    for (ii=1;ii<=n_deviations_est; ii++) if (deviations_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = par_devs(ii); }
+  for (ii=rdv_syr;ii<=rdv_eyr; ii++) if (rec_prop_phz > 0) {Ipnt +=1; ParsOut(Ipnt) = logit_rec_prop_est(ii); }
+  for (ii=1;ii<=nSizeComps; ii++) if (log_vn_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_vn(ii); }
+  for (ii=1;ii<=n_qpar; ii++) if (q_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = survey_q(ii); }
+  for (ii=1;ii<=n_addcv_par; ii++) if (cv_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = log_add_cv(ii); }
+  for (ii=1;ii<=n_deviations_est; ii++) if (deviations_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = par_devs(ii); }
 
-    // AEP need to look at this
-    if (CalcRefPoints!=0 && nyrRetroNo==0) calc_spr_reference_points2(1);
+    if (CalcRefPoints!=0 && nyrRetroNo==0) calc_spr_reference_points2(0);
     if ( verbose >= 3 ) cout << "Ok after calc_spr_reference_points ..." << endl;
     calc_sdreport();
     if ( verbose >= 3 ) cout << "Ok after calc_sdreport ..." << endl;
@@ -7206,8 +7146,8 @@ FUNCTION calc_relative_abundance
   dvar_vector ret(1,nclass);                                         ///> retention
   dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
   dvar_vector tempZ1(1,nclass);                                      ///> total mortality
-  dvar_vector V(1,nSurveyRows);                                      ///> Predicted survey index
-   
+
+  dvar_vector V(1,nSurveyRows);
   V.initialize();
   for ( int k = 1; k <= nSurveys; k++ ){
     for ( int jj = 1; jj <= nSurveyRows; jj++ ){
@@ -7492,8 +7432,6 @@ FUNCTION calc_predicted_composition
    dvar_vector dNtmp(1,nclass);                                      ///> temporary Ns
    dvar_vector nal(1,nclass);                                        ///> numbers or biomass at length.
    dvar_vector tempZ1(1,nclass);                                     ///> total mortality
-   dvariable qmult;                                                  ///> Q multiplier for comps
-   dvariable cumsum;                                                 ///> used for tail compression
 
    d3_pre_size_comps_in.initialize();
    d3_pre_size_comps.initialize();
@@ -7628,28 +7566,8 @@ FUNCTION calc_predicted_composition
          }
         d3_pre_size_comps_in(ii)(jj)        = dNtmp(1,nbins);
         d3_pre_size_comps_in(ii)(jj)(nbins) = sum(dNtmp(nbins,nclass));
-        // Now apply tail compression (perhaps)
-        if (bTailCompression_in(ii) == 1)
-         {
-          //cout << "doing" << endl;
-          cumsum = 0;
-          for (int kk=1;kk<=tailcompind(ii,jj,1);kk++)
-           {
-            cumsum += d3_pre_size_comps_in(ii,jj,kk);
-            d3_pre_size_comps_in(ii,jj,kk) = 0;
-           }
-          d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,1)) = cumsum;
-          cumsum = 0;
-          for (int kk=nbins;kk>=tailcompind(ii,jj,2);kk--)
-           {
-            cumsum += d3_pre_size_comps_in(ii,jj,kk);
-            d3_pre_size_comps_in(ii,jj,kk) = 0;
-           }
-          d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,2)) = cumsum;
-         }
-        
-	} // jj (years)
-    } // ii (sizecomp)
+		}
+    }
 
    // This aggregates the size composition data by appending size compositions horizontally
    int oldk = 9999; int j; int i;
@@ -7662,30 +7580,16 @@ FUNCTION calc_predicted_composition
       {
        j += 1;
        for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
-        {
-         int iyr = d3_SizeComps_in(kk,ii,-7) ;
-         if (iyr <= nyrRetro || (iyr == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) )
-          { 
-           i = ii; 
-           qmult = 1;
-           if (survey_for_q_in(kk) >0) qmult = SurveyQT(survey_for_q_in(kk),iyr);
-           d3_pre_size_comps(k,i,j) = qmult*d3_pre_size_comps_in(kk,ii,jj); 
-          } // iyr
-        }
+        if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) )
+        { i = ii; d3_pre_size_comps(k,i,j) = d3_pre_size_comps_in(kk,ii,jj); }
       }
     }
- 
+
    // This normalizes all observations by row
    for ( int k = 1; k <= nSizeComps; k++ )
     for ( int i = 1; i <= nSizeCompRows(k); i++ )
      if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) )
       d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
-
-  if (verbose >= 3) {
-    ECHO(d3_pre_size_comps_in)
-    ECHO(d3_pre_size_comps)
-  }
-    
 
 // =================================================================================================================================================
 
@@ -8035,7 +7939,6 @@ FUNCTION index_likelihood
 FUNCTION length_likelihood
 
   // 3) Likelihood for size composition data.
-  if (verbose >= 3) ECHOSTR("Starting length-likelihood")
   d3_res_size_comps.initialize();
   for ( int ii = 1; ii <= nSizeComps; ii++ )
    {
@@ -8051,7 +7954,7 @@ FUNCTION length_likelihood
        }
      } // -- jrow
 
-    bool bCmp = 0;
+    bool bCmp = bTailCompression(ii);
     class acl::negativeLogLikelihood *ploglike;                                               ///> Negative log-likelihood
 
     switch ( iSizeCompType(ii) )                                                               ///> Select option for size-comp data
@@ -8075,12 +7978,10 @@ FUNCTION length_likelihood
 
     if ( ploglike != NULL )                                                                   ///> Compute the likelihood
      {
-      dvariable nll = ploglike->nloglike(log_effn, P);
-      nloglike(3,ii) += nll;
-      if (verbose >= 3) ECHO(nll)
+      nloglike(3,ii) += ploglike->nloglike(log_effn, P);
       delete ploglike;
      }
-   }//--loop ii
+   }
   if ( verbose >= 3 ) cout << "Ok after composition likelihood ..." << endl;
 
 // --------------------------------------------------------------------------------------------------
@@ -8526,7 +8427,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
        log_ftmp = log_fimpbar(k);
        if (h==2) log_ftmp += log_foff(k);
        _ft(k,h,j) = mfexp(log_ftmp);
-       
+
        // Discard mortality rate
        sel.initialize(); ret.initialize(); vul.initialize();
        for (int iy=YrRefSel1; iy<=YrRefSel2;iy++)
@@ -8543,10 +8444,10 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
        vul /= float(YrRefSel2-YrRefSel1+1);
        FF1(h,j) += _ft(k,h,j) * vul;
        FF2(h,j) += _ft(k,h,j) * sel;
-     }
+      }
   // computer the total mortality
   ZZ1.initialize(); ZZ2.initialize(); SS_pass.initialize();
-  
+
   for(int m = 1; m <=nmature;m++)
   for ( int h = 1; h <= nsex; h++ )
    for ( int j = 1; j <= nseason; j++ )
@@ -9448,7 +9349,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
    {
 
     // Find Steepness and R0
-    cout << "Computing steepness" << endl;
     Eqn_basis = STOCKRECREC;
     log_fimpbar = log(sd_fmsy);
 
@@ -9476,7 +9376,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       equilibrium_numbers = calc_brute_equilibrium(spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1b = oflret_pass;
       Deriv = (SSBV1a-SSBV1b)/0.002;
-      //cout << "Solve2 " << ii << " " << Steepness << " " << Deriv << endl;
       if (Deriv > 0)
        {
         SteepMin = Steepness - (SteepMax-SteepMin)/29.0;
@@ -9484,7 +9383,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
         ii = 40;
        }
      }
-  
+
     //SteepMin = 0.2; SteepMax = 5.0;
     for (int ii=1;ii<=30;ii++)
      {
@@ -9501,7 +9400,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
        }
 
       for (int k=1;k<=nfleet;k++)
-      if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
+       if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
       equilibrium_numbers = calc_brute_equilibrium(spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1a = oflret_pass;
       for (int k=1;k<=nfleet;k++)
@@ -9509,10 +9408,9 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       equilibrium_numbers = calc_brute_equilibrium(spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1b = oflret_pass;
       Deriv = (SSBV1a-SSBV1b)/0.002;
-      //cout << "Solve " << ii << " " << SteepMin << " " << SteepMax << " " << Deriv << endl;
       if (Deriv < 0) SteepMin = Steepness; else SteepMax = Steepness;
      }
-    //cout << Steepness << " " << Deriv << " " << ssbF0 << endl;
+    cout << Steepness << " " << Deriv << " " << ssbF0 << endl;
     if (Stock_rec_prj==RICKER)
      {
       SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
@@ -9557,7 +9455,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 
     log_fimpbar = log(sd_fmsy);
     equilibrium_numbers = calc_brute_equilibrium(spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
-    cout << "Final Yield" << ssb_pass/ssbF0 << " " << ssb_pass/spr_bmsy << " " << exp(log_fimpbar) << " " << oflret_pass << " " << Steepness << " " << Deriv << " " << ssbF0 << " " << spr_bmsy << endl;
+    cout << ssb_pass/ssbF0 << " " << ssb_pass/spr_bmsy << " " << exp(log_fimpbar) << " " << oflret_pass << " " << Steepness << " " << Deriv << " " << ssbF0 << " " << spr_bmsy << endl;
 
     if (Compute_yield_prj==YES && DoProfile==YES)
      for (int ii=0;ii<=100;ii++)
@@ -9569,10 +9467,8 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
        spr_yield(ii,2) = ssb_pass/spr_bmsy;
        spr_yield(ii,3) = exp(log_fimpbar(1));
        spr_yield(ii,4) = oflret_pass;
-       cout << ii << " " << spr_yield(ii) << endl;
-      } //--ii
-     exit(1); 
-   } 
+      }
+   } //--ii
 // =======================================================================================================================================
 
   /**
@@ -12236,13 +12132,11 @@ FUNCTION WriteFiles
   OutInpFile1 << anystring << endl;
  
   OutInpFile1 << setw(6) << setfixed() << iSizeCompType_in     << " # Type of likelihood" <<  endl;
-  OutInpFile1 << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression" <<  endl;
-  OutInpFile1 << setw(6) << setprecision(4) << setfixed()    << bTailCompression_in        << " # Auto tail compression (pmin)" << endl;
+  OutInpFile1 << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression (pmin)" <<  endl;
   OutInpFile1 << setw(6) << setfixed() << iCompAggregator    << " # Composition aggregator index" << endl;
   OutInpFile1 << setw(6) << setfixed() << lf_catch_in        << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
   OutInpFile1 << setw(6) << setprecision(4) << setfixed()    << lf_lambda_in        << " # Lambda for effective sample size" << endl;
   OutInpFile1 << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
-  OutInpFile1 << setw(6) << setfixed() << survey_for_q_in        << " # Survey to set Q for this comp" << endl;
 
   OutInpFile1 << endl;
   OutInpFile1 << "# The number of following parameters must match max(Composition Aggregaor Index) " << endl;
@@ -13006,10 +12900,6 @@ FINAL_SECTION
 // 2024-05-14 ** AEP. (Updated GMACS to version 2.20.12) Extended initial conditions to allow reference length to pre-specified.
 // 2024-05-16 ** AEP. (Updated GMACS to version 2.20.13) F-penalty applies to all seasons (not just season 2)
 // 2024-05-20 ** WTS. Added commandline option to make a retrospective run using "-retro XX", where XX is the number of years to peel off.
-// 2024-06-26 ** AEP. Added the ability to set Q for size-composition data
-// 2024-06-27 ** AEP. (Updated GMACS to version 2.20.15) Corrected the way tail compression is implemented and added a pmin input
-// 2024-07-02 ** WTS. Corrected scaling of input size comps so relative proportions of appended size comps always agree with 
-//                    relative proportions of input sample sizes. Added ECHOs when verbose >=3 for d3_pre_size_comps_in and d3_pre_size_comps.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?

@@ -3723,18 +3723,13 @@ DATA_SECTION
         }
        TempSize(end) = cumsum(end);
        tailcompind(kk,ii,2) = end;
-       //--normalize to input sample size
-       for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = TempSize(jj)*size_comp_sample_size_in(kk,ii);
+       for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = TempSize(jj)*TotalSize;
        cout << d3_obs_size_comps_in(kk,ii) << endl;
-       //exit(1);
+       exit(1);
       }
      else
-      { //--no tail compression
-        tailcompind(kk,ii,1) = 1; tailcompind(kk,ii,2) = nSizeCompCols_in(kk); 
-        //--normalize to input sample size
-        d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*(d3_obs_size_comps_in(kk,ii)/sum(d3_obs_size_comps_in(kk,ii)));
-      }
-    }//--loops over ii and kk
+      { tailcompind(kk,ii,1) = 1; tailcompind(kk,ii,2) = nSizeCompCols_in(kk); }
+    }
   
   int oldk = 9999;
   // This aggregates the size composition data by appending size comps horizontally
@@ -3749,7 +3744,7 @@ DATA_SECTION
       for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
         if ((d3_SizeComps_in(kk,ii,-7) <= nyrRetro) || 
            ((d3_SizeComps_in(kk,ii,-7) == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6)) == 1) ){
-          d3_obs_size_comps(k,ii,j) = d3_obs_size_comps_in(kk,ii,jj); //--_in now sums to input sample size over jj
+          d3_obs_size_comps(k,ii,j) = d3_obs_size_comps_in(kk,ii,jj); 
           //cout << idx << " inp: " << kk << " " << ii << " " << jj << " agg: " << k << " " << ii << " " << j << endl;
           mapInpToAggSizeComps(idx)(1) = kk; //--input size comp dataframe index
           mapInpToAggSizeComps(idx)(2) = ii; //--input size comp row
@@ -3771,7 +3766,7 @@ DATA_SECTION
     for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
      if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) )
       {
-       size_comp_sample_size(k,ii) += size_comp_sample_size_in(kk,ii);//--add up component input sample sies
+       size_comp_sample_size(k,ii) += size_comp_sample_size_in(kk,ii);
        size_comp_year(k,ii) = size_comp_year_in(kk,ii);
        size_comp_season(k,ii) = size_comp_season_in(kk,ii);
       }
@@ -3795,7 +3790,7 @@ DATA_SECTION
   for ( int k = 1; k <= nSizeComps; k++ )
    for ( int i = 1; i <= nSizeCompRows(k); i++ )
     if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) )
-     d3_obs_size_comps(k,i) /= sum(d3_obs_size_comps(k,i));//--now sums to 1 over 3rd index for "aggregated" comp
+     d3_obs_size_comps(k,i) /= sum(d3_obs_size_comps(k,i));
 
   ECHO(d3_obs_size_comps);
   ilike_vector(1) = nCatchDF;
@@ -7631,7 +7626,7 @@ FUNCTION calc_predicted_composition
         // Now apply tail compression (perhaps)
         if (bTailCompression_in(ii) == 1)
          {
-          //cout << "doing" << endl;
+          cout << "doing" << endl;
           cumsum = 0;
           for (int kk=1;kk<=tailcompind(ii,jj,1);kk++)
            {
@@ -7680,12 +7675,6 @@ FUNCTION calc_predicted_composition
     for ( int i = 1; i <= nSizeCompRows(k); i++ )
      if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) )
       d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
-
-  if (verbose >= 3) {
-    ECHO(d3_pre_size_comps_in)
-    ECHO(d3_pre_size_comps)
-  }
-    
 
 // =================================================================================================================================================
 
@@ -8035,7 +8024,6 @@ FUNCTION index_likelihood
 FUNCTION length_likelihood
 
   // 3) Likelihood for size composition data.
-  if (verbose >= 3) ECHOSTR("Starting length-likelihood")
   d3_res_size_comps.initialize();
   for ( int ii = 1; ii <= nSizeComps; ii++ )
    {
@@ -8075,12 +8063,10 @@ FUNCTION length_likelihood
 
     if ( ploglike != NULL )                                                                   ///> Compute the likelihood
      {
-      dvariable nll = ploglike->nloglike(log_effn, P);
-      nloglike(3,ii) += nll;
-      if (verbose >= 3) ECHO(nll)
+      nloglike(3,ii) += ploglike->nloglike(log_effn, P);
       delete ploglike;
      }
-   }//--loop ii
+   }
   if ( verbose >= 3 ) cout << "Ok after composition likelihood ..." << endl;
 
 // --------------------------------------------------------------------------------------------------
@@ -13008,8 +12994,6 @@ FINAL_SECTION
 // 2024-05-20 ** WTS. Added commandline option to make a retrospective run using "-retro XX", where XX is the number of years to peel off.
 // 2024-06-26 ** AEP. Added the ability to set Q for size-composition data
 // 2024-06-27 ** AEP. (Updated GMACS to version 2.20.15) Corrected the way tail compression is implemented and added a pmin input
-// 2024-07-02 ** WTS. Corrected scaling of input size comps so relative proportions of appended size comps always agree with 
-//                    relative proportions of input sample sizes. Added ECHOs when verbose >=3 for d3_pre_size_comps_in and d3_pre_size_comps.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
