@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.15; ** AEP & WTS **; Compiled 2024-05-20");
+ !! TheHeader = adstring("## GMACS Version 2.20.16; ** AEP & WTS **; Compiled 2024-07-23");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1356,7 +1356,7 @@ DATA_SECTION
         EnvData((int)EnvDataInp(i,2),(int) EnvDataInp(i,1)) = EnvDataInp(i,3);
       }//--i loop
     } else {
-      int idx;
+      int idx = -1;
       gmacs_data << "# index start_year end_year  name" << endl;
       for (int i=1;i<=NenvIndics;i++) {
         (*pGD) >> idx;      //--index number
@@ -2114,9 +2114,9 @@ DATA_SECTION
        if (IgBlock !=0)
         {
          // Environmental link
-         if (IgEnvLink!=0 || IgRW!=0) { cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; exit(1); } 
-         if (IgBlock<0 && IgBlock>nblocks) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
-         if (IgBlockFn<0 && IgBlockFn>1) { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
+         if ((IgEnvLink!=0) || (IgRW!=0)) { cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; exit(1); } 
+         if ((IgBlock<0 )&& (IgBlock>nblocks)) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
+         if ((IgBlockFn<0) && (IgBlockFn>1)) { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
          for (int kpar=1;kpar<=blocks(IgBlock);kpar++)
           {
            iblock = kpar + 1;
@@ -2852,9 +2852,9 @@ DATA_SECTION
          if (IgBlock !=0)
           {
            // Environmental link
-           if (IgEnvLink!=0 || IgRW!=0) { cout << "Error: you can't have blocks and RWs at the same time - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); } 
-           if (IgBlock<0 && IgBlock>nblocks) { cout << "Error: block out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
-           if (IgBlockFn<0 && IgBlockFn>1) { cout << "Error: block_fn out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
+           if ((IgEnvLink!=0) || (IgRW!=0))      { cout << "Error: you can't have blocks and RWs at the same time - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); } 
+           if ((IgBlock<0) && (IgBlock>nblocks)) { cout << "Error: block out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
+           if ((IgBlockFn<0) && (IgBlockFn>1))   { cout << "Error: block_fn out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
            for (int kpar=1;kpar<=blocks(IgBlock);kpar++)
             {
              iblock = kpar + 1;
@@ -3484,9 +3484,9 @@ DATA_SECTION
   !! ECHOSTR(" * Size composition controls");
   init_ivector iSizeCompType_in(1,nSizeComps_in);                     ///> Size-comp likelihood
   !! for (int k =1; k<=nSizeComps_in; k++)
-  !!  if (iSizeCompType_in(k) != 0 && iSizeCompType_in(k) != 1 && iSizeCompType_in(k) != 2 && iSizeCompType_in(k) != 5)
-  !!   { cout << "Size comp type must be 0, 1, 2 or 5" << endl; 
-  !!       ECHOSTR("Size comp type must be 0, 1, 2 or 5"); 
+  !!  if (iSizeCompType_in(k) != 0 && iSizeCompType_in(k) != 1 && iSizeCompType_in(k) != 2 && iSizeCompType_in(k) != 5 && iSizeCompType_in(k) != 6)
+  !!   { cout << "Size comp type must be 0, 1, 2, 5 or 6" << endl; 
+  !!       ECHOSTR("Size comp type must be 0, 1, 2, 5 or 6"); 
   !!       echoinput<<"k = "<<k<<" iSizeCompType_in(k) = "<<iSizeCompType_in(k)<<endl;
   !!       exit(1); 
   !!   }
@@ -3498,6 +3498,14 @@ DATA_SECTION
   init_vector lf_emphasis_in(1,nSizeComps_in);                       ///> Overall lambda
   init_ivector survey_for_q_in(1,nSizeComps_in);                     ///> Survey to which this comp relates
 
+  !! echoinput << "iSizeCompType_in: " << iSizeCompType_in << endl;
+  !! echoinput << "bTailCompression_in: " << bTailCompression_in << endl;
+  !! echoinput << "bTailCompression_pmin_in: " << bTailCompression_pmin_in << endl;
+  !! echoinput << "iCompAggregator: " << iCompAggregator << endl;
+  !! echoinput << "lf_catch_in: " << lf_catch_in << endl;
+  !! echoinput << "lf_lambda_in: " << lf_lambda_in << endl;
+  !! echoinput << "lf_emphasis_in: " << lf_emphasis_in << endl;
+  !! echoinput << "survey_for_q_in: " << survey_for_q_in << endl;
   int nSizeComps;
   !! nSizeComps = max(iCompAggregator);                              ///> Number of length comps after aggregation
   !! echoinput << "nSizeComps from iCompAggregator: " << nSizeComps << endl;
@@ -3511,6 +3519,7 @@ DATA_SECTION
 
   //--read the information for the effective sample size parameters 
   init_matrix log_vn_pars(1,nSizeComps,1,7);
+  !! echoinput << "log_vn_pars: " << endl << log_vn_pars << endl;
   vector log_vn_ival(1,nSizeComps);
   vector log_vn_lb(1,nSizeComps);
   vector log_vn_ub(1,nSizeComps);
@@ -3527,10 +3536,12 @@ DATA_SECTION
   gmacs_ctl << "##  3:logistic normal" << endl;
   gmacs_ctl << "##  4:multivariate-t" << endl;
   gmacs_ctl << "##  5:Dirichlet" << endl;
+  gmacs_ctl << "##  6:Dirichlet-Alt (Thorson et al 2016 rec'd)" << endl;
   gmacs_ctl << endl;
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ) anystring = anystring + " " + fleetname(d3_SizeComps_in(kk,1,-5));
   gmacs_ctl << anystring << endl;
+  ECHOSTR(anystring);
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
@@ -3539,6 +3550,7 @@ DATA_SECTION
     if (d3_SizeComps_in(kk,1,-4)==FEMALES)          anystring = anystring +"  F  ";
    }
   gmacs_ctl << anystring << endl;
+  ECHOSTR(anystring);
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
@@ -3547,6 +3559,7 @@ DATA_SECTION
     if (d3_SizeComps_in(kk,1,-3)==DISCARDED)        anystring = anystring +" dsc ";
    }
   gmacs_ctl << anystring << endl;
+  ECHOSTR(anystring);
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
@@ -3555,6 +3568,7 @@ DATA_SECTION
     if (d3_SizeComps_in(kk,1,-2)==OLD_SHELL)        anystring = anystring +" OS  ";
    }
   gmacs_ctl << anystring << endl;
+  ECHOSTR(anystring);
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
@@ -3572,7 +3586,7 @@ DATA_SECTION
   gmacs_ctl << setw(6) << setfixed() << lf_catch_in        << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
   gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_lambda_in        << " # Lambda for effective sample size" << endl;
   gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
-  gmacs_ctl << setw(6) << setfixed() << survey_for_q_in        << "  Survey to set Q for this comp" << endl;
+  gmacs_ctl << setw(6) << setfixed()                       << survey_for_q_in     << " # Survey to set Q for this comp" << endl;
   nSizeCompCols.initialize();
   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
    {
@@ -8068,6 +8082,11 @@ FUNCTION length_likelihood
       case 5:                                                                                 ///> Dirichlet
        ploglike = new class acl::dirichlet(O, bCmp);
        break;
+      case 6:                                                                                 ///> Dirichlet-multinomial with Thorson 2016 rec'd parameterization
+       dvariable log_th = log_vn(ii);//--log-scale theta parameter
+       dvector iss = size_comp_sample_size(ii) * lf_lambda(ii);
+       ploglike = new class acl::dirichlet_alt(O, log_th, iss, bCmp);
+       break;
      }
 
     if ( ploglike != NULL )                                                                   ///> extract the residuals
@@ -10746,6 +10765,7 @@ FUNCTION CreateOutput
        }
       oldk = k;
     }//--ii loop
+  OutFile1 << ">EOD<" << endl;
   
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Size_fit_summary: dataframe" << endl;
@@ -10852,9 +10872,31 @@ FUNCTION CreateOutput
    for ( int ii = 1; ii <= nSizeComps; ii++ )
    {
     // Set final sample-size for composition data for comparisons
-    size_comp_sample_size(ii) = value(mfexp(log_vn(ii))) * size_comp_sample_size(ii);
+    // size_comp_sample_size(ii) = value(mfexp(log_vn(ii))) * size_comp_sample_size(ii);//--20240723WTS: should not be doing this!
    }
   
+  //output sample size multipliers for DM likelihoods: 20240723WTS
+  OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
+  OutFile1 << "Sample_size_multipliers: dataframe" << endl;
+  OutFile1 << "series  row  multiplier effective_ss  input_ss" << endl;
+  for (int kk = 1; kk <= nSizeComps; kk++ ){
+    //cout<<"kk = "<<kk<<"  th = ";
+    double th = value(mfexp(log_vn(kk)));
+    //cout<<th<< "  nSizeCompRows(kk) = " << nSizeCompRows(kk) << endl;
+    for (int ii=1;ii<=nSizeCompRows(kk);ii++){
+      double m = th; //--default (= 1 for most types)
+      int    n = size_comp_sample_size(kk,ii)*lf_lambda(kk);//input sample size
+      double e = m*n; 
+      if (iSizeCompType(kk)==6) {
+        //--DM alt type
+        e = (1.0+n*th)/(1+th);
+        m = 0; if (n>0) {m = e/n;}
+      }
+      OutFile1 << kk << "  " << ii << "  " << m << "  " << e << "  " << n << endl;
+    }//--ii loop
+  }//--kk loop
+  OutFile1 << ">EOD<" << endl;
+
   OutFile1 << "#Size data: standard deviation and median" << endl;
   REPMAT(sdnr_MAR_lf); 
   OutFile1 << "#Size data: Francis multipliers" << endl;
@@ -12245,7 +12287,7 @@ FUNCTION WriteFiles
   OutInpFile1 << setw(6) << setfixed() << survey_for_q_in        << " # Survey to set Q for this comp" << endl;
 
   OutInpFile1 << endl;
-  OutInpFile1 << "# The number of following parameters must match max(Composition Aggregaor Index) " << endl;
+  OutInpFile1 << "# The number of following parameters must match max(Composition Aggregator Index) " << endl;
   OutInpFile1 << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
   for (int b=1; b<=nSizeComps;b++)
    {
@@ -12831,13 +12873,27 @@ FINAL_SECTION
 
     if (ppSLX) {
         //clean up pointer array--probably unnecessary
-        cout<<"deleting ppSLX";
-        for (int k=0;k<nsel_patterns;k++) delete ppSLX[k];
+        cout<<"nsel_patterns = "<<nsel_patterns<<endl;
+        cout<<"nsel_use      = "<<nsel_use<<endl;
+        cout<<"deleting ppSLX array w/ "<<nsel_use<<" sel patterns"<<endl;
+        for (int k=0;k<nsel_use;k++) {
+          cout<<"deleting ppSLX["<<k<<"]"<<endl;
+          if (ppSLX[k]) {
+            delete ppSLX[k];
+            cout<<"deleted ppSLX["<<k<<"]"<<endl;
+          } else {
+            cout<<endl<<"#------------------------------"<<endl;
+            cout<<"WARNING: ppSLX["<<k<<"] was not defined!"<<endl;
+            cout<<"Check your selectivity function declarations!"<<endl;
+            cout<<"#------------------------------"<<endl<<endl;
+          }
+        }
         delete ppSLX;
         cout<<"Finished deleting ppSLX"<<endl;
     }
 
   //  Print run time statistics to the screen.
+  cout<<endl<<"Starting time statistics"<<endl;
   time(&finish);
   elapsed_time = difftime(finish,start);
   hour = long(elapsed_time)/3600;
@@ -13010,6 +13066,10 @@ FINAL_SECTION
 // 2024-06-27 ** AEP. (Updated GMACS to version 2.20.15) Corrected the way tail compression is implemented and added a pmin input
 // 2024-07-02 ** WTS. Corrected scaling of input size comps so relative proportions of appended size comps always agree with 
 //                    relative proportions of input sample sizes. Added ECHOs when verbose >=3 for d3_pre_size_comps_in and d3_pre_size_comps.
+// 2024-07-23 ** WTS. (Updated GMACS to version 2.20.16) Added Dirichlet-Multinomial alternative calculation using iSizeCompType_in=6. Added 
+//                    comparison of input/output sample sizes to Gmacsall.out file.
+// 2024-07-24 ** WTS. Resolved issue in FINAL_SECTION with deleting ppSLX. `nsel_use` is the size of ppSLX (the number of selectivity defined),
+//                    not `nsel_patterns`.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?

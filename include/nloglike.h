@@ -294,6 +294,53 @@ namespace acl
     };
     */
 
+	/**
+	 * @brief Class for alternative Dirichlet-multinomial negative log-likelihood using Thorson et al. (2016) "theta" parameterization.
+	 * @details This is a derived class which inherits the virtual methods in negativeLogLikelihood.
+	**/
+	class dirichlet_alt: public negativeLogLikelihood
+	{
+
+	private:
+		dvariable   m_log_th;    //input DM parameter
+    dvector     m_iss;       //input sample sizes
+		bool        m_bCompress; //flag to compress size comps
+//		dvar_matrix m_P;         //matrix of predicted proportions
+
+	public:
+		dirichlet_alt(const dmatrix &_O, const dvariable& _log_th, const dvector& _iss, const bool bCompress=false)
+		: negativeLogLikelihood(_O), m_log_th(_log_th), m_iss(_iss), m_bCompress(bCompress) 
+		{
+			if ( m_bCompress ) tail_compression();
+		}
+
+		// ~dirichlet_alt();
+		virtual ~dirichlet_alt() { }
+
+		// negative log likelihood (log_effn must be supplied but is is ignored)
+		const dvariable nloglike(const dvar_vector& log_effn, const dvar_matrix& _P) const 
+		{
+			if ( m_bCompress )
+			{
+				dmatrix     Or = compress(this->get_O());
+				dvar_matrix Pr = compress(_P);
+				return ddirichlet(Or,Pr);
+			} else {
+				return ddirichlet(this->get_O(),_P);	
+			}
+		}
+
+		// pearson residuals
+		const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
+		{
+			return pearson_residuals(this->get_O(),_P);
+		}
+		
+		const dvariable ddirichlet(const dmatrix& o, const dvar_matrix& p) const;
+
+		const dmatrix pearson_residuals(const dmatrix& o, const dvar_matrix p) const;
+	};
+
 } // end of acl namespace
 
 #endif

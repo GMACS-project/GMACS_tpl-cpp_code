@@ -76,3 +76,52 @@ const dmatrix acl::dirichlet::pearson_residuals(const dvar_vector& log_vn, const
 	}
 	return res;
 }
+
+/**
+ * @brief Dirichlet density function with Thorson et al (2016) recommended "theta" parameterization.
+ * @details Negative log likelihood using the Dirichlet distribution.
+ * @author William Stockhausen
+ * @param o dmatrix of observed proportions.
+ * @param p dvar_matrix of predicted proportions
+ * @return negative loglikelihood.
+**/
+const dvariable acl::dirichlet_alt::ddirichlet(const dmatrix& o, const dvar_matrix& p) const
+{
+	if ( o.colsize() != p.colsize() || o.rowsize() != p.rowsize() )
+	{
+		cerr << "Error in dirichlet_alt::ddirichlet calc: observed and predicted matrixes are not the same size" << endl;
+		ad_exit(1);
+	}
+
+  dvariable tot_nll = 0.0;
+  dvariable theta = mfexp(m_log_th);
+	for (int r = o.rowmin(); r<=o.rowmax();r++){
+		//the following is from Thorson et al. 2016
+		double      n   = m_iss[r];      //to maintain semblance to Thorson et al.
+		dvariable   thn = theta*n;
+		dvector     obsp = o(r)/sum(o(r));
+		dvar_vector modp = p(r)/sum(p(r));
+    dvariable nll;
+    nll.initialize();
+		if (n>0){//blows up if ss=0
+			nll = -( gammln(n+1.0)-sum(gammln(n*obsp+1.0)) );//constant term
+			nll -= gammln(thn)-gammln(n+thn);
+			nll -= sum(gammln(n*obsp+thn*modp) - gammln(thn*modp));
+		}
+    tot_nll += nll;
+  } //--r loop
+  return(tot_nll);
+}
+
+const dmatrix acl::dirichlet_alt::pearson_residuals(const dmatrix& o, const dvar_matrix p) const
+{
+  double th = value(mfexp(m_log_th));
+	dvector vn = (1.0+m_iss*th)/(1.0+th);
+	dmatrix res = o - value(p);
+	// dmatrix var = value(elem_prod(p,1.0-p)) / vn;
+	for ( int i = o.rowmin(); i <= o.rowmax(); i++ ) {
+		dvector var = value(elem_prod(p(i),1.0-p(i))) / vn(i);
+		res(i) = elem_div(res(i),sqrt(var+TINY));
+	}
+	return res;
+}
