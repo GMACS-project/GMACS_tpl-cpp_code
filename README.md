@@ -27,14 +27,16 @@ Changes to the tpl or c++ files can be recompiled using "cmake --build _build", 
 
 ## Testing
 
-The `testing/input_files` folder contains subfolders with suitable input files to test the compiled GMACS executable. The `testing/runs` folder contains two R files which can be used to test the models in the `testing/input_files` subfolders. To run the tests: 
-    1. start an R session
-    2. change the working directory to the `testing/runs` folder
-    3. source the "runTests.r" file
-    4. run the function "runTests" for the models of interest 
-        a. set the `tests` input vector to the names of the subfolders containing the models you want to test
-        b. set the top-level directory for running the tests (the default is ".", i.e. the `testing/runs` folder)
-        c. set the `compareWithPin`, `verbose`, and `cleanup` flags as desired (`verbose` functionality is not yet implemented).
+The `testing/input_files` folder contains subfolders with suitable input files to test the compiled GMACS executable. The `testing/scripts` folder contains two R files which can be used to test the models in the `testing/input_files` subfolders. To run the tests: 
+
+1. start an R session
+2. change the working directory to the `testing/scripts` folder
+3. source the "runTests.r" file
+4. run the function "runTests" for the models of interest
+   - set the `tests` input vector to the names of the subfolders containing the models you want to test
+   - set the top-level directory for running the tests (the default is ".", i.e. the `testing/scripts` folder)
+   - set the `compareWithPin`, `verbose`, and `cleanup` flags as desired (`verbose` functionality is not yet implemented).
+        
 The function will run the models specified (copying the input files from relevant `testing/inut_files` subfolders). The output is a list with an element for each model tested. Each element indicates whether the test passed or, if not, where "substantial" differences (abs(new-old)>$10^{-5}$) occurred between the new par file and an old par file ("gmacs.par_old") or the pin file ("gmacs.pin") used to initialize the model.
 
 ## Which tools are available for working with GMACS?
