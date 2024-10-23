@@ -1,0 +1,30 @@
+#datafile
+bbrkc.dat
+#controlfile
+bbrkc_v16.ctl
+#projectionfile
+bbrkc.prj
+# Weight unit
+Tonnes
+# Abundance unit
+millions
+# Stock name
+Bristol_Bay_red_king_crab
+# Jitter specs (1=yes; SD)
+0  0.1                   
+# Output variances of (1=Yes)
+1   # Reference points
+0   # Recruits
+0   # SSB
+0   # Fbar
+0   # OutDynB0
+0   # Retrospective analysis number
+# Other controls
+   10      # Maximum phase (stop the estimation after this phase).
+   -1      # Maximum number of function calls
+   1       # Calculate reference points (0=no)      
+   0       # use pin file (0=no, 1=yes)
+   1       # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)
+
+# EOF
+9999

@@ -16,3 +16,6 @@ testing/input_files/NewCTLformat_20240401/gmacs_out.ctl
 testing/input_files/NewCTLformat_20240401/gmacs_in1.ctl
 testing/input_files/NewCTLformat_20240401/gmacs_in.ctl
 testing/input_files/AndreLatest/
+testing/input_files/BBRKC_20240731/bbrkc_v16.zip
+testing/input_files/BBRKC_20240731/bbrkcgmacs2_20_16issue.zip
+testing/input_files/BBRKC_20240731/bbrkc_v14.zip

@@ -38,7 +38,7 @@
 //    The following specify using an ascii pin file fnPin to set parameter values, 
 //    and set usepinfile=1 regardless of the value in gmacs.dat. Pinfile usage can 
 //    also be turned "on" in the gmacs.dat file (in which case the commandline options 
-//    are only useful for specifying a non-default pinfile name). 
+//    are only usful for specifying a non-default pinfile name). 
 //    If fnPin not given, then fnPin = "gmacs.pin" (the ADMB default).
 //    -pin fnPin          
 //    -ainp fnPin
@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.17; ** AEP & WTS **; Compiled 2024-10-22");
+ !! TheHeader = adstring("## GMACS Version 2.20.16; ** AEP & WTS **; Compiled 2024-07-23");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1464,7 +1464,6 @@ DATA_SECTION
 
   int n_deviations;
   int n_devvars;
-  !! n_deviations = 0;//--WTS: 2024-10-22
   !! n_devvars=0;
   imatrix devpoints(1,100,1,10);
   matrix rdevpoints(1,100,1,5);
@@ -2198,9 +2197,7 @@ DATA_SECTION
          for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
            GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
         for (int iblk=1;iblk<=blocks(IgRWBlock);iblk++)
-          n_deviations += (blocklimits(IgRWBlock,iblk,2)-blocklimits(IgRWBlock,iblk,1)+1);
-        ECHOSTR("after checking growth parameters")
-        ECHO(n_deviations)
+         n_deviations += (blocklimits(IgRWBlock,iblk,2)-blocklimits(IgRWBlock,iblk,1)+1);
         devpoints(n_devvars,4) = n_deviations; 
         devpoints(n_devvars,5) = IgRWBlock;
         devpoints(n_devvars,6) = ipar;
@@ -2542,9 +2539,7 @@ DATA_SECTION
         if (M_mirror_RW(ig)<0 || M_mirror_RW(ig)>=ig)  { cout << "Error: random walk mirror pointer out of range - sex*maturity state " << sexes(h) << " & " << m << endl; exit(1); }        
         if (M_mirror_RW(ig) != 0 && (M_block(ig)>0 || M_RW(ig) >0 || M_env_link(ig)>0)) { cout << "Error: mirrow_RW requires no blocks, environmenal links or random walks - sex*maturity state " << h << " & " << m << endl; exit(1); }        
       } //--Mirror 
-    } //--
-    ECHOSTR("after M env_links")
-    ECHOSTR(n_deviations)
+    } //--ig
    
  END_CALCS
 
@@ -2980,8 +2975,6 @@ DATA_SECTION
        } // iy
      } //- ipar (if)
    } 
-   ECHOSTR("after sel env_links, RWs")
-   ECHO(n_deviations)
  END_CALCS
 
   imatrix iYrsSelChanges(1,2*nsex*nfleet,syr,nyrRetro+1);
@@ -3199,8 +3192,6 @@ DATA_SECTION
       rdevpoints(n_devvars,1) = q_RW_sigma(ii);
     }
   echoinput << "final number of catchability parameters: " << n_qpar << endl;
-  ECHOSTR("after survey Q env_links, RW")
-  ECHO(n_deviations)
  END_CALCS
   ivector qToSurv(1,n_qpar);//--map from q index to non-mirrored survey index
   ivector qType(1,n_qpar);
@@ -9868,30 +9859,33 @@ FUNCTION dvector calc_Francis_weights()
    double Obs, Pre, Var;
    dvector lfwt(1,nSizeComps);
 
-   for ( int k = 1; k <= nSizeComps; k++ ){
+   for ( int k = 1; k <= nSizeComps; k++ )
+    {
      nobs = nSizeCompRows(k);
      dvector resid(1,nobs);
      j = 1;
      resid.initialize();
-     for ( int i = 1; i <= nSizeCompRows(k); i++ ){
+     for ( int i = 1; i <= nSizeCompRows(k); i++ )
+      {
        //cout << k << " " << i << " " << nSizeCompCols(k) << " "<< nclass << endl;
        //cout << d3_obs_size_comps(k,i) << endl;
        //cout << d3_pre_size_comps(k,i) << endl;
        //cout << mid_points << endl;
        Obs=0;Pre=0;Var=0;
-       for (int l=1;l<=min(nSizeCompCols(k),nclass);l++){
+       for (int l=1;l<=min(nSizeCompCols(k),nclass);l++)
+        {
          Obs += d3_obs_size_comps(k,i,l)*mid_points(l);
          Pre += value(d3_pre_size_comps(k,i,l))*mid_points(l);
          Var += value(d3_pre_size_comps(k,i,l))*mid_points(l)*mid_points(l);
         }
        // Combined sex comps
-       if (nSizeCompCols(k)>nclass){
-        for (int l=nclass+1;l<=nSizeCompCols(k);l++){
-          Obs += d3_obs_size_comps(k,i,l)*mid_points(l-nclass);
-          Pre += value(d3_pre_size_comps(k,i,l))*mid_points(l-nclass);
-          Var += value(d3_pre_size_comps(k,i,l))*mid_points(l-nclass)*mid_points(l-nclass);
+       if (nSizeCompCols(k)>nclass)
+       for (int l=nclass+1;l<=nSizeCompCols(k);l++)
+        {
+         Obs += d3_obs_size_comps(k,i,l)*mid_points(l-nclass);
+         Pre += value(d3_pre_size_comps(k,i,l))*mid_points(l-nclass);
+         Var += value(d3_pre_size_comps(k,i,l))*mid_points(l-nclass)*mid_points(l-nclass);
         }
-       }
        Var -= square(Pre);
        //cout << Obs << " " << Pre << " " << Var << endl;
        resid(j++) = (Obs - Pre) / sqrt(Var / size_comp_sample_size(k,i));
@@ -10737,13 +10731,15 @@ FUNCTION CreateOutput
   adstring ShellName;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "Size_fit_summary: dataframe" << endl;
-  OutFile1 << "Original_series Modified_series Year Fleet  Season Sex Type  Shell  Maturity  Nsamp  DataVec_(obs) DataVec_(pred)" << endl;
+  OutFile1 << "Original_series Modified_series Year Fleet  Season Sex  Type Shell  Maturity  Nsamp  DataVec_(obs) DataVec_(pred)" << endl;
   int oldk = 0;
-  for (int ii=1; ii<=nSizeComps_in;ii++){
+  for (int ii=1; ii<=nSizeComps_in;ii++)
+   {
     int k = iCompAggregator(ii);
-    if ( oldk != k ){
-     for (int jj=1;jj<=nSizeCompRows_in(ii);jj++){
-      if ((d3_SizeComps_in(ii,jj,-7) <= nyrRetro) || (d3_SizeComps_in(ii,jj,-7) == nyrRetro+1 && d3_SizeComps_in(ii,jj,-6) == 1) ){
+    if ( oldk != k )
+     for (int jj=1;jj<=nSizeCompRows_in(ii);jj++)
+      if (d3_SizeComps_in(ii,jj,-7) <= nyrRetro || (d3_SizeComps_in(ii,jj,-7) == nyrRetro+1 && d3_SizeComps_in(ii,jj,-6) == 1) )
+       {
         OutFile1 << ii << " " 
                  << k << " " 
                  << int(d3_SizeComps_in(ii,jj,-7)) << " " 
@@ -10755,22 +10751,20 @@ FUNCTION CreateOutput
                  << maturestate(d3_SizeComps_in(ii,jj,-1)) << " ";
         ShellName = shellstate(d3_SizeComps_in(ii,jj,-2));
         MatName   = maturestate(d3_SizeComps_in(ii,jj,-1));
-        for (int kk=1;kk<=nSizeComps_in;kk++){
-          if (kk!=ii && k == iCompAggregator(kk)) {
+        for (int kk=1;kk<=nSizeComps_in;kk++)
+          if (kk!=ii && k == iCompAggregator(kk)) 
+          {
             if (d3_SizeComps_in(kk,jj,-2)!=d3_SizeComps_in(ii,jj,-2)) ShellName = shellstate(0);
             if (d3_SizeComps_in(kk,jj,-1)!=d3_SizeComps_in(ii,jj,-1)) MatName   = maturestate(0);
           }
-        }//--kk
         OutFile1 << ShellName << " " 
                  << MatName << "  " 
                  << size_comp_sample_size(k,jj) << "   " 
                  << d3_obs_size_comps(k,jj) << "   " 
                  << d3_pre_size_comps(k,jj) << endl;
-      }//--check on size comps
-     }//-- jj loop
-    }//-- oldk != k
-    oldk = k;
-  }//--ii loop
+       }
+      oldk = k;
+    }//--ii loop
   OutFile1 << ">EOD<" << endl;
   
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
@@ -13076,8 +13070,6 @@ FINAL_SECTION
 //                    comparison of input/output sample sizes to Gmacsall.out file.
 // 2024-07-24 ** WTS. Resolved issue in FINAL_SECTION with deleting ppSLX. `nsel_use` is the size of ppSLX (the number of selectivity defined),
 //                    not `nsel_patterns`.
-// 2024-10-22 ** WTS. (GMACS Version 2.20.17) Explicitly set n_deviations = 0 after declaration. 
-//                    Added ECHOs for n_deviations at various stages of counting as diagnostics.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?

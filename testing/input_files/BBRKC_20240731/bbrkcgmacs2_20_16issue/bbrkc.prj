@@ -1,0 +1,62 @@
+0                          # Do not compute MSY (1=Yes)
+0 1 1 1 1 1                # Set to 0 if F35% applied to this fleet; 1 if F is to be fixed
+1983 2021                  # First and last year for average recruitment/MMB for Bspr calculation (Tier 3 or Tier 4)
+1983 2021                  # First and last year for average sex ratio for computing reference points
+2018 2022                  # First and last year for average F for discards (computing reference points)
+2019 2022                    # First and last year for average M (0 = last year) # 0 0 does ALL years
+2018 2022                  # First and last year for average season length proportion (0 = last year) 
+2021                       # Year used for computing growth (0 = last year) 
+2020 2022                  # First and last year for average selectivities (0 = last year) 
+
+# OFL specifications
+0.35                       # Target SPR ratio for Bmsy proxy.
+3                          # Tier, choose tier 3 / 4
+0.10                       # Alpha (cut-off) 
+0.25                       # Beta (limit)
+1.00                       # Gamma (F proxy for tier 4)
+0.80                       # ABC-OFL buffer
+0                          # Produce a yield curve (1=yes; 2=no); does this work?
+
+# Projection material
+# if doing projections you NEED a value for catch in the current crab year
+2031                       # Last year of projection from the terminal (last year data) year
+1                          # Projection type (1=Constant F; 2=proportion of current F)
+4                          # Number of strategies (0 for no projections), maximium Fs to explore
+0 0.1 0.2 0.25             # Range of F values
+1                          # 0 for no mortality for non-directed fleets (see input #1 above); 1=Yes
+2                          # Mcmc replicates per draw - gives you additional uncertainty without doing mcmc
+-3423.8                    # Fixed BMSY (negative number for replicate-specific)
+
+1983 2021                  # First and last year for average recruitment/MMB for projection (Tier 3 or Tier 4)  
+1983 2021                  # First and last year for average sex ratio for projection   
+2018 2022                  # First and last year for average F for discards (computing projections) 
+2019 2022                     # First and last year for average M (0 = last year) 
+2018 2022                  # First and last year for average season length proportion (0 = last year) 
+2021                       # Year used for computing growth (0 = last year) 
+2020 2022                  # First and last year for average selectivities (0 = last year)
+
+
+1                          # Stock-recruitment option (1= random draws of rec;2=Ricker, 3 = B-H, 4= Mean recruit)
+6                          # Time to recruitment
+2012 2021                  # First and last years for generating future recruitment (only used if Stock_recruitment option = 1)
+12294529                   # Mean recruitment
+0.6                        # SigmaR (only used if Stock_recruitment option = 2) [0.6]
+0.0                        # Prow , autocorrelated recruitment 
+0.0                        # Initial eps
+
+# State strategy
+1 # 1                      # Apply strategies [OFL, ABC] (1=apply HCR;0= constant F) 
+1                          # Apply the state startegy (1=Yes; 0=No)
+2                          # Number of state parameters
+0.001729630                # Mean weight to use (mature)
+0.001930932                # Mean weight to use (legal)
+
+# Stop after XX mcdraws
+10 #10000
+
+# Full diagnostics (1=Yes)
+1  
+
+## eof
+9999
+
