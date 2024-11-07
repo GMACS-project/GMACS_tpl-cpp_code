@@ -8,7 +8,6 @@ number-sections: true
 number-depth: 3
 reference-location: document
 reference-section-title: References
-bibliography: /Users/williamstockhausen/Work/Projects/Bibliography/AllRefs.bib
 csl: '`r system.file("files/CJFAS.csl",package="wtsQMD")`'
 link-citations: true
 crossref:
@@ -31,6 +30,8 @@ format:
     fig-asp: 0.6
     fig-dpi: 100
     embed-resources: true
+    include-in-header: 
+      - '`r system.file("files/in-line_math_mode.html",package="wtsQMD")`'
   pdf:
     documentclass: scrartcl
     toc: false
@@ -51,11 +52,11 @@ format:
           \usepackage{placeins}
           \extrafloats{500}
           \maxdeadcycles=10000
-      - file: "/Users/williamstockhausen/Work/Programming/R/Library/wtsQMD/files/ltx_ExtraLatexIncludes.tex"
+      - file: '`r system.file("files/ltx_ExtraLatexIncludes.tex",package="wtsQMD")`'
 echo: false
 warning: false
 results: 'hide'
-keep-md: false
+keep-md: true
 keep-yaml: false
 editor: source
 editor_options: 
@@ -64,7 +65,6 @@ concordance: true
 params:
   setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
   testing: false
-  pns: "../../ModelRuns/TannerCrab24_01"
   reorderTables: false   #--issue with finding "range" of table values  (don't use)
   reorderFigures: false  #--issue with finding "range" of figure values (don't use)
 ---
@@ -126,9 +126,14 @@ strCases = stringr::str_replace_all(strCases,stringr::fixed("_"),".")
 
 ```{r chkParams}
 #--get convergence information----
-dfrConvInfo = wtsGMACS::extractModelConvergenceInfo(reslst);
-nConv = sum(dfrConvInfo$`std errors?`=="yes");
-noConv = (dfrConvInfo |> dplyr::filter(`std errors?`=="no"))$case;
+  dfrConvInfo = wtsGMACS::extractModelConvergenceInfo(reslst);
+  nConv = sum(dfrConvInfo$`std errors?`=="yes");
+  includeNoStdErrors = TRUE;#--include model cases w/ no std errors?
+  if (includeNoStdErrors){
+    noConv = "--";
+  } else {
+    noConv = (dfrConvInfo |> dplyr::filter(`std errors?`=="no"))$case;
+  }
   tblno = tblno+1;#--advance in-text table index
   tblnoModConvDiags = tblno;#--save table index for in-text model convergence diagnostics table 
 
@@ -171,18 +176,23 @@ This section provides a summary of results for GMACS Tanner crab `r strMdls` `r 
 
 ## Model convergence {#sec-GMACS-ModConv}
 
-Parameter jittering was used to improve confidence that the "best" results for each model were associated with the model's maximum likelihood estimate (MLE). Each model was run 400 times, with the initial values for estimated parameters randomly selected with an uncertainty factor of 0.1. Model convergence was judged on the basis of a small final maximum gradient and successful estimation of parameter uncertainty information (Table `r LETTERS[tblnoModConvDiags]`). Based on these criteria, `r ifelse(nConv==nCases,"all",paste0(nConv," out"))` of the `r nCases` models converged successfully. The optimization process was fairly robust for five of the seven models, with greater than 10% of the jitter runs achieving essentially the same solution. However, this was not the case for models 24.02a an 24.07, both of which had less than 4 out of 400 runs end near the "best" run in terms of the final value for the model's objective function. 
+Model convergence was judged on the basis of a small final maximum gradient and successful estimation of parameter uncertainty information (Table `r LETTERS[tblnoModConvDiags]`). Based on these criteria, `r ifelse(nConv==nCases,"all",paste0(nConv," out"))` of the `r nCases` models converged successfully.  
 
-All of the models exhibited at least one parameter estimated at bound in the "best" model run [@tbl-GMACS-PsAtBs]. The largest number occurred in model G24.02a, with four. The mean for the ascending logistic function used to describe fishery selectivity for male bycatch in the BBRKC ("RKF") fishery was estimated at its upper bound in all seven models. All parameter values are listed in Tables [-@tbl-GMACS-AllParamEsts-1]-[-@tbl-GMACS-AllParamEsts-`r nPgsEstPars`]. 
+Models that exhibited at least one parameter estimated at a bound are listed in [@tbl-GMACS-PsAtBs]. 
+
+All parameter values are listed in Tables [-@tbl-GMACS-AllParamEsts-1]-[-@tbl-GMACS-AllParamEsts-`r nPgsEstPars`]. 
 
 
-```{r GMACS-tblModelConvergence,results='asis'}
+```{r GMACS-tblModelConvergence,results='asis',eval=FALSE}
+  #--TODO: develop code to list convergence diagnostics
+  #--
   #--print in-text model convergence info table
   #if (isPDF) cat("\\begin{landscape}\n\n");
   cap = paste0("Table ",LETTERS[tblnoModConvDiags],". ",
                "Summary convergence diagnostics for the GMACS models");
   cat(cap);
-  fn = file.path(child_path$peek(),"../../../Text/external_artifacts/Description24_02GMACS",
+  fn = file.path(child_path$peek(),
+                 "../../../Text/external_artifacts/Description24_02GMACS",
                  paste0("Table_07.ModelConvergence.",def_ext));
   kbl = wtsQMD::imageAsKable(fn);
   cat(kbl,"\n\n");
@@ -194,7 +204,8 @@ All of the models exhibited at least one parameter estimated at bound in the "be
 ```{r}
 #| label: tbl_GMACS-PsAtBs
   tmp = dfrPsAtBs |> 
-          dplyr::select(case,estimate=est,lb,ub,type=status,gradient=grd,se,description=par_type) |> 
+          dplyr::select(case,estimate=est,lb,ub,type=status,
+                        gradient=grd,se,description=par_type) |> 
           dplyr::mutate(description=stringr::str_replace_all(description,"_"," "),
                         case=stringr::str_replace_all(case,"_",".")) |> 
           dplyr::mutate(
@@ -239,7 +250,7 @@ tmp1 = dfrEstPars |> dplyr::mutate(
     kbl = wtsQMD::doKbl(tmp1[rw:min(rw+nlns,nrow(dfrEstPars)),],
                         digits=3,
                         position="h",
-                        border_right=c(1,3,5,7,9,11,13,15),
+                        border_right=c(1,3,3+2*(1:nCases)),
                         ltx_font_size=7,
                         replaceNAs="--",
                         adjColSpacing=-6) |> 
@@ -258,12 +269,16 @@ tmp1 = dfrEstPars |> dplyr::mutate(
 
 ## Fits to fishery catch data {#sec-GMACS-FitsToFsheryCatchData}
 
-Fits to retained catch were excellent for all models (Figures [-@fig-GMACS-RetCatchFit] and [-@fig-GMACS-RetCatchResids]), as expected. Fits to total catch biomass in the crab fisheries were also very good for the directed fishery ("TCF") and the snow crab fishery ("SCF") for all models and all years, although there were some differences between predicted and observed values in the early 1990's (Figures [-@fig-GMACS-TotCatchFitCFs], [-@fig-GMACS-TotCatchResidsCFsM], and [-@fig-GMACS-TotCatchResidsCFsF]). However, fits to total catch biomass in the BBRKC fishery ("RKF") exhibited some extremely large differences for models 24.07 for females and 24.02a for males. All seven models substantially over-predict total catch biomass for males in the BBRKC fishery in 2007. In contrast, fits to Tanner crab bycatch in the groundfish fisheries are very good across all three fleets for all models, although the fits for 24.07 to the catch by trawl gear ("GFT") diverge from the observations as one goes back in time from 1997 (Figures [-@fig-GMACS-TotCatchFitGFs] and [-@fig-GMACS-TotCatchResidsGFs]). 
+Fits to retained catch: Figures [-@fig-GMACS-RetCatchFit] and [-@fig-GMACS-RetCatchResids]).
+
+Fits to total catch biomass: Figures [-@fig-GMACS-TotCatchFitCFs], [-@fig-GMACS-TotCatchResidsCFsM], and [-@fig-GMACS-TotCatchResidsCFsF]. 
+
+Fits to Tanner crab bycatch in the groundfish fisheries: Figures [-@fig-GMACS-TotCatchFitGFs] and [-@fig-GMACS-TotCatchResidsGFs]. 
 
 ```{r GMACS-getCatchFitData}
 ##--catch data----
 dfrCatFit = wtsGMACS::extractRep1Results(reslst,"Catch_fit_summary") |> 
-              dplyr::filter(!(case %in% noConv)) |>
+              #dplyr::filter(!(case %in% noConv)) |>  #--uncomment to include non-converged cases
               dplyr::mutate(
                 dplyr::across(c(year,obs,cv,effort,HM,prd,rsd),
                               as.numeric)
@@ -395,12 +410,12 @@ rm(p);
 
 ##  Fits to relative biomass indices {#sec-GMACS-FitsToRelBioIndices}
 
-Fits to the NMFS survey biomass indices are relatively poor (or worse) and broadly correlated across all three population categories (males, immature females, mature females) for all models (Figures [-@fig-GMACS-IndexFits] and [-@fig-GMACS-IndexResids]). Model G24.07, fitting to VAST-based indices, exhibited the worst performance due to the smaller CVs associated with those time series.
+Fits to the NMFS survey biomass indices: Figures [-@fig-GMACS-IndexFits] and [-@fig-GMACS-IndexResids]). 
 
 ```{r GMACS-getIndexFitData}
 ##--index catch data----
 dfrIndxFit = wtsGMACS::extractRep1Results(reslst,"Index_fit_summary") |> 
-               dplyr::filter(!(case %in% noConv)) |>
+               dplyr::filter(!(case %in% noConv)) |> #--uncomment to exclude non-converged
                dplyr::mutate(
                 dplyr::across(c(year,obs,base_CV,actual_CV,q,prd,prsn_res),
                               as.numeric)
@@ -440,19 +455,34 @@ rm(dfrCatFit,dfrIndxFit);
 
 ## Fits to size compositions {#sec-GMACS-FitsToSizeComps}
 
-Predicted retained catch size compositions (Figure [-@fig-GMACS-ZCFits1]) are very similar across all years and models while observed compositions vary annually in both shape and location, reflecting changes in harvest strategies and industry-preferred crab size, spatial shifts in fishing effort (including spatial closures), and changes in the underlying population size structure and spatial pattern. This inflexibility in the predicted size compositions is directly related to the use of retention (and selectivity) functions for the directed fishery whose estimated parameters do not vary with time in the models considered here.
+Predicted retained catch size compositions: Figure [-@fig-GMACS-ZCFits1].
 
-Comparison of fits to the sex-specific total catch size compositions from the crab fisheries (Figures [-@fig-GMACS-ZCFits2]-[-@fig-GMACS-ZCFits13]) is somewhat complicated by the fact that G24.02 appends the female size compositions to the male size compositions in to create an "extended" composition (on an annual basis) that is normalized across both sexes and a single (annual) likelihood value calculated whereas the remaining models fit the size compositions separately by sex. One advantage to this approach is that it retains information about the sex ratio when abundance or biomass indices are aggregated across sex, as in G24.02 for both crab and groundfish fishery data or the remaining models for groundfish data only. Fits to the crab fishery total catch size compositions for G24.02 are thus presented in figures separately from those from the other models. Because sample sizes for males are typically much larger than those for females, the observed proportions in the crab fishery data associated with females at all sizes are much smaller than those for males in G24.02. Consequently, poor fits to the female portion of the extended size crab fishery compositions are typically downweighted in the overall likelihood relative to those in the non-extended fits while those for males are not. Because the catch biomass data from the groundfish fisheries is not sex-specific, fitting the groundfish bycatch size compositions using the "extended" approach is necessary to retain information regarding the size composition of bycatch in the groundfish fisheries. 
+Total catch size compositions from the crab fisheries: Figures [-@fig-GMACS-ZCFits2]-[-@fig-GMACS-ZCFits13]). 
 
-The predicted size compositions for males in the directed fishery are very similar across all seven models (Figures [-@fig-GMACS-ZCFits2] and [-@fig-GMACS-ZCFits4]). The models somewhat overpredict the proportion of small males and underpredict the proportion of large males from compositions in the early 1990s while the opposite is true for compositions from 2015/16 on. For females, Model G24.02 tended to underestimate proportions in the directed fishery across all size bins prior to 2008/09 and overestimated them afterward ([@fig-GMACS-ZCFits3]). In contrast, the other models fit the female size compositions fairly well ([@fig-GMACS-ZCFits5]). 
+The predicted size compositions for males in the directed fishery: Figures [-@fig-GMACS-ZCFits2] and [-@fig-GMACS-ZCFits4]). 
 
-On the whole, predicted size compositions for males in the snow crab fishery were very similar across all seven models (Figures [-@fig-GMACS-ZCFits6] and [-@fig-GMACS-ZCFits8]). As with the directed fishery, fits to size compositions for females were poor for G24.02 ([@fig-GMACS-ZCFits7]) while the other models predicted the female size compositions in similar fashion and fit them fairly well ([@fig-GMACS-ZCFits9]), with the exceptions of the final two years of data when sample sizes were very small. 
+The predicted size compositions for females in the directed fishery: [@fig-GMACS-ZCFits5]. 
 
-Predicted size compositions for males in the BBRKC fishery were very similar across all seven models (Figures [-@fig-GMACS-ZCFits10] and [-@fig-GMACS-ZCFits12]), but the fits in many years were poor (e.g., 1990, 2009). Fits to size compositions for females were again poor for G24.02 ([@fig-GMACS-ZCFits11]). The predicted female size compositions from G24.07 were substantially different from the remaining models ([@fig-GMACS-ZCFits13]; overall, G24.07 fit the data poorly while the models fit the data well in a few years (e.g., 2008) but rather poorly in most (although better than 24.07 in all years).
+Predicted size compositions for males in the snow crab fishery: Figures [-@fig-GMACS-ZCFits6] and [-@fig-GMACS-ZCFits8]
 
-Model G24.07 predicted substantially different size compositions for male Tanner crab taken in the combined gear groundfish fisheries in 1987-1989 relative to the other models ([@fig-GMACS-ZCFits14]), although none of the fits to the data in these years were very good. The predicted size compositions for females taken in the combined gear groundfish fisheries were more similar across models ([@fig-GMACS-ZCFits15]) and the fits (with the exceptions of 1982-1984) were marginally better than for males. The predicted size compositions for males taken in the fixed gear groundfish fisheries were remarkably similar across models ([@fig-GMACS-ZCFits16]), while the fits were good in most years (1992 and 1993 being exceptions). The predicted size compositions for females differed somewhat more across models, specially during 1991-1995 ([@fig-GMACS-ZCFits17]). On the whole, predicted size compositions for males taken in the trawl gear groundfish fisheries ([@fig-GMACS-ZCFits18]) were similar across models in most years, but showed more differences across models in 1994, 1995, 2003 and 2004. The associated fits to the observed size compositions ranged from reasonably good (e.g., 2014, 2015) to relatively poor (e.g., 1995, 1997). Similar observations hold for the predicted female size compositions in the fixed gear groundfish fisheries ([@fig-GMACS-ZCFits19]), although the years in which good (2014, 2019) and bad (1992, 1995) fits occur differ.
+Predicted size compositions for males in the snow crab fishery: Figures -[@fig-GMACS-ZCFits7]) and([@fig-GMACS-ZCFits9]). 
 
-Given the differences in how NMFS survey selectivities are modeled among the various GMACS models, the predicted size compositions for the NMFS survey are surprisingly similar (Figures [-@fig-GMACS-ZCFits20]-[-@fig-GMACS-ZCFits22]). In general, all fit the observed size compositions reasonably well for immature and mature females (Figures [-@fig-GMACS-ZCFits20] and [-@fig-GMACS-ZCFits21]). Visually, the poorest fits occur when proportions in one or two size bins dominate the composition (e.g., mature females, 1982 and 1986) or where observed modes well fit in one year do not propagate to the next in the observed composition but do so in the predicted values (e.g., immature females, 2001-2004). Fits to male size compositions ([@fig-GMACS-ZCFits21]) are a mix of good (e.g., 1997, 2007, 2023) and poor (e.g., 1982, 1985, 1992) fits. 
+Predicted size compositions for males in the BBRKC fishery: Figures [-@fig-GMACS-ZCFits10] and [-@fig-GMACS-ZCFits12]. 
+
+Predicted size compositions for females in the BBRKC fishery: Figures [-@fig-GMACS-ZCFits11] and [-@fig-GMACS-ZCFits13].
+
+Predicted size compositions for male Tanner crab taken in the combined gear groundfish fisheries: [@fig-GMACS-ZCFits14]. although none of the fits to the data in these years were very good. 
+
+Predicted size compositions for male Tanner crab taken in the combined gear groundfish fisheries: [@fig-GMACS-ZCFits15].
+
+Predicted size compositions for males taken in the fixed gear groundfish fisheries: [@fig-GMACS-ZCFits16].
+Predicted size compositions for males taken in the fixed gear groundfish fisheries: [@fig-GMACS-ZCFits17]). 
+
+Predicted size compositions for males taken in the trawl gear groundfish fisheries [@fig-GMACS-ZCFits18]. 
+
+Predicted size compositions for females taken in the trawl gear groundfish fisheries [@fig-GMACS-ZCFits19]).
+
+Predicted size compositions for the NMFS survey: Figures [-@fig-GMACS-ZCFits20]-[-@fig-GMACS-ZCFits22].  
 
 ```{r GMACS-getSizeFitSummaries}
   ##--size comps----
@@ -848,7 +878,8 @@ The estimated logistic selectivity curves in the groundfish fisheries were fairl
 zBs = wtsGMACS::extractRep1Results(reslst,"size_midpoints")[[1]];
 nZBs = length(zBs);
 dfrSel = wtsGMACS::extractRep1Results(reslst,"selfcns") |> 
-           dplyr::filter(!(case %in% noConv),type!="discard",
+           dplyr::filter(!(case %in% noConv)) |> 
+           dplyr::filter(type!="discard",
                          fleet %in% c("TCF","SCF","RKF","GFA","GFT","GFF")) |>
            tidyr::pivot_longer(cols=4+(1:nZBs),names_to="size",values_to="est") |>
            dplyr::mutate(dplyr::across(c(2,6,7),as.numeric)); 
@@ -955,7 +986,7 @@ For the groundfish fisheries, the mean ln-scale fishing mortality offsets for fe
 ```{r GMACS-getFMs}
 ##--fully-selected fishing mortality rates----
 dfrFMbyXFY = wtsGMACS::extractRep1Results(reslst,"Fully-selected_FM_by_season_sex_and_fishery") |> 
-             dplyr::filter(!(case %in% noConv)) |>
+              dplyr::filter(!(case %in% noConv)) |>
               tidyr::pivot_longer(cols=!c("case","sex","fleet","year"),
                                   names_to="season",
                                   values_to="est") |> 
@@ -1113,7 +1144,8 @@ Survey selectivity curves are estimated only in models G24.02 and G24.02a (Figur
   zBs = wtsGMACS::extractRep1Results(reslst,"size_midpoints")[[1]];
   nZBs = length(zBs);
   dfrSel = wtsGMACS::extractRep1Results(reslst,"selfcns") |> 
-             dplyr::filter(!(case %in% noConv),type=="capture",
+             dplyr::filter(!(case %in% noConv)) |> 
+             dplyr::filter(type=="capture",
                            fleet %in% c("NMFSAM","NMFSMF")) |>
              tidyr::pivot_longer(cols=4+(1:nZBs),names_to="size",values_to="est") |>
              dplyr::mutate(dplyr::across(c(2,6,7),as.numeric)); 
@@ -1173,9 +1205,6 @@ Survey selectivity curves are estimated only in models G24.02 and G24.02a (Figur
 
 ## Summary {#sec-GMACS-smry}
 
-The seven models considered here represent a "first cut" at developing a GMACS model for Tanner crab. Emphasis was placed on constructing the "simplest" models capable of representing the population and fishery dynamics. In particular, no estimated parameters other than fully-selected fishing mortality rates varied in time, whereas parameters reflecting natural mortality and fishery selectivity are estimated within multiple time blocks in the current assessment model. Parameters that varied across time in some of the models (i.e., the probability of terminal molt and NMFS survey selectivity) were estimated outside those models and fixed inside them. Based on the models' relatively poor abilities to follow the variability manifested in the observed time series for NMFS survey biomass, this simplified approach to including temporal variability in a model was not sufficient. It is reasonably clear, and this is true to a lesser extent of the current stock assessment model as well, that at least one of the time-invariant biological processes (e.g., natural mortality, growth) needs to vary temporally in order to better capture the 3-5 year variability seen in the survey data. It is unclear, however, how this should be implemented.
-
-Other considerations for next steps include: 1) alternative fishery selectivity curves; 2) adding time blocks for fishery selectivity; and 3) combining or eliminating fishery datasets. With regard to 1), male selectivity in the snow crab fishery is dome-shaped in the current assessment model (and pretty well supported by the data) but logistic in the GMACS models considered here. With regard to 2), important changes in the prosecution of both crab and groundfish fisheries have occurred since 1982 (e.g., rationalization of the crab fisheries) that should be better captured by at least estimating appropriate selectivity curves by relevant time blocks. With regard to 3), combining the small amounts of recent bycatch in the BBRKC and groundfish fisheries into a combined bycatch fleet might improve the overall stability of the models by eliminating the need to fit to multiple small sources of fishing mortality.
 
 <!-- references -->
 ```{r,eval=!knitr::opts_knit$get("child")&!isPDF,results='asis'}

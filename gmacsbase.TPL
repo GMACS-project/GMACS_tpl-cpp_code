@@ -7512,203 +7512,215 @@ FUNCTION calc_relative_abundance
    *  [ ] Add maturity component for data sets with mature old and mature new.
   **/
 FUNCTION calc_predicted_composition
-   dvar_vector dNtmp(1,nclass);                                      ///> temporary Ns
-   dvar_vector nal(1,nclass);                                        ///> numbers or biomass at length.
-   dvar_vector tempZ1(1,nclass);                                     ///> total mortality
-   dvariable qmult;                                                  ///> Q multiplier for comps
-   dvariable cumsum;                                                 ///> used for tail compression
+    if (verbose>3) cout<<"--Starting calc_predicted_composition"<<endl;
+    dvar_vector dNtmp(1,nclass);                                      ///> temporary Ns
+    dvar_vector nal(1,nclass);                                        ///> numbers or biomass at length.
+    dvar_vector tempZ1(1,nclass);                                     ///> total mortality
+    dvariable qmult;                                                  ///> Q multiplier for comps
+    dvariable cumsum;                                                 ///> used for tail compression
 
-   d3_pre_size_comps_in.initialize();
-   d3_pre_size_comps.initialize();
-   for ( int ii = 1; ii <= nSizeComps_in; ii++ )
-    {
-	 int nbins = nSizeCompCols_in(ii);
-     for ( int jj = 1; jj <= nSizeCompRows_in(ii); jj++ )
-      if ( (d3_SizeComps_in(ii,jj,-7) <= nyrRetro || (d3_SizeComps_in(ii,jj,-7) == nyrRetro+1 && d3_SizeComps_in(ii,jj,-6) == 1) ) && 
-           d3_SizeComps_in(ii,jj,-7) >= syr)
-       {
-        dNtmp.initialize();
-        int i       = d3_SizeComps_in(ii)(jj,-7);                     ///> year
-        int j       = d3_SizeComps_in(ii)(jj,-6);                     ///> seas
-        int k       = d3_SizeComps_in(ii)(jj,-5);                     ///> gear (a.k.a. fleet)
-        int h       = d3_SizeComps_in(ii)(jj,-4);                     ///> sex
-        int type    = d3_SizeComps_in(ii)(jj,-3);                     ///> retained or discard
-        int shell   = d3_SizeComps_in(ii)(jj,-2);                     ///> shell condition
-        int bmature = d3_SizeComps_in(ii)(jj,-1);                     ///> boolean for maturity
+    d3_pre_size_comps_in.initialize();
+    d3_pre_size_comps.initialize();
+    for ( int ii = 1; ii <= nSizeComps_in; ii++ ){
+      int nbins = nSizeCompCols_in(ii);
+      if (verbose>3) cout<<"----ii = "<< ii <<" nbins = "<< nbins << endl;
+      for ( int jj = 1; jj <= nSizeCompRows_in(ii); jj++ ) {
+        if ( ( (d3_SizeComps_in(ii,jj,-7) <= nyrRetro) || 
+               ((d3_SizeComps_in(ii,jj,-7) == nyrRetro+1) && (d3_SizeComps_in(ii,jj,-6) == 1)) ) && 
+             (d3_SizeComps_in(ii,jj,-7) >= syr)) {
+          dNtmp.initialize();
+          int i       = d3_SizeComps_in(ii)(jj,-7);                     ///> year
+          int j       = d3_SizeComps_in(ii)(jj,-6);                     ///> seas
+          int k       = d3_SizeComps_in(ii)(jj,-5);                     ///> gear (a.k.a. fleet)
+          int h       = d3_SizeComps_in(ii)(jj,-4);                     ///> sex
+          int type    = d3_SizeComps_in(ii)(jj,-3);                     ///> retained or discard
+          int shell   = d3_SizeComps_in(ii)(jj,-2);                     ///> shell condition
+          int bmature = d3_SizeComps_in(ii)(jj,-1);                     ///> boolean for maturity
+          if (verbose>3) {
+            cout<<"------Processing size comp for "<< i << " season = "<< j <<" fleet = "<< k;
+            cout<<" sex = "<< h <<" type = "<< type <<" shell = "<< shell <<" bmature = "<< bmature << endl;
+          }
 
-        if ( h != UNDET_SEX )                                           ///> sex specific
-         {
-          dvar_vector sel = mfexp(log_slx_capture(k,h,i));
-          dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
-          dvar_vector dis = mfexp(log_slx_discard(k,h,i));
-
-           // AEPCAL--check the maturity index for Z2 and Z1
-		   
-		   if (lf_catch_in(ii)==CATCH_COMP)
-		   {
-            // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-            // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-			if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-			
-            if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)
-             {
-              tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-             }
-            if (season_type(j)==EXPLOIT_F)
-             {
-              tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-              cout << "not coded yet" << endl; exit(1);
-             }
-		   }
-          if (lf_catch_in(ii)==SURVEY_COMP) for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
-
-          nal.initialize();                                           ///> Numbers by sex
-
-		  // need cases for when maturity changes and when shell condition changes
-		  if(nmature == 1)
-		  {
-		   for ( int m = 1; m <= nmature; m++ )
-		    for ( int o = 1; o <= nshell; o++ )
-            {
-             int ig = pntr_hmo(h,m,o);
-             if ( shell == 0 ) nal += d4_N(ig,i,j);
-             if ( shell == o ) nal += d4_N(ig,i,j);
-            }
-		  }
-
-		  if(nmature == 2)
-		  {
-		   for ( int m = 1; m <= nmature; m++ )
-		    for ( int o = 1; o <= nshell; o++ )
-            {
-             int ig = pntr_hmo(h,m,o);
-             if ( bmature == 0 ) nal += d4_N(ig,i,j);
-             if ( bmature == m ) nal += d4_N(ig,i,j);
-            }
-		  }
-	  
-          switch ( type )
-           {
-            case RETAINED:                                            ///> retained
-             dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1);
-            break;
-            case DISCARDED:                                           ///> discarded
-             dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1);
-            break;
-            case TOTALCATCH:                                          ///> both retained and discarded
-             dNtmp += elem_prod(elem_prod(nal, sel),tempZ1);
-            break;
-           }
-         }
-        else
-         { // sexes combined in the observations
-          for ( int h = 1; h <= nsex; h++ )
-           {
+          if ( h != UNDET_SEX ) {                                          ///> sex specific
+            if (verbose>3) cout<<"--sex-specific observations in comp"<< endl;
             dvar_vector sel = mfexp(log_slx_capture(k,h,i));
             dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
             dvar_vector dis = mfexp(log_slx_discard(k,h,i));
-           // AEPCAL--check the maturity index
-		  if (lf_catch_in(ii)==CATCH_COMP)
-		   {
-          // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-          // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-			if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-			
-            if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)
-             {
-              tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-             }
-            if (season_type(j)==EXPLOIT_F)
-             {
-              tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-              cout << "not coded yet" << endl; exit(1);
-             }
-           }
-    	  if (lf_catch_in(ii)==SURVEY_COMP) for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
 
-            nal.initialize();                                         ///> Numbers by sex
-            for ( int m = 1; m <= nmature; m++ )
-             for ( int o = 1; o <= nshell; o++ )
-              {
-               int ig = pntr_hmo(h,m,o);
-               if ( shell == 0 ) nal += d4_N(ig,i,j);
-               if ( shell == o ) nal += d4_N(ig,i,j);
+            // AEPCAL--check the maturity index for Z2 and Z1
+
+            if (lf_catch_in(ii)==CATCH_COMP) {
+              if (verbose>3) cout <<"----catch comp"<< endl;
+              // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
+              // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+              if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
+
+              if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F) {
+                tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
               }
- 
-            switch ( type )
-             {
-           case RETAINED:                                            ///> retained
-             dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1);
-            break;
-            case DISCARDED:                                           ///> discarded
-             dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1);
-            break;
-            case TOTALCATCH:                                          ///> both retained and discarded
-             dNtmp += elem_prod(elem_prod(nal, sel),tempZ1);
-            break;
-             }
-           }
-         }
-        d3_pre_size_comps_in(ii)(jj)        = dNtmp(1,nbins);
-        d3_pre_size_comps_in(ii)(jj)(nbins) = sum(dNtmp(nbins,nclass));
-        // Now apply tail compression (perhaps)
-        if (bTailCompression_in(ii) == 1)
-         {
-          //cout << "doing" << endl;
-          cumsum = 0;
-          for (int kk=1;kk<=tailcompind(ii,jj,1);kk++)
-           {
-            cumsum += d3_pre_size_comps_in(ii,jj,kk);
-            d3_pre_size_comps_in(ii,jj,kk) = 0;
-           }
-          d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,1)) = cumsum;
-          cumsum = 0;
-          for (int kk=nbins;kk>=tailcompind(ii,jj,2);kk--)
-           {
-            cumsum += d3_pre_size_comps_in(ii,jj,kk);
-            d3_pre_size_comps_in(ii,jj,kk) = 0;
-           }
-          d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,2)) = cumsum;
-         }
-        
-	} // jj (years)
-    } // ii (sizecomp)
+              if (season_type(j)==EXPLOIT_F) {
+                tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+                cout << "not coded yet" << endl; exit(1);
+              }
+            }//--lf_catch_in(ii)==CATCH_COMP
 
-   // This aggregates the size composition data by appending size compositions horizontally
-   int oldk = 9999; int j; int i;
-   for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-    {
-     int k = iCompAggregator(kk);
-     if ( oldk != k ) j = 0;
-     oldk = k;
-     for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ )
-      {
-       j += 1;
-       for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
-        {
-         int iyr = d3_SizeComps_in(kk,ii,-7) ;
-         if (iyr <= nyrRetro || (iyr == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) )
-          { 
-           i = ii; 
-           qmult = 1;
-           if (survey_for_q_in(kk) >0) qmult = SurveyQT(survey_for_q_in(kk),iyr);
-           d3_pre_size_comps(k,i,j) = qmult*d3_pre_size_comps_in(kk,ii,jj); 
-          } // iyr
-        }
-      }
-    }
+            if (lf_catch_in(ii)==SURVEY_COMP) {
+              if (verbose>3) cout << "----survey comp" << endl;
+              for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
+            }
+
+            nal.initialize();                                           ///> Numbers by sex
+
+            // need cases for when maturity changes and when shell condition changes
+            if(nmature == 1){
+              for ( int m = 1; m <= nmature; m++ ){
+                for ( int o = 1; o <= nshell; o++ ) {
+                  int ig = pntr_hmo(h,m,o);
+                  if ( shell == 0 ) nal += d4_N(ig,i,j);
+                  if ( shell == o ) nal += d4_N(ig,i,j);
+                }//--o loop
+              }//--m loop
+            }//--nmature == 1
+
+            if(nmature == 2) {
+              for ( int m = 1; m <= nmature; m++ ){
+                for ( int o = 1; o <= nshell; o++ ) {
+                  int ig = pntr_hmo(h,m,o);
+                  if ( bmature == 0 ) nal += d4_N(ig,i,j);
+                  if ( bmature == m ) nal += d4_N(ig,i,j);
+                }//--o loop
+              }//--m loop
+            }//--nmature == 2
+
+            switch ( type ) {
+              case RETAINED:                                            ///> retained
+                dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1);
+                break;
+              case DISCARDED:                                           ///> discarded
+                dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1);
+                break;
+              case TOTALCATCH:                                          ///> both retained and discarded
+                dNtmp += elem_prod(elem_prod(nal, sel),tempZ1);
+                break;
+            }//--switch(type)
+            //end of sex-specific: h != UNDET_SEX
+          } else {
+            // sexes combined in the observations
+            if (verbose>3) cout <<"----sexes combined in the observations"<< endl;
+            for ( int h = 1; h <= nsex; h++ ){
+              if (verbose>3) cout <<"------h = " << h << endl;
+              dvar_vector sel = mfexp(log_slx_capture(k,h,i));
+              dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
+              dvar_vector dis = mfexp(log_slx_discard(k,h,i));
+              // AEPCAL--check the maturity index
+              if (lf_catch_in(ii)==CATCH_COMP) {
+                if (verbose>3) cout <<"------catch comp"<< endl;
+                // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
+                // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+                if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
+
+                if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F) {
+                  tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+                }
+                if (season_type(j)==EXPLOIT_F) {
+                  tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+                  cout << "not coded yet" << endl; exit(1);
+                }
+              }//--lf_catch_in(ii)==CATCH_COMP
+    	        if (lf_catch_in(ii)==SURVEY_COMP) {
+                if (verbose>3) cout <<"------survey comp" << endl;
+                for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
+              }
+
+              nal.initialize();                                         ///> Numbers by sex
+              for ( int m = 1; m <= nmature; m++ ){
+                for ( int o = 1; o <= nshell; o++ ) {
+                  int ig = pntr_hmo(h,m,o);
+                  if ( shell == 0 ) nal += d4_N(ig,i,j);
+                  if ( shell == o ) nal += d4_N(ig,i,j);
+                }//--o loop
+              }//--m loop
+
+              switch ( type ) {
+                case RETAINED:                                            ///> retained
+                  dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1);
+                  break;
+                case DISCARDED:                                           ///> discarded
+                  dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1);
+                  break;
+                case TOTALCATCH:                                          ///> both retained and discarded
+                  dNtmp += elem_prod(elem_prod(nal, sel),tempZ1);
+                  break;
+              }//--switch(type)
+            }//--h loop
+          }//--else sexes combined
+          d3_pre_size_comps_in(ii)(jj)        = dNtmp(1,nbins);
+          d3_pre_size_comps_in(ii)(jj)(nbins) = sum(dNtmp(nbins,nclass));
+          // Now apply tail compression (perhaps)
+          if (bTailCompression_in(ii) == 1) {
+            if (verbose>3) cout <<"------doing tail compression" << endl;
+            cumsum = 0;
+            for (int kk=1;kk<=tailcompind(ii,jj,1);kk++) {
+              cumsum += d3_pre_size_comps_in(ii,jj,kk);
+              d3_pre_size_comps_in(ii,jj,kk) = 0;
+            }//--kk
+            d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,1)) = cumsum;
+            cumsum = 0;
+            for (int kk=nbins;kk>=tailcompind(ii,jj,2);kk--) {
+              cumsum += d3_pre_size_comps_in(ii,jj,kk);
+              d3_pre_size_comps_in(ii,jj,kk) = 0;
+            }//--kk
+            d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,2)) = cumsum;
+          }//--bTailCompression_in(ii) == 1
+        }// if check on whether to include year
+      } // jj loop (years)
+    } // ii loop (sizecomp)
+
+    // This aggregates the size composition data by appending size compositions horizontally
+    if (verbose) cout<<"--Extending size comps horizontally"<<endl;
+    int oldk = 9999; int j; int i;
+    for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
+      int k = iCompAggregator(kk);
+      if (verbose) cout <<"----kk = "<< kk <<" k = "<< k << endl;
+      if ( oldk != k ) j = 0;
+      oldk = k;
+      for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ ) {
+        j += 1;
+        if (verbose>3) cout << "jj, j = " << jj << ", " << j << endl;
+        for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ) {
+          int iyr = d3_SizeComps_in(kk,ii,-7) ;
+          if (verbose>3) cout << "ii, iyr = " << ii << ", " << iyr << endl;
+          if ( (iyr <= nyrRetro) || ((iyr == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6) == 1)) ) { 
+            i = ii; 
+            qmult = 1;
+            if (survey_for_q_in(kk) >0) {
+              if (verbose) cout<<"----survey_for_q_in(kk) = "<< survey_for_q_in(kk) << endl;
+              qmult = SurveyQT(survey_for_q_in(kk),iyr);
+              if (verbose) cout<<"----qmult = "<< qmult << endl;
+            }
+            if (verbose>3) cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
+            if (verbose>3) cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
+            d3_pre_size_comps(k,i,j) = qmult*d3_pre_size_comps_in(kk,ii,jj); 
+          } // if check on iyr
+        }//--ii loop
+      }//--jj loop
+    }//--kk loop
  
    // This normalizes all observations by row
-   for ( int k = 1; k <= nSizeComps; k++ )
-    for ( int i = 1; i <= nSizeCompRows(k); i++ )
-     if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) )
-      d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
-
+   if (verbose) cout<<"--Normalizing comps" << endl;
+   for ( int k = 1; k <= nSizeComps; k++ ){
+      for ( int i = 1; i <= nSizeCompRows(k); i++ ){
+        if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) )
+          d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
+      }//--i loop
+   }//--k loop
+  
   if (verbose >= 3) {
     ECHO(d3_pre_size_comps_in)
     ECHO(d3_pre_size_comps)
   }
-    
+  if (verbose> 3) cout <<"--Finished calc_predicted_compositions"<< endl;
+
 
 // =================================================================================================================================================
 
@@ -13078,6 +13090,7 @@ FINAL_SECTION
 //                    not `nsel_patterns`.
 // 2024-10-22 ** WTS. (GMACS Version 2.20.17) Explicitly set n_deviations = 0 after declaration. 
 //                    Added ECHOs for n_deviations at various stages of counting as diagnostics.
+// 2024-11-07 ** WTS. (GMACS Version 2.20.17) Add a lot of verbose>3 cout's to calc_predicted_composition to diagnose ctl file problem specifiying aggregations. 
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?

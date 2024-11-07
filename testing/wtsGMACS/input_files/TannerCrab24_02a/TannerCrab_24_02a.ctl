@@ -656,7 +656,7 @@
       1      1      1      1      1      1      1      1      1      1      1      1      1      2      2      2 # Set to 1 for catch-based predictions; 2 for survey or total catch predictions
       1      1      1      1      1      1      1      1      1      1      1      1      1      1      1      1 # Lambda for effective sample size
       1      1      1      1      1      1      1      1      1      1      1      1      1      1      1      1 # Lambda for overall likelihood
-      0      0      0      9      9      9      0      0      0      0      0      0      0      2      3      1 # Survey to set Q for this comp
+      0      0      0      0      0      0      0      0      0      0      0      0      0      2      3      1 # Survey to set Q for this comp
 ## ———————————————————————————————————————————————————————————————————————————————————— ##																					
 
 #--the number of parameters listed here must match the MAXIMUM composition aggregator index

@@ -23,3 +23,10 @@ testing/input_files/BBRKC_20240731/bbrkc_v14.zip
 testing/wtsGMACS/model_runs/SMBKC_2024Asmt/
 testing/wtsGMACS/model_runs/TannerCrab24_02/
 testing/wtsGMACS/model_runs/TannerCrab24_02a/
+testing/wtsGMACS/model_comparisons/figures
+testing/wtsGMACS/model_comparisons/tables
+testing/wtsGMACS/model_comparisons/*.csv
+testing/wtsGMACS/model_comparisons/*.md
+testing/wtsGMACS/model_comparisons/*.pdf
+testing/wtsGMACS/model_comparisons/*.RData
+
