@@ -5,11 +5,12 @@ include/.DS_Store
 /_build/
 /docs/
 /doxy/
-/testing/runs/*
 .Rproj.user
 .Rhistory
 gmacsbase_20240304.TPL
 gmacsbaseOLD.TPL
+README.html
+/testing/runs/*
 testing/input_files/gmacs1.par
 testing/input_files/gmacs2.par
 testing/input_files/NewCTLformat_20240401/gmacs_out.ctl
@@ -19,4 +20,6 @@ testing/input_files/AndreLatest/
 testing/input_files/BBRKC_20240731/bbrkc_v16.zip
 testing/input_files/BBRKC_20240731/bbrkcgmacs2_20_16issue.zip
 testing/input_files/BBRKC_20240731/bbrkc_v14.zip
-README.html
+testing/wtsGMACS/model_runs/SMBKC_2024Asmt/
+testing/wtsGMACS/model_runs/TannerCrab24_02/
+testing/wtsGMACS/model_runs/TannerCrab24_02a/

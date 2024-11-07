@@ -1,0 +1,1201 @@
+---
+title: "GMACS Model Run Report"
+author: "William T. Stockhausen"
+institute: "AFSC/NMFS/NOAA"
+date: '`r format(Sys.time(), "%b %e, %Y")`'
+fontsize: 11pt 
+number-sections: true
+number-depth: 3
+reference-location: document
+reference-section-title: References
+bibliography: /Users/williamstockhausen/Work/Projects/Bibliography/AllRefs.bib
+csl: '`r system.file("files/CJFAS.csl",package="wtsQMD")`'
+link-citations: true
+crossref:
+  chapters: false      # prepend label reference numbers by chater number?
+  fig-title: Figure    # for caption: default is "Figure")
+  tbl-title: Table     # for caption: default is "Table")
+  title-delim: "."     # for caption: default is ":")
+  fig-prefix: Figure   # for in-text (use [-@fig-ref] to drop prefix in text)
+  tbl-prefix: Table    # for in-text (use [-@tbl-ref] to drop prefix in text)
+  fig-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  tbl-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  subref-labels: alpha a # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  ref-hyperlink: true    # references are hyperlinked if true
+format: 
+  html: 
+    df-print: paged
+    toc: true
+    toc-location: right
+    fig-width: 6.5
+    fig-asp: 0.6
+    fig-dpi: 100
+    embed-resources: true
+  pdf:
+    documentclass: scrartcl
+    toc: false
+    fig_crop: false
+    keep-tex: false
+    fig-width: 6.5
+    fig-asp: 0.6
+    fig-dpi: 100
+    geometry:
+      - left=1.0in
+      - right=1.0in
+      - top=1.0in
+      - bottom=1.0in
+      - textwidth=6.5in
+      - showframe=false
+    include-in-header: 
+      - text: |
+          \usepackage{placeins}
+          \extrafloats{500}
+          \maxdeadcycles=10000
+      - file: "/Users/williamstockhausen/Work/Programming/R/Library/wtsQMD/files/ltx_ExtraLatexIncludes.tex"
+echo: false
+warning: false
+results: 'hide'
+keep-md: false
+keep-yaml: false
+editor: source
+editor_options: 
+  chunk_output_type: console
+concordance: true
+params:
+  setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
+  testing: false
+  pns: "../../ModelRuns/TannerCrab24_01"
+  reorderTables: false   #--issue with finding "range" of table values  (don't use)
+  reorderFigures: false  #--issue with finding "range" of figure values (don't use)
+---
+<!-- IMPORTANT: if used as a child doc, all chunk labels must be unique within the overall document -->
+
+<!-- 
+  NOTEs: 
+     * child_path$peek() gives path to current script.
+     * before starting a child document, do 
+         "child_path$push(file.path(child_path$peek(),rel_path))" first, 
+         where rel_path is the relative path to the child
+     * after a child document has finished, do "child_path$pop()" to return to current path value
+-->
+
+<!-- if not child doc, set up required objects -->
+```{r}
+#| label: Rpt4Gmacs_setup
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: "asis"
+  testing = params$testing;
+  if (testing) cat(params$setup,"\n\n")
+  source(params$setup);
+  if (testing) cat("root = ",root,"\n\n")
+  reorderTables  = params$reorderTables;
+  reorderFigures = params$reorderFigures;
+```
+
+```{r}
+#| label: setup_Rpt4Gmacs
+#| results: 'asis'
+  require(ggplot2);
+  require(kableExtra);
+  require(tables);
+  Sum = wtsUtilities::Sum;
+  old_thm = ggplot2::theme_set(cowplot::theme_cowplot(font_size = 10) +
+                               cowplot::background_grid() +
+                               cowplot::panel_border());
+  thm = wtsPlots::getStdTheme();
+  options("readr.show_col_types"=FALSE);
+  if (testing) cat("dirThs =",child_path$peek(),"\n\n")
+  ##--NOTE: take out or modify the following as necessary
+  ##--
+  dirThs = child_path$peek();
+  if (!exists("tblno")) tblno = 0;
+```
+
+```{r GMACS-getModelResults}
+require(wtsGMACS);
+reslst = wtsUtilities::getObj(file.path(dirThs,"rda_ModelsResLst.RData"));
+cases = names(reslst$repsLst);
+nCases = length(cases);
+strMdls = "models";
+strCases = cases[1]; i=2;
+while (i < nCases) {strCases = paste0(strCases,", ",cases[i]); i=i+1;}
+if (nCases != 1) strCases = paste0(strCases," and ",cases[nCases]);
+if (nCases == 1) strMdls = "model";
+strCases = stringr::str_replace_all(strCases,stringr::fixed("_"),".")
+```
+
+```{r chkParams}
+#--get convergence information----
+dfrConvInfo = wtsGMACS::extractModelConvergenceInfo(reslst);
+nConv = sum(dfrConvInfo$`std errors?`=="yes");
+noConv = (dfrConvInfo |> dplyr::filter(`std errors?`=="no"))$case;
+  tblno = tblno+1;#--advance in-text table index
+  tblnoModConvDiags = tblno;#--save table index for in-text model convergence diagnostics table 
+
+#--estimated parameters----
+dfrEstPars = wtsGMACS::extractParamsInfo(reslst) |> 
+          dplyr::select(!c(status,id,par,phase)) |>
+          dplyr::mutate(case=stringr::str_replace_all(case,"_",".")) |> 
+          tidyr::pivot_wider(names_from="case",
+                             values_from=c("est","se"),
+                             names_sep="-",
+                             names_vary="slowest",
+                             names_glue='{case}-{.value}') |> 
+          dplyr::relocate(description,.before=1);
+nlns = 33;
+nPgsEstPars = ceiling(nrow(dfrEstPars)/nlns);
+
+##--check parameters at bounds----
+dfrPsAtBs = wtsGMACS::extractParamsAtBounds(reslst);
+nPsAtBs = dfrPsAtBs |> 
+            dplyr::group_by(case) |> 
+            dplyr::summarize(cnt=dplyr::n()) |>
+            dplyr::ungroup();
+nMdsWithPsAtBs = nrow(nPsAtBs);
+if (nMdsWithPsAtBs==0) {
+  strPsAtBs = "Additionally, no models had any parameters estimated at a bound.";
+} else if (nMdsWithPsAtBs==nCases) {
+  strPsAtBs = "However, all of the models had at least on parameter estimated at a bound.";
+} else {
+  strPsAtBs = paste0("However, of the ",nCases," models considered, ",nMdsWithPsAtBs," had at least one parameter estimated at a bound.")
+}
+##--check other parameters?----
+if (!is.null(params$chkParams))
+  dfrOthrPs = dfrEstPars |> 
+                dplyr::filter(par %in% params$chkParams);#--
+```
+
+# Model Results: GMACS Models {#sec-ModRes-GMACSs}
+
+This section provides a summary of results for GMACS Tanner crab `r strMdls` `r strCases`. 
+
+## Model convergence {#sec-GMACS-ModConv}
+
+Parameter jittering was used to improve confidence that the "best" results for each model were associated with the model's maximum likelihood estimate (MLE). Each model was run 400 times, with the initial values for estimated parameters randomly selected with an uncertainty factor of 0.1. Model convergence was judged on the basis of a small final maximum gradient and successful estimation of parameter uncertainty information (Table `r LETTERS[tblnoModConvDiags]`). Based on these criteria, `r ifelse(nConv==nCases,"all",paste0(nConv," out"))` of the `r nCases` models converged successfully. The optimization process was fairly robust for five of the seven models, with greater than 10% of the jitter runs achieving essentially the same solution. However, this was not the case for models 24.02a an 24.07, both of which had less than 4 out of 400 runs end near the "best" run in terms of the final value for the model's objective function. 
+
+All of the models exhibited at least one parameter estimated at bound in the "best" model run [@tbl-GMACS-PsAtBs]. The largest number occurred in model G24.02a, with four. The mean for the ascending logistic function used to describe fishery selectivity for male bycatch in the BBRKC ("RKF") fishery was estimated at its upper bound in all seven models. All parameter values are listed in Tables [-@tbl-GMACS-AllParamEsts-1]-[-@tbl-GMACS-AllParamEsts-`r nPgsEstPars`]. 
+
+
+```{r GMACS-tblModelConvergence,results='asis'}
+  #--print in-text model convergence info table
+  #if (isPDF) cat("\\begin{landscape}\n\n");
+  cap = paste0("Table ",LETTERS[tblnoModConvDiags],". ",
+               "Summary convergence diagnostics for the GMACS models");
+  cat(cap);
+  fn = file.path(child_path$peek(),"../../../Text/external_artifacts/Description24_02GMACS",
+                 paste0("Table_07.ModelConvergence.",def_ext));
+  kbl = wtsQMD::imageAsKable(fn);
+  cat(kbl,"\n\n");
+  #if (isPDF) cat("\\end{landscape}\n\n");
+  rm(cap,kbl);
+```
+
+
+```{r}
+#| label: tbl_GMACS-PsAtBs
+  tmp = dfrPsAtBs |> 
+          dplyr::select(case,estimate=est,lb,ub,type=status,gradient=grd,se,description=par_type) |> 
+          dplyr::mutate(description=stringr::str_replace_all(description,"_"," "),
+                        case=stringr::str_replace_all(case,"_",".")) |> 
+          dplyr::mutate(
+            dplyr::across(2:7,as.numeric)
+          )
+  kbl = wtsQMD::doKbl(tmp,
+                      digits=3,
+                      format.args=list(big.mark = ',',format="e#"),
+                      position="h",
+                      border_right=c(1),
+                      ltx_font_size=9,replaceNAs="--",adjColSpacing=-4);
+  lbl = wtsQMD::getLabel();
+  cap = paste0('Any GMACS model parameters estimated at a bound are listed here. ',
+               'Those estimated at a lower bound ("lb") are indicated by "type" = -1; ',
+               'those estimated at an upper bound ("ub") are indicated by "type" = 1. ',
+               'se: estimated standard error.');
+#  lstTbls[[lbl]] = wtsQMD::insertKblIntoQMD(kbl,lbl,cap,ori="L");
+  lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl,ori="L");
+  rm(tmp,kbl,lbl,cap);
+```
+
+```{r}
+#| label: tbl_GMACS-AllParamEsts
+tmp1 = dfrEstPars |> dplyr::mutate(
+         description=stringr::str_replace(description,"Scaled logN for","logN: "),
+         description=stringr::str_replace(description,"mature immature","imm."),
+         description=stringr::str_replace(description,"mature mature","mat."),
+         description=stringr::str_replace(description,"newshell",""),
+         description=stringr::str_replace(description," est "," "),
+         description=stringr::str_replace(description," base "," "),
+         description=stringr::str_replace(description," year "," "),
+         description=stringr::str_replace(description," season 2",""),
+         description=stringr::str_replace(description,"Log fdev","fdev"),
+         description=stringr::str_replace(description,"Log fdov","fdov"));
+  npgs = nPgsEstPars;
+  cap = paste0('All GMACS model parameter values (and standard errors, if estimated) are listed here, by model case. ',
+               'id: overall parameter index (includes fixed parameters); par: index of estimated parameters; ',
+               'phase: first estimation phase (negative values indicate fixed parameters); ',
+               'lb: parameter lower bound; ub: parameter upper bound; est: estimate; se: standard error.');
+  rw = 1;
+  for (i in 1:npgs){
+    kbl = wtsQMD::doKbl(tmp1[rw:min(rw+nlns,nrow(dfrEstPars)),],
+                        digits=3,
+                        position="h",
+                        border_right=c(1,3,5,7,9,11,13,15),
+                        ltx_font_size=7,
+                        replaceNAs="--",
+                        adjColSpacing=-6) |> 
+            kableExtra::header_separate("-") |> 
+            stringr::str_replace_all(" NA "," -- ") |> 
+            stringr::str_replace_all(stringr::fixed("{NA}"),"{--}") |> 
+            stringr::str_replace_all(stringr::fixed(" NA\\")," --\\"); 
+    class(kbl) = c("kableExtra" ,"knitr_kable");
+    lbl = wtsQMD::getLabel(paste0("-",i));
+    lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl,ori="L");
+    cap = "Parameters table continued."
+    rw = rw+nlns;
+  }
+  rm(tmp1,npgs,rw,kbl,lbl,cap);
+```
+
+## Fits to fishery catch data {#sec-GMACS-FitsToFsheryCatchData}
+
+Fits to retained catch were excellent for all models (Figures [-@fig-GMACS-RetCatchFit] and [-@fig-GMACS-RetCatchResids]), as expected. Fits to total catch biomass in the crab fisheries were also very good for the directed fishery ("TCF") and the snow crab fishery ("SCF") for all models and all years, although there were some differences between predicted and observed values in the early 1990's (Figures [-@fig-GMACS-TotCatchFitCFs], [-@fig-GMACS-TotCatchResidsCFsM], and [-@fig-GMACS-TotCatchResidsCFsF]). However, fits to total catch biomass in the BBRKC fishery ("RKF") exhibited some extremely large differences for models 24.07 for females and 24.02a for males. All seven models substantially over-predict total catch biomass for males in the BBRKC fishery in 2007. In contrast, fits to Tanner crab bycatch in the groundfish fisheries are very good across all three fleets for all models, although the fits for 24.07 to the catch by trawl gear ("GFT") diverge from the observations as one goes back in time from 1997 (Figures [-@fig-GMACS-TotCatchFitGFs] and [-@fig-GMACS-TotCatchResidsGFs]). 
+
+```{r GMACS-getCatchFitData}
+##--catch data----
+dfrCatFit = wtsGMACS::extractRep1Results(reslst,"Catch_fit_summary") |> 
+              dplyr::filter(!(case %in% noConv)) |>
+              dplyr::mutate(
+                dplyr::across(c(year,obs,cv,effort,HM,prd,rsd),
+                              as.numeric)
+              );
+crbFshs = c("TCF","SCF","RKF");
+```
+
+```{r}
+#| label: fig-GMACS-RetCatchFit
+#| fig-cap: Fits of GMACS models to retained catch biomass, colored by model case.
+  p = ggplot(dfrCatFit |> dplyr::filter(fleet %in% crbFshs,type=="retained"),
+         aes(x=year,colour=case)) + 
+        geom_point(aes(y=obs)) + 
+        # geom_ribbon(aes(ymin=lba,ymax=uba),fill="blue",alpha=0.3) + 
+        # geom_ribbon(aes(ymin=lbo,ymax=ubo),fill="green",alpha=0.3) + 
+        geom_line(aes(y=prd)) + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Retained Catch (1,000's t)") + 
+        facet_wrap(~fleet,ncol=1,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r GMACS-PlotLollipops}
+  plotLollipops<-function(dfr,
+                          var,
+                          extreme=3,
+                          dw=1,
+                          size=0.1,
+                          plotPoints=TRUE,
+                          xlab="year",
+                          ylab="Pearsons Residuals"){
+     tst = dfr |> dplyr::select(case,fleet,y=year,val={{var}}) |>
+                    dplyr::mutate(ctg=ifelse(abs(val)<extreme,"ok","extreme")) |>
+                    dplyr::mutate(ctgf=factor(ctg,levels=c("ok","extreme")),
+                                  ctgz=ifelse(ctg=="ok",1,2),
+                                  facet=fleet);
+  
+     mx = max(extreme,max(abs(tst$val),na.rm=TRUE));
+     p1 = ggplot(tst,aes(x=y,colour=case,fill=case,shape=ctgf)) +
+           geom_linerange(aes(ymin=0,ymax=val),position=position_dodge2(dw),linewidth=size) +
+           geom_hline(yintercept= extreme,linetype=2,colour="black")+
+           geom_hline(yintercept=       0,linetype=2,colour="black")+
+           geom_hline(yintercept=-extreme,linetype=2,colour="black")+
+           scale_y_continuous(limits=mx*c(-1,1),breaks=c(-extreme,0,extreme))+
+           scale_size(range=c(1,2),guide=NULL)+scale_shape_manual(values=c(21,22))+
+           labs(x=xlab,y=ylab,shape="") +
+           facet_grid(facet~.,scales="free_y") +
+           theme(panel.spacing.y=unit(0.01,"in"),
+                 panel.spacing.x=unit(0.02,"in"),
+                 panel.background=element_rect(colour="black",fill="white"),
+                 panel.grid=element_blank());
+      if (plotPoints) p1 = p1 + geom_point(aes(y=val,size=ctgz),position=position_dodge2(dw));
+      return(p1)
+  }  
+```
+
+```{r}
+#| label: fig-GMACS-RetCatchResids
+#| fig-cap: "Residuals for GMACS models from fits to the retained catch biomass data, colored by model case (lines: predicted; points: observed; envelopes: confidence intervals on observations)."
+  p = plotLollipops(dfrCatFit |> dplyr::filter(fleet %in% crbFshs,type=="retained"),rsd,ylab="Residuals")
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r}
+#| label: fig-GMACS-TotCatchFitCFs
+#| fig-cap: Fits of GMACS models to total catch biomass in the crab fisheries, colored by model case. 
+#| fig-width: 8 
+  p = ggplot(dfrCatFit |> dplyr::filter(fleet %in% crbFshs,type=="total"),
+         aes(x=year,colour=case)) + 
+        geom_point(aes(y=obs)) + 
+        # geom_ribbon(aes(ymin=lba,ymax=uba),fill="blue",alpha=0.3) + 
+        # geom_ribbon(aes(ymin=lbo,ymax=ubo),fill="green",alpha=0.3) + 
+        geom_line(aes(y=prd)) + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Total Catch (1,000's t)") + 
+        facet_grid(fleet~sex,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(p);
+```
+
+```{r}
+#| label: fig-GMACS-TotCatchResidsCFsM
+#| fig-cap: "Residuals for GMACS models from fits to the total catch biomass data by crab fishery for males, colored by model case (lines: predicted; points: observed; envelopes: confidence intervals on observations)."
+#| fig-width: 8 
+  p = plotLollipops(dfrCatFit |> dplyr::filter(fleet %in% crbFshs,type=="total",sex=="male"),rsd,ylab="Residuals")
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+  rm(p);
+```
+
+```{r}
+#| label: fig-GMACS-TotCatchResidsCFsF
+#| fig-cap: "Residuals for GMACS models from fits to the total catch biomass data by crab fishery for females, colored by model case (lines: predicted; points: observed; envelopes: confidence intervals on observations)."
+#| fig-width: 8 
+  p = plotLollipops(dfrCatFit |> dplyr::filter(fleet %in% crbFshs,type=="total",sex=="female"),rsd,ylab="Residuals")
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+  rm(p);
+```
+
+```{r}
+#| label: fig-GMACS-TotCatchFitGFs
+#| fig-cap: Fits of GMACS models to total catch biomass in the groundfish fisheries, colored by model case.
+#| fig-width: 8 
+  p = ggplot(dfrCatFit |> dplyr::filter(!(fleet %in% crbFshs),type=="total"),
+         aes(x=year,colour=case)) + 
+        geom_point(aes(y=obs)) + 
+        # geom_ribbon(aes(ymin=lba,ymax=uba),fill="blue",alpha=0.3) + 
+        # geom_ribbon(aes(ymin=lbo,ymax=ubo),fill="green",alpha=0.3) + 
+        geom_line(aes(y=prd)) + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Total Catch (1,000's t)") + 
+        facet_grid(fleet~sex,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(p);
+```
+
+```{r}
+#| label: fig-GMACS-TotCatchResidsGFs
+#| fig-cap: "Residuals for GMACS models from fits to the total catch biomass data by groundfish fishery gear type for combined sexes, colored by model case (lines: predicted; points: observed; envelopes: confidence intervals on observations)."
+#| fig-width: 8 
+  p = plotLollipops(dfrCatFit |> 
+                      dplyr::filter(!(fleet %in% crbFshs), 
+                                    type=="total", sex=="undetermined"), rsd, ylab="Residuals")
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+  rm(p)
+```
+
+##  Fits to relative biomass indices {#sec-GMACS-FitsToRelBioIndices}
+
+Fits to the NMFS survey biomass indices are relatively poor (or worse) and broadly correlated across all three population categories (males, immature females, mature females) for all models (Figures [-@fig-GMACS-IndexFits] and [-@fig-GMACS-IndexResids]). Model G24.07, fitting to VAST-based indices, exhibited the worst performance due to the smaller CVs associated with those time series.
+
+```{r GMACS-getIndexFitData}
+##--index catch data----
+dfrIndxFit = wtsGMACS::extractRep1Results(reslst,"Index_fit_summary") |> 
+               dplyr::filter(!(case %in% noConv)) |>
+               dplyr::mutate(
+                dplyr::across(c(year,obs,base_CV,actual_CV,q,prd,prsn_res),
+                              as.numeric)
+               ) |> 
+               dplyr::mutate(lba=qlnorm(0.05,log(obs),sqrt(log(1+actual_CV^2))),
+                             uba=qlnorm(0.05,log(obs),sqrt(log(1+actual_CV^2)),lower.tail=FALSE));
+```
+
+```{r}
+#| label: fig-GMACS-IndexFits
+#| fig-cap: "Fits of GMACS models to the biomass indices, colored by model case (lines: predicted; points: observed; envelopes: confidence intervals on observations). Note that all models fit to design-based indices, except G24.07 which fits to VAST-based indices."
+#| fig-width: 8 
+  p = ggplot(dfrIndxFit,aes(x=year,colour=case,fill=case)) + 
+        geom_ribbon(aes(ymin=lba,ymax=uba,group=case),alpha=0.2,colour=NA) + 
+      #  geom_ribbon(aes(ymin=lbo,ymax=ubo,group=case),fill="green",alpha=0.3,colour=NA) + 
+        geom_point(aes(y=obs)) + 
+        geom_line(aes(y=prd)) + 
+        facet_wrap(~fleet,ncol=1,scales="free_y") + 
+        labs(y="NMFS Survey Biomass (1,000's t)") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+  rm(p);
+```
+
+```{r}
+#| label: fig-GMACS-IndexResids
+#| fig-cap: "Residuals for GMACS models from fits to the biomass indices, colored by model case (lines: predicted; points: observed; envelopes: confidence intervals on observations). Note that all models fit to design-based indices, except G24.07 which fits to VAST-based indices."
+#| fig-width: 8 
+  p = plotLollipops(dfrIndxFit,prsn_res)
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+```{r}
+##--clean up a bit----
+rm(dfrCatFit,dfrIndxFit);
+```
+
+## Fits to size compositions {#sec-GMACS-FitsToSizeComps}
+
+Predicted retained catch size compositions (Figure [-@fig-GMACS-ZCFits1]) are very similar across all years and models while observed compositions vary annually in both shape and location, reflecting changes in harvest strategies and industry-preferred crab size, spatial shifts in fishing effort (including spatial closures), and changes in the underlying population size structure and spatial pattern. This inflexibility in the predicted size compositions is directly related to the use of retention (and selectivity) functions for the directed fishery whose estimated parameters do not vary with time in the models considered here.
+
+Comparison of fits to the sex-specific total catch size compositions from the crab fisheries (Figures [-@fig-GMACS-ZCFits2]-[-@fig-GMACS-ZCFits13]) is somewhat complicated by the fact that G24.02 appends the female size compositions to the male size compositions in to create an "extended" composition (on an annual basis) that is normalized across both sexes and a single (annual) likelihood value calculated whereas the remaining models fit the size compositions separately by sex. One advantage to this approach is that it retains information about the sex ratio when abundance or biomass indices are aggregated across sex, as in G24.02 for both crab and groundfish fishery data or the remaining models for groundfish data only. Fits to the crab fishery total catch size compositions for G24.02 are thus presented in figures separately from those from the other models. Because sample sizes for males are typically much larger than those for females, the observed proportions in the crab fishery data associated with females at all sizes are much smaller than those for males in G24.02. Consequently, poor fits to the female portion of the extended size crab fishery compositions are typically downweighted in the overall likelihood relative to those in the non-extended fits while those for males are not. Because the catch biomass data from the groundfish fisheries is not sex-specific, fitting the groundfish bycatch size compositions using the "extended" approach is necessary to retain information regarding the size composition of bycatch in the groundfish fisheries. 
+
+The predicted size compositions for males in the directed fishery are very similar across all seven models (Figures [-@fig-GMACS-ZCFits2] and [-@fig-GMACS-ZCFits4]). The models somewhat overpredict the proportion of small males and underpredict the proportion of large males from compositions in the early 1990s while the opposite is true for compositions from 2015/16 on. For females, Model G24.02 tended to underestimate proportions in the directed fishery across all size bins prior to 2008/09 and overestimated them afterward ([@fig-GMACS-ZCFits3]). In contrast, the other models fit the female size compositions fairly well ([@fig-GMACS-ZCFits5]). 
+
+On the whole, predicted size compositions for males in the snow crab fishery were very similar across all seven models (Figures [-@fig-GMACS-ZCFits6] and [-@fig-GMACS-ZCFits8]). As with the directed fishery, fits to size compositions for females were poor for G24.02 ([@fig-GMACS-ZCFits7]) while the other models predicted the female size compositions in similar fashion and fit them fairly well ([@fig-GMACS-ZCFits9]), with the exceptions of the final two years of data when sample sizes were very small. 
+
+Predicted size compositions for males in the BBRKC fishery were very similar across all seven models (Figures [-@fig-GMACS-ZCFits10] and [-@fig-GMACS-ZCFits12]), but the fits in many years were poor (e.g., 1990, 2009). Fits to size compositions for females were again poor for G24.02 ([@fig-GMACS-ZCFits11]). The predicted female size compositions from G24.07 were substantially different from the remaining models ([@fig-GMACS-ZCFits13]; overall, G24.07 fit the data poorly while the models fit the data well in a few years (e.g., 2008) but rather poorly in most (although better than 24.07 in all years).
+
+Model G24.07 predicted substantially different size compositions for male Tanner crab taken in the combined gear groundfish fisheries in 1987-1989 relative to the other models ([@fig-GMACS-ZCFits14]), although none of the fits to the data in these years were very good. The predicted size compositions for females taken in the combined gear groundfish fisheries were more similar across models ([@fig-GMACS-ZCFits15]) and the fits (with the exceptions of 1982-1984) were marginally better than for males. The predicted size compositions for males taken in the fixed gear groundfish fisheries were remarkably similar across models ([@fig-GMACS-ZCFits16]), while the fits were good in most years (1992 and 1993 being exceptions). The predicted size compositions for females differed somewhat more across models, specially during 1991-1995 ([@fig-GMACS-ZCFits17]). On the whole, predicted size compositions for males taken in the trawl gear groundfish fisheries ([@fig-GMACS-ZCFits18]) were similar across models in most years, but showed more differences across models in 1994, 1995, 2003 and 2004. The associated fits to the observed size compositions ranged from reasonably good (e.g., 2014, 2015) to relatively poor (e.g., 1995, 1997). Similar observations hold for the predicted female size compositions in the fixed gear groundfish fisheries ([@fig-GMACS-ZCFits19]), although the years in which good (2014, 2019) and bad (1992, 1995) fits occur differ.
+
+Given the differences in how NMFS survey selectivities are modeled among the various GMACS models, the predicted size compositions for the NMFS survey are surprisingly similar (Figures [-@fig-GMACS-ZCFits20]-[-@fig-GMACS-ZCFits22]). In general, all fit the observed size compositions reasonably well for immature and mature females (Figures [-@fig-GMACS-ZCFits20] and [-@fig-GMACS-ZCFits21]). Visually, the poorest fits occur when proportions in one or two size bins dominate the composition (e.g., mature females, 1982 and 1986) or where observed modes well fit in one year do not propagate to the next in the observed composition but do so in the predicted values (e.g., immature females, 2001-2004). Fits to male size compositions ([@fig-GMACS-ZCFits21]) are a mix of good (e.g., 1997, 2007, 2023) and poor (e.g., 1982, 1985, 1992) fits. 
+
+```{r GMACS-getSizeFitSummaries}
+  ##--size comps----
+  dfrZCs = wtsGMACS::extractRep1Results(reslst,"Size_fit_summary") |> 
+             dplyr::filter(!(case %in% noConv)) |>
+             dplyr::mutate(
+               dplyr::across(c(year,size,inpSS,inpN,aggObs,aggPrd,aggRes),
+                             as.numeric)
+             );
+  flts = (dfrZCs |> dplyr::distinct(fleet))$fleet;
+  dfrUFCs = dfrZCs |> dplyr::distinct(origID,aggID,fleet,comp_type,sex,maturity,shell_cond,case) |> 
+             dplyr::mutate(fleet=factor(fleet,levels=flts))
+  dfrUFCs = dfrUFCs |> 
+             dplyr::inner_join(dfrUFCs |> 
+                               dplyr::group_by(aggID,case) |> 
+                               dplyr::summarize(ext=dplyr::n()) |> 
+                               dplyr::ungroup(),by=c("aggID","case"));
+  dfrUZCs = dfrUFCs |> 
+             dplyr::distinct(comp_type,fleet,ext,sex,maturity,shell_cond) |>
+             dplyr::arrange(comp_type,fleet,dplyr::desc(ext),dplyr::desc(sex),maturity,shell_cond);
+  pltZCs<-function(dfrZCs,dfrUFCs,dfrUZC){
+    dfrUFC = dfrUFCs |> dplyr::inner_join(dfrUZC,by=names(dfrUZC));#--pick unique fleet, bio cats, & cases
+    tmp = dfrZCs |> dplyr::inner_join(dfrUFC,by=names(dfrUFC)[names(dfrUFC)!="ext"]);
+    str = paste(dfrUZC$fleet,dfrUZC$comp_type);
+    if (dfrUZC$shell_cond!="undetermined") str = paste(str,dfrUZC$shell_cond);
+    if (dfrUZC$maturity  !="undetermined") str = paste(str,dfrUZC$maturity);
+    if (dfrUZC$sex       !="undetermined") str = paste0(str," ",dfrUZC$sex,"s");
+    p = compareFitsZCs(tmp,subtitle=str);
+    return(list(plt=p,cap=getcap(str)));
+  }
+  getcap<-function(str){
+    str = paste0("Fits to size comps for ",str,". ",
+                 "Pins: observed proportions; lines: predicted proprtions, ",
+                 "colored by case.");
+    return(str);
+  }
+  icnt=1;
+```
+
+```{r GMACS-ZCFits,results='asis'}
+  for (i in 1:nrow(dfrUZCs)){
+    lbl = paste0("fig-",wtsQMD::getLabel(i));
+    pth = wtsQMD::getFigFN(i);
+    lst  = pltZCs(dfrZCs,dfrUFCs,dfrUZCs[i,]);
+    plt = lst$plt;
+    cap = lst$cap;
+    if (!isPDF){
+      wtsQMD::insertImageIntoHTML(list(lbl=lbl,cap=cap,pth=pth,wid=8,dpi=def_dpi));
+    } else {
+      lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=8,dpi=def_dpi,ori="L");
+    }
+    ggsave(pth,plot=plt,width=8,height=5.5,units="in",dpi=def_dpi);
+    rm(lbl,pth,lst,plt,cap);
+  }
+```
+
+```{r}
+#--clean up a bit----
+rm(dfrZCs,dfrUFCs,dfrUZCs,pltZCs,getcap);
+```
+
+## Estimated population quantities {#sec-GMACS-PopQuants}
+
+All seven models estimated generally similar patterns for annual recruitment ([@fig-GMACS-Rec]), although overall levels differed substantially, with G24.02a exhibiting the lowest and G24.02 the highest. Similar observations hold for estimated mature male biomass (MMB; [@fig-GMACS-MMB]), although G24.07 exhibited the lowest overall level rather than G24.02a.  
+
+Estimates across the seven models for initial numbers by population category and size class ([@fig-GMACS-N0]) differ primarily in scale. One difference is that the numbers in the two smallest size classes for immature males estimated in G24.07 follow a different pattern (decreasing from a high value in the first size bin) from that exhibited by the other models (increasing from a low value in the first size bin). **The results for mature males highlight a structural issue with the GMACS framework that needs to be corrected: the numbers in the smallest size bin for mature males should be zero for all models.** They are not because GMACS hardwires this population category/size bin as a (necessary) reference class for the parameters that determine the initial size structure. The reference size bin, however, needs to user-determined: in the case of Tanner crab, there should be no mature males in the 25-30 mm CW size class. This issue, however, only affects model results until the first generation of crab dies out.
+
+Estimates across the seven models for final numbers by population category and size class ([@fig-GMACS-NF]) also differ primarily in scale. None of the models predict mature males in the smallest size bin, so the structural error in the initial size structure is indeed only a transient issue and (for Tanner crab) has no impact on results after the first 15-20 years.
+
+Estimated time series for abundance aggregated by immature category ([@fig-GMACS-Nyxm]) generally reflect differences in recruitment across the models, with G24.02 consistently estimating the highest levels of abundance for immature crab and G24.02a the lowest levels. The patterns across models are less consistent for mature crab. G24.07 exhibits some abrupt changes in mature female abundance (e.g., late 1980s, mid-1990s) not seen in the other models nor particularly reflected in the estimated time series for mature males. G24.02 consistently estimated the highest abundance for mature males across time, but this was not the case for mature females. Conversely, G24.02a consistently estimated the lowest abundance for mature females across time, but this was not the case for males. Similar patterns are generally evident in the estimates for biomass aggregated by population category, as well ([@fig-GMACS-Nyxm]).
+
+Estimated rates for natural mortality ([@fig-GMACS-M]) were fairly consistent across the models for mature males, but this was not the case for immature crab or mature females. Estimated rates for immature crab hit their lower bound (0.1 yr^{-1}) in G24.02a and were lower than 0.2 yr^{1-} for G24.03 and G24.04 but higher (and roughly similar) for the remaining models. Estimated rates for mature females were generally higher across the models compared with the other population categories, with the estimate from G24.07 being the exception (it was similar to its estimates for M on immature crab). For the other models, the estimated rates for mature females grouped by model pairs: highest for G24.02 and G24.02a, intermediate for G24.03 and G24.04, and lowest (but still above 0.3 yr^{-1}) for G24.05 and G24.06.
+
+```{r}
+#| label: fig-GMACS-Rec
+#| fig-cap: Time series estimates from GMACS models for recruitment. 
+#| fig-asp: 0.8
+  dfr = wtsGMACS::extractRep1Results(reslst,"Summary") |> 
+          dplyr::filter(!(case %in% noConv)) |> 
+          dplyr::select(case,year,rec_male,`log(rec_male)`,`SD(log(rec_male))`) |>
+          dplyr::mutate(dplyr::across(2:5,as.numeric)) |> 
+          dplyr::mutate(est=rec_male,
+                        lb=qlnorm(0.10,log(rec_male),`SD(log(rec_male))`),
+                        ub=qlnorm(0.10,log(rec_male),`SD(log(rec_male))`,lower.tail=FALSE)
+                       );
+  ##----plot time series----
+  p = ggplot(dfr,mapping=aes(x=year,y=est,ymin=lb,ymax=ub,colour=case,fill=case)) +
+      geom_line() + 
+      geom_ribbon() + 
+      geom_hline(yintercept=0) + 
+      labs(x="year",y="estimated male recruitment (millions)") + 
+      wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+  # }
+```
+
+```{r}
+#| label: fig-GMACS-MMB
+#| fig-cap: Time series estimates from GMACS models for MMB.
+#| fig-asp: 0.8
+  dfr = wtsGMACS::extractRep1Results(reslst,"Summary") |> 
+          dplyr::filter(!(case %in% noConv)) |> 
+          dplyr::select(case,year,SSB,`log(SSB)`,`SD(log(SSB))`) |> #--this is MMB, right?
+          dplyr::mutate(dplyr::across(2:5,as.numeric)) |> 
+          dplyr::mutate(est=SSB,
+                        lb=qlnorm(0.10,log(SSB),`SD(log(SSB))`),
+                        ub=qlnorm(0.10,log(SSB),`SD(log(SSB))`,lower.tail=FALSE)
+                       );
+  ##----plot time series----
+  p = ggplot(dfr,mapping=aes(x=year,y=est,ymin=lb,ymax=ub,colour=case,fill=case)) +
+      geom_line() + 
+      geom_ribbon() + 
+      geom_hline(yintercept=0) + 
+      labs(x="year",y="estimated MMB (1,000's t)") + 
+      wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r GMACS-getN_YXMSZ}
+##--population numbers-at-population category-and-size----
+dfrN_YXMSZ = wtsGMACS::extractRep1Results(reslst,"N_YXMSZ") |> 
+                dplyr::filter(!(case %in% noConv)) |> 
+                tidyr::pivot_longer(cols=!c(case,year,sex,maturity,shell_con),
+                                    names_to="size",
+                                    values_to="est") |> 
+                dplyr::mutate(dplyr::across(c(year,size,est),
+                                            as.numeric),
+                              xm=paste(maturity,sex)
+                             );
+```
+
+```{r}
+#| label: fig-GMACS-N0
+#| fig-cap: Initial population abundance from GMACS models, by category and size. 
+#| fig-width: 8
+  ###--initial population abundance by category and size----
+  dfrN = dfrN_YXMSZ |> 
+            dplyr::filter(year==1982);
+  p = ggplot(dfrN,aes(x=size,y=est,colour=case)) + 
+        geom_point() + 
+        geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Initial Population Abdundance (millions)") + 
+        facet_wrap(~xm,ncol=1,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(p,dfrN);
+```
+
+```{r}
+#| label: fig-GMACS-NF
+#| fig-cap: Final population abundance from GMACS models, by category and size.
+#| fig-width: 8
+  ###--final population abundance by category and size----
+  dfrN = dfrN_YXMSZ |> 
+            dplyr::filter(year==2023);
+  p = ggplot(dfrN,aes(x=size,y=est,colour=case)) + 
+        geom_point() + 
+        geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Final Population Abdundance (millions)") + 
+        facet_wrap(~xm,ncol=1,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(p,dfrN);
+```
+
+```{r}
+#| label: fig-GMACS-Nyxm
+#| fig-cap: Time series of population abundance from GMACS models, by category.
+#| fig-width: 8
+  ###--population abundance by sex, maturity----
+  dfrN_YXM = dfrN_YXMSZ |> 
+               dplyr::group_by(case,year,sex,maturity) |> 
+               dplyr::summarize(est=sum(est)) |> 
+               dplyr::ungroup() |> 
+               dplyr::mutate(xm=paste(maturity,sex));
+  p = ggplot(dfrN_YXM,aes(x=year,y=est,colour=case)) + 
+        geom_point() + geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Population Abdundance (millions)") + 
+        facet_wrap(~xm,ncol=1,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(p,dfrN_YXM,dfrN_YXMSZ);
+```
+
+```{r GMACS-getB_YXMSZ}
+  ##--population biomass by population category and size----
+  dfrB_YXMSZ = wtsGMACS::extractRep1Results(reslst,"B_YXMSZ") |> 
+                  dplyr::filter(!(case %in% noConv)) |> 
+                  tidyr::pivot_longer(cols=!c(case,year,sex,maturity,shell_con),
+                                      names_to="size",
+                                      values_to="est") |> 
+                  dplyr::mutate(dplyr::across(c(year,size,est),
+                                              as.numeric),
+                                xm=paste(maturity,sex)
+                               );
+```
+
+```{r}
+#| label: fig-GMACS-B0
+#| fig-cap: Initial population biomass from GMACS models, by category and size.
+#| eval: false
+#| fig-width: 8
+  ###--initial population biomass by category and size----
+  dfrB = dfrB_YXMSZ |> 
+            dplyr::filter(year==1982);
+  p = ggplot(dfrB,aes(x=size,y=est,colour=case)) + 
+        geom_point() + 
+        geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Initial Population Biomass (1,000's t)") + 
+        facet_wrap(~xm,ncol=1,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(p,dfrB);
+```
+
+```{r}
+#| label: fig-GMACS-BF
+#| fig-cap: Final population biomass from GMACS models, by category and size.
+#| eval: false
+#| fig-width: 8
+  ###--final population biomass by category and size----
+  dfrB = dfrB_YXMSZ |> 
+            dplyr::filter(year==2023);
+  p = ggplot(dfrB,aes(x=size,y=est,colour=case)) + 
+        geom_point() + 
+        geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Final Population Biomass (1,000's t)") + 
+        facet_wrap(~xm,ncol=1,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(p,dfrB);
+```
+
+```{r}
+#| label: fig-GMACS-Byxm
+#| fig-cap: Time series of population biomass from GMACS models, by category.
+#| fig-width: 8
+  ###--population biomass by sex, maturity----
+  dfrB_YXM = dfrB_YXMSZ |> 
+               dplyr::group_by(case,year,sex,maturity) |> 
+               dplyr::summarize(est=sum(est)) |> 
+               dplyr::ungroup() |> 
+               dplyr::mutate(xm=paste(maturity,sex));
+  p = ggplot(dfrB_YXM,aes(x=year,y=est,colour=case)) + 
+        geom_point() + geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        labs(y="Population Biomass (1,000's t)") + 
+        facet_wrap(~xm,ncol=1,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(p,dfrB_YXM,dfrB_YXMSZ);
+```
+
+```{r}
+#| label: fig-GMACS-MnGr
+#| fig-cap: Estimated mean post-molt size from GMACS models, by model case.
+#| eval: false
+  ##--mean growth----
+  dfrMnGr = wtsGMACS::extractRep1Results(reslst,"Mean growth") |> 
+              dplyr::filter(!(case %in% noConv)) |> 
+              dplyr::mutate(dplyr::across(3:5,as.numeric));
+  ggplot(dfrMnGr,aes(x=premolt_size,y=mean_postmolt_size,colour=case)) + 
+    geom_line() + 
+    geom_abline(slope=1,linetype=3) + 
+    scale_y_continuous() + 
+    labs(x="pre-molt size (mm CW)",y="mean post-molt size (mm CW}") + 
+    facet_grid(sex~block) + 
+    wtsPlots::getStdTheme()
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r}
+#| label: fig-GMACS-PrGr
+#| fig-cap: Estimated growth transition matrices from GMACS models, by time block and model case.
+#| eval: false
+  ##--growth matrices----
+  dfrPrGr = wtsGMACS::extractRep1Results(reslst,"growth_matrix") |> 
+              dplyr::filter(!(case %in% noConv)) |> 
+              tidyr::pivot_longer(cols=!c(sex,block,premolt_size),
+                                  names_to="postmolt_size",values_to="est") |>
+              dplyr::mutate(dplyr::across(3:5,as.numeric)) |> 
+              dplyr::mutate(xm=paste(sex));
+  p = ggplot(dfrPrGr |> dplyr::filter(est>0.0001),
+         aes(x=premolt_size,y=postmolt_size,size=est,fill=est)) + 
+        geom_point(alpha=0.5,shape=21) + 
+        scale_size_area() + 
+        geom_line(aes(x=premolt_size,y=mean_postmolt_size),data=dfrMnGr,inherit.aes=FALSE) + 
+        geom_abline(slope=1,linetype=3) + 
+        scale_fill_viridis_c(option="magma") + 
+        facet_wrap(~sex,ncol=1) + 
+        labs(x="pre-molt size (mm CW)",y="postmolt size (mm CW)") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r}
+#| label: fig-GMACS-PrZTr
+#| fig-cap: Estimated size transition matrices from GMACS models, by time block and model case.
+#| eval: false
+  ##--size transition matrices----
+  dfrPrTr = wtsGMACS::extractRep1Results(reslst,"size_matrix") |> 
+              dplyr::filter(!(case %in% noConv)) |>
+              tidyr::pivot_longer(cols=!c(sex,block,premolt_size),
+                                  names_to="postmolt_size",values_to="est") |>
+              dplyr::mutate(dplyr::across(3:5,as.numeric)) |> 
+              dplyr::mutate(xm=paste(sex));
+  p = ggplot(dfrPrTr |> dplyr::filter(est>0.0001),
+         aes(x=premolt_size,y=postmolt_size,size=est,fill=est)) + 
+        geom_point(alpha=0.5,shape=21) + 
+        scale_size_area() + 
+        geom_line(aes(x=premolt_size,y=mean_postmolt_size),data=dfrMnGr,inherit.aes=FALSE) + 
+        geom_abline(slope=1,linetype=3) + 
+        scale_fill_viridis_c(option="magma") + 
+        facet_wrap(~sex,ncol=1) + 
+        labs(x="pre-molt size (mm CW)",y="postmolt size (mm CW)") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r}
+#| label: fig-GMACS-PrTMM
+#| fig-cap: Estimated probability of terminal molt from GMACS models for males as a function of post-molt size, by year. Colors indicate model case.
+#| eval: false
+#----prTM for males----
+  dfrPrTM = wtsGMACS::extractRep1Results(reslst,"prMature") |> 
+                dplyr::filter(!(case %in% noConv)) |>
+                tidyr::pivot_longer(cols=!c(case,year,sex),
+                                    names_to="size",values_to="est") |> 
+                dplyr::mutate(dplyr::across(c(year,size,est),as.numeric));
+  p = ggplot(dfrPrTM |> dplyr::filter(sex=="male"),
+           aes(x=size,y=est,colour=case)) + 
+      geom_line() + 
+      scale_y_continuous(limits=c(0,1.1))+ 
+      labs(y="Estimated Pr(terminal molt)") + 
+      facet_wrap(~year,dir="v") + 
+      wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r}
+#| label: fig-GMACS-PrTMF
+#| fig-cap: Estimated probability of terminal molt from GMACS models for females as a function of post-molt size, by year. Colors indicate model case.
+#| eval: false
+#----prTM for females----
+  p = ggplot(dfrPrTM |> dplyr::filter(sex=="female"),
+           aes(x=size,y=est,colour=case)) + 
+      geom_line() + 
+      scale_y_continuous(limits=c(0,1.1))+ 
+      labs(y="Estimated Pr(terminal molt)") + 
+      facet_wrap(~year,dir="v") + 
+      wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r}
+#| label: fig-GMACS-M
+#| fig-cap: Estimated natural mortality rates from GMACS models, by population category. Colored by model case.
+  #--natural mortality----
+  dfrMbyXM = wtsGMACS::extractRep1Results(reslst,"Natural_mortality-by-class") |> 
+                 dplyr::filter(!(case %in% noConv)) |>
+                 tidyr::pivot_longer(cols=!c(case,year,sex,maturity),
+                                    names_to="size",values_to="est") |> 
+                dplyr::mutate(dplyr::across(c(year,size,est),as.numeric)) |> 
+                dplyr::mutate(xm=paste(maturity,sex)) |> 
+                dplyr::group_by(case,xm,sex,maturity) |> 
+                dplyr::summarize(est=mean(est,na.rm=TRUE)) |> 
+                dplyr::ungroup();
+  p = ggplot(dfrMbyXM,
+             aes(x=xm,y=est,colour=case,fill=case,group=case)) + 
+        geom_col(alpha=0.5,position=position_dodge()) + 
+        scale_y_continuous(limits=c(0,NA))+ 
+        labs(y="Estimated M") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+rm(p,dfrMbyXM);
+```
+
+## Selectivity in the fisheries {#sec-GMACS-FshSel}
+
+Estimated logistic selectivity curves for males in the directed fishery ([@fig-GMACS-SelTCF]) have generally similar widths across the models, with G24.07 estimating the furthest left-shifted (relatively higher selection at smaller sizes) and G24.02a the furthest right-shifted (relatively lower selection at smaller sizes). The estimated logistic retention curves are essentially identical for all models, with very narrow widths and inflection points very close to 144 mm CW. The industry-preferred minimum size has changed over time from 145 mm CW to 125 mm CW, so this would suggest that the models underestimated the retention of males less than 145 mm CW (as is the case; [@fig-GMACS-ZCFits1]). Estimated selectivity for females in the directed fishery was similar across all models except G24.02, which was shifted 30 mm to larger sizes.
+
+Estimated logistic capture selectivity for male Tanner crab in the snow crab were essentially identical across models, as was the case for the BBRKC fishery, with full selection at smaller sizes in the snow crab fishery ([@fig-GMACS-SelOCFs]). For females, selectivity in the snow crab fishery was shifted 35 mm to the right in G24.02 from the curves estimated in the remaining models (inflection points ~79 mm CW). G24.07 was the "odd man out" for female selectivity in the BBRKC fishery, shifted to an inflection point at 63 mm CW roughly ~50 mm to the left of the inflection points estimated in the other models. Additionally, unlike the other models, the width of the female selectivity curve for G24.07 was estimated at its lower bound.
+
+The estimated logistic selectivity curves in the groundfish fisheries were fairly similar by sex and fishery, except for those estimated for G24.07 in the combined-gear fishery ([@fig-GMACS-SelGFs]). These were both substantially right-shifted relative to the estimated curves for the other models.
+
+```{r GMACS-getSelFshFcns}
+#--selectivity----
+zBs = wtsGMACS::extractRep1Results(reslst,"size_midpoints")[[1]];
+nZBs = length(zBs);
+dfrSel = wtsGMACS::extractRep1Results(reslst,"selfcns") |> 
+           dplyr::filter(!(case %in% noConv),type!="discard",
+                         fleet %in% c("TCF","SCF","RKF","GFA","GFT","GFF")) |>
+           tidyr::pivot_longer(cols=4+(1:nZBs),names_to="size",values_to="est") |>
+           dplyr::mutate(dplyr::across(c(2,6,7),as.numeric)); 
+```
+
+```{r}
+#| label: fig-GMACS-SelTCF
+#| fig-cap: "Estimated fishery selectivity and retention curves in the directed fishery from GMACS models. Color: model case."
+  ##--retained selectivity, directed fishery----
+  fleets = c("TCF");
+  tmp =  dfrSel |> dplyr::filter(fleet %in% fleets,year==1982);
+  p = ggplot(tmp,
+             aes(x=size,y=est,colour=case,linetype=type)) + 
+        geom_point() + geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        facet_wrap(~sex,ncol=1) + 
+        labs(y="Function") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r}
+#| label: fig-GMACS-SelOCFs
+#| fig-cap: "Estimated fishery capture selectivity by sex in the non-directed crab fisheries from GMACS models. Color: model case."
+#| fig-width: 8
+  ##--retained selectivity, directed fishery----
+  flt = c("SCF","RKF");
+  tmp =  dfrSel |> dplyr::filter(!(fleet %in% flt),year %in% c(1982),type=="capture");
+  p = ggplot(tmp,
+             aes(x=size,y=est,colour=case,linetype=type)) + 
+        geom_point() + geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        facet_grid(fleet~sex) + 
+        labs(y="Capture Selectvity") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+```{r}
+#| label: fig-GMACS-SelGFs
+#| fig-cap: "Estimated fishery capture selectivity by sex in the groundfish fisheries from GMACS models. Color: model case."
+#| fig-width: 8
+  ##--retained selectivity, directed fishery----
+  flt = c("GFA","GFF","GFT");
+  tmp =  dfrSel |> dplyr::filter(!(fleet %in% flt),year %in% c(1982,2005),type=="capture");
+  p = ggplot(tmp,
+             aes(x=size,y=est,colour=case,linetype=type)) + 
+        geom_point() + geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        facet_grid(fleet~sex) + 
+        labs(y="Capture Selectvity") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+## Fishing mortality {#sec-GMACS-FM}
+
+Estimated retained catch fishing mortality ([@fig-GMACS-RetMort]) was essentially identical across all seven models, with the exception of G24.02a in 2006, which estimated a smaller value compared with the other models. All seven  models exhibited an anomalous "spike" in estimated total catch fishing mortality (i.e., retained catch plus all discard mortality; [@fig-GMACS-TotMort]) in 2019 associated with overestimated bycatch in the BBRKC fishery; G24.07 estimated three additional "spikes" while 24.02a estimated one additional spike.
+
+Estimated fully-selected fishing mortality rates on males in the directed fishery ([@fig-GMACS-FshMortTCF]) are extremely high (> 1) in the 1989-1991 time period for all seven models, reflecting the large reported retained and total catches during this time. Estimated rates are highest for G24.02a and lowest for G4.02. Rates show similar patterns for females, but the rates are highest for G24.02 and lowest for G24.07. Rates for fully-selected fishing mortality on males in the snow crab fishery also peak in 1989-1991 across all models, but at much lower values (< 0.15) than the levels in the directed fishery ([@fig-GMACS-FshMortSCF]). Rates were lowest for G24.02a across the entire model time period but no model consistently exhibited the highest rates. Similar to results for the directed fishery, rates for females were highest for G24.02a. Estimates of fully-selected fishing mortality in the BBRKC fishery exhibited worrisome "spikes" of unreasonable magnitude for G24.07 and G24.02a ([@fig-GMACS-FshMortRKF]). Additionally, all of the models exhibited an unreasonable spike in 2019, the last year for which observed data were included. These spikes account for the poor fits to total catch biomass in the BBRKC fishery ([@fig-GMACS-TotCatchFitCFs]) but may indicate problems with model specification.
+
+Estimates of fully-selected fishing mortality in the groundfish fisheries vary in absolute level but exhibit substantially similar variability across time for all seven models (Figures [-@fig-GMACS-FshMortGFA]-[-@fig-GMACS-FshMortGFF]). For the combined-gear fisheries, G24.07 exhibits an overall downward trend from 1982 to 1990 where the other models exhibit upward trends, but the variability superimposed on these trends is similar across all the model ([@fig-GMACS-FshMortGFA]). For the trawl gear fisheries, both the trends and interannual variability are similar for males ([@fig-GMACS-FshMortGFA]). Fishing mortality on females appears to be identically zero across all models for the trawl gear fishery; this is due to the precision (to 0.0001) to which results are reported in the model output. A similar issue occurs with fishing mortality for females in the fixed gear fisheries and is responsible for the quantization evident in [@fig-GMACS-FshMortGFF]. As with the other groundfish fisheries, the trends and interannual variability are also similar across models for fishing mortality on males by the fixed gear fisheries, mainly differeing by overall level.
+
+For the crab fisheries, the annual ln-scale fishing mortality deviations for males and offset deviations for females exhibit a few very large estimates related to bycatch in the BBRKC ("RKF") fishery for G24.02a and G24.07 ([@fig-GMACS-FshMortCFs]), as well as across all models for 2019. These are the source for the spikes in fully-selected fishing mortality in the BBRKC fishery just discussed. 
+
+For the groundfish fisheries, the mean ln-scale fishing mortality offsets for females vary much more widely across models than either the mean ln-scale estimates or the annual deviations for males ([@fig-GMACS-FshMortGFs]). Otherwise, the only standout differences are the annual ln-scale deviations are always more extreme from G24.07 (higher or lower) than the annual median for the combined groundfish fleets ("GFA"). 
+
+```{r}
+#| label: fig-GMACS-RetMort
+#| fig-cap: Time series estimates for retained catch mortality from GMACS models.
+  dfr = wtsGMACS::extractRep1Results(reslst,"Summary") |> 
+          dplyr::filter(!(case %in% noConv)) |> 
+          dplyr::select(case,year,ret_mortality) |>
+          dplyr::mutate(dplyr::across(2:3,as.numeric)) |> 
+          dplyr::mutate(est=ret_mortality);
+  ##----plot time series----
+  p = ggplot(dfr,mapping=aes(x=year,y=est,colour=case,fill=case)) +
+      geom_line() + 
+      geom_hline(yintercept=0) + 
+      labs(x="year",y="retained catch fishing mortality (1,000's t)") + 
+      wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p));
+```
+
+```{r}
+#| label: fig-GMACS-TotMort
+#| fig-cap: Time series estimates for total fishing mortality from GMACS models.
+#| fig-width: 8
+  dfr = wtsGMACS::extractRep1Results(reslst,"Summary") |> 
+          dplyr::filter(!(case %in% noConv)) |> 
+          dplyr::select(case,year,tot_mortality) |>
+          dplyr::mutate(dplyr::across(2:3,as.numeric)) |> 
+          dplyr::mutate(est=tot_mortality);
+  ##----plot time series----
+  p = ggplot(dfr,mapping=aes(x=year,y=est,colour=case,fill=case)) +
+      geom_line() + 
+      geom_hline(yintercept=0) + 
+      labs(x="year",y="total fishing mortality (1,000's t)") + 
+      wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+
+```{r GMACS-getFMs}
+##--fully-selected fishing mortality rates----
+dfrFMbyXFY = wtsGMACS::extractRep1Results(reslst,"Fully-selected_FM_by_season_sex_and_fishery") |> 
+             dplyr::filter(!(case %in% noConv)) |>
+              tidyr::pivot_longer(cols=!c("case","sex","fleet","year"),
+                                  names_to="season",
+                                  values_to="est") |> 
+              dplyr::mutate(
+                dplyr::across(c(year,est),as.numeric)
+              ) |> 
+              dplyr::group_by(case,fleet,season) |> 
+              dplyr::filter(sum(est)>0) |> 
+              dplyr::ungroup();
+crbFshs = c("TCF","SCF","RKF")
+```
+
+```{r}
+#| label: fig-GMACS-FshMortTCF
+#| fig-cap: Estimated fully-selected fishing mortality in the directed fishery from GMACS models, colored by case.
+#| fig-width: 8
+  flt = "TCF";
+  p = ggplot(dfrFMbyXFY |> dplyr::filter(fleet==flt),
+             aes(x=year,y=est,colour=case)) + 
+        geom_point() + geom_line() + 
+        facet_wrap(~sex,ncol=1,scales="free_y") + 
+        labs(y="Fully-selected Fishing Mortality",subtitle=flt) + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+```{r}
+#| label: fig-GMACS-FshMortSCF
+#| fig-cap: Estimated fully-selected fishing mortality in the snow crab fishery from GMACS models, colored by case.
+#| fig-width: 8
+  flt = "SCF";
+  p = ggplot(dfrFMbyXFY |> dplyr::filter(fleet==flt),
+             aes(x=year,y=est,colour=case)) + 
+        geom_point() + geom_line() + 
+        facet_wrap(~sex,ncol=1,scales="free_y") + 
+        labs(y="Fully-selected Fishing Mortality",subtitle=flt) + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+```{r}
+#| label: fig-GMACS-FshMortRKF
+#| fig-cap: Estimated fully-selected fishing mortality in the BBRKC fishery from GMACS models, colored by case.
+#| fig-width: 8
+  flt = "RKF";
+  p = ggplot(dfrFMbyXFY |> dplyr::filter(fleet==flt),
+             aes(x=year,y=est,colour=case)) + 
+        geom_point() + geom_line() + 
+        facet_wrap(~sex,ncol=1,scales="free_y") + 
+        labs(y="Fully-selected Fishing Mortality",subtitle=flt) + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+```{r}
+#| label: fig-GMACS-FshMortGFA
+#| fig-cap: Estimated fully-selected fishing mortality in the combinied-gear groundfish fisheries from GMACS models, colored by case.
+#| fig-width: 8
+  flt = "GFA";
+  p = ggplot(dfrFMbyXFY |> dplyr::filter(fleet==flt),
+             aes(x=year,y=est,colour=case)) + 
+        geom_point() + geom_line() + 
+        facet_wrap(~sex,ncol=1,scales="free_y") + 
+        labs(y="Fully-selected Fishing Mortality",subtitle=flt) + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+```{r}
+#| label: fig-GMACS-FshMortGFT
+#| fig-cap: Estimated fully-selected fishing mortality in the groundfish trawl fisheries from GMACS models, colored by case.
+#| fig-width: 8
+  flt = "GFT";
+  p = ggplot(dfrFMbyXFY |> dplyr::filter(fleet==flt),
+             aes(x=year,y=est,colour=case)) + 
+        geom_point() + geom_line() + 
+        facet_wrap(~sex,ncol=1,scales="free_y") + 
+        labs(y="Fully-selected Fishing Mortality",subtitle=flt) + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+```{r}
+#| label: fig-GMACS-FshMortGFF
+#| fig-cap: Estimated fully-selected fishing mortality in the fixed-gear groundfish fisheries from GMACS models, colored by case.
+#| fig-width: 8
+  flt = "GFF";
+  p = ggplot(dfrFMbyXFY |> dplyr::filter(fleet==flt),
+             aes(x=year,y=est,colour=case)) + 
+        geom_point() + geom_line() + 
+        facet_wrap(~sex,ncol=1,scales="free_y") + 
+        labs(y="Fully-selected Fishing Mortality",subtitle=flt) + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+rm(flt,p,dfrFMbyXFY);
+```
+
+```{r GMACS-getLnFMs}
+##--fishing mortality parameters----
+  dfrFPs = wtsGMACS::extractRep1Results(reslst,"logFM_parameters") |> 
+             dplyr::filter(!(case %in% noConv)) |>
+             dplyr::mutate(
+               dplyr::across(c(index,est),as.numeric)
+             );
+  crbFshs = c("TCF","SCF","RKF");
+  surveys = c("NMFSAM","NMFSIF","NMFSMF");
+```
+
+```{r}
+#| label: fig-GMACS-FshMortCFs
+#| fig-cap: Ln-scale fishing mortality deviations and means for crab fisheries from GMACS models, colored by case.
+#| fig-width: 9
+#| fig-asp: 0.667
+  tmp = dfrFPs |> dplyr::filter(!(fleet %in% surveys),
+                                (fleet %in% crbFshs))
+  p = ggplot() + 
+        geom_point(data=tmp |> dplyr::filter(!is.na(index)),
+                   mapping=aes(x=index,y=est,colour=case)) +
+        geom_hline(yintercept=0,linetype=1,color="black") +
+        geom_hline(data=tmp |> dplyr::filter(is.na(index)),
+                   mapping=aes(yintercept=est,colour=case),
+                   linetype=3) +
+        facet_grid(fleet~sex,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+  rm(p);
+```
+
+```{r}
+#| label: fig-GMACS-FshMortGFs
+#| fig-cap: Ln-scale fishing mortality deviations and means for groundfish fisheries from GMACS models, colored by case.
+#| fig-width: 9
+#| fig-asp: 0.667
+  tmp = dfrFPs |> dplyr::filter(!(fleet %in% surveys),
+                                !(fleet %in% crbFshs))
+  p = ggplot() + 
+        geom_point(data=tmp |> dplyr::filter(!is.na(index)),
+                   mapping=aes(x=index,y=est,colour=case)) +
+        geom_hline(yintercept=0,linetype=1,color="black") +
+        geom_hline(data=tmp |> dplyr::filter(is.na(index)),
+                   mapping=aes(yintercept=est,colour=case),
+                   linetype=3) +
+        facet_grid(fleet~sex,scales="free_y") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+  rm(p,dfrFPs);
+```
+
+## Survey selectivity {#sec-GMACS-SrvSel}
+
+Survey selectivity curves are estimated only in models G24.02 and G24.02a (Figures [-@fig-GMACS-SrvSelM] and [-@fig-GMACS-SrvSelF], which show combined catchability/selectivity), while mean or annual curves estimated outside the model (as discussed in [@sec-EmpSelFcns]) are used in the remaining models. The estimated sex-specific curves are logistic and apply to the entire model time period. The inflection point of the curve estimated in G24.02 for males is beyond the largest size class in the model; combined with the estimate for fully-selected catchability (fixed at 0.5 based on TCSAM02 model results), the resulting curve is smaller than the empirical curves used in models G24.03-24.07 except for the largest size bins ([@fig-GMACS-SrvSelM]). The curve for 24.02a, on the other hand, runs through the middle of the (blue) mean empirical selectivity curve. Fully-selected catchability for both G24.02 and G24.02a are is roughly the same as that implied by the mean empirical curve. The results for females are different ([-@fig-GMACS-SrvSelF]). For females, the combined catchability/selectivity curve from G24_02a is larger than the empirical selectivity curve across all size bins while the curve for G24.02 is smaller than the empirical mean until ~90 mm CW, beyond which it is larger. The fully-selected catchability from the mean empirical curve is smaller than that for both 24.02 and 24.02a. 
+
+```{r GMACS-getSelSrvFcns}
+  #--selectivity----
+  zBs = wtsGMACS::extractRep1Results(reslst,"size_midpoints")[[1]];
+  nZBs = length(zBs);
+  dfrSel = wtsGMACS::extractRep1Results(reslst,"selfcns") |> 
+             dplyr::filter(!(case %in% noConv),type=="capture",
+                           fleet %in% c("NMFSAM","NMFSMF")) |>
+             tidyr::pivot_longer(cols=4+(1:nZBs),names_to="size",values_to="est") |>
+             dplyr::mutate(dplyr::across(c(2,6,7),as.numeric)); 
+  ##--index data w/ fully-selected catchability----
+  dfrIndxFit = wtsGMACS::extractRep1Results(reslst,"Index_fit_summary") |> 
+                 dplyr::filter(!(case %in% noConv)) |>
+                 dplyr::mutate(
+                   dplyr::across(c(year,obs,base_CV,actual_CV,q,prd,prsn_res),
+                                 as.numeric)
+                 ) |> 
+                 dplyr::mutate(lbo=qlnorm(0.10,log(obs),sqrt(log(1+base_CV^2))),
+                               ubo=qlnorm(0.10,log(obs),sqrt(log(1+base_CV^2)),lower.tail=FALSE),
+                               lba=qlnorm(0.10,log(obs),sqrt(log(1+actual_CV^2))),
+                               uba=qlnorm(0.10,log(obs),sqrt(log(1+actual_CV^2)),lower.tail=FALSE)
+                              );
+  dfrCbl = dfrSel |> 
+             dplyr::inner_join(dfrIndxFit,by=c("case","year","fleet","sex")) |> 
+             dplyr::mutate(est=q*est) |> 
+             dplyr::select(case,fleet,sex,year,size,est);
+```
+
+```{r}
+#| label: fig-GMACS-SrvSelM
+#| fig-cap: "Estimated NMFS survey catchability for males from GMACS models. Survey selectivity is estimated inside the model only for G24.02 and G24.02a. Color: model case."
+#| fig-width: 9.0
+#| fig-asp: 0.667
+  ##--NMFS survey catchability for males----
+  fleets = c("NMFSAM");
+  tmp =  dfrCbl |> dplyr::filter(fleet %in% fleets,sex=="male");
+  p = ggplot(tmp,
+             aes(x=size,y=est,colour=case)) + 
+        geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        facet_wrap(~year) + 
+        labs(y="Survey Catchability",subtitle="NMFS survey, males") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+```{r}
+#| label: fig-GMACS-SrvSelF
+#| fig-cap: "Estimated NMFS survey catchability from GMACS models for females. Survey selectivity is estimated inside the model only for G24.02 and G24.02a. Color: model case."
+#| fig-width: 9.0
+#| fig-asp: 0.667
+  ##--NMFS survey catchability for females----
+  fleets = c("NMFSMF");
+  tmp =  dfrCbl |> dplyr::filter(fleet %in% fleets,sex=="female");
+  p = ggplot(tmp,
+             aes(x=size,y=est,colour=case)) + 
+        geom_line() + 
+        scale_y_continuous(limits=c(0,NA)) + 
+        facet_wrap(~year) + 
+        labs(y="Survey Catchability",subtitle="NMFS survey, females") + 
+        wtsPlots::getStdTheme();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,ori="L"));
+```
+
+## Summary {#sec-GMACS-smry}
+
+The seven models considered here represent a "first cut" at developing a GMACS model for Tanner crab. Emphasis was placed on constructing the "simplest" models capable of representing the population and fishery dynamics. In particular, no estimated parameters other than fully-selected fishing mortality rates varied in time, whereas parameters reflecting natural mortality and fishery selectivity are estimated within multiple time blocks in the current assessment model. Parameters that varied across time in some of the models (i.e., the probability of terminal molt and NMFS survey selectivity) were estimated outside those models and fixed inside them. Based on the models' relatively poor abilities to follow the variability manifested in the observed time series for NMFS survey biomass, this simplified approach to including temporal variability in a model was not sufficient. It is reasonably clear, and this is true to a lesser extent of the current stock assessment model as well, that at least one of the time-invariant biological processes (e.g., natural mortality, growth) needs to vary temporally in order to better capture the 3-5 year variability seen in the survey data. It is unclear, however, how this should be implemented.
+
+Other considerations for next steps include: 1) alternative fishery selectivity curves; 2) adding time blocks for fishery selectivity; and 3) combining or eliminating fishery datasets. With regard to 1), male selectivity in the snow crab fishery is dome-shaped in the current assessment model (and pretty well supported by the data) but logistic in the GMACS models considered here. With regard to 2), important changes in the prosecution of both crab and groundfish fisheries have occurred since 1982 (e.g., rationalization of the crab fisheries) that should be better captured by at least estimating appropriate selectivity curves by relevant time blocks. With regard to 3), combining the small amounts of recent bycatch in the BBRKC and groundfish fisheries into a combined bycatch fleet might improve the overall stability of the models by eliminating the need to fit to multiple small sources of fishing mortality.
+
+<!-- references -->
+```{r,eval=!knitr::opts_knit$get("child")&!isPDF,results='asis'}
+  cat("# References {-}\n");
+  cat("::: {#refs}\n");
+  cat(":::\n\n");
+```
+
+<!-- tables, if not child doc and lstTbls is not empty -->
+```{r}
+#| label: tables_Rpt4Gmacs
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printTablesSectionFromList.R",package="wtsQMD"));
+```
+
+<!-- figures, if not child doc and lstFigs is not empty -->
+```{r}
+#| label: figures_Rpt4Gmacs
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printFiguresSectionFromList.R",package="wtsQMD"));
+```
