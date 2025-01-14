@@ -1,0 +1,37 @@
+# TheHeader
+## GMACS Version 2.20.14; ** AEP & WTS **; Compiled 2024-05-20
+# datafile
+WAG_23_1c.dat
+# controlfile
+WAG_23_1c.ctl
+# projectfile
+WAG_23_1c.prj
+# weightunit
+t
+# numbersunit
+1000s
+# StockName
+Aleutian_Islands_golden_king_crab
+# IsJittered
+0
+# sdJitter
+0.1
+# OutRefPars
+1
+# OutRecruit
+0
+# OutSSB
+0
+# Outfbar
+0
+# OutDynB0
+0
+# nyrRetro
+0
+10 # Maximum phase (stop the estimation after this phase)
+-1 # Maximum number of function calls
+1 # Calculate reference points (0=no)
+1 # use pin file (0=no, 1=yes)
+1 # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)
+# dataeof
+9999

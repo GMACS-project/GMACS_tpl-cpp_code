@@ -1,0 +1,9 @@
+call runmodel smbkc
+call runmodel nsrkc
+call runmodel aigkc
+call runmodel snow_crab
+call runmodel BBRKC
+call runmodel snow_crabV2
+call runmodel BBRKCV2
+
+
