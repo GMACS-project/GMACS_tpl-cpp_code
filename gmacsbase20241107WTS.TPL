@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.18; ** AEP & WTS **; Compiled 2025-01-14");
+ !! TheHeader = adstring("## GMACS Version 2.20.17; ** AEP & WTS **; Compiled 2024-10-22");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -9329,7 +9329,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   dvar_matrix equilibrium_numbers(1,n_grp,1,nclass);
   dvariable FF;
   dvariable Fmsy;
-  dvariable TotalF;
   dvariable MeanF,NF;
   dvariable Fmult, Fmult2, SSBV0, SSBV1a,SSBV1b,Deriv, Adjust, R1;
   dvariable SteepMin,SteepMax;
@@ -9410,14 +9409,8 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     Bmsy = mean(calc_ssb()(spr_syr,spr_nyr));
     Fmsy = OFLgamma * M_pars_est(1);
     for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log(Fave(k));
-    
-    // Normalize fmsy for Tier 4
-    TotalF = 0;
     for (int k=1;k<=nfleet;k++)
-     if (Ffixed(k) != 1) TotalF += Fave(k);
-    
-    for (int k=1;k<=nfleet;k++)
-     if (Ffixed(k) != 1) log_fimpbar(k) = log(Fmsy*Fave(k)/TotalF);
+     if (Ffixed(k) != 1) log_fimpbar(k) = log(Fmsy);
    }
 
   // Save FMSY
@@ -13098,7 +13091,6 @@ FINAL_SECTION
 // 2024-10-22 ** WTS. (GMACS Version 2.20.17) Explicitly set n_deviations = 0 after declaration. 
 //                    Added ECHOs for n_deviations at various stages of counting as diagnostics.
 // 2024-11-07 ** WTS. (GMACS Version 2.20.17) Add a lot of verbose>3 cout's to calc_predicted_composition to diagnose ctl file problem specifiying aggregations. 
-// 2025-01-14 ** AEP. (GMACS Version 2.20.18) Split the Fmsy for Tier 4 between fleets
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
