@@ -81,7 +81,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.18; ** AEP & WTS **; Compiled 2025-01-14");
+ !! TheHeader = adstring("## GMACS Version 2.20.19; ** AEP & WTS **; Compiled 2025-01-15");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -2671,6 +2671,9 @@ DATA_SECTION
   WriteCtlStr("##      Inputs: knots (in length units); values at knots (0-1) - at least one should have phase -1");
   WriteCtlStr("##  10: One parameter logistic selectivity (inflection point and slope)");
   WriteCtlStr("##  11: Pre-specified selectivity (matrix by year and class)");
+  WriteCtlStr("##  12: Spline with 0 until one size-class and 1 after another");
+  WriteCtlStr("##      Inputs: knots (in length units); values at knots (0-1) - at least one should have phase -1");
+  WriteCtlStr("##  13: Stacked logistic");
   gmacs_ctl << "## Selectivity specifications --" << endl;
   
   WriteCtlStr("## Extra (type 1): number of selectivity parameters to estimated");
@@ -2739,6 +2742,8 @@ DATA_SECTION
        if (slx_type_in(ipnt,k) == SELEX_UNIFORM1) nparS = 0;                          ///> uniform has 0 parameters
        if (slx_type_in(ipnt,k) == SELEX_UNIFORM0) nparS = 0;                          ///> uniform has 0 parameters
        if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE) nparS = 2 * slx_extra_in(h,k);  ///> spline has parameters for knots and values
+       if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE_FLOOR) nparS = 2 * slx_extra_in(h,k); ///> spline has parameters for knots and values
+       if (slx_type_in(ipnt,k) == SELEX_STACKED_LOGISTIC) nparS = 5;                  ///> stacked logistic has five parameters
        if (slx_type_in(ipnt,k)< 0) nparS = 0;                                         ///> mirror has 0 parameters
        nparS += ret_max_in(ipnt,k); 
        slx_type_npar(ipnt,k) = nparS;
@@ -2829,6 +2834,13 @@ DATA_SECTION
          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
+         if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
+         if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
+         if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+         if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+         if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+         if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+         if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
          
 	 gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
 	 gmacs_ctl << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
@@ -2891,6 +2903,13 @@ DATA_SECTION
 	     if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
 	     if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
 	     if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
+	     if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
+	     if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
+	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
 	     anystring += "_block_group_"+str(IgBlock)+"_block_"+str(kpar); 
 
              gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
@@ -2929,6 +2948,13 @@ DATA_SECTION
 	   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
 	   if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
 	   if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
+	   if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
+	   if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
+	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
            
            parname1(PPnt+1) = anystring;
            PPnt += 1;
@@ -4753,7 +4779,6 @@ PRELIMINARY_CALCS_SECTION
   calc_growth_transition();                 if ( verbose >= 3 ) cout << "Ok after calc_growth_transition in Prelim ..." << endl;
   init_selectivities();                     if ( verbose >= 3 ) cout << "Ok after init_selectivities in Prelim ..." << endl;
   calc_selectivities();                     if ( verbose >= 3 ) cout << "Ok after calc_selectivities in Prelim ..." << endl;
-  cout<<"done"<<endl;
 
   cout<<"Finished PRELIMINARY_CALCS_SECTION"<<endl;
 // =============================================================================
@@ -5475,7 +5500,7 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
 FUNCTION init_selectivities
   dvar_vector pv;
   dvar_vector temp_slx1(1,nclass);
-  dvariable p1, p2, p3, p4;
+  dvariable p1, p2, p3, p4, p5;
 
   //create pointer array
   if (ppSLX){
@@ -5545,6 +5570,14 @@ FUNCTION init_selectivities
          p4 = mfexp(S_pars(is,4));
          pSLX = new class gsm::DoubleNormal4<dvar_vector,dvariable>(p1,p2,p3,p4);
          break;
+        case SELEX_STACKED_LOGISTIC:                          ///> Cody's stacked logistic
+         p1 = mfexp(S_pars(is,1));
+         p2 = mfexp(S_pars(is,2));
+         p3 = mfexp(S_pars(is,3));
+         p4 = mfexp(S_pars(is,4));
+         p5 = mfexp(S_pars(is,5));
+         pSLX = new class gsm::StackedLogistic<dvar_vector,dvariable>(p1,p2,p3,p4,p5);
+         break;
         case SELEX_UNIFORM1:                                  ///> uniform 1
          pSLX = new class gsm::UniformCurve<dvar_vector>;
          break;
@@ -5552,6 +5585,14 @@ FUNCTION init_selectivities
          pSLX = new class gsm::Uniform0Curve<dvar_vector>;
          break;
         case SELEX_CUBIC_SPLINE:                             ///> cubic spline
+         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) knots(i) = mfexp(S_pars(is,i)); 
+         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) temp_slx2(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); 
+         //need to set y_vals and x_vals below appropriately
+         //y_vals are values at knots (a dvar_vector)
+         //x_vals are knots           (a dvar_vector)
+         pSLX = new class gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
+         break;
+        case SELEX_CUBIC_SPLINE_FLOOR:                             ///> cubic spline
          for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) knots(i) = mfexp(S_pars(is,i)); 
          for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) temp_slx2(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); 
          //need to set y_vals and x_vals below appropriately
@@ -5593,7 +5634,7 @@ FUNCTION calc_selectivities
   int jstore, estore, sd;
   dvar_vector pv;
   dvar_vector temp_slx1(1,nclass);
-  dvariable p1, p2, p3, p4;
+  dvariable p1, p2, p3, p4, p5;
   dvar_vector selx(1,nclass);
   dvar_matrix sel_store(1,nsel_use,1,nclass);
 
@@ -5616,7 +5657,7 @@ FUNCTION calc_selectivities
      {int ipnt = 1; } 
     else {
       dvar_vector temp_slx2(1,slx_extra_in(ipnt2,k));
-      dvar_vector knots(1,slx_extra_in(ipnt2,k));
+      dvar_vector knots(1,max(2,slx_extra_in(ipnt2,k)));
       switch ( slx_type_in(ipnt2,k) ) {
         case SELEX_PARAMETRIC:                               ///> parametric
          for (int i = 1; i <= nclass; i++) { temp_slx1(i) = S_pars(is,i); }
@@ -5658,6 +5699,7 @@ FUNCTION calc_selectivities
          p3 = mfexp(S_pars(is,3));
          ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3);
          pSLX = ppSLX[is-1];
+         break;
         case SELEX_DOUBLENORM4:                               ///> double normal4
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
@@ -5665,6 +5707,16 @@ FUNCTION calc_selectivities
          p4 = mfexp(S_pars(is,4));
          ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3,p4);
          pSLX = ppSLX[is-1];
+         break;
+        case SELEX_STACKED_LOGISTIC:                             ///> Cody's stacked logistic
+         p1 = mfexp(S_pars(is,1));
+         p2 = mfexp(S_pars(is,2));
+         p3 = mfexp(S_pars(is,3));
+         p4 = mfexp(S_pars(is,4));
+         p5 = mfexp(S_pars(is,5));
+         ((gsm::StackedLogistic<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3,p4,p5);
+         pSLX = ppSLX[is-1];
+         break;
         case SELEX_UNIFORM1:                                  ///> uniform 1
          pSLX = ppSLX[is-1];//gsm::UniformCurve<dvar_vector>
          break;
@@ -5672,27 +5724,37 @@ FUNCTION calc_selectivities
          pSLX = ppSLX[is-1];//gsm::Uniform0Curve<dvar_vector>
          break;
         case SELEX_CUBIC_SPLINE:                             ///> cubic spline
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) knots(i) = mfexp(S_pars(is,i)); 
-         for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) temp_slx2(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); 
-         //need to set y_vals and x_vals below appropriately
-         //y_vals are values at knots (a dvar_vector)
-         //x_vals are knots           (a dvar_vector)
-         ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[is-1])->initSpline(temp_slx2,knots);
-         pSLX = ppSLX[is-1];
-         dvector knots2(1,slx_extra_in(ipnt2,k));
-         dvar_vector vals(1,slx_extra_in(ipnt2,k));
-         for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { knots2(i)=(value(mfexp(S_pars(is,i)))-mid_points(1))/(mid_points(nclass)-mid_points(1));  }
-         for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { vals(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); }
-         dvector jyr(1,nclass);
-         jyr.fill_seqadd(0, 1.0 / (nclass - 1));
-         vcubic_spline_function csf(knots2, vals);
-         selx = csf(jyr);
          break;
-       
+        case SELEX_CUBIC_SPLINE_FLOOR:                             ///> cubic spline with a floor
+         break;
+        
        } // switch
-      if (slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE) selx = pSLX->logSelectivity(dvar_mid_points);  
+      if (slx_type_in(ipnt2,k) ==  SELEX_CUBIC_SPLINE ||  slx_type_in(ipnt2,k) == SELEX_CUBIC_SPLINE_FLOOR)
+       {
+        dvector knots2(1,slx_extra_in(ipnt2,k));
+        dvar_vector vals(1,slx_extra_in(ipnt2,k));
+        for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) knots(i) = mfexp(S_pars(is,i)); 
+        for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) temp_slx2(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); 
+        ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[is-1])->initSpline(temp_slx2,knots);
+        dvector jyr(1,nclass);
+        pSLX = ppSLX[is-1];
+        for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { knots2(i)=(value(mfexp(S_pars(is,i)))-mid_points(1))/(mid_points(nclass)-mid_points(1));  }
+        for (int i=1;i<=slx_extra_in(ipnt2,k);i++) { vals(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); }
+        jyr.fill_seqadd(0, 1.0 / (nclass - 1));
+        vcubic_spline_function csf(knots2, vals);
+        selx = csf(jyr);
+        if (slx_type_in(ipnt2,k) == SELEX_CUBIC_SPLINE_FLOOR)
+         for (int iclass=1;iclass<=nSizeSex(h);iclass++)
+          {
+           if (mid_points(iclass) <= knots(1)) selx(iclass) =  S_pars(is,slx_extra_in(ipnt2,k)+1);
+           if (mid_points(iclass) >= knots(slx_extra_in(ipnt2,k))) selx(iclass) =  S_pars(is,2*slx_extra_in(ipnt2,k));
+          }
+       }
+       
+      if (slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE & slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE_FLOOR) selx = pSLX->logSelectivity(dvar_mid_points);  
       if (slx_type_in(ipnt2,k)==SELEX_PARAMETRIC || slx_type_in(ipnt2,k)==SELEX_COEFFICIENTS) selex_smooth_pen += dnorm(first_difference(selx), 1.0);
       if (slx_type_in(ipnt2,k)==SELEX_CUBIC_SPLINE) selex_smooth_pen += dnorm(first_difference(selx), 1.0);
+      if (slx_type_in(ipnt2,k)==SELEX_CUBIC_SPLINE_FLOOR) selex_smooth_pen += dnorm(first_difference(selx), 1.0);
       if (ret_max_in(ipnt2,k)>0) selx += S_pars(is,3);
       if (slx_max_at_1_in(ipnt2,k)==1) selx -= selx(nclass);
       if (slx_max_at_1_in(ipnt2,k)==0 && slx_1_at_size(ipnt2,k)!=0) selx -= selx(slx_1_at_size(ipnt2,k));
@@ -9814,7 +9876,6 @@ FUNCTION calc_sdreport
   // Actual catch
   F = ftmp;
   F2 = ftmp2;
-  cout << "Here99" << endl;
   calc_total_mortality();
   calc_initial_numbers_at_length();
   update_population_numbers_at_length();
@@ -12633,6 +12694,10 @@ GLOBALS_SECTION
   #define SELEX_ONE_PAR_LOGISTIC 10
   #undef SELEX_PRESPECIFIED
   #define SELEX_PRESPECIFIED 11
+  #undef SELEX_CUBIC_SPLINE_FLOOR
+  #define SELEX_CUBIC_SPLINE_FLOOR 12
+  #undef SELEX_STACKED_LOGISTIC
+  #define SELEX_STACKED_LOGISTIC 13
 
   #undef GROWTH_FIXEDGROWTHTRANS
   #define GROWTH_FIXEDGROWTHTRANS 1
@@ -13099,6 +13164,7 @@ FINAL_SECTION
 //                    Added ECHOs for n_deviations at various stages of counting as diagnostics.
 // 2024-11-07 ** WTS. (GMACS Version 2.20.17) Add a lot of verbose>3 cout's to calc_predicted_composition to diagnose ctl file problem specifiying aggregations. 
 // 2025-01-14 ** AEP. (GMACS Version 2.20.18) Split the Fmsy for Tier 4 between fleets
+// 2025-01-15 ** AEP. (GMACS Version 2.20.18) Added the floor spline selectivity pattern and the stacked logistic selectivity pattern
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?

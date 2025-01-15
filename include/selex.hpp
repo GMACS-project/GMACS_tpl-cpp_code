@@ -650,6 +650,99 @@ namespace gsm {
         }
     };
 
+    // StackedLogistic: 5-parameter stacked logistic selectivity
+    /**
+     * @brief 5-parameter stacked logistic selectivity
+     * @details Uses the logistic curve (plogis95) for a two parameter function
+     *
+     * @param T data vector or dvar vector
+     * @param T2 double or dvariable
+    **/
+    template<class T,class T2>
+    class StackedLogistic: public Selex<T>
+    {
+    private:
+        T2 m_omega;     // weighting factor
+        T2 m_mean1;     // mean for the first logistic curve
+        T2 m_sd1;       // sd for the first logistic curve
+        T2 m_mean2;     // mean for the second logistic curve
+        T2 m_sd2;       // sd for the first logistic curve
+
+    public:
+        /**
+         *
+         * @param omega - weighting factor
+         * @param mean1 - mean for the first logistic curve
+         * @param sd1   - sd for the first logistic curve
+         * @param mean2 - mean for the second logistic curve
+         * @param sd2   - sd for the first logistic curve
+         */
+        StackedLogistic(T2 omega = T2(1), T2 mean1 = T2(1),
+                      T2 sd1 = T2(1), T2 mean2 = T2(1), T2 sd2 = T2(1))
+        : m_omega(omega), m_mean1(mean1), m_sd1(sd1), m_mean2(mean2), m_sd2(sd2) {}
+
+        T2 GetOmega()  const { return m_omega; }
+        T2 GetMean1()  const { return m_mean1; }
+        T2 GetSd1()    const { return m_sd1; }
+        T2 GetMean2()  const { return m_mean2; }
+        T2 GetSd2()    const { return m_sd2; }
+
+        void SetOmega(T2 &omega){ this->m_omega = omega; }
+        void SetMean1(T2 &mean1){ this->m_mean1 = mean1; }
+        void SetSd1(T2 &sd1)    { this->m_sd1 = sd1; }
+        void SetMean2(T2 &mean2){ this->m_mean2 = mean2; }
+        void SetSd2(T2 &sd2)    { this->m_sd2 = sd2; }
+        void SetParams(T2 &omega, T2 &mean1, T2 &sd1, T2 &mean2, T2 &sd2){
+            this->m_omega = omega;
+            this->m_mean1 = mean1;
+            this->m_sd1   = sd1;
+            this->m_mean2 = mean2;
+            this->m_sd2   = sd2;
+        }
+
+        /**
+         * @brief selex
+         * @param T x - independent variable--must be compatible with T2
+         * @return selex with type T
+         */
+        const T Selectivity(const T &x) const
+        {
+             T y1 = gsm::plogis(x, m_mean1, m_sd1);
+             T y2 = gsm::plogis(x, m_mean2, m_sd2);
+             T y = m_omega*y1 + (1-m_omega)*y2;
+            return y;
+        }
+
+        /**
+         * @brief calculate log(selex)
+         * @param T x - independent variable--must be compatible with T2
+         * @return log(selex) with type T
+         */
+        const T logSelectivity(const T &x) const
+        {
+             T y1 = gsm::plogis(x, m_mean1, m_sd1);
+             T y2 = gsm::plogis(x, m_mean2, m_sd2);
+             T y = m_omega*y1 + (1-m_omega)*y2;
+             y = log(y);
+            return y;
+        }
+
+        /**
+         * @brief calculate log(selex/mean(selex))
+         * @param T x - independent variable--must be compatible with T2
+         * @return log(selex/mean(selex)) with type T
+         */
+        const T logSelexMeanOne(const T &x) const
+        {
+             T y1 = gsm::plogis(x, m_mean1, m_sd1);
+             T y2 = gsm::plogis(x, m_mean2, m_sd2);
+             T y = m_omega*y1 + (1-m_omega)*y2;
+             y = log(y);
+             y  -= log(mean(mfexp(y)));
+            return y;
+        }
+    };
+
     // Coefficients: Base function for non-parametric selectivity cooefficients
     /**
      * @brief Nonparametric selectivity coefficients
