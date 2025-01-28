@@ -318,7 +318,7 @@ if (FALSE) {
                      verbose=0);
 }
 
-##--run Tanner crab only
+##--run Tanner crab only (on Mac)
 if (FALSE) {
   #
   #--NOTE: make sure all paths to directories/files are correct for your system
@@ -335,6 +335,30 @@ if (FALSE) {
   #--run tests
   results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
                      repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
+                     exeDir=file.path(dirPrj,"_build"),
+                     stocks="TannerCrab",
+                     testDir=".", #--current working directory
+                     scriptsDir=file.path(dirPrj,"testing/scripts"),
+                     verbose=0);
+}
+
+##--run Tanner crab only (on Windows)
+if (FALSE) {
+  #
+  #--NOTE: make sure all paths to directories/files are correct for your system
+  #
+  ##--the following assumes: 
+  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
+  ###-------e.g.: at "dirPrj/testing/runs_windows"
+  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS_Project/GMACS_Models"
+  ###--3. The gmacs executable is under the "dirPrj/_build" directory
+  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
+  #
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  exeDir = file.path(dirPrj,"_build");
+  #--run tests
+  results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
+                     repoDir="~/Work/Programming/GMACS_Project/GMACS_Models",
                      exeDir=file.path(dirPrj,"_build"),
                      stocks="TannerCrab",
                      testDir=".", #--current working directory
