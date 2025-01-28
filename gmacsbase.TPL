@@ -79,6 +79,20 @@
 // Label 600: CreateOutput
 // Label 700: write_eval
 // ************************************************************************************ //
+
+// Commandline options
+// ************************************************************************************ //
+// -testing : run testing section
+// -sim : simulate data
+// -jitter seed : jitter initial parameter values (if seed=0, RNG is initialized using current time)
+//                 overrides gmacs.dat setting
+// -i : print info
+// -retro x : do retrospective run with 'x' peels
+// -verbose : set verbose level (overrides gmacs.dat setting)
+// - ainp fn : use pin file fn (or gmacs.pin if fn is missing)
+// - apin fn : use pin file fn (or gmacs.pin if fn is missing)
+// - pin fn : use pin file fn (or gmacs.pin if fn is missing)
+// ************************************************************************************ //
 DATA_SECTION
 
  !! TheHeader = adstring("## GMACS Version 2.20.19; ** AEP & WTS **; Compiled 2025-01-15");

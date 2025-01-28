@@ -1,0 +1,87 @@
+---
+title: "runTests Report"
+crossref:
+  chapters: false      # prepend label reference numbers by chater number?
+  fig-title: Figure    # for caption: default is "Figure")
+  tbl-title: Table     # for caption: default is "Table")
+  title-delim: "."     # for caption: default is ":")
+  fig-prefix: Figure   # for in-text (use [-@fig-ref] to drop prefix in text)
+  tbl-prefix: Table    # for in-text (use [-@tbl-ref] to drop prefix in text)
+  fig-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  tbl-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  subref-labels: alpha a # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  ref-hyperlink: true    # references are hyperlinked if true
+format:
+  html:
+    df-print: paged
+    toc: true
+    toc-location: right
+    fig-width: 6.5
+    fig-asp: 0.6
+    fig-dpi: 100
+    embed-resources: true
+    include-in-header: 
+      - '`r system.file("files/in-line_math_mode.html",package="wtsQMD")`'
+  pdf:
+    documentclass: scrartcl
+    toc: false
+    fig_crop: false
+    keep-tex: false
+    geometry:
+      - left=1.0in
+      - right=1.0in
+      - top=1.0in
+      - bottom=1.0in
+      - textwidth=6.5in
+      - showframe=false
+    include-in-header: 
+      - text: |
+          \usepackage{placeins}
+          \extrafloats{500}
+          \maxdeadcycles=10000
+      - file: '`r system.file("files/ltx_ExtraLatexIncludes.tex",package="wtsQMD")`'
+keep-md: false
+concordance: true
+echo: false
+results: false
+params:
+  fn: "testing_results.RData"
+---
+
+```{r setup}
+  require(wtsQMD,quietly=TRUE);
+  # system.file("files/qmd_setup.R",package="wtsQMD")
+  if (wtsQMD::isOutputPDF()){
+    root = knitr::opts_knit$get("root.dir");
+    child_path=fastmap::faststack();#--stack for paths
+    child_path$push(root);#--set toplevel folder to root
+  }
+  fn = file.path(params$fn);
+  res = wtsUtilities::getObj(fn);
+  mds = names(res);
+  lstTbls = list();
+  lstFigs = list();
+  dirFigs = dirname(knitr::fig_path());
+  if (!dir.exists(dirFigs)) dir.create(dirFigs,recursive=TRUE);
+```
+
+```{r}
+#| label: fig_Res
+#| results: asis
+#| fig-width: 6.0
+#| fig-asp: 0.8
+  for (md in mds){
+    p = res[[md]]$allout$plot;
+    lbl = wtsQMD::getLabel(xtra=md);
+    pth = wtsQMD::getFigFN(xtra=md);
+    lstFigs = c(lstFigs,wtsQMD::printGGplot(p,cap=paste0("Results for ",md,"."),ori="P",lbl=lbl,pth=pth));
+  }
+```
+
+<!-- figures, if not child doc and lstFigs is not empty -->
+```{r}
+#| label: figures
+#| eval: !expr '(!wtsQMD::isOutputHTML()) && (!knitr::opts_knit$get("child"))'
+#| results: asis
+  source(system.file("files/printFiguresSectionFromList.R",package="wtsQMD"));
+```

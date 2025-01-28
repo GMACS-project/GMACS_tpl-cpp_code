@@ -27,13 +27,20 @@
  *
  * Table 1. List of available selectivity functions, function names, and the class
  * object.
- * | Selectivity    | Functions     | Class name              |
- * |----------------|---------------|-------------------------|
- * | Logistic       | plogis        | LogisticCurve           |
- * | Logistic95     | plogis95      | LogisticCurve95         |
- * | Coefficients   | selcoffs      | SelectivityCoefficients |
- * | Nonparameteric | nonparametric | ParameterPerClass       |
- * | Uniform        | uniform       | UniformCurve            |
+ * | Selectivity       | Functions        | Class name              |
+ * |-------------------|------------------|-------------------------|
+ * | Logistic          | plogis           | LogisticCurve           |
+ * | Logistic95        | plogis95         | LogisticCurve95         |
+ * | Coefficients      | selcoffs         | SelectivityCoefficients |
+ * | Nonparameteric    | nonparametric    | ParameterPerClass       |
+ * | Uniform           | uniform          | UniformCurve            |
+ * | Declining logistic| declplogistic    | DeclineLogistic         |
+ * | Uniform           | uniform          | LogisticCurveOne        |
+ * | Double normal     | pdubnorm         | DoubleNormal            |
+ * | Double normal     | pdubnorm4        | DoubleNormal4           |
+ * | Double normal     | pDubnorm6        | DoubleNormal6           |
+ * | Stacked logistic  | plogis           | StackedLogistic         |
+ * | Spline            | spline_cubic_val | SelectivitySpline       |
 **/
 
 #ifndef SELEX_HPP
