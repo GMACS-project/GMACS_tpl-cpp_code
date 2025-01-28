@@ -245,19 +245,19 @@ Note&nbsp;1: Example <code>gmacs.dat</code> file.
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>0   # Fbar</span>
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>0   # OutDynB0</span>
 <span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>0   #--number of peels for retrospective</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>0   #--number of peels for retrospective model run</span>
 <span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>### Other controls</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>   10      # Maximum phase (estimation stops after this phase).                                                                                 </span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>   10      # Maximum phase (estimation stops after this phase).                                 </span>
 <span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>   -1      # Maximum number of function calls, if 1, stop at fn1 call; if -1 run as long as it takes</span>
 <span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    1      # Calculate reference points (0=no, 1=yes)</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    0      # 1 to use a pin file (1) to initialize parameter values, 0 for a normal run</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    0      # 1 to use a pin file (1) to initialize parameter values, 0 for a normal run (3)</span>
 <span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    0      # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)</span>
 <span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>9999 #EOF (3) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>9999 #EOF (4) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
-<p>Note the use of underscores in the weight units (1) and stock name (2). The “9999” (3) marks the end of the file and serves as a diagnostic check that all information has been read.</p>
+<p>Note the use of underscores in the weight units (1) and stock name (2). Using a “pin” (parameter input) file (4) for parameter initialization can also be activated from the command line. The “9999” (3) marks the end of the file and serves as a diagnostic check that all information has been read.</p>
 
 
 </section>

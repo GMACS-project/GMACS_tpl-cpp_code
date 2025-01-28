@@ -208,7 +208,11 @@ window.Quarto = {
   <li><a href="#user-manual" id="toc-user-manual" class="nav-link" data-scroll-target="#user-manual">User manual</a></li>
   <li><a href="#code-documentation" id="toc-code-documentation" class="nav-link" data-scroll-target="#code-documentation">Code documentation</a></li>
   </ul></li>
-  <li><a href="#testing" id="toc-testing" class="nav-link" data-scroll-target="#testing">Testing</a></li>
+  <li><a href="#testing" id="toc-testing" class="nav-link" data-scroll-target="#testing">Testing</a>
+  <ul class="collapse">
+  <li><a href="#new-approach-post-jan-2025" id="toc-new-approach-post-jan-2025" class="nav-link" data-scroll-target="#new-approach-post-jan-2025">new approach (post-Jan 2025)</a></li>
+  <li><a href="#old-approach-pre-jan-2025" id="toc-old-approach-pre-jan-2025" class="nav-link" data-scroll-target="#old-approach-pre-jan-2025">old approach (pre-Jan 2025)</a></li>
+  </ul></li>
   <li><a href="#which-tools-are-available-for-working-with-gmacs" id="toc-which-tools-are-available-for-working-with-gmacs" class="nav-link" data-scroll-target="#which-tools-are-available-for-working-with-gmacs">Which tools are available for working with GMACS?</a></li>
   <li><a href="#the-gmacs-development-team" id="toc-the-gmacs-development-team" class="nav-link" data-scroll-target="#the-gmacs-development-team">The Gmacs development team</a></li>
   <li><a href="#noaa-disclaimer" id="toc-noaa-disclaimer" class="nav-link" data-scroll-target="#noaa-disclaimer">NOAA Disclaimer</a></li>
@@ -256,10 +260,11 @@ window.Quarto = {
 <pre><code>* cmake -S . -B _build -G "Unix Makefiles"
 * cmake --build _build</code></pre>
 <p>The first command creates the <code>_build</code> subfolder and the Makefile appropriate for the given platform (“Unix Makefiles” appears to be an appropriate value for the -G option when compiling with RTools under either OSX or Windows). The second command builds the project by running the Makefile and (if successful) concatenates the gmacsbase.TPL and personal.TPL files as gmacs.tpl, copies this to <code>_build</code>, calls tpl2cpp on gmacs.tpl to create the associated .cpp and .htp files, and finally compiles the source and header files to create the gmacs executble in the <code>_build</code> folder (<code>gmacs</code> on Mac OSX and <code>gmacs.exe</code> on Windows).</p>
-<p>Changes to the tpl or c++ files can be recompiled using “cmake –build _build”, which will only update the compilation process for files changed since the last build (i.e., not recompiling everything). To “start from scratch”, you can either delete the _build folder and run the two commands above again or run “cmake –build _build –target clean” (which deletes the gmacs executable, gmacs.tpl, gmacs.cpp, gmacs.htp and all the object files under the <code>_build</code> folder, but not the CMake-associated files) followed by “cmake –build _build”.</p>
+<p>Changes to the tpl or c++ files can be recompiled using “cmake –build _build”, which will only update the compilation process for files changed since the last build (i.e., not recompiling everything). An alternative is to open a command prompt or terminal window and change directory to the “_build” folder, then run “make”.</p>
+<p>To “start from scratch”, you can either delete the _build folder and run the two commands above again or run “cmake –build _build –target clean” (which deletes the gmacs executable, gmacs.tpl, gmacs.cpp, gmacs.htp and all the object files under the <code>_build</code> folder, but not the CMake-associated files) followed by “cmake –build _build”.</p>
 <section id="user-manual" class="level3">
 <h3 class="anchored" data-anchor-id="user-manual">User manual</h3>
-<p>A user manual (currently under construction) can be accessed <a href="https://gmacs-project.github.io/GMACS_tpl-cpp_code/">here</a>. It can also be built locally as html on your computer from the source distribution. It is written in Quarto Markdown, so you will need <a href="https://quarto.org">Quarto</a> (which conveniently comes with <a href="https://posit.co/products/open-source/rstudio/">RStudio</a>), installed on your computer to create teh manual. Once Quarto is installed on your computer, you can create the manual using either a terminal (Command Prompt on Windows) or RStudio.</p>
+<p>This user manual (currently under construction) can be accessed <a href="https://gmacs-project.github.io/GMACS_tpl-cpp_code/">here</a>. It can also be built locally as html on your computer from the source distribution. It is written in Quarto Markdown, so you will need <a href="https://quarto.org">Quarto</a> (which conveniently comes with <a href="https://posit.co/products/open-source/rstudio/">RStudio</a>), installed on your computer to create the manual. Once Quarto is installed on your computer, you can create the manual using either a terminal (Command Prompt on Windows) or RStudio.</p>
 <section id="using-a-terminal" class="level4">
 <h4 class="anchored" data-anchor-id="using-a-terminal">Using a terminal</h4>
 <ol type="1">
@@ -297,7 +302,48 @@ window.Quarto = {
 </section>
 <section id="testing" class="level2">
 <h2 class="anchored" data-anchor-id="testing">Testing</h2>
-<p>The <code>testing/input_files</code> folder contains subfolders with suitable input files to test the compiled GMACS executable. The <code>testing/runs</code> folder contains two R files which can be used to test the models in the <code>testing/input_files</code> subfolders. To run the tests: 1. start an R session 2. change the working directory to the <code>testing/runs</code> folder 3. source the “runTests.r” file 4. run the function “runTests” for the models of interest a. set the <code>tests</code> input vector to the names of the subfolders containing the models you want to test b. set the top-level directory for running the tests (the default is “.”, i.e.&nbsp;the <code>testing/runs</code> folder) c.&nbsp;set the <code>compareWithPin</code>, <code>verbose</code>, and <code>cleanup</code> flags as desired (<code>verbose</code> functionality is not yet implemented). The function will run the models specified (copying the input files from relevant <code>testing/inut_files</code> subfolders). The output is a list with an element for each model tested. Each element indicates whether the test passed or, if not, where “substantial” differences (abs(new-old)&gt;<span class="math inline">\(10^{-5}\)</span>) occurred between the new par file and an old par file (“gmacs.par_old”) or the pin file (“gmacs.pin”) used to initialize the model.</p>
+<section id="new-approach-post-jan-2025" class="level3">
+<h3 class="anchored" data-anchor-id="new-approach-post-jan-2025">new approach (post-Jan 2025)</h3>
+<p>First, the “GMACS_Models” repository on GitHub (https://github.com/GMACS-project/GMACS_Models) should be cloned or downloaded. This repo contains subfolders in the “all_models” folder with files from the most recent assessment, as well as other models. The file “models-for_testing.csv” lists the subfolders to be used for testing (unless modified by the user, these will typically be the most recently-accepted assessment model).</p>
+<p>The <code>testing/scripts</code> folder contains an R script, <code>runTests.R</code>, which can also be used to test (all or a subset of) the models identified in the “models-for_testing.csv” file. For each model, the script compares the new model results to the original results from the GMACS_Models repo by comparing the respective par and the Gmacsall.out files.</p>
+<p>To run the tests:</p>
+<ul>
+<li>start an R session</li>
+<li>Create a <code>testing/runs</code> or other suitable <code>runs</code> folder (if it doesn’t exist already)</li>
+<li>change the working directory to the <code>runs</code> folder</li>
+<li>source the “testing/scripts/runTests.R” file</li>
+<li>run the function “runTests” for the models of interest
+<ul>
+<li>set <code>repoDir</code> to the path to the GMACS_Models repo</li>
+<li>set <code>exeDir</code> to the path to the gmacs executable</li>
+<li>set <code>stocks</code> to the stocks of interest (as listed in “models-for_testing.csv”, or NULL for all stocks)</li>
+<li>set <code>testDir</code>, the top-level disctory for running the tests, to “.” (because you changed the working directory to the “runs” folder)</li>
+<li>set <code>scriptsDir</code>, the path to the scripts folder (from the <code>runs</code> folder, if a relative path)</li>
+<li>set <code>usePin</code> as “par” or “pin” to use “gmacs.par” or “gmacs.pin” from the original model run as a pin file (“none” does not use a pin file)</li>
+<li>set <code>compareWith</code> as “par” or “pin” to compare the new “gmacs.par” to the “gmacs.par” or “gmacs.pin” from the original model run (“none” does no comparison)</li>
+</ul></li>
+</ul>
+<p>Example codes are given at the end of the “runTests.R” file.</p>
+<p>The results of the comparisons are returned as a R list, with element names corresponding to the stocks for the models tested. The returned list is also written to the testing folder as “testing_results.RData” (which will be overwritten in subsequent tests run in the same folder) and “testing_results_xxx.RData”, where “xxx” indicates the date and time at which the tests finished. Each element in the returned list is also a list, with elements <code>pars</code>, <code>allout</code>, <code>tblOld</code>, and <code>tblNew</code>. <code>pars</code> gives results from comparing the new par file with the original par (or pin) file, if the latter was available. Based on Andre Punt’s “TestUpdate.R” code, <code>allout</code> gives results from comparing the max gradient and OFL from the <code>Gmacsall.out</code> files, as well as several <code>ggplot2</code> plots comparing results for various estimated time series. The <code>tblOld</code> and <code>tblNew</code> are dataframes based on the “Gmacsall.out” “Summary” tables from the original and new model runs, respectively.</p>
+<p>After copying the “testing/scripts/runTests_Report.qmd” file into the testing directory, it can be rendered as a pdf or html file to provide a simple report of the comparisons.</p>
+</section>
+<section id="old-approach-pre-jan-2025" class="level3">
+<h3 class="anchored" data-anchor-id="old-approach-pre-jan-2025">old approach (pre-Jan 2025)</h3>
+<p>The <code>testing/scripts</code> folder contains an R script, <code>runTests.old.R</code>, which can also be used to test the models in a folder (the default is “../input_files” from the testing folder). To run the tests from “testing/runs” with input files in “testing/input_files”:</p>
+<ul>
+<li>start an R session</li>
+<li>Create a <code>testing/runs</code> folder (if it doesn’t exist already)</li>
+<li>change the working directory to the <code>testing/runs</code> folder</li>
+<li>source the “testing/scripts/runTests.old.R” file</li>
+<li>run the function “runTests” for the models of interest
+<ul>
+<li>set the <code>tests</code> input vector to the names of the subfolders containing the models you want to test</li>
+<li>set the top-level directory for running the tests (the default is “.”, i.e.&nbsp;the <code>testing/runs</code> folder)</li>
+<li>set the <code>compareWithPin</code>, <code>verbose</code>, and <code>cleanup</code> flags as desired (<code>verbose</code> functionality is not yet implemented).</li>
+</ul></li>
+</ul>
+<p>The function will run the models specified (copying the input files from relevant <code>testing/inut_files</code> subfolders). The output is a list with an element for each model tested. Each element indicates whether the test passed or, if not, where “substantial” differences (abs(new-old)&gt;<span class="math inline">\(10^{-5}\)</span>) occurred between the new par file and an old par file (“gmacs.par_old”) or the pin file (“gmacs.pin”) used to initialize the model.</p>
+</section>
 </section>
 <section id="which-tools-are-available-for-working-with-gmacs" class="level2">
 <h2 class="anchored" data-anchor-id="which-tools-are-available-for-working-with-gmacs">Which tools are available for working with GMACS?</h2>
@@ -305,7 +351,7 @@ window.Quarto = {
 </section>
 <section id="the-gmacs-development-team" class="level2 unnumbered">
 <h2 class="unnumbered anchored" data-anchor-id="the-gmacs-development-team">The Gmacs development team</h2>
-<p><a href="#tbl-contribs" class="quarto-xref">Table&nbsp;1</a> summarizes the people who have worked on the Gmacs project since its inception.</p>
+<p><a href="#tbl-contribs" class="quarto-xref">Table&nbsp;1</a> summarizes the people who have worked on the GMACS project since its inception.</p>
 <div class="cell" data-layout-align="center">
 <div id="tbl-contribs" class="cell quarto-float anchored" data-layout-align="center">
 <figure class="quarto-float quarto-float-tbl figure">
