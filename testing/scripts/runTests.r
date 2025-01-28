@@ -4,6 +4,7 @@
 #' @description Function to run tests using models from the GMACS_Models repo
 #' 
 #' @param repoDir - path to GMACS_Models repo folder
+#' @param exeDir - (absolute) path to `gmacs` execuatable
 #' @param stocks - stocks to run tests for (default: NULL implies run all in repoDir/models-for_test.csv)
 #' @param testDir - path to folder for running tests (default is current working directory)
 #' @param scriptsDir - path to folder containing *this* file, relative to \code{testDir}
@@ -18,16 +19,10 @@
 #' @details The GMACS_Models GitHub repository can be downloaded (or cloned) from https://github.com/GMACS-project/GMACS_Models. 
 #' The "`repoDir`/models-for_testing.csv" specifies the models to be used for testing the GMACS model code. 
 #' 
-#' 
-#' The easiest way to run tests is to **call this function with 'testing/runs' as working directory.** 
-#' This is accomplished by using \code{setwd(path to testing/runs)}. If the working directory is not 
-#' 'testing/runs', then the input parameters \code{testdir}, \code{scriptsDir}, and \code{inputsPath} need to 
-#' be set appropriately.
-#' 
-#' Using the pin file to initialize a model run (\code{usePin="par" or "pin"}) also sets the starting phase to 10. 
-#' If all is well, the model should converge almost immediately if the pin file is a copy of a 
-#' par file from a previous converged model run. Ideally, the model should converge immediately, with the 
-#' resulting par file identical to the pin file. However, this is frequently not the case if parameter values 
+#' Using a par or pin file to initialize a model run (\code{usePin="par" or "pin"}) also sets the starting phase to 10. 
+#' If the pin file is a copy of a 
+#' par file from a previous converged model run, the model should converge almost immediately and the 
+#' resulting par file will be identical to the pin file. However, this is frequently not the case if parameter values 
 #' are near a bound in the pin file and thus the resulting par file values may not be identical to those in the 
 #' pin file (i.e., the model converged to a slightly different place in parameter space). For the purpose of 
 #' quickly testing the impact of changes to the code on previous model results, it 
@@ -35,10 +30,12 @@
 #' against a par file from the old code that was the result of using the same pin file to initialize 
 #' that model run.
 #' 
-#' @importFrom dplyr 
+#' @import dplyr 
+#' 
 #' @export
 #' 
 runTests<-function(repoDir,
+                   exeDir,
                    stocks=NULL,
                    testDir=".",
                    scriptsDir="../scripts",
@@ -64,6 +61,12 @@ runTests<-function(repoDir,
   #--source required scripts----
   source(file.path(scriptsDir,"readParFile.R"));
   
+  #--copy gmacs executable to testDir (current WD at this point)
+  exeName = "gmacs";
+  if (Sys.info()["sysname"]=="Windows") exeName = "gmacs.exe";
+  res = file.copy(from=file.path(exeDir,exeName),to=exeName,overwrite=TRUE);
+  if (!res) stop("Could not find gmacs executable in",exeDir);
+  
   #--run tests----
   ##--set verbose level for model run----
   if (is.numeric(verbose)) {
@@ -80,6 +83,10 @@ runTests<-function(repoDir,
     #--for testing: tst = tests[1];
     cat("#--Starting test '",tst,"'\n",sep='');
     if (!dir.exists(tst)) dir.create(tst);
+    
+    ##--copy gmacs executable to tst folder from testDir
+    res = file.copy(from=exeName,to=file.path(tst,exeName),overwrite=TRUE);
+    if (!res) stop("Could not copy",exeName,"to",tst);
   
     ##--copy/rename required files from repoDir/tst----
     dfrFNs = dfrTsts2 |> dplyr::filter(path==tst);
@@ -99,7 +106,7 @@ runTests<-function(repoDir,
       if (usePin=="par"){
         fn = file.path(repoDir,"all_models",tst,dfrFNs$par_file[1]);
         if (file.exists(fn)){
-          res=file.copy(from=fn,to=file.path("gmacs.pin"),overwrite=TRUE);
+          res=file.copy(from=fn,to=file.path(tst,"gmacs.pin"),overwrite=TRUE);
           if (!res) warning("Could not copy par file to pin file.");
         } else {
           warning("Cannot run using original par file as pin file--does not exist:\n\t",fn,immediate.=TRUE);
@@ -108,7 +115,7 @@ runTests<-function(repoDir,
       if (usePin=="pin"){
         fn = file.path(repoDir,"all_models",tst,dfrFNs$pin_file[1]);
         if (file.exists(fn)){
-          res=file.path(from=fn,to=file.path("gmacs.pin"),overwrite=TRUE);
+          res=file.path(from=fn,to=file.path(tst,"gmacs.pin"),overwrite=TRUE);
           if (!res) warning("Could not copy pin file to pin file.",immediate.=TRUE);
         } else {
           warning("Connot run using original pin file--does not exist:\n\t",fn,immediate.=TRUE);
@@ -133,7 +140,7 @@ runTests<-function(repoDir,
       }
       
       ###--run model----
-      setwd(tst);
+      setwd(tst); #--changing current WD to `tst` here
       if (printPathInfo) cat("\nIn test '",tst,"'. \n\tworking folder for test: '",getwd(),"'\n",sep="");
       Sys.chmod(scr,mode='7777')
       if (Sys.info()["sysname"]=="Windows") {
@@ -284,14 +291,28 @@ runTests<-function(repoDir,
   tstr = gsub("[[:punct:]*|[:blank:]*]","-",Sys.time(),fixed=FALSE);
   save(results,file=paste0("tesing_results_",tstr,".RData"));
   save(results,file=paste0("testing_results.RData"));
+  file.remove(exeName);#--delete executable from testing directory
   return(results);
 }
 
+#--Examples----
 ##--run all
 if (FALSE) {
+  #
+  #--NOTE: make sure all paths to directories/files are correct for your system
+  #
+  ##--the following assumes: 
+  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
+  ###-------e.g.: at "dirPrj/testing/current_test_runs"
+  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS-project/GMACS_Models"
+  ###--3. The gmacs executable is under the "dirPrj/_build" directory
+  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
+  #
   dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  exeDir = normalizePath(file.path(dirPrj,"_build"));#--change as necessary
   results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
                      repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
+                     exeDir=exeDir,
                      testDir=".", #--current working directory
                      scriptsDir=file.path(dirPrj,"testing/scripts"),
                      verbose=0);
@@ -299,11 +320,24 @@ if (FALSE) {
 
 ##--run Tanner crab only
 if (FALSE) {
+  #
+  #--NOTE: make sure all paths to directories/files are correct for your system
+  #
+  ##--the following assumes: 
+  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
+  ###-------e.g.: at "dirPrj/testing/current_test_runs"
+  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS-project/GMACS_Models"
+  ###--3. The gmacs executable is under the "dirPrj/_build" directory
+  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
+  #
   dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  exeDir = file.path(dirPrj,"_build");
+  #--run tests
   results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
                      repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
+                     exeDir=file.path(dirPrj,"_build"),
                      stocks="TannerCrab",
-                     testDir=file.path(dirPrj,"testing/scripts"),
+                     testDir=".", #--current working directory
                      scriptsDir=file.path(dirPrj,"testing/scripts"),
                      verbose=0);
 }

@@ -8,31 +8,62 @@ The intention of this repository is to restrict it to only the tpl and c++ code 
 
 GMACS uses the [AD Model Builder](http://www.admb-project.org) C++ libraries, so these must be installed prior to installing and using GMACS. GMACS also provides a script for platform-independent installation using CMake. 
 
-For Windows users, it is recommended to install [RTools](https://cran.r-project.org/bin/windows/Rtools/rtools43/rtools.html) to provide compilers to build the ADMB libraries, a cmake executable, and unix-like shell functions for various file manipulation tasks. After installing RTools, the user should add the folder containing `g++.exe` to the front of their Windows PATH so that the RTools compiler/linker is found before any other version (this could be done on a per-terminal session basis). For RTools version 4.3, this would be `RTools`\x86_64-mingw32.static.posix\bin, where `RTools` is the top-level folder to which RTools was installed. In addition, add an environment variable `RToolsUsr` with the path to the `Rtools`\bin folder so that the unix-like shell commands are avaialable in the Windows Command Prompt window.
+For Windows users, it is recommended to install [RTools](https://cran.r-project.org/bin/windows/Rtools/rtools43/rtools.html) to provide compilers to build the ADMB libraries, a `cmake` executable, and unix-like shell functions for various file manipulation tasks. After installing RTools, the user should add the folder containing `g++.exe` to the front of their Windows PATH so that the RTools compiler/linker is found before any other version (this could be done on a per-terminal session basis). For RTools version 4.3, this would be `RTools`\x86_64-mingw32.static.posix\bin, where `RTools` is the top-level folder to which RTools was installed. In addition, add an environment variable `RToolsUsr` with the path to the `Rtools`\bin folder so that the unix-like shell commands are avaialable in the Windows Command Prompt window.
 
-For Mac OSX users, a cmake executable script and gui can be installed from https://cmake.org/download/.
+For Mac OSX users, a `cmake` executable script and gui can be installed from https://cmake.org/download/.
 
 Once ADMB has been compiled, create the environment variable ADMB_HOME and set it equal to the path to the `admb` sub-folder of the `build` directory (i.e., the folder that contains `bin`, `include`, and `lib`). Also, copy (or rename) the libadm-contrib.xxxx.a file in the `lib` sub-folder to libadmb-contrib.a.
 
 If you have not already done so, clone a copy of this repository to a folder on your local machine.
 
-To compile the GMACS executable, open a command prompt (Windows) or terminal window (Mac OSX) and change directory to the top-level GMACS directory (i.e., the one that contains the gmacsbase.tpl, personal.tpl, and CMakeLists.txt files). Then run the following commands:
+To compile the GMACS executable, open a command prompt (Windows) or terminal window (Mac OSX) and change directory to the top-level GMACS directory (i.e., the one that contains the gmacsbase.TPL, personal.TPL, and CMakeLists.txt files). Then run the following commands:
 
   *  cmake -S . -B _build -G "Unix Makefiles"
   *  cmake --build _build
 
 The first command creates the `_build` subfolder and the Makefile appropriate for the given platform ("Unix Makefiles" appears to be an appropriate value for the -G option when compiling with RTools under either OSX or Windows). The second command builds the project by running the Makefile and (if successful) copies the gmacsbase and personal tpl files to `_build`, concatenates them as gmacs.tpl, calls tpl2cpp on gmacs.tpl to create the associated .cpp and .htp files, and finally compiles the source and header files to create the gmacs executble in the `_build` folder (`gmacs` on Mac OSX and `gmacs.exe` on Windows).
 
-Changes to the tpl or c++ files can be recompiled using "cmake --build _build", which will only update the compilation process for files changed since the last build (i.e., not recompiling everything). To "start from scratch", you can either delete the _build folder and run the two commands above again or run "cmake --build _build --target clean" (which deletes the gmacs executable, gmacs.tpl, gmacs.cpp, gmacs.htp and all the object files under the `_build` folder, but not the CMake-associated files) followed by "cmake --build _build".
+Changes to the tpl or c++ files can be recompiled using "cmake --build _build", which will only update the compilation process for files changed since the last build (i.e., not recompiling everything). An alternative is to open a command prompt or terminal window and change directory to the "_build" folder, then run "make". 
+
+To "start from scratch", you can either delete the _build folder and run the two commands above again or run "cmake --build _build --target clean" (which deletes the gmacs executable, gmacs.tpl, gmacs.cpp, gmacs.htp and all the object files under the `_build` folder, but not the CMake-associated files) followed by "cmake --build _build".
 
 ## Testing
 
-The `testing/input_files` folder contains subfolders with suitable input files to test the compiled GMACS executable. The `testing/scripts` folder contains R scripts which can be used to test the models in the `testing/input_files` subfolders. To run the tests: 
+### new approach (post-Jan 2025)
+
+First, the "GMACS_Models" repository on GitHub (https://github.com/GMACS-project/GMACS_Models) should be cloned or downloaded. This repo contains subfolders in the "all_models" folder with files from the most recent assessment, as well as other models. The file "models-for_testing.csv" lists the subfolders to be used for testing (unless modified by the user, these will typically be the most recently-accepted assessment model). 
+
+The `testing/scripts` folder contains an R script, `runTests.R`, which can also be used to test (all or a subset of) the models identified in the "models-for_testing.csv" file. For each model, the script compares the new model results to the original results from the GMACS_Models repo by comparing the respective par and the Gmacsall.out files. 
+
+To run the tests:
+
+  *  start an R session
+  *  Create a `testing/runs` or other suitable `runs` folder (if it doesn't exist already)
+  *  change the working directory to the `runs` folder
+  *  source the "testing/scripts/runTests.R" file
+  *  run the function "runTests" for the models of interest 
+      - set `repoDir` to the path to the GMACS_Models repo
+      - set `exeDir` to the path to the gmacs executable
+      - set `stocks` to the stocks of interest (as listed in "models-for_testing.csv", or NULL for all stocks)
+      - set `testDir`, the top-level disctory for running the tests, to "." (because you changed the working directory to the "runs" folder)
+      - set `scriptsDir`, the path to the scripts folder (from the `runs` folder, if a relative path)
+      - set `usePin` as "par" or "pin" to use "gmacs.par" or "gmacs.pin" from the original model run as a pin file ("none" does not use a pin file)
+      - set `compareWith` as "par" or "pin" to compare the new "gmacs.par" to the "gmacs.par" or "gmacs.pin" from the original model run ("none" does no comparison)
+
+Example codes are given at the end of the "runTests.R" file.
+
+The results of the comparisons are returned as a R list, with element names corresponding to the stocks for the models tested. The returned list is also written to the testing folder as "testing_results.RData" (which will be overwritten in subsequent tests run in the same folder) and "testing_results_xxx.RData", where "xxx" indicates the date and time at which the tests finished. Each element in the returned list is also a list, with elements `pars`, `allout`, `tblOld`, and `tblNew`. `pars` gives results from comparing the new par file with the original par (or pin) file, if the latter was available. Based on Andre Punt's "TestUpdate.R" code, `allout` gives results from comparing the max gradient and OFL from the `Gmacsall.out` files, as well as several `ggplot2` plots comparing results for various estimated time series. The `tblOld` and `tblNew` are dataframes based on the "Gmacsall.out" "Summary" tables from the original and new model runs, respectively.
+
+After copying the "testing/scripts/runTests_Report.qmd" file into the testing directory, it can be rendered as a pdf or html file to provide a simple report of the comparisons. 
+
+### old approach (pre-Jan 2025)
+
+The `testing/scripts` folder contains an R script, `runTests.old.R`, which can also be used to test the models in a folder (the default is "../input_files" from the testing folder). To run the tests from "testing/runs" with input files in "testing/input_files": 
 
   *  start an R session
   *  Create a `testing/runs` folder (if it doesn't exist already)
   *  change the working directory to the `testing/runs` folder
-  *  source the "testing/scripts/runTests.r" file
+  *  source the "testing/scripts/runTests.old.R" file
   *  run the function "runTests" for the models of interest 
       - set the `tests` input vector to the names of the subfolders containing the models you want to test
       - set the top-level directory for running the tests (the default is ".", i.e. the `testing/runs` folder)
