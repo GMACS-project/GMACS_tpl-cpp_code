@@ -292,7 +292,7 @@ if (FALSE) {
   dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
   results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
                      repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
-                     testDir=file.path(dirPrj,"testing/scripts"),
+                     testDir=".", #--current working directory
                      scriptsDir=file.path(dirPrj,"testing/scripts"),
                      verbose=0);
 }
