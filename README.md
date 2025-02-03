@@ -33,15 +33,15 @@ To "start from scratch", you can either delete the _build folder and run the two
 
 First, the "GMACS_Models" repository on GitHub (https://github.com/GMACS-project/GMACS_Models) should be cloned or downloaded. This repo contains subfolders in the "all_models" folder with files from the most recent assessment, as well as other models. The file "models-for_testing.csv" lists the subfolders to be used for testing (unless modified by the user, these will typically be the most recently-accepted assessment model). 
 
-The `testing/scripts` folder contains an R script, `runTests.R`, which can also be used to test (all or a subset of) the models identified in the "models-for_testing.csv" file. For each model, the script compares the new model results to the original results from the GMACS_Models repo by comparing the respective par and the Gmacsall.out files. 
+The `testing/scripts` folder contains an R script, `runTests1.R`, which can also be used to test (all or a subset of) the models identified in the "models-for_testing.csv" file. Ideally run in a separate suitably-named "runs" folder, this script runs the models in "models-for_testing.csv" and collates the results from the old and new model runs in an output file "testing_results.RData" in the folder used to run the tests. The tesing/scripts folder also contains a Quarto markdown file, "runTests_Report.qmd". When copied and rendered in the "runs" folder, it creates a report (pdf or html) that compares the new models results to the original results from the GMACS_Models repo using the respective par and the Gmacsall.out files. 
 
 To run the tests:
 
   *  start an R session
   *  Create a `testing/runs` or other suitable `runs` folder (if it doesn't exist already)
   *  change the working directory to the `runs` folder
-  *  source the "testing/scripts/runTests.R" file
-  *  run the function "runTests" for the models of interest 
+  *  source the "testing/scripts/runTests1.R" file
+  *  run the function "runTests" for the models of interest to create "testing_results.RData"
       - set `repoDir` to the path to the GMACS_Models repo
       - set `exeDir` to the path to the gmacs executable
       - set `stocks` to the stocks of interest (as listed in "models-for_testing.csv", or NULL for all stocks)
@@ -50,11 +50,11 @@ To run the tests:
       - set `usePin` as "par" or "pin" to use "gmacs.par" or "gmacs.pin" from the original model run as a pin file ("none" does not use a pin file)
       - set `compareWith` as "par" or "pin" to compare the new "gmacs.par" to the "gmacs.par" or "gmacs.pin" from the original model run ("none" does no comparison)
 
-Example codes are given at the end of the "runTests.R" file.
+Example codes are given at the end of the "runTests1.R" file.
 
-The results of the comparisons are returned as a R list, with element names corresponding to the stocks for the models tested. The returned list is also written to the testing folder as "testing_results.RData" (which will be overwritten in subsequent tests run in the same folder) and "testing_results_xxx.RData", where "xxx" indicates the date and time at which the tests finished. Each element in the returned list is also a list, with elements `pars`, `allout`, `tblOld`, and `tblNew`. `pars` gives results from comparing the new par file with the original par (or pin) file, if the latter was available. Based on Andre Punt's "TestUpdate.R" code, `allout` gives results from comparing the max gradient and OFL from the `Gmacsall.out` files, as well as several `ggplot2` plots comparing results for various estimated time series. The `tblOld` and `tblNew` are dataframes based on the "Gmacsall.out" "Summary" tables from the original and new model runs, respectively.
+The results of the comparisons are returned as a R list, with element names corresponding to the stocks for the models tested. The returned list is also written to the testing folder as "testing_results.RData" (which will be overwritten in subsequent tests run in the same folder) and "testing_results_xxx.RData", where "xxx" indicates the date and time at which the tests finished. Each element in the returned list is also a list, with elements `lstFNs` (a list with input filenames),`pars`, `allOutNew`, and `allOutOld`. `pars` gives results from comparing the new par file with the original par (or pin) file, if the latter was available. `allOutNew` and `allOutOld` contain the lists obtained by running `wtsGMACS::readGmacsAllout` on the respective "Gmacsall.out" files.
 
-After copying the "testing/scripts/runTests_Report.qmd" file into the testing directory, it can be rendered as a pdf or html file to provide a simple report of the comparisons. 
+After copying the "testing/scripts/runTests_Report.qmd" file into the testing directory: it can be rendered as a pdf or html file to provide a simple report of the comparisons. 
 
 ### old approach (pre-Jan 2025)
 
