@@ -216,70 +216,16 @@ runTests<-function(repoDir,
         res = NULL;
         pg  = NULL;
       } else {
-        Index <- which(tblNew[,1]=="Total:")
-        Obj1 <- as.numeric(tblNew[Index,2])
-        Index <- which(tblNew[,1]=="OFL(tot)")
-        OFL1 <- as.numeric(tblNew[Index,3])
-        Index <- which(tblOld[,1]=="Total:")
-        Obj2 <- as.numeric(tblOld[Index,2])
-        Index <- which(tblOld[,1]=="OFL(tot)")
-        OFL2 <- as.numeric(tblOld[Index,3])
-        Outcome <- "ALL_OK"
-        if (abs(Obj2-Obj1)>0.001) Outcome <- "Not_OK"
-        res1 = paste("Objective function value test:",Obj1,Obj2,Obj2-Obj1,Outcome,"\n");
-        Outcome <- "ALL_OK"
-        if (abs(OFL2-OFL1)>0.001) Outcome <- "Not_OK"
-        res2 = paste("OFL value test:",OFL1,OFL2,(OFL2/OFL1-1)*100,Outcome,"\n");
-        res = c(res1,res2);
-        
-        ####--make combined dataframe and plot----
-        eods = which(tblOld[,1]==">EOD<");
-        rdx1 = which(tblOld[,1]=="#Overall_summary")+2;
-        rdx2 = min(eods[eods-rdx1>0])-1;
-        cols = as.vector(t(as.matrix(tblOld[rdx1,])));
-        cols = cols[!is.na(cols)];
-        nc   = length(cols);
-        if (any(stringr::str_count(cols,"female")>0))
-          cols[13:14] = paste0(cols[13:14],"_female");
-        dfrOld = tblOld[(rdx1+1):rdx2,1:nc];
-        colnames(dfrOld) = cols;
-        dfrOld = dfrOld |> 
-                   dplyr::mutate(dplyr::across(where(is.character),as.numeric)) |> 
-                   dplyr::mutate(model="old");
-        eods = which(tblNew[,1]==">EOD<");
-        rdx1 = which(tblNew[,1]=="#Overall_summary")+2;
-        rdx2 = min(eods[eods-rdx1>0])-1;
-        cols = as.vector(t(as.matrix(tblOld[rdx1,])));
-        cols = cols[!is.na(cols)];
-        nc   = length(cols);
-        if (any(stringr::str_count(cols,"female")>0))
-          cols[13:14] = paste0(cols[13:14],"_female");
-        dfrNew = tblNew[(rdx1+1):rdx2,1:nc];
-        colnames(dfrNew) = cols;
-        dfrNew = dfrNew |> 
-                   dplyr::mutate(dplyr::across(where(is.character),as.numeric)) |> 
-                   dplyr::mutate(model="new");
-        dfrComp = dplyr::bind_rows(dfrOld,dfrNew);
-        
-        makePlot<-function(dfr,var){
-          require(ggplot2);
-          p = ggplot(dfr,aes(x=Year,y={{var}},colour=model)) + 
-                geom_line() + geom_point() + wtsPlots::getStdTheme() + 
-                theme(legend.position="inside",
-                      legend.position.inside=c(0.99,0.99),
-                      legend.justification=c(1,1));
-          return(p)
-        }
-        p1 = makePlot(dfrComp,Recruit_male)
-        p2 = makePlot(dfrComp,SSB);
-        p3 = makePlot(dfrComp,Total_mortality);
-        p4 = makePlot(dfrComp,Retained_mortality);
-        pg = cowplot::plot_grid(p1,p2,p3,p4,nrow=2);
+        ####--use wtsGMACS to read files----
+        lstAlloutNew = wtsGMACS::readGmacsAllout(fnNew);
+        lstAllOutOld = wtsGMACS::readGmacsAllout(fnOld);
       }
-      res_allout = list(res=res,plot=pg);
-      
+
       ###--add test results to results list----
-      results[[tst]] = list(lstFNs=lstFNs,pars=res_pars,allout=res_allout,tblOld=tblOld,tblNew=tblNew);
+      results[[tst]] = list(lstFNs=lstFNs,
+                            pars=res_pars,
+                            allOutNew=lstAlloutNew,
+                            allOutOld=lstAllOutOld);
 
       ###--move out of current run folder up a folder level to testDir----
       setwd("..");
@@ -340,6 +286,7 @@ if (FALSE) {
   ###--3. The gmacs executable is under the "dirPrj/_build" directory
   ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
   #
+  require(wtsGMACS)
   dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
   exeDir = file.path(dirPrj,"_build");
   #--run tests

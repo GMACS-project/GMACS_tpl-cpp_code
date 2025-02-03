@@ -95,7 +95,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.20; ** AEP & WTS **; Compiled 2025-01-30");
+ !! TheHeader = adstring("## GMACS Version 2.20.19; ** AEP & WTS **; Compiled 2025-01-15");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -3787,8 +3787,7 @@ DATA_SECTION
        TempSize(end) = cumsum(end);
        tailcompind(kk,ii,2) = end;
        //--normalize to input sample size
-       //for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TempSize(jj);
-       for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj);
+       for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = TempSize(jj)*size_comp_sample_size_in(kk,ii);
        cout << d3_obs_size_comps_in(kk,ii) << endl;
        //exit(1);
       }
@@ -3796,8 +3795,7 @@ DATA_SECTION
       { //--no tail compression
         tailcompind(kk,ii,1) = 1; tailcompind(kk,ii,2) = nSizeCompCols_in(kk); 
         //--normalize to input sample size
-        //d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*(d3_obs_size_comps_in(kk,ii)/sum(d3_obs_size_comps_in(kk,ii)));
-        d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*d3_obs_size_comps_in(kk,ii);
+        d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*(d3_obs_size_comps_in(kk,ii)/sum(d3_obs_size_comps_in(kk,ii)));
       }
     }//--loops over ii and kk
   
@@ -13181,7 +13179,6 @@ FINAL_SECTION
 // 2024-11-07 ** WTS. (GMACS Version 2.20.17) Add a lot of verbose>3 cout's to calc_predicted_composition to diagnose ctl file problem specifiying aggregations. 
 // 2025-01-14 ** AEP. (GMACS Version 2.20.18) Split the Fmsy for Tier 4 between fleets
 // 2025-01-15 ** AEP. (GMACS Version 2.20.18) Added the floor spline selectivity pattern and the stacked logistic selectivity pattern
-// 2025-01-30 ** AEP. (GMACS Version 2.20.20) Updated the weight aggregated comps are computed.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
