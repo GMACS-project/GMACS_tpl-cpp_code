@@ -2,6 +2,83 @@
 title: "model.ctl file"
 ---
 
+## General ctl file parameter specifications 
+  * Initial: Initial value for the parameter (must lie between lower and upper)
+  * Lower & Upper: Range for the parameter
+  * Prior type
+    - 0: Uniform   - parameters are the range of the uniform prior"  << endl;
+    - 1: Normal    - parameters are the mean and sd
+    - 2: Lognormal - parameters are the mean and sd of the log
+    - 3: Beta      - parameters are the two beta parameters [see dbeta]
+    - 4: Gamma     - parameters are the two gamma parameters [see dgamma]
+  * Phase: Set equal to a negative number not to estimate
+  * Relative: 0: absolute; 1 relative 
+  * Block: Block group number for time variation   
+  * Block_fn: 
+    - 0: absolute values
+    - 1: exponential
+  * Env_L: Environmental link
+    - 0: none
+    - 1: additive
+    - 2: multiplicative
+    - 3: exponential
+  * EnvL_var: Environmental variable
+  * RW: random walk characteristics
+    - 0 for no random walk changes
+    - 1 otherwise
+  * RW_blk: Block number for random walks
+  * Sigma_RW: Sigma used for the random walk
+
+## ctl file options and flags
+
+### Prior types
+  * 0: Uniform   - parameters are the range of the uniform prior
+  * 1: Normal    - parameters are the mean and sd
+  * 2: Lognormal - parameters are the mean and sd of the log
+  * 3: Beta      - parameters are the two beta parameters [see dbeta]
+  * 4: Gamma     - parameters are the two gamma parameters [see dgamma]
+
+### Growth transition types
+#### Options for the growth matrix
+  * 1: Pre-specified growth transition matrix (requires molt probability)
+  * 2: Pre-specified size transition matrix (molt probability is ignored)
+  * 3: Growth increment is gamma distributed (requires molt probability)
+  * 4: Post-molt size is gamma distributed (requires molt probability)
+  * 5: Von Bert.: kappa varies among individuals (requires molt probability)
+  * 6: Von Bert.: Linf varies among individuals (requires molt probability)
+  * 7: Von Bert.: kappa and Linf varies among individuals (requires molt probability)
+  * 8: Growth increment is normally distributed (requires molt probability)
+
+#### Options for the growth increment model matrix
+  * 1: Linear 
+    - intercept
+    - slope
+    - ln-scale gamma distribution scale parameter
+  * 2: Individual
+  * 3: Individual (Same as 2)
+  * 4: Power law for mean post-molt size 
+    - ln-scale intercept
+    - ln-scale slope
+    - ln-scale gamma distribution scale parameter
+  * 5: Alternative power law for mean post-molt size. 
+    - reference (small) pre-molt size (constant: must have phase < 0)
+    - mean post-molt size at small reference pre-molt size
+    - reference (large) pre-molt size (constant: must have phase < 0)
+    - mean post-molt size at large reference pre-molt size
+    - ln-scale gamma distribution scale parameter
+
+##### Options for the molt probability function
+  * 0: Pre-specified
+  * 1: Constant at 1
+  * 2: Logistic
+  * 3: Individual
+
+##### Options for the mature probability function
+  * 0: Pre-specified
+  * 1: Constant at 1
+  * 2: Logistic
+  * 3: Individual
+
 ## `The model.ctl` file {#sec-model-ctl-file}
 
 While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below). 
