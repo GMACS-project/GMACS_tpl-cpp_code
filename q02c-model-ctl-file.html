@@ -186,7 +186,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#sec-model-ctl-file" id="toc-sec-model-ctl-file" class="nav-link active" data-scroll-target="#sec-model-ctl-file"><code>The model.ctl</code> file</a></li>
+  <li><a href="#general-ctl-file-parameter-specifications" id="toc-general-ctl-file-parameter-specifications" class="nav-link active" data-scroll-target="#general-ctl-file-parameter-specifications">General ctl file parameter specifications</a></li>
+  <li><a href="#ctl-file-options-and-flags" id="toc-ctl-file-options-and-flags" class="nav-link" data-scroll-target="#ctl-file-options-and-flags">ctl file options and flags</a>
+  <ul class="collapse">
+  <li><a href="#prior-types" id="toc-prior-types" class="nav-link" data-scroll-target="#prior-types">Prior types</a></li>
+  <li><a href="#growth-transition-types" id="toc-growth-transition-types" class="nav-link" data-scroll-target="#growth-transition-types">Growth transition types</a></li>
+  </ul></li>
+  <li><a href="#sec-model-ctl-file" id="toc-sec-model-ctl-file" class="nav-link" data-scroll-target="#sec-model-ctl-file"><code>The model.ctl</code> file</a></li>
   </ul>
 </nav>
     </div>
@@ -212,6 +218,119 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<section id="general-ctl-file-parameter-specifications" class="level2">
+<h2 class="anchored" data-anchor-id="general-ctl-file-parameter-specifications">General ctl file parameter specifications</h2>
+<ul>
+<li>Initial: Initial value for the parameter (must lie between lower and upper)</li>
+<li>Lower &amp; Upper: Range for the parameter</li>
+<li>Prior type
+<ul>
+<li>0: Uniform - parameters are the range of the uniform prior</li>
+<li>1: Normal - parameters are the mean and sd</li>
+<li>2: Lognormal - parameters are the mean and sd of the log</li>
+<li>3: Beta - parameters are the two beta parameters [see dbeta]</li>
+<li>4: Gamma - parameters are the two gamma parameters [see dgamma]</li>
+</ul></li>
+<li>Phase: Set equal to a negative number not to estimate</li>
+<li>Relative: 0: absolute; 1 relative</li>
+<li>Block: Block group number for time variation<br>
+</li>
+<li>Block_fn:
+<ul>
+<li>0: absolute values</li>
+<li>1: exponential</li>
+</ul></li>
+<li>Env_L: Environmental link
+<ul>
+<li>0: none</li>
+<li>1: additive</li>
+<li>2: multiplicative</li>
+<li>3: exponential</li>
+</ul></li>
+<li>EnvL_var: Environmental variable</li>
+<li>RW: random walk characteristics
+<ul>
+<li>0 for no random walk changes</li>
+<li>1 otherwise</li>
+</ul></li>
+<li>RW_blk: Block number for random walks</li>
+<li>Sigma_RW: Sigma used for the random walk</li>
+</ul>
+</section>
+<section id="ctl-file-options-and-flags" class="level2">
+<h2 class="anchored" data-anchor-id="ctl-file-options-and-flags">ctl file options and flags</h2>
+<section id="prior-types" class="level3">
+<h3 class="anchored" data-anchor-id="prior-types">Prior types</h3>
+<ul>
+<li>0: Uniform - parameters are the range of the uniform prior</li>
+<li>1: Normal - parameters are the mean and sd</li>
+<li>2: Lognormal - parameters are the mean and sd of the log</li>
+<li>3: Beta - parameters are the two beta parameters [see dbeta]</li>
+<li>4: Gamma - parameters are the two gamma parameters [see dgamma]</li>
+</ul>
+</section>
+<section id="growth-transition-types" class="level3">
+<h3 class="anchored" data-anchor-id="growth-transition-types">Growth transition types</h3>
+<section id="options-for-the-growth-matrix" class="level4">
+<h4 class="anchored" data-anchor-id="options-for-the-growth-matrix">Options for the growth matrix</h4>
+<ul>
+<li>1: Pre-specified growth transition matrix (requires molt probability)</li>
+<li>2: Pre-specified size transition matrix (molt probability is ignored)</li>
+<li>3: Growth increment is gamma distributed (requires molt probability)</li>
+<li>4: Post-molt size is gamma distributed (requires molt probability)</li>
+<li>5: Von Bert.: kappa varies among individuals (requires molt probability)</li>
+<li>6: Von Bert.: Linf varies among individuals (requires molt probability)</li>
+<li>7: Von Bert.: kappa and Linf varies among individuals (requires molt probability)</li>
+<li>8: Growth increment is normally distributed (requires molt probability)</li>
+</ul>
+</section>
+<section id="options-for-the-growth-increment-model-matrix" class="level4">
+<h4 class="anchored" data-anchor-id="options-for-the-growth-increment-model-matrix">Options for the growth increment model matrix</h4>
+<ul>
+<li>1: Linear
+<ul>
+<li>intercept</li>
+<li>slope</li>
+<li>ln-scale gamma distribution scale parameter</li>
+</ul></li>
+<li>2: Individual</li>
+<li>3: Individual (Same as 2)</li>
+<li>4: Power law for mean post-molt size
+<ul>
+<li>ln-scale intercept</li>
+<li>ln-scale slope</li>
+<li>ln-scale gamma distribution scale parameter</li>
+</ul></li>
+<li>5: Alternative power law for mean post-molt size.
+<ul>
+<li>reference (small) pre-molt size (constant: must have phase &lt; 0)</li>
+<li>mean post-molt size at small reference pre-molt size</li>
+<li>reference (large) pre-molt size (constant: must have phase &lt; 0)</li>
+<li>mean post-molt size at large reference pre-molt size</li>
+<li>ln-scale gamma distribution scale parameter</li>
+</ul></li>
+</ul>
+<section id="options-for-the-molt-probability-function" class="level5">
+<h5 class="anchored" data-anchor-id="options-for-the-molt-probability-function">Options for the molt probability function</h5>
+<ul>
+<li>0: Pre-specified</li>
+<li>1: Constant at 1</li>
+<li>2: Logistic</li>
+<li>3: Individual</li>
+</ul>
+</section>
+<section id="options-for-the-mature-probability-function" class="level5">
+<h5 class="anchored" data-anchor-id="options-for-the-mature-probability-function">Options for the mature probability function</h5>
+<ul>
+<li>0: Pre-specified</li>
+<li>1: Constant at 1</li>
+<li>2: Logistic</li>
+<li>3: Individual</li>
+</ul>
+</section>
+</section>
+</section>
+</section>
 <section id="sec-model-ctl-file" class="level2">
 <h2 class="anchored" data-anchor-id="sec-model-ctl-file"><code>The model.ctl</code> file</h2>
 <p>While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below).</p>
