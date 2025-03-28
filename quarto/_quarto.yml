@@ -8,6 +8,7 @@ project:
     - q02b-model-dat-file.qmd
     - q02c-model-ctl-file.qmd
     - q02d-model-prj-file.qmd
+    - q03-GMACS-flags.qmd
   
 website:
   sidebar:
@@ -22,6 +23,7 @@ website:
       - file: q02b-model-dat-file.qmd
       - file: q02c-model-ctl-file.qmd
       - file: q02d-model-prj-file.qmd
+      - file: q03-GMACS-flags.qmd
   page-navigation: true
   page-footer: 
     right: "v.2.01.M.09"

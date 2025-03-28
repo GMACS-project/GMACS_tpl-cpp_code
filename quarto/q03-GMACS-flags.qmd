@@ -1,0 +1,146 @@
+---
+title: "GMACS flags"
+---
+
+## GMACS flags 
+
+The GMACS code and input files use a number of integer "flags" to identify user-specified options and clarify code. The complete list of these flags--identified from macro "defines" in the TPL code--is given in the following sections. For each flag, the value, a brief description, and the 
+macro variable (in parentheses) should be given (TODO: finish). For flags associated with functions, the function parameters (in the order they need 
+to be specified in the ctl file) are also given as sub-bullets (TODO: finish).
+
+### Basic flags
+  * 0: no  (NO)
+  * 1: yes (YES)
+
+### Population characteristics
+#### Sex flags
+  * 0: undetermined or single sex (UNDET_SEX)
+  * 1: male   (MALES)
+  * 2: female (FEMALES)
+ 
+#### Shell condition flags
+  * 0: undetermined (UNDET_SHELL)
+  * 1: new shell    (NEW_SHELL)
+  * 2: old shell    (OLD_SHELL)
+
+#### Maturity state flags
+  * 0: undetermined (UNDET_MATURE)
+  * 1: mature       (MATURE)
+  * 2: immature     (IMMATURE)
+
+### Data flags
+#### Basic data types
+  * 1: biomass   (BIOMASS)
+  * 2: abundance (ABUNDANCE)
+
+#### Catch data type flags
+  * 0: total catch (TOTALCATCH)
+  * 1: retaied catch (RETAINED)
+  * 2: discarded catch (DISCARDED)
+  
+#### Growth data type flags
+  * 0: no growth data                  (NOGROWTH_DATA)
+  * 1: growth increment data           (GROWTHINC_DATA)
+  * 2: data for a growth clsas (??)    (GROWTHCLASS_DATA)
+  * 3: values for a growth class (??)  (GROWTHCLASS_VALS)
+
+## ctl file options and flags
+
+### Prior types
+  * 0: Uniform   - parameters are the range of the uniform prior
+  * 1: Normal    - parameters are the mean and sd
+  * 2: Lognormal - parameters are the mean and sd of the log
+  * 3: Beta      - parameters are the two beta parameters [see dbeta]
+  * 4: Gamma     - parameters are the two gamma parameters [see dgamma]
+
+### Initial N
+  * 0: unfished equilibrium (UNFISHEDEQN)
+  * 1: fished equilibrium (FISHEDEQN)
+  * 2: freely-estimated parameters (FREEPARS)
+  * 3: freely-estimated parameters (scaled) (FREEPARSSCALED)
+  * 4: reference points (??) (REFPOINTS)
+
+### Allometry: Length-weight relationships
+  * 1: functional relationship (LW_RELATIONSHIP)
+  * 2: vector of values (weights-at-sizes)             (LW_VECTOR)
+  * 3: matrix (rows: years; columns: weights-at-sizes) (LW_MATRIX)
+
+### Natural mortality (M) flags
+  * 0: constant M (M_CONSTANT)
+  * 1: random (walk?) (M_RANDOM)
+  * 2: cubic spline (M_CUBIC_SPLINE)
+  * 3: blocked changes (M_BLOCKED_CHANGES)
+  * 4: time blocks type 1 (M_TIME_BLOCKS1)
+  * 5: time blocks type 3 (M_TIME_BLOCKS3)
+  * 6: time blocks type 2 (M_TIME_BLOCKS2) [yes, out of order]
+
+#### Custom M
+  * 0: no custom M      (NO_CUSTOM_M)
+  * 1: w/ custom M (??) (WITH_CUSTOM_M)
+
+### Growth transition types
+#### Options for the growth matrix
+  * 1: Pre-specified growth transition matrix (requires molt probability)
+  * 2: Pre-specified size transition matrix (molt probability is ignored)
+  * 3: Growth increment is gamma distributed (requires molt probability)
+  * 4: Post-molt size is gamma distributed (requires molt probability)
+  * 5: Von Bert.: kappa varies among individuals (requires molt probability)
+  * 6: Von Bert.: Linf varies among individuals (requires molt probability)
+  * 7: Von Bert.: kappa and Linf varies among individuals (requires molt probability)
+  * 8: Growth increment is normally distributed (requires molt probability)
+
+#### Options for the growth increment model matrix
+  * 1: Linear 
+    - intercept
+    - slope
+    - ln-scale gamma distribution scale parameter
+  * 2: Individual
+  * 3: Individual (Same as 2)
+  * 4: Power law for mean post-molt size 
+    - ln-scale intercept
+    - ln-scale slope
+    - ln-scale gamma distribution scale parameter
+  * 5: Alternative power law for mean post-molt size. 
+    - reference (small) pre-molt size (constant: must have phase < 0)
+    - mean post-molt size at small reference pre-molt size
+    - reference (large) pre-molt size (constant: must have phase < 0)
+    - mean post-molt size at large reference pre-molt size
+    - ln-scale gamma distribution scale parameter
+
+##### Options for the molt probability function
+  * 0: Pre-specified (FIXED_PROB_MOLT)
+  * 1: Constant at 1 (CONSTANT_PROB_MOLT)
+  * 2: Logistic      (LOGISTIC_PROB_MOLT)
+  * 3: Individual    (FREE_PROB_MOLT)
+
+##### Options for the mature probability function
+  * 0: Pre-specified (FIXED_PROB_MATURE)
+  * 1: Constant at 1 (CONSTANT_PROB_MATURE)
+  * 2: Logistic      (LOGISTIC_PROB_MATURE)
+  * 3: Individual    (FREE_PROB_MATURE)
+
+### Fishing mortality type flags
+  * 0: inatantaneous F (INSTANT_F)
+  * 1: constinuous F   (CONTINUOUS_F)
+  * 2: ??              (EXPLOIT_F)
+
+#### Selectivity and retention function flags
+  * 0: Parametric selectivity    (SELEX_PARAMETRIC)
+  * 1: coefficients              (SELEX_COEFFICIENTS)
+  * 2: standaerd logistic        (SELEX_STANLOGISTIC)
+    - size-at-50% selected
+    - slope at 50% selected 
+  * 3: alternative logistic      (SELEX_5095LOGISTIC)
+    - size-at-50% selected
+    - size at 95% selected
+  * 4: double normal             (SELEX_DOUBLENORM)
+  * 5: uniform with value 1      (SELEX_UNIFORM1)
+  * 6: uniform with value 0      (SELEX_UNIFORM0)
+  * 7: 4-parameter double normal (SELEX_DOUBLENORM4)
+  * 8: declining logistic        (SELEX_DECLLOGISTIC)
+  * 9: cubic spline              (SELEX_CUBIC_SPLINE)
+  * 10: 1-paameter logistic      (SELEX_ONE_PAR_LOGISTIC)
+  * 11: pre-specified            (SELEX_PRESPECIFIED)
+  * 12: cubic spline w/ a floor  (SELEX_CUBIC_SPLINE_FLOOR)
+  * 13 stacked logistic          (SELEX_STACKED_LOGISTIC)
+
