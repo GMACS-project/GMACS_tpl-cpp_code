@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>model.prj file</title>
+<title>GMACS flags</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,40 +20,6 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
 </style>
 
 
@@ -64,8 +30,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./q03-GMACS-flags.html" rel="next">
-<link href="./q02c-model-ctl-file.html" rel="prev">
+<link href="./q02d-model-prj-file.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -115,7 +80,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./q02d-model-prj-file.html">model.prj file</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./q03-GMACS-flags.html">GMACS flags</a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -172,13 +137,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./q02d-model-prj-file.html" class="sidebar-item-text sidebar-link active">
+  <a href="./q02d-model-prj-file.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">model.prj file</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./q03-GMACS-flags.html" class="sidebar-item-text sidebar-link">
+  <a href="./q03-GMACS-flags.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">GMACS flags</span></a>
   </div>
 </li>
@@ -192,7 +157,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#sec-model-prj-file" id="toc-sec-model-prj-file" class="nav-link active" data-scroll-target="#sec-model-prj-file"><code>The model.prj</code> file</a></li>
+  <li><a href="#gmacs-flags" id="toc-gmacs-flags" class="nav-link active" data-scroll-target="#gmacs-flags">GMACS flags</a>
+  <ul class="collapse">
+  <li><a href="#basic-flags" id="toc-basic-flags" class="nav-link" data-scroll-target="#basic-flags">Basic flags</a></li>
+  <li><a href="#population-characteristics" id="toc-population-characteristics" class="nav-link" data-scroll-target="#population-characteristics">Population characteristics</a></li>
+  <li><a href="#data-flags" id="toc-data-flags" class="nav-link" data-scroll-target="#data-flags">Data flags</a></li>
+  </ul></li>
+  <li><a href="#ctl-file-options-and-flags" id="toc-ctl-file-options-and-flags" class="nav-link" data-scroll-target="#ctl-file-options-and-flags">ctl file options and flags</a>
+  <ul class="collapse">
+  <li><a href="#prior-types" id="toc-prior-types" class="nav-link" data-scroll-target="#prior-types">Prior types</a></li>
+  <li><a href="#initial-n" id="toc-initial-n" class="nav-link" data-scroll-target="#initial-n">Initial N</a></li>
+  <li><a href="#allometry-length-weight-relationships" id="toc-allometry-length-weight-relationships" class="nav-link" data-scroll-target="#allometry-length-weight-relationships">Allometry: Length-weight relationships</a></li>
+  <li><a href="#natural-mortality-m-flags" id="toc-natural-mortality-m-flags" class="nav-link" data-scroll-target="#natural-mortality-m-flags">Natural mortality (M) flags</a></li>
+  <li><a href="#growth-transition-types" id="toc-growth-transition-types" class="nav-link" data-scroll-target="#growth-transition-types">Growth transition types</a></li>
+  <li><a href="#fishing-mortality-type-flags" id="toc-fishing-mortality-type-flags" class="nav-link" data-scroll-target="#fishing-mortality-type-flags">Fishing mortality type flags</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -201,7 +180,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">model.prj file</h1>
+<h1 class="title">GMACS flags</h1>
 </div>
 
 
@@ -218,116 +197,218 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="sec-model-prj-file" class="level2">
-<h2 class="anchored" data-anchor-id="sec-model-prj-file"><code>The model.prj</code> file</h2>
-<p>While the file is a single entity, it is convenient to examine the different sections separately in the order they occur in the file (see below).</p>
-<p>Values are separated by spaces or tabs. Character-based input (e.g., fleet names, etc.) should not contain spaces, tabs, or “#”, but can contain numbers and punctuation. An underscore (“_“) is used to indicate a space–underscores will be replaced by spaces in formatted model output (e.g., in tables or figures).</p>
-<p>An example of how the model projection information is specified is given in the following text box:</p>
-<div id="nte-prj1" class="callout callout-style-default callout-note no-icon callout-titled" title="Management reference points section from an example `model.prj` file.">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note&nbsp;1: Management reference points section from an example <code>model.prj</code> file.
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a># quantities to calculate management reference points</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>0              # compute MSY (0: no, 1: yes)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>0 1 1 1        # Set to 0 if F35% applied to this fleet; 1 if F is to be fixed</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>1982 2022      # First and last year for average recruitment/MMB for Bspr calculation (Tier 3 or Tier 4)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>1982 2022      # First and last year for average sex ratio for computing reference points</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>2011 2021      # First and last year for average F for discards (computing reference points and projections)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>1982 2017      # First and last years for M (0 = last year)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>1982 2022      # First and last years for proportion of the season</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>1982           # Year for specifying growth (0 = last year)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>1982 2022      # first and last years for average selex and discard (0 = last year)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a># OFL specifications</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>0.35          # Target SPR ratio for Bmsy proxy.</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>3             # Tier</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>0.10          # Alpha (cut-off)</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>0.25          # Beta (limit)</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>1.00          # Gamma</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>0.80          # ABC-OFL buffer</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>0             # Produce a yield curve (1=yes; 2=no)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</div>
-<div id="nte-prj2" class="callout callout-style-default callout-note no-icon callout-titled" title="Projections information section from example `model.prj` file.">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note&nbsp;2: Projections information section from example <code>model.prj</code> file.
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb2"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a># Projection material</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>2031                # Last year of projection </span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>1                   # Projection type (1=Constant F; 2=proportion of current F)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>2                   # Number of strategies (0 for no projections)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>0 1.59              # Range of F values</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>1                   # 0 for no mortality for non-directed fleets (see input #1 above); 1=Yes</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>2                   # Mcmc replicates per draw</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>-3423.8             # Fixed BMSY (negative number for replicate-specific)</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>1982 2017           # First and last year for average recruitment (Rbar)</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>1982 2017           # First and last years for average sex ratio </span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>2011 2021           # First and last years for average F for discards </span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>1982 2017           # First and last years for M (0=last year)</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>0 0                 # First and last years for proportion of the season</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>0                   # Year for specifying growth for projections (0=last year)</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>0 0                 # First and last years for average selex and discard (0=last year)</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>1                   # Stock-recruitment option (1=Mean Rec;2=Ricker;3=Beverton-Holt;4=Mean recruitment)</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>5                   # Time (years) to recruitment</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>1982 2017           # First and last years for generating future recruitment (only used if Stock_recruitment option = 1)</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>10000               # mean recruitment</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>0.6                 # SigmaR (only used if Stock_recruitment option = 2)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>0.0                 # Prow</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>0.0                 # Initial eps</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</div>
-<div id="nte-prj3" class="callout callout-style-default callout-note no-icon callout-titled" title="State harvest strategy section from example `model.prj` file.">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note&nbsp;3: State harvest strategy section from example <code>model.prj</code> file.
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb3"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a># State strategy</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>1                          # Apply strategies [OFL, ABC] (1=apply HCR;0= constant F) </span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>1                          # Apply the state startegy (1=Yes; 0=No)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>2                          # Number of state parameters</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>0.001729630                # Mean weight to use (mature)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>0.001930932                # Mean weight to use (legal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</div>
-<div id="nte-prj4" class="callout callout-style-default callout-note no-icon callout-titled" title="Final section from example `model.prj` file.">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note&nbsp;4: Final section from example <code>model.prj</code> file.
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<div class="sourceCode" id="cb4"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>10000   # Stop after XX mcdraws</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>1       # Full diagnostics (0 = No, 1=Yes)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>9999    ## EOF</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</div>
+<section id="gmacs-flags" class="level2">
+<h2 class="anchored" data-anchor-id="gmacs-flags">GMACS flags</h2>
+<p>The GMACS code and input files use a number of integer “flags” to identify user-specified options and clarify code. The complete list of these flags–identified from macro “defines” in the TPL code–is given in the following sections. For each flag, the value, a brief description, and the macro variable (in parentheses) should be given (TODO: finish). For flags associated with functions, the function parameters (in the order they need to be specified in the ctl file) are also given as sub-bullets (TODO: finish).</p>
+<section id="basic-flags" class="level3">
+<h3 class="anchored" data-anchor-id="basic-flags">Basic flags</h3>
+<ul>
+<li>0: no (NO)</li>
+<li>1: yes (YES)</li>
+</ul>
+</section>
+<section id="population-characteristics" class="level3">
+<h3 class="anchored" data-anchor-id="population-characteristics">Population characteristics</h3>
+<section id="sex-flags" class="level4">
+<h4 class="anchored" data-anchor-id="sex-flags">Sex flags</h4>
+<ul>
+<li>0: undetermined or single sex (UNDET_SEX)</li>
+<li>1: male (MALES)</li>
+<li>2: female (FEMALES)</li>
+</ul>
+</section>
+<section id="shell-condition-flags" class="level4">
+<h4 class="anchored" data-anchor-id="shell-condition-flags">Shell condition flags</h4>
+<ul>
+<li>0: undetermined (UNDET_SHELL)</li>
+<li>1: new shell (NEW_SHELL)</li>
+<li>2: old shell (OLD_SHELL)</li>
+</ul>
+</section>
+<section id="maturity-state-flags" class="level4">
+<h4 class="anchored" data-anchor-id="maturity-state-flags">Maturity state flags</h4>
+<ul>
+<li>0: undetermined (UNDET_MATURE)</li>
+<li>1: mature (MATURE)</li>
+<li>2: immature (IMMATURE)</li>
+</ul>
+</section>
+</section>
+<section id="data-flags" class="level3">
+<h3 class="anchored" data-anchor-id="data-flags">Data flags</h3>
+<section id="basic-data-types" class="level4">
+<h4 class="anchored" data-anchor-id="basic-data-types">Basic data types</h4>
+<ul>
+<li>1: biomass (BIOMASS)</li>
+<li>2: abundance (ABUNDANCE)</li>
+</ul>
+</section>
+<section id="catch-data-type-flags" class="level4">
+<h4 class="anchored" data-anchor-id="catch-data-type-flags">Catch data type flags</h4>
+<ul>
+<li>0: total catch (TOTALCATCH)</li>
+<li>1: retaied catch (RETAINED)</li>
+<li>2: discarded catch (DISCARDED)</li>
+</ul>
+</section>
+<section id="growth-data-type-flags" class="level4">
+<h4 class="anchored" data-anchor-id="growth-data-type-flags">Growth data type flags</h4>
+<ul>
+<li>0: no growth data (NOGROWTH_DATA)</li>
+<li>1: growth increment data (GROWTHINC_DATA)</li>
+<li>2: data for a growth clsas (??) (GROWTHCLASS_DATA)</li>
+<li>3: values for a growth class (??) (GROWTHCLASS_VALS)</li>
+</ul>
+</section>
+</section>
+</section>
+<section id="ctl-file-options-and-flags" class="level2">
+<h2 class="anchored" data-anchor-id="ctl-file-options-and-flags">ctl file options and flags</h2>
+<section id="prior-types" class="level3">
+<h3 class="anchored" data-anchor-id="prior-types">Prior types</h3>
+<ul>
+<li>0: Uniform - parameters are the range of the uniform prior</li>
+<li>1: Normal - parameters are the mean and sd</li>
+<li>2: Lognormal - parameters are the mean and sd of the log</li>
+<li>3: Beta - parameters are the two beta parameters [see dbeta]</li>
+<li>4: Gamma - parameters are the two gamma parameters [see dgamma]</li>
+</ul>
+</section>
+<section id="initial-n" class="level3">
+<h3 class="anchored" data-anchor-id="initial-n">Initial N</h3>
+<ul>
+<li>0: unfished equilibrium (UNFISHEDEQN)</li>
+<li>1: fished equilibrium (FISHEDEQN)</li>
+<li>2: freely-estimated parameters (FREEPARS)</li>
+<li>3: freely-estimated parameters (scaled) (FREEPARSSCALED)</li>
+<li>4: reference points (??) (REFPOINTS)</li>
+</ul>
+</section>
+<section id="allometry-length-weight-relationships" class="level3">
+<h3 class="anchored" data-anchor-id="allometry-length-weight-relationships">Allometry: Length-weight relationships</h3>
+<ul>
+<li>1: functional relationship (LW_RELATIONSHIP)</li>
+<li>2: vector of values (weights-at-sizes) (LW_VECTOR)</li>
+<li>3: matrix (rows: years; columns: weights-at-sizes) (LW_MATRIX)</li>
+</ul>
+</section>
+<section id="natural-mortality-m-flags" class="level3">
+<h3 class="anchored" data-anchor-id="natural-mortality-m-flags">Natural mortality (M) flags</h3>
+<ul>
+<li>0: constant M (M_CONSTANT)</li>
+<li>1: random (walk?) (M_RANDOM)</li>
+<li>2: cubic spline (M_CUBIC_SPLINE)</li>
+<li>3: blocked changes (M_BLOCKED_CHANGES)</li>
+<li>4: time blocks type 1 (M_TIME_BLOCKS1)</li>
+<li>5: time blocks type 3 (M_TIME_BLOCKS3)</li>
+<li>6: time blocks type 2 (M_TIME_BLOCKS2) [yes, out of order]</li>
+</ul>
+<section id="custom-m" class="level4">
+<h4 class="anchored" data-anchor-id="custom-m">Custom M</h4>
+<ul>
+<li>0: no custom M (NO_CUSTOM_M)</li>
+<li>1: w/ custom M (??) (WITH_CUSTOM_M)</li>
+</ul>
+</section>
+</section>
+<section id="growth-transition-types" class="level3">
+<h3 class="anchored" data-anchor-id="growth-transition-types">Growth transition types</h3>
+<section id="options-for-the-growth-matrix" class="level4">
+<h4 class="anchored" data-anchor-id="options-for-the-growth-matrix">Options for the growth matrix</h4>
+<ul>
+<li>1: Pre-specified growth transition matrix (requires molt probability)</li>
+<li>2: Pre-specified size transition matrix (molt probability is ignored)</li>
+<li>3: Growth increment is gamma distributed (requires molt probability)</li>
+<li>4: Post-molt size is gamma distributed (requires molt probability)</li>
+<li>5: Von Bert.: kappa varies among individuals (requires molt probability)</li>
+<li>6: Von Bert.: Linf varies among individuals (requires molt probability)</li>
+<li>7: Von Bert.: kappa and Linf varies among individuals (requires molt probability)</li>
+<li>8: Growth increment is normally distributed (requires molt probability)</li>
+</ul>
+</section>
+<section id="options-for-the-growth-increment-model-matrix" class="level4">
+<h4 class="anchored" data-anchor-id="options-for-the-growth-increment-model-matrix">Options for the growth increment model matrix</h4>
+<ul>
+<li>1: Linear
+<ul>
+<li>intercept</li>
+<li>slope</li>
+<li>ln-scale gamma distribution scale parameter</li>
+</ul></li>
+<li>2: Individual</li>
+<li>3: Individual (Same as 2)</li>
+<li>4: Power law for mean post-molt size
+<ul>
+<li>ln-scale intercept</li>
+<li>ln-scale slope</li>
+<li>ln-scale gamma distribution scale parameter</li>
+</ul></li>
+<li>5: Alternative power law for mean post-molt size.
+<ul>
+<li>reference (small) pre-molt size (constant: must have phase &lt; 0)</li>
+<li>mean post-molt size at small reference pre-molt size</li>
+<li>reference (large) pre-molt size (constant: must have phase &lt; 0)</li>
+<li>mean post-molt size at large reference pre-molt size</li>
+<li>ln-scale gamma distribution scale parameter</li>
+</ul></li>
+</ul>
+<section id="options-for-the-molt-probability-function" class="level5">
+<h5 class="anchored" data-anchor-id="options-for-the-molt-probability-function">Options for the molt probability function</h5>
+<ul>
+<li>0: Pre-specified (FIXED_PROB_MOLT)</li>
+<li>1: Constant at 1 (CONSTANT_PROB_MOLT)</li>
+<li>2: Logistic (LOGISTIC_PROB_MOLT)</li>
+<li>3: Individual (FREE_PROB_MOLT)</li>
+</ul>
+</section>
+<section id="options-for-the-mature-probability-function" class="level5">
+<h5 class="anchored" data-anchor-id="options-for-the-mature-probability-function">Options for the mature probability function</h5>
+<ul>
+<li>0: Pre-specified (FIXED_PROB_MATURE)</li>
+<li>1: Constant at 1 (CONSTANT_PROB_MATURE)</li>
+<li>2: Logistic (LOGISTIC_PROB_MATURE)</li>
+<li>3: Individual (FREE_PROB_MATURE)</li>
+</ul>
+</section>
+</section>
+</section>
+<section id="fishing-mortality-type-flags" class="level3">
+<h3 class="anchored" data-anchor-id="fishing-mortality-type-flags">Fishing mortality type flags</h3>
+<ul>
+<li>0: inatantaneous F (INSTANT_F)</li>
+<li>1: constinuous F (CONTINUOUS_F)</li>
+<li>2: ?? (EXPLOIT_F)</li>
+</ul>
+<section id="selectivity-and-retention-function-flags" class="level4">
+<h4 class="anchored" data-anchor-id="selectivity-and-retention-function-flags">Selectivity and retention function flags</h4>
+<ul>
+<li>0: Parametric selectivity (SELEX_PARAMETRIC)</li>
+<li>1: coefficients (SELEX_COEFFICIENTS)</li>
+<li>2: standaerd logistic (SELEX_STANLOGISTIC)
+<ul>
+<li>size-at-50% selected</li>
+<li>slope at 50% selected</li>
+</ul></li>
+<li>3: alternative logistic (SELEX_5095LOGISTIC)
+<ul>
+<li>size-at-50% selected</li>
+<li>size at 95% selected</li>
+</ul></li>
+<li>4: double normal (SELEX_DOUBLENORM)</li>
+<li>5: uniform with value 1 (SELEX_UNIFORM1)</li>
+<li>6: uniform with value 0 (SELEX_UNIFORM0)</li>
+<li>7: 4-parameter double normal (SELEX_DOUBLENORM4)</li>
+<li>8: declining logistic (SELEX_DECLLOGISTIC)</li>
+<li>9: cubic spline (SELEX_CUBIC_SPLINE)</li>
+<li>10: 1-paameter logistic (SELEX_ONE_PAR_LOGISTIC)</li>
+<li>11: pre-specified (SELEX_PRESPECIFIED)</li>
+<li>12: cubic spline w/ a floor (SELEX_CUBIC_SPLINE_FLOOR)</li>
+<li>13 stacked logistic (SELEX_STACKED_LOGISTIC)</li>
+</ul>
 
 
+</section>
+</section>
 </section>
 
 </main> <!-- /main -->
@@ -720,14 +801,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./q02c-model-ctl-file.html" class="pagination-link  aria-label=" model.ctl="" file"="">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">model.ctl file</span>
+      <a href="./q02d-model-prj-file.html" class="pagination-link  aria-label=" model.prj="" file"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">model.prj file</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./q03-GMACS-flags.html" class="pagination-link" aria-label="GMACS flags">
-        <span class="nav-page-text">GMACS flags</span> <i class="bi bi-arrow-right-short"></i>
-      </a>
   </div>
 </nav>
 </div> <!-- /content -->

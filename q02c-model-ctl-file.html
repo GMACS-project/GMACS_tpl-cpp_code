@@ -176,6 +176,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">model.prj file</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q03-GMACS-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">GMACS flags</span></a>
+  </div>
+</li>
     </ul>
     </div>
 </nav>
@@ -186,11 +192,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#general-ctl-file-parameter-specifications" id="toc-general-ctl-file-parameter-specifications" class="nav-link active" data-scroll-target="#general-ctl-file-parameter-specifications">General ctl file parameter specifications</a></li>
+  <li><a href="#general-ctl-file-parameter-specifications" id="toc-general-ctl-file-parameter-specifications" class="nav-link active" data-scroll-target="#general-ctl-file-parameter-specifications">General ctl file parameter specifications</a>
+  <ul class="collapse">
+  <li><a href="#basic-flags" id="toc-basic-flags" class="nav-link" data-scroll-target="#basic-flags">Basic flags</a></li>
+  <li><a href="#population-characteristics" id="toc-population-characteristics" class="nav-link" data-scroll-target="#population-characteristics">Population characteristics</a></li>
+  <li><a href="#data-flags" id="toc-data-flags" class="nav-link" data-scroll-target="#data-flags">Data flags</a></li>
+  </ul></li>
   <li><a href="#ctl-file-options-and-flags" id="toc-ctl-file-options-and-flags" class="nav-link" data-scroll-target="#ctl-file-options-and-flags">ctl file options and flags</a>
   <ul class="collapse">
   <li><a href="#prior-types" id="toc-prior-types" class="nav-link" data-scroll-target="#prior-types">Prior types</a></li>
+  <li><a href="#initial-n" id="toc-initial-n" class="nav-link" data-scroll-target="#initial-n">Initial N</a></li>
+  <li><a href="#allometry-length-weight-relationships" id="toc-allometry-length-weight-relationships" class="nav-link" data-scroll-target="#allometry-length-weight-relationships">Allometry: Length-weight relationships</a></li>
+  <li><a href="#natural-mortality-m-flags" id="toc-natural-mortality-m-flags" class="nav-link" data-scroll-target="#natural-mortality-m-flags">Natural mortality (M) flags</a></li>
   <li><a href="#growth-transition-types" id="toc-growth-transition-types" class="nav-link" data-scroll-target="#growth-transition-types">Growth transition types</a></li>
+  <li><a href="#fishing-mortality-type-flags" id="toc-fishing-mortality-type-flags" class="nav-link" data-scroll-target="#fishing-mortality-type-flags">Fishing mortality type flags</a></li>
   </ul></li>
   <li><a href="#sec-model-ctl-file" id="toc-sec-model-ctl-file" class="nav-link" data-scroll-target="#sec-model-ctl-file"><code>The model.ctl</code> file</a></li>
   </ul>
@@ -256,6 +271,67 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>RW_blk: Block number for random walks</li>
 <li>Sigma_RW: Sigma used for the random walk</li>
 </ul>
+<section id="basic-flags" class="level3">
+<h3 class="anchored" data-anchor-id="basic-flags">Basic flags</h3>
+<ul>
+<li>0: no (NO)</li>
+<li>1: yes (YES)</li>
+</ul>
+</section>
+<section id="population-characteristics" class="level3">
+<h3 class="anchored" data-anchor-id="population-characteristics">Population characteristics</h3>
+<section id="sex-flags" class="level4">
+<h4 class="anchored" data-anchor-id="sex-flags">Sex flags</h4>
+<ul>
+<li>0: undetermined or single sex (UNDET_SEX)</li>
+<li>1: male (MALES)</li>
+<li>2: female (FEMALES)</li>
+</ul>
+</section>
+<section id="shell-condition-flags" class="level4">
+<h4 class="anchored" data-anchor-id="shell-condition-flags">Shell condition flags</h4>
+<ul>
+<li>0: undetermined (UNDET_SHELL)</li>
+<li>1: new shell (NEW_SHELL)</li>
+<li>2: old shell (OLD_SHELL)</li>
+</ul>
+</section>
+<section id="maturity-state-flags" class="level4">
+<h4 class="anchored" data-anchor-id="maturity-state-flags">Maturity state flags</h4>
+<ul>
+<li>0: undetermined (UNDET_MATURE)</li>
+<li>1: mature (MATURE)</li>
+<li>2: immature (IMMATURE)</li>
+</ul>
+</section>
+</section>
+<section id="data-flags" class="level3">
+<h3 class="anchored" data-anchor-id="data-flags">Data flags</h3>
+<section id="basic-data-types" class="level4">
+<h4 class="anchored" data-anchor-id="basic-data-types">Basic data types</h4>
+<ul>
+<li>1: biomass (BIOMASS)</li>
+<li>2: abundance (ABUNDANCE)</li>
+</ul>
+</section>
+<section id="catch-data-type-flags" class="level4">
+<h4 class="anchored" data-anchor-id="catch-data-type-flags">Catch data type flags</h4>
+<ul>
+<li>0: total catch (TOTALCATCH)</li>
+<li>1: retaied catch (RETAINED)</li>
+<li>2: discarded catch (DISCARDED)</li>
+</ul>
+</section>
+<section id="growth-data-type-flags" class="level4">
+<h4 class="anchored" data-anchor-id="growth-data-type-flags">Growth data type flags</h4>
+<ul>
+<li>0: no growth data (NOGROWTH_DATA)</li>
+<li>1: growth increment data (GROWTHINC_DATA)</li>
+<li>2: data for a growth clsas (??) (GROWTHCLASS_DATA)</li>
+<li>3: values for a growth class (??) (GROWTHCLASS_VALS) #define GROWTHCLASS_VALS 3</li>
+</ul>
+</section>
+</section>
 </section>
 <section id="ctl-file-options-and-flags" class="level2">
 <h2 class="anchored" data-anchor-id="ctl-file-options-and-flags">ctl file options and flags</h2>
@@ -268,6 +344,43 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>3: Beta - parameters are the two beta parameters [see dbeta]</li>
 <li>4: Gamma - parameters are the two gamma parameters [see dgamma]</li>
 </ul>
+</section>
+<section id="initial-n" class="level3">
+<h3 class="anchored" data-anchor-id="initial-n">Initial N</h3>
+<ul>
+<li>0: unfished equilibrium (UNFISHEDEQN)</li>
+<li>1: fished equilibrium (FISHEDEQN)</li>
+<li>2: freely-estimated parameters (FREEPARS)</li>
+<li>3: freely-estimated parameters (scaled) (FREEPARSSCALED)</li>
+<li>4: reference points (??) (REFPOINTS)</li>
+</ul>
+</section>
+<section id="allometry-length-weight-relationships" class="level3">
+<h3 class="anchored" data-anchor-id="allometry-length-weight-relationships">Allometry: Length-weight relationships</h3>
+<ul>
+<li>1: functional relationship (LW_RELATIONSHIP)</li>
+<li>2: vector of values (LW_VECTOR)</li>
+<li>3: matrix (rows: years; columns: sizes) (LW_MATRIX)</li>
+</ul>
+</section>
+<section id="natural-mortality-m-flags" class="level3">
+<h3 class="anchored" data-anchor-id="natural-mortality-m-flags">Natural mortality (M) flags</h3>
+<ul>
+<li>0: constant M (M_CONSTANT)</li>
+<li>1: random (walk?) (M_RANDOM)</li>
+<li>2: cubic spline (M_CUBIC_SPLINE)</li>
+<li>3: blocked changes (M_BLOCKED_CHANGES)</li>
+<li>4: time blocks type 1 (M_TIME_BLOCKS1)</li>
+<li>5: time blocks type 3 (M_TIME_BLOCKS3)</li>
+<li>6: time blocks type 2 (M_TIME_BLOCKS2) [yes, out of order]</li>
+</ul>
+<section id="custom-m" class="level4">
+<h4 class="anchored" data-anchor-id="custom-m">Custom M</h4>
+<ul>
+<li>0: no custom M (NO_CUSTOM_M)</li>
+<li>1: w/ custom M (??) (WITH_CUSTOM_M)</li>
+</ul>
+</section>
 </section>
 <section id="growth-transition-types" class="level3">
 <h3 class="anchored" data-anchor-id="growth-transition-types">Growth transition types</h3>
@@ -313,21 +426,56 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="options-for-the-molt-probability-function" class="level5">
 <h5 class="anchored" data-anchor-id="options-for-the-molt-probability-function">Options for the molt probability function</h5>
 <ul>
-<li>0: Pre-specified</li>
-<li>1: Constant at 1</li>
-<li>2: Logistic</li>
-<li>3: Individual</li>
+<li>0: Pre-specified (FIXED_PROB_MOLT)</li>
+<li>1: Constant at 1 (CONSTANT_PROB_MOLT)</li>
+<li>2: Logistic (LOGISTIC_PROB_MOLT)</li>
+<li>3: Individual (FREE_PROB_MOLT)</li>
 </ul>
 </section>
 <section id="options-for-the-mature-probability-function" class="level5">
 <h5 class="anchored" data-anchor-id="options-for-the-mature-probability-function">Options for the mature probability function</h5>
 <ul>
-<li>0: Pre-specified</li>
-<li>1: Constant at 1</li>
-<li>2: Logistic</li>
-<li>3: Individual</li>
+<li>0: Pre-specified (FIXED_PROB_MATURE)</li>
+<li>1: Constant at 1 (CONSTANT_PROB_MATURE)</li>
+<li>2: Logistic (LOGISTIC_PROB_MATURE)</li>
+<li>3: Individual (FREE_PROB_MATURE)</li>
 </ul>
 </section>
+</section>
+</section>
+<section id="fishing-mortality-type-flags" class="level3">
+<h3 class="anchored" data-anchor-id="fishing-mortality-type-flags">Fishing mortality type flags</h3>
+<ul>
+<li>0: inatantaneous F (INSTANT_F)</li>
+<li>1: constinuous F (CONTINUOUS_F)</li>
+<li>2: ?? (EXPLOIT_F)</li>
+</ul>
+<section id="selectivity-and-retention-function-flags" class="level4">
+<h4 class="anchored" data-anchor-id="selectivity-and-retention-function-flags">Selectivity and retention function flags</h4>
+<ul>
+<li>0: Parametric selectivity (SELEX_PARAMETRIC)</li>
+<li>1: coefficients (SELEX_COEFFICIENTS)</li>
+<li>2: standaerd logistic (SELEX_STANLOGISTIC)
+<ul>
+<li>size-at-50% selected</li>
+<li>slope at 50% selected</li>
+</ul></li>
+<li>3: alternative logistic (SELEX_5095LOGISTIC)
+<ul>
+<li>size-at-50% selected</li>
+<li>size at 95% selected</li>
+</ul></li>
+<li>4: double normal (SELEX_DOUBLENORM)</li>
+<li>5: uniform with value 1 (SELEX_UNIFORM1)</li>
+<li>6: uniform with value 0 (SELEX_UNIFORM0)</li>
+<li>7: 4-parameter double normal (SELEX_DOUBLENORM4)</li>
+<li>8: declining logistic (SELEX_DECLLOGISTIC)</li>
+<li>9: cubic spline (SELEX_CUBIC_SPLINE)</li>
+<li>10: 1-paameter logistic (SELEX_ONE_PAR_LOGISTIC)</li>
+<li>11: pre-specified (SELEX_PRESPECIFIED)</li>
+<li>12: cubic spline w/ a floor (SELEX_CUBIC_SPLINE_FLOOR)</li>
+<li>13 stacked logistic (SELEX_STACKED_LOGISTIC)</li>
+</ul>
 </section>
 </section>
 </section>
