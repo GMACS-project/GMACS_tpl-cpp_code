@@ -6,7 +6,7 @@ title: "model.ctl file"
   * Initial: Initial value for the parameter (must lie between lower and upper)
   * Lower & Upper: Range for the parameter
   * Prior type
-    - 0: Uniform   - parameters are the range of the uniform prior"  << endl;
+    - 0: Uniform   - parameters are the range of the uniform prior
     - 1: Normal    - parameters are the mean and sd
     - 2: Lognormal - parameters are the mean and sd of the log
     - 3: Beta      - parameters are the two beta parameters [see dbeta]

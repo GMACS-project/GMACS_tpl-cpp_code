@@ -2074,9 +2074,16 @@ DATA_SECTION
     gmacs_ctl << "##  RW: 0 for no random walk changes; 1 otherwise" << endl;
     gmacs_ctl << "##  RW_blk: Block number for random walks" << endl;
     gmacs_ctl << "##  Sigma_RW: Sigma used for the random walk" << endl;
-    gmacs_ctl << endl;
     cout<<"assigning growth parameters"<<endl;
     for (int ig=1;ig<=3*nsex;ig++){
+      if (ig<=nsex)  {
+        gmacs_ctl << endl << "### Parameter inputs for growth transitions" << endl;
+      } else if (ig<=2*nsex) {
+        gmacs_ctl << endl << "### Parameter inputs for probability of molting" << endl;
+      } else if (ig<=3*nsex) {
+        gmacs_ctl << endl << "### Parameter inputs for probabilit of maturing" << endl;
+      }
+  
       if (nparGs(ig) > 0) gmacs_ctl << "# Inputs for sex * type " << ig << endl;
       if (nparGs(ig) > 0) gmacs_ctl << "# MAIN PARS: Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
       n_Gpar2 = n_Gpar;
@@ -2095,46 +2102,54 @@ DATA_SECTION
         iblock = 1;
         anystring = " missing ";
         for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+"_(ln-scale)";
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha_base_" +sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha0_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta_base_"  +sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta0_base_" +sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
-        cout<< ipar << " " << bUseGrowthIncrementModel2(ig) << " " << anystring << Gpar_control(n_Gpar) <<endl;
-
-        if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)){
-          if (ipar <=nclass){
-            anystring = "Molt_increment_base_"+sexes(h)+"_class_"+str(ipar);
-          } else { 
-            anystring = "Gscale_base_"+sexes(h);
+        if (ig <= nsex){
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+"_(ln-scale)";
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha_base_" +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha0_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta_base_"  +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta0_base_" +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
+          cout<< ipar << " " << bUseGrowthIncrementModel2(ig) << " " << anystring << Gpar_control(n_Gpar) <<endl;
+  
+          if ((bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)){
+            if (ipar <=nclass){
+              anystring = "Molt_increment_base_"+sexes(h)+"_class_"+str(ipar);
+            } else { 
+              anystring = "Gscale_base_"+sexes(h);
+            }
+            cout<<"    "<<anystring<<endl;
           }
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==1)     anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==2)     anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==3)     anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==1)  anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==2)  anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==3)  anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
+          cout<<"    "<<anystring<<endl;
+        }// ig <= nsex
+  
+        if (ig>nsex && ig <= 2*nsex){
+          if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)                anystring = "Molt_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
           cout<<"    "<<anystring<<endl;
         }
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==1)     anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==2)     anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==3)     anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==1)  anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==2)  anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==3)  anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
-        cout<<"    "<<anystring<<endl;
-        if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)                anystring = "Molt_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-        cout<<"    "<<anystring<<endl;
-        if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)                anystring = "Mature_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-        cout<<"    "<<anystring<<endl;
+  
+        if (ig>2*nsex && ig <= 3*nsex){
+          if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)                anystring = "Mature_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+          cout<<"    "<<anystring<<endl;
+        }
         cout<<"printing Gpar_control"<<endl;
         gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
         gmacs_ctl << setw(10) << setfixed() << int(Gpar_control(n_Gpar,4)) << " ";
@@ -2145,7 +2160,8 @@ DATA_SECTION
         parname1(PPnt+1) = anystring;
         PPnt += 1;
       }
-      if (nparGs(ig) > 0)  gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase Reltve " << endl;
+
+      gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase Reltve " << endl;
       for (int iyr=syr;iyr<=nyrRetro;iyr++){
         for (int ipar=1; ipar<=nparGs(ig);ipar++)  GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar2+ipar;
       }
@@ -2161,9 +2177,9 @@ DATA_SECTION
         float SigmaRW = Gpar_control(jpar,14);
         if (IgBlock !=0){
           // Environmental link
-          if ((IgEnvLink!=0) || (IgRW!=0)) { cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; exit(1); } 
+          if ((IgEnvLink!=0) || (IgRW!=0))      { cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; exit(1); } 
           if ((IgBlock<0 )&& (IgBlock>nblocks)) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
-          if ((IgBlockFn<0) && (IgBlockFn>1)) { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
+          if ((IgBlockFn<0) && (IgBlockFn>1))   { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
           for (int kpar=1;kpar<=blocks(IgBlock);kpar++) {
             iblock = kpar + 1;
             n_Gpar += 1;
@@ -2174,40 +2190,54 @@ DATA_SECTION
             for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++){
               GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;
             }
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+" (ln-scale)";
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+" (ln-scale)";
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha_base_" +sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha0_base_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta_base_"  +sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta0_base_" +sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
+  
+            if (ig <= nsex){
+              if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+" (ln-scale)";
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+" (ln-scale)";
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha_base_" +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha0_base_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta_base_"  +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta0_base_" +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
 
-            if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
-            if (ipar <=nclass){
-              anystring = "Molt_increment_"+sexes(h)+"_class_"+str(ipar);
-            } else {
-              anystring = "Gscale_"+sexes(h);
+              if (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2){
+                if (ipar <=nclass){
+                  anystring = "Molt_increment_"+sexes(h)+"_class_"+str(ipar);
+                } else {
+                  anystring = "Gscale_"+sexes(h);
+                }
+              }
             }
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==1)     anystring = "Linf_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==2)     anystring = "Kappa_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==3)     anystring = "SigmaKappa_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==1)  anystring = "Linf_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==2)  anystring = "Kappa_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==3)  anystring = "SigmaKappa_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h);
-            if (ig <= nsex && bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h);
-            if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h);
-            if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h);
-            if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)                anystring = "Molt_probability_"+sexes(h)+"_class_"+str(ipar);
-            if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h);
-            if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h);
-            if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)                anystring = "Mature_probability_"+sexes(h)+"_class_"+str(ipar);
+  
+            if (ig <= nsex){
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==1)     anystring = "Linf_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==2)     anystring = "Kappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==3)     anystring = "SigmaKappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==1)  anystring = "Linf_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==2)  anystring = "Kappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==3)  anystring = "SigmaKappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h);
+            }
+  
+            if ((ig>nsex) && (ig <= 2*nsex)){ // probability of molting
+              if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h);
+              if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h);
+              if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)                anystring = "Molt_probability_"+sexes(h)+"_class_"+str(ipar);
+            }
+
+            if ((ig>2*nsex) && (ig <= 3*nsex)){ // probability of maturing
+              if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h);
+              if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h);
+              if (bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)                anystring = "Mature_probability_"+sexes(h)+"_class_"+str(ipar);
+            }
+  
             anystring = anystring+"_block_group_"+str(IgBlock)+"_block_"+str(kpar);
             gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
             gmacs_ctl << setw(10) << setfixed() << int(Gpar_control(n_Gpar,4)) << " ";
@@ -8320,10 +8350,10 @@ FUNCTION growth_likelihood
   if ( verbose >= 3 ) cout << "Ok after increment likelihood 2 ..." << endl;
 
   // 5) Likelihood for growth increment data #1
-  if (GrowthObsType==GROWTHINC_DATA){
+  if (GrowthObsType==GROWTHINC_DATA){  //TODO: is thhis correct? why only (1)? why only a "dnorm" likelihood??
     if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL || 
           bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL || 
-          bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL) {
+          bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODELALT) {
       // Predictions are for matrix 1
       dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
       nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
