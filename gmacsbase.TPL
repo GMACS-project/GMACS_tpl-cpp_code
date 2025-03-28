@@ -95,7 +95,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.21; ** AEP & WTS **; Compiled 2025-02-15");
+ !! TheHeader = adstring("## GMACS Version 2.20.22; ** AEP & WTS **; Compiled 2025-03-30");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1201,7 +1201,7 @@ DATA_SECTION
   init_int nGrowthObs;                                     ///> Number of data points
   int NGrowthInputs;
   !!if (GrowthObsType==GROWTHINC_DATA) NGrowthInputs = 4; else NGrowthInputs = 8;
-  !!if(GrowthObsType==GROWTHINC_DATA) gmacs_data << "## Size increments" << endl;
+  !!if(GrowthObsType==GROWTHINC_DATA)   gmacs_data << "## Size increments" << endl;
   !!if(GrowthObsType==GROWTHCLASS_DATA) gmacs_data << "## size-at-release, size-at-recaptures, and time-at-liberty" << endl;
   !!if(GrowthObsType==GROWTHCLASS_VALS) gmacs_data << "## size-class-at-release, sex, size-class-at-recapture, and time-at-liberty fleet recapture_year number" << endl;
   init_matrix dGrowthData(1,nGrowthObs,1,NGrowthInputs);
@@ -1224,8 +1224,7 @@ DATA_SECTION
   int MaxGrowTimeLib;
   !! MaxGrowTimeLib = 0;
  LOC_CALCS
-  if (GrowthObsType==GROWTHINC_DATA)
-   {
+  if (GrowthObsType==GROWTHINC_DATA){
     dPreMoltSize = column(dGrowthData,1);
     iMoltIncSex  = ivector(column(dGrowthData,2));
     dMoltInc     = column(dGrowthData,3);
@@ -1244,19 +1243,16 @@ DATA_SECTION
     xx.initialize();
 
     // MLE estimates for alpha and beta for the linear growth increment model.
-    if ( nGrowthObs > 0 )
-     {
-      for ( int i = 1; i <= nGrowthObs; i++ )
-       {
+    if ( nGrowthObs > 0 ){
+      for ( int i = 1; i <= nGrowthObs; i++ ){
         int h = iMoltIncSex(i);
         nh(h)++;
         xybar(h) += dPreMoltSize(i) * dMoltInc(i);
         xbar(h)  += dPreMoltSize(i);
         ybar(h)  += dMoltInc(i);
         xx(h)    += square(dPreMoltSize(i));
-       }
-      for ( h = 1; h <= nsex; h++ )
-       {
+      }
+      for ( h = 1; h <= nsex; h++ ){
         xybar(h) /= nh(h);
         xbar(h) /= nh(h);
         ybar(h) /= nh(h);
@@ -1265,30 +1261,28 @@ DATA_SECTION
         double alp = ybar(h) - slp*xbar(h);
         mle_alpha(h) = alp;
         mle_beta(h) = -slp;
-       }
-     }
-   }
-  if (GrowthObsType==GROWTHCLASS_DATA)
-   {
+      }
+    }
+  }
+  if (GrowthObsType==GROWTHCLASS_DATA){
     int iclass;
     int h2;
-    iMoltIncSex  = ivector(column(dGrowthData,2));
+    iMoltIncSex     = ivector(column(dGrowthData,2));
     iMoltTimeAtLib  = ivector(column(dGrowthData,4));
-    iMoltTrans = ivector(column(dGrowthData,5));
+    iMoltTrans      = ivector(column(dGrowthData,5));
     iMoltFleetRecap = ivector(column(dGrowthData,6));
-    iMoltYearRecap = ivector(column(dGrowthData,7));
-    iMoltSampSize = ivector(column(dGrowthData,8));
-    for (int i = 1; i <= nGrowthObs; i++)
-     {
+    iMoltYearRecap  = ivector(column(dGrowthData,7));
+    iMoltSampSize   = ivector(column(dGrowthData,8));
+    for (int i = 1; i <= nGrowthObs; i++){
       h2 = iMoltIncSex(i);
       iclass = -1;
       for (int j = 1; j <=nclass; j++)
-       if (dGrowthData(i,1) >= size_breaks(j) &&  dGrowthData(i,1) < size_breaks(j+1)) iclass = j;
+        if (dGrowthData(i,1) >= size_breaks(j) &&  dGrowthData(i,1) < size_breaks(j+1)) iclass = j;
       iMoltInitSizeClass(i) = iclass;
       if (iclass == -1) { cout << "Error: release size out of range; row" << i << endl; exit(1); }
       iclass = -1;
       for (int j = 1; j <=nclass; j++)
-       if (dGrowthData(i,3) >= size_breaks(j) &&  dGrowthData(i,3) < size_breaks(j+1)) iclass = j;
+        if (dGrowthData(i,3) >= size_breaks(j) &&  dGrowthData(i,3) < size_breaks(j+1)) iclass = j;
       iMoltEndSizeClass(i) = iclass;
       if (iclass == -1) { cout << "Error: recapture size out of range; row " << i << endl; exit(1); }
       if (iMoltEndSizeClass(i) < iMoltInitSizeClass(i)) { cout << "Error: recapture size less than recapture size; row " << i << endl; exit(1); }
@@ -1296,9 +1290,8 @@ DATA_SECTION
       if (MaxGrowTimeLibSex(h2) < iMoltTimeAtLib(i)) MaxGrowTimeLibSex(h2) = iMoltTimeAtLib(i);
       if (MaxGrowTimeLib < iMoltTimeAtLib(i)) MaxGrowTimeLib = iMoltTimeAtLib(i);
      }
-   }
-  if (GrowthObsType==GROWTHCLASS_VALS)
-   {
+  }
+  if (GrowthObsType==GROWTHCLASS_VALS){
     int iclass;
     int h2;
     iMoltIncSex  = ivector(column(dGrowthData,2));
@@ -1307,8 +1300,7 @@ DATA_SECTION
     iMoltFleetRecap = ivector(column(dGrowthData,6));
     iMoltYearRecap = ivector(column(dGrowthData,7));
     iMoltSampSize = ivector(column(dGrowthData,8));
-    for (int i = 1; i <= nGrowthObs; i++)
-     {
+    for (int i = 1; i <= nGrowthObs; i++){
       h2 = iMoltIncSex(i);
       iMoltInitSizeClass(i) = dGrowthData(i,1);
       if (iMoltInitSizeClass(i) < 1 || iMoltInitSizeClass(i) > nclass) { cout << "Error: release size out of range; row" << i << endl; exit(1); }
@@ -1317,18 +1309,18 @@ DATA_SECTION
 
       if (MaxGrowTimeLibSex(h2) < iMoltTimeAtLib(i)) MaxGrowTimeLibSex(h2) = iMoltTimeAtLib(i);
       if (MaxGrowTimeLib < iMoltTimeAtLib(i)) MaxGrowTimeLib = iMoltTimeAtLib(i);
-     }
-   }
+    }
+  }
   WRITEDAT(GrowthObsType); WRITEDAT(nGrowthObs);
   if(GrowthObsType==GROWTHINC_DATA) gmacs_data << "# Pre-molt_size Sex size-increment CV" << endl;
   if(GrowthObsType==GROWTHCLASS_DATA) gmacs_data << "# Size-at-release Sex Size-at-recapture Time-at-liberty fleet-at-recapture year-at-recapture sample_size" << endl;
   gmacs_data << dGrowthData << endl;
   if (GrowthObsType==GROWTHINC_DATA)
-   {  ECHO(dPreMoltSize); ECHO(iMoltIncSex); ECHO(dMoltInc); ECHO(dMoltIncCV); }
+    {  ECHO(dPreMoltSize); ECHO(iMoltIncSex); ECHO(dMoltInc); ECHO(dMoltIncCV); }
   if (GrowthObsType==GROWTHCLASS_DATA)
-   {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
+    {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
   if (GrowthObsType==GROWTHCLASS_VALS)
-   {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
+    {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
  END_CALCS
 
   // |--------------------|
@@ -1514,212 +1506,208 @@ DATA_SECTION
  
  LOC_CALCS
   {
-  rdv_syr             = int(model_controls(1));
-  if (rdv_syr == 0) rdv_syr = syr;                         ///> Default value for start year
-  if ( rdv_syr < syr )
-   {
-     cout << "Error: recruitment cannot be estimated before start year" << endl;//NOTE: could set phases to -1
-     exit(1);
-   }
-  model_controls(2) -= (nyr-nyrRetro);
-  rdv_eyr             = int(model_controls(2));
-  if ( rdv_eyr < rdv_syr )
-   {
-     cout << "Error: end recruitment year must be AFTER start recruitment year" << endl;
-     exit(1);
-   }
-  if ( rdv_eyr > nyr )
-   {
-     cout << "Error: recruitment cannot be estimated after end year" << endl;//NOTE: could set phases to -1
-     exit(1);
-   }
-  Term_molt           = int(model_controls(3));	
-  if (Term_molt==1 && nmature==1)
-   {
-    cout << "Error: terminal molt requires two maturity partitions" << endl;
-    exit(1);
-   }
-  rdv_phz             = int(model_controls(4));
-  if (nsex==1) rec_prop_phz = -1; else rec_prop_phz = int(model_controls(5));
-  init_sex_ratio = model_controls(6);
-  init_sex_ratio = -1.0*log((1.0-init_sex_ratio)/init_sex_ratio);
+    rdv_syr             = int(model_controls(1));
+    if (rdv_syr == 0) rdv_syr = syr;                         ///> Default value for start year
+    if ( rdv_syr < syr )
+    {
+      cout << "Error: recruitment cannot be estimated before start year" << endl;//NOTE: could set phases to -1
+      exit(1);
+    }
+    model_controls(2) -= (nyr-nyrRetro);
+    rdv_eyr             = int(model_controls(2));
+    if ( rdv_eyr < rdv_syr )
+    {
+      cout << "Error: end recruitment year must be AFTER start recruitment year" << endl;
+      exit(1);
+    }
+    if ( rdv_eyr > nyr )
+    {
+      cout << "Error: recruitment cannot be estimated after end year" << endl;//NOTE: could set phases to -1
+      exit(1);
+    }
+    Term_molt           = int(model_controls(3));	
+    if (Term_molt==1 && nmature==1)
+    {
+      cout << "Error: terminal molt requires two maturity partitions" << endl;
+      exit(1);
+    }
+    rdv_phz             = int(model_controls(4));
+    if (nsex==1) rec_prop_phz = -1; else rec_prop_phz = int(model_controls(5));
+    init_sex_ratio = model_controls(6);
+    init_sex_ratio = -1.0*log((1.0-init_sex_ratio)/init_sex_ratio);
 
-  bInitializeUnfished = int(model_controls(7));
-  Refclass            = int(model_controls(8));
-  spr_lambda          = model_controls(9);
-  nSRR_flag           = int(model_controls(10));
-  BRP_rec_sexR        = int(model_controls(11));
-  NyrEquil            = int(model_controls(12));
-  devParPhase         = int(model_controls(13));  
-  bias1               = int(model_controls(14));  
-  bias2               = int(model_controls(15));  
-  bias3               = int(model_controls(16));  
-  bias4               = int(model_controls(17));  
-  
-  for (int Iy=syr;Iy<=nyr;Iy++)
-   if (Iy <= bias1)
-    Rec_bias(Iy) = 0;
-   else
-    if (Iy <= bias2)
-     Rec_bias(Iy) = (float(Iy)-bias1)/(bias2-bias1);
-    else
-     if (Iy <= bias3)
-      Rec_bias(Iy) = 1.0;
-     else
-      if (Iy <= bias4)
-       Rec_bias(Iy) = 1.0-(float(Iy)-bias3)/(bias4-bias3);
-      else
-       Rec_bias(Iy) = 0;
-     
-  gmacs_ctl << endl << "##  ------------------------------------------------------------------------------------ ##" << endl;
-  gmacs_ctl << "##  OTHER  CONTROLS" << endl;
-  gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
-  gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(8)) << " # Reference size-class for initial conditons = 3" << endl;
-  gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(11)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(12)) << " # Years to compute equilibria" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(13)) << " # Phase for deviation parameters" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(14)) << " # First year of bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
-  gmacs_ctl << endl;
-  echoinput << endl << "# Extra controls" << endl;
-  echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
-  echoinput << model_controls(2) << " # Last year of recruitment estimation" << endl;
-  echoinput << model_controls(3) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
-  echoinput << model_controls(4) << " # Phase for recruitment estimation" << endl;
-  echoinput << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
-  echoinput << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-  echoinput << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  echoinput << model_controls(8) << " # Reference size-class for initial conditons = 3" << endl;
-  echoinput << model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  echoinput << model_controls(10) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  echoinput << model_controls(11) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  echoinput << model_controls(12) << " # Years to compute equilibria" << endl;
-  echoinput << model_controls(13) << " # Phase for deviation parameters" << endl;
-  echoinput << model_controls(14) << " # First year of bias-correction" << endl;
-  echoinput << model_controls(15) << " # First full bias-correction" << endl;
-  echoinput << model_controls(16) << " # Last full bias-correction" << endl;
-  echoinput << model_controls(17) << " # Last year of bias-correction" << endl;
-  echoinput << endl;
+    bInitializeUnfished = int(model_controls(7));
+    Refclass            = int(model_controls(8));
+    spr_lambda          = model_controls(9);
+    nSRR_flag           = int(model_controls(10));
+    BRP_rec_sexR        = int(model_controls(11));
+    NyrEquil            = int(model_controls(12));
+    devParPhase         = int(model_controls(13));  
+    bias1               = int(model_controls(14));  
+    bias2               = int(model_controls(15));  
+    bias3               = int(model_controls(16));  
+    bias4               = int(model_controls(17));  
+    
+    for (int Iy=syr;Iy<=nyr;Iy++){
+      if (Iy <= bias1){
+        Rec_bias(Iy) = 0;
+      } else if (Iy <= bias2) {
+        Rec_bias(Iy) = (float(Iy)-bias1)/(bias2-bias1);
+      } else if (Iy <= bias3) {
+        Rec_bias(Iy) = 1.0;
+      } else if (Iy <= bias4) {
+        Rec_bias(Iy) = 1.0-(float(Iy)-bias3)/(bias4-bias3);
+      } else {
+        Rec_bias(Iy) = 0;
+      }
+    }
+    gmacs_ctl << endl << "##  ------------------------------------------------------------------------------------ ##" << endl;
+    gmacs_ctl << "##  OTHER  CONTROLS" << endl;
+    gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
+    gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(8)) << " # Reference size-class for initial conditons = 3" << endl;
+    gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(11)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(12)) << " # Years to compute equilibria" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(13)) << " # Phase for deviation parameters" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(14)) << " # First year of bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
+    gmacs_ctl << endl;
+    echoinput << endl << "# Extra controls" << endl;
+    echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
+    echoinput << model_controls(2) << " # Last year of recruitment estimation" << endl;
+    echoinput << model_controls(3) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+    echoinput << model_controls(4) << " # Phase for recruitment estimation" << endl;
+    echoinput << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
+    echoinput << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
+    echoinput << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
+    echoinput << model_controls(8) << " # Reference size-class for initial conditons = 3" << endl;
+    echoinput << model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+    echoinput << model_controls(10) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+    echoinput << model_controls(11) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+    echoinput << model_controls(12) << " # Years to compute equilibria" << endl;
+    echoinput << model_controls(13) << " # Phase for deviation parameters" << endl;
+    echoinput << model_controls(14) << " # First year of bias-correction" << endl;
+    echoinput << model_controls(15) << " # First full bias-correction" << endl;
+    echoinput << model_controls(16) << " # Last full bias-correction" << endl;
+    echoinput << model_controls(17) << " # Last year of bias-correction" << endl;
+    echoinput << endl;
 
-  // Default number of parameters
-  ntheta = 3 + 2*nsex + 3;
-  
-  int Jpnt;
-  int Kpnt;
-  Jpnt = 1;
-  parname1(Jpnt) = "Log(R0)";
-  parname1(Jpnt+1) = "Log(Rinitial)";
-  parname1(Jpnt+2) = "Log(Rbar)";
-  parname1(Jpnt+3) = "Recruitment_ra-males";
-  parname1(Jpnt+4) = "Recruitment_rb-males";
-  Jpnt = Jpnt + 5;
-  if (nsex>1)
-   {
-    parname1(Jpnt) = "Recruitment_ra-females";
-    parname1(Jpnt+1) = "Recruitment_rb-females";
-    Jpnt += 2;
-   }
-  parname1(Jpnt) = "log(SigmaR)";
-  parname1(Jpnt+1) = "Steepness";
-  parname1(Jpnt+2) = "Rho";
-  Jpnt = Jpnt + 2;
-  PPnt = Jpnt;
+    // Default number of parameters
+    ntheta = 3 + 2*nsex + 3;
+    
+    int Jpnt;
+    int Kpnt;
+    Jpnt = 1;
+    parname1(Jpnt)   = "Log(R0)";
+    parname1(Jpnt+1) = "Log(Rinitial)";
+    parname1(Jpnt+2) = "Log(Rbar)";
+    parname1(Jpnt+3) = "Recruitment_ra-males";
+    parname1(Jpnt+4) = "Recruitment_rb-males";
+    Jpnt = Jpnt + 5;
+    if (nsex>1) {
+      parname1(Jpnt)  = "Recruitment_ra-females";
+      parname1(Jpnt+1) = "Recruitment_rb-females";
+      Jpnt += 2;
+    }
+    parname1(Jpnt)   = "log(SigmaR)";
+    parname1(Jpnt+1) = "Steepness";
+    parname1(Jpnt+2) = "Rho";
+    Jpnt = Jpnt + 2;
+    PPnt = Jpnt;
 
-  int nthetatest;
-  nthetatest = 0;
-  if (bInitializeUnfished == FISHEDEQN)      nthetatest = nfleet;
-  if (bInitializeUnfished == FREEPARS)       nthetatest = nclass*nsex*nmature*nshell;
-  if (bInitializeUnfished == FREEPARSSCALED) nthetatest = (nclass*nsex*nmature*nshell-1);
-  ntheta += nthetatest;
-  cout << "Expecting " << ntheta << " theta parameters" << endl;
-  gmacs_ctl << "# Expecting " << ntheta << " theta parameters" << endl;
-  echoinput << "Expecting " << ntheta<< " theta parameters" << endl;
-  echoinput << "Thetas" << endl;
-  echoinput << 3 << " for log(R0), log(Rini), and log(Rbar)" << endl;
-  echoinput << 2*nsex << " for the recruitment distribution parameters" << endl;
-  echoinput << 3 << " for log(sigmaR), steepness and recruitment autocorrelation" << endl;
-  echoinput << nthetatest << " for the parameters to define the initial size-structure" << endl;
-  echoinput << endl;
-  
-  // Estimate initial numbers as absolute
-  if ( bInitializeUnfished == FREEPARS )
-   {
-    int Ipnt = 0;
-    for ( int h = 1; h <= nsex; h++ )
-     for ( int m = 1; m <= nmature; m++ )
-      for ( int o = 1; o <= nshell; o++ )
-       {
-        int Ihmo = pntr_hmo(h,m,o);
-        for ( int l = 1; l <= nclass; l++ )
-         {
-          Ipnt += 1;
-          anystring = "Initial_logN_for_sex_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
-          parname1(Jpnt+Ipnt) = anystring;
-         }
-       }
-     PPnt += Ipnt;
-   }
-   
-  // Estimate initial numbers as logistic offsest
-  if ( bInitializeUnfished == FREEPARSSCALED )
-   {
-    int Ipnt = 0; Kpnt = 0;
-    for ( int h = 1; h <= nsex; h++ )
-     for ( int m = 1; m <= nmature; m++ )
-      for ( int o = 1; o <= nshell; o++ )
-       {
-        int Ihmo = pntr_hmo(h,m,o);
-        for ( int l = 1; l <= nclass; l++ )
-         {
-          if (Kpnt!=Refclass-1)
-           { 
-            Ipnt += 1;
-            anystring = "Scaled_logN_for_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
-            parname1(Jpnt+Ipnt) = anystring;
-           }
-          Kpnt += 1; 
-         }  
-       }
-    PPnt += Ipnt;
-   }
+    int nthetatest;
+    nthetatest = 0;
+    if (bInitializeUnfished == FISHEDEQN)      nthetatest = nfleet;
+    if (bInitializeUnfished == FREEPARS)       nthetatest = nclass*nsex*nmature*nshell;
+    if (bInitializeUnfished == FREEPARSSCALED) nthetatest = (nclass*nsex*nmature*nshell-1);
+    ntheta += nthetatest;
+    cout      << "Expecting "   << ntheta << " theta parameters" << endl;
+    gmacs_ctl << "# Expecting " << ntheta << " theta parameters" << endl;
+    echoinput << "Expecting "   << ntheta << " theta parameters" << endl;
+    echoinput << "Thetas" << endl;
+    echoinput << 3          << " for log(R0), log(Rini), and log(Rbar)" << endl;
+    echoinput << 2*nsex     << " for the recruitment distribution parameters" << endl;
+    echoinput << 3          << " for log(sigmaR), steepness and recruitment autocorrelation" << endl;
+    echoinput << nthetatest << " for the parameters to define the initial size-structure" << endl;
+    echoinput << endl;
+    
+    // Estimate initial numbers as absolute
+    if ( bInitializeUnfished == FREEPARS ){
+      int Ipnt = 0;
+      for ( int h = 1; h <= nsex; h++ ){
+        for ( int m = 1; m <= nmature; m++ ){
+          for ( int o = 1; o <= nshell; o++ ){
+            int Ihmo = pntr_hmo(h,m,o);
+            for ( int l = 1; l <= nclass; l++ ) {
+              Ipnt += 1;
+              anystring = "Initial_logN_for_sex_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
+              parname1(Jpnt+Ipnt) = anystring;
+            }// - l
+          }// - o
+        }// - m
+      }// - h
+      PPnt += Ipnt;
+    }// - bInitializeUnfished == FREEPARS
+    
+    // Estimate initial numbers as logistic offsest
+    if ( bInitializeUnfished == FREEPARSSCALED ){
+      int Ipnt = 0; Kpnt = 0;
+      for ( int h = 1; h <= nsex; h++ ) {
+        for ( int m = 1; m <= nmature; m++ ) {
+          for ( int o = 1; o <= nshell; o++ ) {
+            int Ihmo = pntr_hmo(h,m,o);
+            for ( int l = 1; l <= nclass; l++ ) {
+              if (Kpnt!=Refclass-1) { 
+                Ipnt += 1;
+                anystring = "Scaled_logN_for_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
+                parname1(Jpnt+Ipnt) = anystring;
+              }
+              Kpnt += 1; 
+            } // - l loop
+          } // - o loop
+        } // - m loop
+      } // - h loop
+      PPnt += Ipnt;
+    } // - bInitializeUnfished == FREEPARSSCALED
   }
  END_CALCS
 
 
-  !! cout << " * Key parameter controls" << endl;
-  !! ECHOSTR(" * Key parameter controls");
   init_matrix theta_control(1,ntheta,1,7);                 ///> The specifications for the controls
-  !! gmacs_ctl << "# Core parameters" << endl;
-  !! gmacs_ctl << "## Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
-  !! gmacs_ctl << "## Lower & Upper: Range for the parameter" << endl;
-  !! gmacs_ctl << "## Phase: Set equal to a negative number not to estimate" << endl;
-  !! gmacs_ctl << "## Prior type:"  << endl;
-  !! gmacs_ctl << "## 0: Uniform   - parameters are the range of the uniform prior"  << endl;
-  !! gmacs_ctl << "## 1: Normal    - parameters are the mean and sd" << endl;
-  !! gmacs_ctl << "## 2: Lognormal - parameters are the mean and sd of the log" << endl;
-  !! gmacs_ctl << "## 3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
-  !! gmacs_ctl << "## 4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
-  !! gmacs_ctl << "# Initial_value    Lower_bound    Upper_bound Phase Prior_type        Prior_1        Prior_2" << endl;
-  !! for (int i=1;i<=ntheta;i++) {
-  !!    gmacs_ctl << setw(15) << setprecision(8) <<  setfixed() << theta_control(i,1) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,2) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,3) << " ";
-  !!    gmacs_ctl << setw(5) << setfixed() << (int) theta_control(i,4) << " ";
-  !!    gmacs_ctl << setw(10) << setfixed() << (int) theta_control(i,5) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,6) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,7) << " # " << parname1(i) << endl;
-  !! }
+ LOC_CALCS
+  cout << " * Key parameter controls" << endl;
+  ECHOSTR(" * Key parameter controls");
+  gmacs_ctl << "# Core parameters" << endl;
+  gmacs_ctl << "## Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
+  gmacs_ctl << "## Lower & Upper: Range for the parameter" << endl;
+  gmacs_ctl << "## Phase: Set equal to a negative number not to estimate" << endl;
+  gmacs_ctl << "## Prior type:"  << endl;
+  gmacs_ctl << "## 0: Uniform   - parameters are the range of the uniform prior"  << endl;
+  gmacs_ctl << "## 1: Normal    - parameters are the mean and sd" << endl;
+  gmacs_ctl << "## 2: Lognormal - parameters are the mean and sd of the log" << endl;
+  gmacs_ctl << "## 3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
+  gmacs_ctl << "## 4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
+  gmacs_ctl << "# Initial_value    Lower_bound    Upper_bound Phase Prior_type        Prior_1        Prior_2" << endl;
+  for (int i=1;i<=ntheta;i++) {
+     gmacs_ctl << setw(15) << setprecision(8) <<  setfixed() << theta_control(i,1) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,2) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,3) << " ";
+     gmacs_ctl << setw(5) << setfixed() << (int) theta_control(i,4) << " ";
+     gmacs_ctl << setw(10) << setfixed() << (int) theta_control(i,5) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,6) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,7) << " # " << parname1(i) << endl;
+  }
+ END_CALCS
   vector theta_ival(1,ntheta);
   vector theta_lb(1,ntheta);
   vector theta_ub(1,ntheta);
@@ -6094,10 +6082,11 @@ FUNCTION calc_molting_probability
 
   /**
    * @brief Compute growth increments
-   * @details Presently based on liner form
+   * @details Presently based on linear form
    *
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
    * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
+   * @param igrow ??
    *
    * @return dvar_vector of predicted growth increments
   **/
@@ -6123,13 +6112,13 @@ FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ive
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
   /**
-   * @brief Molt increment as a (linear or power law) function of pre-molt size.
+   * @brief Calculate mean molt increment as a (linear or power law) function of pre-molt size.
    *
    * TODO: Option for empirical molt increments.
    *
-   * @param alpha
-   * @param beta
-   * @param mid_points
+   * @param alpha(h,igrow) - h: sex; igrow: ??
+   * @param beta(h,igrow) - h: sex; igrow: ??
+   * @param mid_points of size claasses
    *
    * @return molt_increment
   **/
