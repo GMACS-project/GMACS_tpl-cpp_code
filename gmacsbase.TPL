@@ -95,7 +95,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.21; ** AEP & WTS **; Compiled 2025-02-15");
+ !! TheHeader = adstring("## GMACS Version 2.20.21a; ** AEP & WTS **; Compiled 2025-03-28");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -8252,7 +8252,7 @@ FUNCTION growth_likelihood
   if ( verbose >= 3 ) cout << "Ok after increment likelihood 2 ..." << endl;
 
   // 5) Likelihood for growth increment data #1
-  if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL && bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
+  if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
     {
     // Predictions are for matrix 1
     dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
@@ -13171,6 +13171,8 @@ FINAL_SECTION
 // 2025-01-15 ** AEP. (GMACS Version 2.20.18) Added the floor spline selectivity pattern and the stacked logistic selectivity pattern
 // 2025-01-30 ** AEP. (GMACS Version 2.20.20) Updated the weight aggregated comps are computed.
 // 2025-02-15 ** MV.  (GMACS Version 2.20.21) Corrected indexing error for the random walk sigma.
+// 2025-03-28 ** WTS. (GMACS Version 2.20.21a) Corrected error in growth_likelihood function that prevented the likelihood from being calculated 
+//                     if GrowthObsType==GROWTHINC_DATA
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
