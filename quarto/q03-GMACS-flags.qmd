@@ -40,9 +40,10 @@ to be specified in the ctl file) are also given as sub-bullets (TODO: finish).
   
 #### Growth data type flags
   * 0: no growth data                  (NOGROWTH_DATA)
-  * 1: growth increment data           (GROWTHINC_DATA)
-  * 2: data for a growth clsas (??)    (GROWTHCLASS_DATA)
+  * 1: normally-distributed growth increment data  (GROWTHINC_DATA_NORMAL)
+  * 2: data for a growth class (??)    (GROWTHCLASS_DATA)
   * 3: values for a growth class (??)  (GROWTHCLASS_VALS)
+  * 4: gamma-distributed growth increment data  (GROWTHINC_DATA_GAMMA)
 
 ## ctl file options and flags
 

@@ -1196,12 +1196,13 @@ DATA_SECTION
   // |-----------------------|
   !! cout << " * Growth data" << endl;
   init_int GrowthObsType;                                  ///> Type of observation (increment or change in size-class)
-  !! if (GrowthObsType != NOGROWTH_DATA && GrowthObsType != GROWTHINC_DATA && GrowthObsType != GROWTHCLASS_DATA && GrowthObsType != GROWTHCLASS_VALS)
-  !!  { cout << "GrowthObsType can only be 0,1, 2 or 3; STOPPING" << endl; exit(1); }
+  !! if (GrowthObsType != NOGROWTH_DATA && GrowthObsType != GROWTHINC_DATA_NORMAL && GrowthObsType != GROWTHINC_DATA_GAMMA &&
+  !!       GrowthObsType != GROWTHCLASS_DATA && GrowthObsType != GROWTHCLASS_VALS)
+  !!   { cout << "GrowthObsType can only be 0,1, 2, 3 or 4; STOPPING" << endl; exit(1); }
   init_int nGrowthObs;                                     ///> Number of data points
   int NGrowthInputs;
-  !!if (GrowthObsType==GROWTHINC_DATA) NGrowthInputs = 4; else NGrowthInputs = 8;
-  !!if(GrowthObsType==GROWTHINC_DATA)   gmacs_data << "## Size increments" << endl;
+  !!if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA) NGrowthInputs = 4; else NGrowthInputs = 8;
+  !!if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA) gmacs_data << "## Size increments" << endl;
   !!if(GrowthObsType==GROWTHCLASS_DATA) gmacs_data << "## size-at-release, size-at-recaptures, and time-at-liberty" << endl;
   !!if(GrowthObsType==GROWTHCLASS_VALS) gmacs_data << "## size-class-at-release, sex, size-class-at-recapture, and time-at-liberty fleet recapture_year number" << endl;
   init_matrix dGrowthData(1,nGrowthObs,1,NGrowthInputs);
@@ -1224,12 +1225,13 @@ DATA_SECTION
   int MaxGrowTimeLib;
   !! MaxGrowTimeLib = 0;
  LOC_CALCS
-  if (GrowthObsType==GROWTHINC_DATA){
+  if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA){
     dPreMoltSize = column(dGrowthData,1);
     iMoltIncSex  = ivector(column(dGrowthData,2));
     dMoltInc     = column(dGrowthData,3);
     dMoltIncCV   = column(dGrowthData,4);
 
+    //--TODO: is the rest of thhis used anywhere??
     dvector xybar(1,nsex);
     dvector xx(1,nsex);
     dvector xbar(1,nsex);
@@ -1312,10 +1314,10 @@ DATA_SECTION
     }
   }
   WRITEDAT(GrowthObsType); WRITEDAT(nGrowthObs);
-  if(GrowthObsType==GROWTHINC_DATA) gmacs_data << "# Pre-molt_size Sex size-increment CV" << endl;
+  if(GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA) gmacs_data << "# Pre-molt_size Sex size-increment CV" << endl;
   if(GrowthObsType==GROWTHCLASS_DATA) gmacs_data << "# Size-at-release Sex Size-at-recapture Time-at-liberty fleet-at-recapture year-at-recapture sample_size" << endl;
   gmacs_data << dGrowthData << endl;
-  if (GrowthObsType==GROWTHINC_DATA)
+  if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA)
     {  ECHO(dPreMoltSize); ECHO(iMoltIncSex); ECHO(dMoltInc); ECHO(dMoltIncCV); }
   if (GrowthObsType==GROWTHCLASS_DATA)
     {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
@@ -6081,8 +6083,9 @@ FUNCTION calc_molting_probability
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
   /**
-   * @brief Compute growth increments
-   * @details Presently based on linear form
+   * @brief Compute (mean) growth increments based on linear form
+   * @details Mean growth increments are calculated based on a linear relationship 
+   * between pre-molt size and molt increment size.
    *
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
    * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
@@ -6091,7 +6094,7 @@ FUNCTION calc_molting_probability
    * @return dvar_vector of predicted growth increments
   **/
 
-FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ivector iSex, int igrow)
+FUNCTION dvar_vector calc_growth_increments_linear(const dvector vSizes, const ivector iSex, int igrow)
   {
    if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
@@ -6099,8 +6102,7 @@ FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ive
     dvar_vector pMoltInc(1,vSizes.indexmax());
     pMoltInc.initialize();
     int h,i;
-    for ( i = 1; i <= nGrowthObs; i++ )
-     {
+    for ( i = 1; i <= nGrowthObs; i++ ){
       h = iSex(i);
       pMoltInc(i) = alpha(h,igrow) - beta(h,igrow) * vSizes(i);
      }
@@ -6108,6 +6110,106 @@ FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ive
     RETURN_ARRAYS_DECREMENT();
     return pMoltInc;
   }
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Calculate likelihood of observed molt increments based on linear relationship for mean growth and a gamma distribution
+   * @details Growth likelihood is calculated based on a linear relationship for mean molt increment as a function of 
+   * pre-molt size and an assumed gamma distribution about the mean. 
+   * 
+   * @param dMoltInc is a vector of observed molt increments
+   * @param vSizes is a vector of doubles of size data from which to compute predicted values
+   * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
+   * @param igrow index indicating appropriate growth matrix to use
+   *
+   * @return dvariable with negative log likelihood
+  **/
+
+FUNCTION dvariable calc_like_gamma_linear_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+  if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
+    { cerr << "indices don't match..." << endl; ad_exit(1); }
+  RETURN_ARRAYS_INCREMENT();
+    dvariable mnMltInc, r, mu, nll;
+    int h,i;
+    nll.initialize();
+    for ( i = 1; i <= nGrowthObs; i++ ){
+      h = iSex(i);
+      mnMltInc = alpha(h,igrow) - beta(h,igrow) * vSizes(i);//--mean molt increment
+      mu   = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
+      r    = mu * mnMltInc;     //--gamma distribution shape (location) parameter
+      nll += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+    }
+  RETURN_ARRAYS_DECREMENT();
+  return nll;
+
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Calculate likelihood of observed postmolt size based on a power law for mean growth and a gamma distribution for molt increment
+   * @details Growth likelihood is calculated based on a power law relationship for mean post-molt size given pre-molt size
+   * and an assumed gamma distribution for the observed molt increment. 
+   *
+   * @param dMoltInc is a vector of observed molt increments
+   * @param vSizes is a vector of doubles of size data from which to compute predicted values
+   * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
+   * @param igrow index indicating appropriate growth matrix to use
+   *
+   * @return dvariable with negative log likelihood
+  **/
+
+FUNCTION dvariable calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+  if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
+    { cerr << "indices don't match..." << endl; ad_exit(1); }
+  RETURN_ARRAYS_INCREMENT();
+    dvariable mnMltInc, r, mu, nll;
+    int h,i;
+    nll.initialize();
+    for ( i = 1; i <= nGrowthObs; i++ ){
+      h = iSex(i);
+      mnMltInc = exp(alpha(h,igrow) + beta(h,igrow) * log(vSizes(i)))-vSizes(i);//--mean molt increment
+      mu   = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
+      r    = mu * mnMltInc;        //--gamma distribution shape (location) parameter
+      nll += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+    }
+  RETURN_ARRAYS_DECREMENT();
+  return nll;
+  
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Calculate likelihood of observed postmolt size based on an alternative power law for mean growth and a gamma distribution
+   * @details Growth likelihood is calculated based on an alternative power law relationship for mean post-molt size given pre-molt size
+   * and an assumed gamma distribution about the mean. 
+   *
+   * @param dMoltInc is a vector of observed molt increments
+   * @param vSizes is a vector of doubles of size data from which to compute predicted values
+   * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
+   * @param igrow index indicating appropriate growth matrix to use
+   *
+   * @return dvariable with negative log likelihood
+  **/
+
+FUNCTION dvariable calc_like_gamma_pwrlawalt_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+  if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
+    { cerr << "indices don't match..." << endl; ad_exit(1); }
+  RETURN_ARRAYS_INCREMENT();
+    dvariable mnPMZ, mnMltInc, r, mu, nll;
+    int h,i;
+    nll.initialize();
+    for ( i = 1; i <= nGrowthObs; i++ ){
+      h = iSex(i);
+      mnPMZ = alpha(h,igrow)*mfexp(log(beta(h,igrow)/alpha(h,igrow))/log(beta0(h,igrow)/alpha0(h,igrow))*log(vSizes(i)/alpha0(h,igrow)));//--mean postmolt size
+      mnMltInc = mnPMZ-vSizes(i);
+      mu = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
+      r  = mu * mnMltInc;        //--gamma distribution shape (location) parameter
+      nll  += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+    }
+  RETURN_ARRAYS_DECREMENT();
+  return nll;
+
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -8339,14 +8441,25 @@ FUNCTION growth_likelihood
   if ( verbose >= 3 ) cout << "Ok after increment likelihood 2 ..." << endl;
 
   // 5) Likelihood for growth increment data #1
-  if (GrowthObsType==GROWTHINC_DATA){  //TODO: is thhis correct? why only (1)? why only a "dnorm" likelihood??
-    if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL || 
-          bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL || 
-          bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODELALT) {
-      // Predictions are for matrix 1
-      dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
+  if (GrowthObsType==GROWTHINC_DATA_NORMAL){  //TODO: is thhis correct? why only (1)? why only a "dnorm" likelihood??
+    if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
+      // normal-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+      dvar_vector MoltIncPred = calc_growth_increments_linear(dPreMoltSize, iMoltIncSex,1);
       nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
-    }
+    } 
+  } else if (GrowthObsType==GROWTHINC_DATA_GAMMA){
+    if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
+      // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+      nloglike(5,1) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+    } 
+    if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL){
+      // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+      nloglike(5,1) = calc_like_gamma_pwrlaw_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+    } else 
+    if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODELALT){
+      // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+      nloglike(5,1) = calc_like_gamma_pwrlawalt_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+    } 
   }
   if ( verbose >= 3 ) cout << "Ok after increment likelihood 1 ..." << endl;
 
@@ -12693,12 +12806,15 @@ GLOBALS_SECTION
   
   #undef NOGROWTH_DATA
   #define NOGROWTH_DATA 0
-  #undef GROWTHINC_DATA
-  #define GROWTHINC_DATA 1
+  #undef GROWTHINC_DATA_NORMAL
+  #define GROWTHINC_DATA_NORMAL 1
   #undef GROWTHCLASS_DATA
   #define GROWTHCLASS_DATA 2
   #undef GROWTHCLASS_VALS
   #define GROWTHCLASS_VALS 3
+  #undef GROWTHINC_DATA_GAMMA
+  #define GROWTHINC_DATA_GAMMA 1
+
   #undef NO_CUSTOM_M
   #define NO_CUSTOM_M 0
   #undef WITH_CUSTOM_M
@@ -13254,6 +13370,7 @@ FINAL_SECTION
 // 2025-01-15 ** AEP. (GMACS Version 2.20.18) Added the floor spline selectivity pattern and the stacked logistic selectivity pattern
 // 2025-01-30 ** AEP. (GMACS Version 2.20.20) Updated the weight aggregated comps are computed.
 // 2025-02-15 ** MV.  (GMACS Version 2.20.21) Corrected indexing error for the random walk sigma.
+// 2025-03-28 ** WTS  (GMACS Version 2.20.22) Added growth likelihood options when fitting non-tagging molt increment data. Reformatted several code sections.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
