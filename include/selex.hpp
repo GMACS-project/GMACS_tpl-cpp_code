@@ -760,7 +760,7 @@ namespace gsm {
      * that selectivities are bounded between 0-1.
      *
      * @param x Independent variable
-     * @param sel_coeffs Vector of estimated selectivity coefficients logit transformed.
+     * @param sel_coeffs Vector of estimated selectivity coefficients logit (??: exponential?) transformed.
      * @return Selectivity coefficients.
     **/
     template<class T>

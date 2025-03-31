@@ -95,7 +95,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.21a; ** AEP & WTS **; Compiled 2025-03-28");
+ !! TheHeader = adstring("## GMACS Version 2.20.22; ** AEP & WTS **; Compiled 2025-03-31");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1196,12 +1196,13 @@ DATA_SECTION
   // |-----------------------|
   !! cout << " * Growth data" << endl;
   init_int GrowthObsType;                                  ///> Type of observation (increment or change in size-class)
-  !! if (GrowthObsType != NOGROWTH_DATA && GrowthObsType != GROWTHINC_DATA && GrowthObsType != GROWTHCLASS_DATA && GrowthObsType != GROWTHCLASS_VALS)
-  !!  { cout << "GrowthObsType can only be 0,1, 2 or 3; STOPPING" << endl; exit(1); }
+  !! if (GrowthObsType != NOGROWTH_DATA && GrowthObsType != GROWTHINC_DATA_NORMAL && GrowthObsType != GROWTHINC_DATA_GAMMA &&
+  !!       GrowthObsType != GROWTHCLASS_DATA && GrowthObsType != GROWTHCLASS_VALS)
+  !!   { cout << "GrowthObsType can only be 0,1, 2, 3 or 4; STOPPING" << endl; exit(1); }
   init_int nGrowthObs;                                     ///> Number of data points
   int NGrowthInputs;
-  !!if (GrowthObsType==GROWTHINC_DATA) NGrowthInputs = 4; else NGrowthInputs = 8;
-  !!if(GrowthObsType==GROWTHINC_DATA) gmacs_data << "## Size increments" << endl;
+  !!if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA) NGrowthInputs = 4; else NGrowthInputs = 8;
+  !!if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA) gmacs_data << "## Size increments" << endl;
   !!if(GrowthObsType==GROWTHCLASS_DATA) gmacs_data << "## size-at-release, size-at-recaptures, and time-at-liberty" << endl;
   !!if(GrowthObsType==GROWTHCLASS_VALS) gmacs_data << "## size-class-at-release, sex, size-class-at-recapture, and time-at-liberty fleet recapture_year number" << endl;
   init_matrix dGrowthData(1,nGrowthObs,1,NGrowthInputs);
@@ -1224,13 +1225,13 @@ DATA_SECTION
   int MaxGrowTimeLib;
   !! MaxGrowTimeLib = 0;
  LOC_CALCS
-  if (GrowthObsType==GROWTHINC_DATA)
-   {
+  if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA){
     dPreMoltSize = column(dGrowthData,1);
     iMoltIncSex  = ivector(column(dGrowthData,2));
     dMoltInc     = column(dGrowthData,3);
     dMoltIncCV   = column(dGrowthData,4);
 
+    //--TODO: is the rest of thhis used anywhere??
     dvector xybar(1,nsex);
     dvector xx(1,nsex);
     dvector xbar(1,nsex);
@@ -1244,19 +1245,16 @@ DATA_SECTION
     xx.initialize();
 
     // MLE estimates for alpha and beta for the linear growth increment model.
-    if ( nGrowthObs > 0 )
-     {
-      for ( int i = 1; i <= nGrowthObs; i++ )
-       {
+    if ( nGrowthObs > 0 ){
+      for ( int i = 1; i <= nGrowthObs; i++ ){
         int h = iMoltIncSex(i);
         nh(h)++;
         xybar(h) += dPreMoltSize(i) * dMoltInc(i);
         xbar(h)  += dPreMoltSize(i);
         ybar(h)  += dMoltInc(i);
         xx(h)    += square(dPreMoltSize(i));
-       }
-      for ( h = 1; h <= nsex; h++ )
-       {
+      }
+      for ( h = 1; h <= nsex; h++ ){
         xybar(h) /= nh(h);
         xbar(h) /= nh(h);
         ybar(h) /= nh(h);
@@ -1265,30 +1263,28 @@ DATA_SECTION
         double alp = ybar(h) - slp*xbar(h);
         mle_alpha(h) = alp;
         mle_beta(h) = -slp;
-       }
-     }
-   }
-  if (GrowthObsType==GROWTHCLASS_DATA)
-   {
+      }
+    }
+  }
+  if (GrowthObsType==GROWTHCLASS_DATA){
     int iclass;
     int h2;
-    iMoltIncSex  = ivector(column(dGrowthData,2));
+    iMoltIncSex     = ivector(column(dGrowthData,2));
     iMoltTimeAtLib  = ivector(column(dGrowthData,4));
-    iMoltTrans = ivector(column(dGrowthData,5));
+    iMoltTrans      = ivector(column(dGrowthData,5));
     iMoltFleetRecap = ivector(column(dGrowthData,6));
-    iMoltYearRecap = ivector(column(dGrowthData,7));
-    iMoltSampSize = ivector(column(dGrowthData,8));
-    for (int i = 1; i <= nGrowthObs; i++)
-     {
+    iMoltYearRecap  = ivector(column(dGrowthData,7));
+    iMoltSampSize   = ivector(column(dGrowthData,8));
+    for (int i = 1; i <= nGrowthObs; i++){
       h2 = iMoltIncSex(i);
       iclass = -1;
       for (int j = 1; j <=nclass; j++)
-       if (dGrowthData(i,1) >= size_breaks(j) &&  dGrowthData(i,1) < size_breaks(j+1)) iclass = j;
+        if (dGrowthData(i,1) >= size_breaks(j) &&  dGrowthData(i,1) < size_breaks(j+1)) iclass = j;
       iMoltInitSizeClass(i) = iclass;
       if (iclass == -1) { cout << "Error: release size out of range; row" << i << endl; exit(1); }
       iclass = -1;
       for (int j = 1; j <=nclass; j++)
-       if (dGrowthData(i,3) >= size_breaks(j) &&  dGrowthData(i,3) < size_breaks(j+1)) iclass = j;
+        if (dGrowthData(i,3) >= size_breaks(j) &&  dGrowthData(i,3) < size_breaks(j+1)) iclass = j;
       iMoltEndSizeClass(i) = iclass;
       if (iclass == -1) { cout << "Error: recapture size out of range; row " << i << endl; exit(1); }
       if (iMoltEndSizeClass(i) < iMoltInitSizeClass(i)) { cout << "Error: recapture size less than recapture size; row " << i << endl; exit(1); }
@@ -1296,9 +1292,8 @@ DATA_SECTION
       if (MaxGrowTimeLibSex(h2) < iMoltTimeAtLib(i)) MaxGrowTimeLibSex(h2) = iMoltTimeAtLib(i);
       if (MaxGrowTimeLib < iMoltTimeAtLib(i)) MaxGrowTimeLib = iMoltTimeAtLib(i);
      }
-   }
-  if (GrowthObsType==GROWTHCLASS_VALS)
-   {
+  }
+  if (GrowthObsType==GROWTHCLASS_VALS){
     int iclass;
     int h2;
     iMoltIncSex  = ivector(column(dGrowthData,2));
@@ -1307,8 +1302,7 @@ DATA_SECTION
     iMoltFleetRecap = ivector(column(dGrowthData,6));
     iMoltYearRecap = ivector(column(dGrowthData,7));
     iMoltSampSize = ivector(column(dGrowthData,8));
-    for (int i = 1; i <= nGrowthObs; i++)
-     {
+    for (int i = 1; i <= nGrowthObs; i++){
       h2 = iMoltIncSex(i);
       iMoltInitSizeClass(i) = dGrowthData(i,1);
       if (iMoltInitSizeClass(i) < 1 || iMoltInitSizeClass(i) > nclass) { cout << "Error: release size out of range; row" << i << endl; exit(1); }
@@ -1317,18 +1311,18 @@ DATA_SECTION
 
       if (MaxGrowTimeLibSex(h2) < iMoltTimeAtLib(i)) MaxGrowTimeLibSex(h2) = iMoltTimeAtLib(i);
       if (MaxGrowTimeLib < iMoltTimeAtLib(i)) MaxGrowTimeLib = iMoltTimeAtLib(i);
-     }
-   }
+    }
+  }
   WRITEDAT(GrowthObsType); WRITEDAT(nGrowthObs);
-  if(GrowthObsType==GROWTHINC_DATA) gmacs_data << "# Pre-molt_size Sex size-increment CV" << endl;
+  if(GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA) gmacs_data << "# Pre-molt_size Sex size-increment CV" << endl;
   if(GrowthObsType==GROWTHCLASS_DATA) gmacs_data << "# Size-at-release Sex Size-at-recapture Time-at-liberty fleet-at-recapture year-at-recapture sample_size" << endl;
   gmacs_data << dGrowthData << endl;
-  if (GrowthObsType==GROWTHINC_DATA)
-   {  ECHO(dPreMoltSize); ECHO(iMoltIncSex); ECHO(dMoltInc); ECHO(dMoltIncCV); }
+  if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA)
+    {  ECHO(dPreMoltSize); ECHO(iMoltIncSex); ECHO(dMoltInc); ECHO(dMoltIncCV); }
   if (GrowthObsType==GROWTHCLASS_DATA)
-   {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
+    {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
   if (GrowthObsType==GROWTHCLASS_VALS)
-   {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
+    {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
  END_CALCS
 
   // |--------------------|
@@ -1514,212 +1508,208 @@ DATA_SECTION
  
  LOC_CALCS
   {
-  rdv_syr             = int(model_controls(1));
-  if (rdv_syr == 0) rdv_syr = syr;                         ///> Default value for start year
-  if ( rdv_syr < syr )
-   {
-     cout << "Error: recruitment cannot be estimated before start year" << endl;//NOTE: could set phases to -1
-     exit(1);
-   }
-  model_controls(2) -= (nyr-nyrRetro);
-  rdv_eyr             = int(model_controls(2));
-  if ( rdv_eyr < rdv_syr )
-   {
-     cout << "Error: end recruitment year must be AFTER start recruitment year" << endl;
-     exit(1);
-   }
-  if ( rdv_eyr > nyr )
-   {
-     cout << "Error: recruitment cannot be estimated after end year" << endl;//NOTE: could set phases to -1
-     exit(1);
-   }
-  Term_molt           = int(model_controls(3));	
-  if (Term_molt==1 && nmature==1)
-   {
-    cout << "Error: terminal molt requires two maturity partitions" << endl;
-    exit(1);
-   }
-  rdv_phz             = int(model_controls(4));
-  if (nsex==1) rec_prop_phz = -1; else rec_prop_phz = int(model_controls(5));
-  init_sex_ratio = model_controls(6);
-  init_sex_ratio = -1.0*log((1.0-init_sex_ratio)/init_sex_ratio);
+    rdv_syr             = int(model_controls(1));
+    if (rdv_syr == 0) rdv_syr = syr;                         ///> Default value for start year
+    if ( rdv_syr < syr )
+    {
+      cout << "Error: recruitment cannot be estimated before start year" << endl;//NOTE: could set phases to -1
+      exit(1);
+    }
+    model_controls(2) -= (nyr-nyrRetro);
+    rdv_eyr             = int(model_controls(2));
+    if ( rdv_eyr < rdv_syr )
+    {
+      cout << "Error: end recruitment year must be AFTER start recruitment year" << endl;
+      exit(1);
+    }
+    if ( rdv_eyr > nyr )
+    {
+      cout << "Error: recruitment cannot be estimated after end year" << endl;//NOTE: could set phases to -1
+      exit(1);
+    }
+    Term_molt           = int(model_controls(3));	
+    if (Term_molt==1 && nmature==1)
+    {
+      cout << "Error: terminal molt requires two maturity partitions" << endl;
+      exit(1);
+    }
+    rdv_phz             = int(model_controls(4));
+    if (nsex==1) rec_prop_phz = -1; else rec_prop_phz = int(model_controls(5));
+    init_sex_ratio = model_controls(6);
+    init_sex_ratio = -1.0*log((1.0-init_sex_ratio)/init_sex_ratio);
 
-  bInitializeUnfished = int(model_controls(7));
-  Refclass            = int(model_controls(8));
-  spr_lambda          = model_controls(9);
-  nSRR_flag           = int(model_controls(10));
-  BRP_rec_sexR        = int(model_controls(11));
-  NyrEquil            = int(model_controls(12));
-  devParPhase         = int(model_controls(13));  
-  bias1               = int(model_controls(14));  
-  bias2               = int(model_controls(15));  
-  bias3               = int(model_controls(16));  
-  bias4               = int(model_controls(17));  
-  
-  for (int Iy=syr;Iy<=nyr;Iy++)
-   if (Iy <= bias1)
-    Rec_bias(Iy) = 0;
-   else
-    if (Iy <= bias2)
-     Rec_bias(Iy) = (float(Iy)-bias1)/(bias2-bias1);
-    else
-     if (Iy <= bias3)
-      Rec_bias(Iy) = 1.0;
-     else
-      if (Iy <= bias4)
-       Rec_bias(Iy) = 1.0-(float(Iy)-bias3)/(bias4-bias3);
-      else
-       Rec_bias(Iy) = 0;
-     
-  gmacs_ctl << endl << "##  ------------------------------------------------------------------------------------ ##" << endl;
-  gmacs_ctl << "##  OTHER  CONTROLS" << endl;
-  gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
-  gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(8)) << " # Reference size-class for initial conditons = 3" << endl;
-  gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(11)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(12)) << " # Years to compute equilibria" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(13)) << " # Phase for deviation parameters" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(14)) << " # First year of bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
-  gmacs_ctl << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
-  gmacs_ctl << endl;
-  echoinput << endl << "# Extra controls" << endl;
-  echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
-  echoinput << model_controls(2) << " # Last year of recruitment estimation" << endl;
-  echoinput << model_controls(3) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
-  echoinput << model_controls(4) << " # Phase for recruitment estimation" << endl;
-  echoinput << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
-  echoinput << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-  echoinput << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  echoinput << model_controls(8) << " # Reference size-class for initial conditons = 3" << endl;
-  echoinput << model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  echoinput << model_controls(10) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  echoinput << model_controls(11) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  echoinput << model_controls(12) << " # Years to compute equilibria" << endl;
-  echoinput << model_controls(13) << " # Phase for deviation parameters" << endl;
-  echoinput << model_controls(14) << " # First year of bias-correction" << endl;
-  echoinput << model_controls(15) << " # First full bias-correction" << endl;
-  echoinput << model_controls(16) << " # Last full bias-correction" << endl;
-  echoinput << model_controls(17) << " # Last year of bias-correction" << endl;
-  echoinput << endl;
+    bInitializeUnfished = int(model_controls(7));
+    Refclass            = int(model_controls(8));
+    spr_lambda          = model_controls(9);
+    nSRR_flag           = int(model_controls(10));
+    BRP_rec_sexR        = int(model_controls(11));
+    NyrEquil            = int(model_controls(12));
+    devParPhase         = int(model_controls(13));  
+    bias1               = int(model_controls(14));  
+    bias2               = int(model_controls(15));  
+    bias3               = int(model_controls(16));  
+    bias4               = int(model_controls(17));  
+    
+    for (int Iy=syr;Iy<=nyr;Iy++){
+      if (Iy <= bias1){
+        Rec_bias(Iy) = 0;
+      } else if (Iy <= bias2) {
+        Rec_bias(Iy) = (float(Iy)-bias1)/(bias2-bias1);
+      } else if (Iy <= bias3) {
+        Rec_bias(Iy) = 1.0;
+      } else if (Iy <= bias4) {
+        Rec_bias(Iy) = 1.0-(float(Iy)-bias3)/(bias4-bias3);
+      } else {
+        Rec_bias(Iy) = 0;
+      }
+    }
+    gmacs_ctl << endl << "##  ------------------------------------------------------------------------------------ ##" << endl;
+    gmacs_ctl << "##  OTHER  CONTROLS" << endl;
+    gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
+    gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(8)) << " # Reference size-class for initial conditons = 3" << endl;
+    gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(11)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(12)) << " # Years to compute equilibria" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(13)) << " # Phase for deviation parameters" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(14)) << " # First year of bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
+    gmacs_ctl << endl;
+    echoinput << endl << "# Extra controls" << endl;
+    echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
+    echoinput << model_controls(2) << " # Last year of recruitment estimation" << endl;
+    echoinput << model_controls(3) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+    echoinput << model_controls(4) << " # Phase for recruitment estimation" << endl;
+    echoinput << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
+    echoinput << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
+    echoinput << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
+    echoinput << model_controls(8) << " # Reference size-class for initial conditons = 3" << endl;
+    echoinput << model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+    echoinput << model_controls(10) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+    echoinput << model_controls(11) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+    echoinput << model_controls(12) << " # Years to compute equilibria" << endl;
+    echoinput << model_controls(13) << " # Phase for deviation parameters" << endl;
+    echoinput << model_controls(14) << " # First year of bias-correction" << endl;
+    echoinput << model_controls(15) << " # First full bias-correction" << endl;
+    echoinput << model_controls(16) << " # Last full bias-correction" << endl;
+    echoinput << model_controls(17) << " # Last year of bias-correction" << endl;
+    echoinput << endl;
 
-  // Default number of parameters
-  ntheta = 3 + 2*nsex + 3;
-  
-  int Jpnt;
-  int Kpnt;
-  Jpnt = 1;
-  parname1(Jpnt) = "Log(R0)";
-  parname1(Jpnt+1) = "Log(Rinitial)";
-  parname1(Jpnt+2) = "Log(Rbar)";
-  parname1(Jpnt+3) = "Recruitment_ra-males";
-  parname1(Jpnt+4) = "Recruitment_rb-males";
-  Jpnt = Jpnt + 5;
-  if (nsex>1)
-   {
-    parname1(Jpnt) = "Recruitment_ra-females";
-    parname1(Jpnt+1) = "Recruitment_rb-females";
-    Jpnt += 2;
-   }
-  parname1(Jpnt) = "log(SigmaR)";
-  parname1(Jpnt+1) = "Steepness";
-  parname1(Jpnt+2) = "Rho";
-  Jpnt = Jpnt + 2;
-  PPnt = Jpnt;
+    // Default number of parameters
+    ntheta = 3 + 2*nsex + 3;
+    
+    int Jpnt;
+    int Kpnt;
+    Jpnt = 1;
+    parname1(Jpnt)   = "Log(R0)";
+    parname1(Jpnt+1) = "Log(Rinitial)";
+    parname1(Jpnt+2) = "Log(Rbar)";
+    parname1(Jpnt+3) = "Recruitment_ra-males";
+    parname1(Jpnt+4) = "Recruitment_rb-males";
+    Jpnt = Jpnt + 5;
+    if (nsex>1) {
+      parname1(Jpnt)  = "Recruitment_ra-females";
+      parname1(Jpnt+1) = "Recruitment_rb-females";
+      Jpnt += 2;
+    }
+    parname1(Jpnt)   = "log(SigmaR)";
+    parname1(Jpnt+1) = "Steepness";
+    parname1(Jpnt+2) = "Rho";
+    Jpnt = Jpnt + 2;
+    PPnt = Jpnt;
 
-  int nthetatest;
-  nthetatest = 0;
-  if (bInitializeUnfished == FISHEDEQN)      nthetatest = nfleet;
-  if (bInitializeUnfished == FREEPARS)       nthetatest = nclass*nsex*nmature*nshell;
-  if (bInitializeUnfished == FREEPARSSCALED) nthetatest = (nclass*nsex*nmature*nshell-1);
-  ntheta += nthetatest;
-  cout << "Expecting " << ntheta << " theta parameters" << endl;
-  gmacs_ctl << "# Expecting " << ntheta << " theta parameters" << endl;
-  echoinput << "Expecting " << ntheta<< " theta parameters" << endl;
-  echoinput << "Thetas" << endl;
-  echoinput << 3 << " for log(R0), log(Rini), and log(Rbar)" << endl;
-  echoinput << 2*nsex << " for the recruitment distribution parameters" << endl;
-  echoinput << 3 << " for log(sigmaR), steepness and recruitment autocorrelation" << endl;
-  echoinput << nthetatest << " for the parameters to define the initial size-structure" << endl;
-  echoinput << endl;
-  
-  // Estimate initial numbers as absolute
-  if ( bInitializeUnfished == FREEPARS )
-   {
-    int Ipnt = 0;
-    for ( int h = 1; h <= nsex; h++ )
-     for ( int m = 1; m <= nmature; m++ )
-      for ( int o = 1; o <= nshell; o++ )
-       {
-        int Ihmo = pntr_hmo(h,m,o);
-        for ( int l = 1; l <= nclass; l++ )
-         {
-          Ipnt += 1;
-          anystring = "Initial_logN_for_sex_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
-          parname1(Jpnt+Ipnt) = anystring;
-         }
-       }
-     PPnt += Ipnt;
-   }
-   
-  // Estimate initial numbers as logistic offsest
-  if ( bInitializeUnfished == FREEPARSSCALED )
-   {
-    int Ipnt = 0; Kpnt = 0;
-    for ( int h = 1; h <= nsex; h++ )
-     for ( int m = 1; m <= nmature; m++ )
-      for ( int o = 1; o <= nshell; o++ )
-       {
-        int Ihmo = pntr_hmo(h,m,o);
-        for ( int l = 1; l <= nclass; l++ )
-         {
-          if (Kpnt!=Refclass-1)
-           { 
-            Ipnt += 1;
-            anystring = "Scaled_logN_for_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
-            parname1(Jpnt+Ipnt) = anystring;
-           }
-          Kpnt += 1; 
-         }  
-       }
-    PPnt += Ipnt;
-   }
+    int nthetatest;
+    nthetatest = 0;
+    if (bInitializeUnfished == FISHEDEQN)      nthetatest = nfleet;
+    if (bInitializeUnfished == FREEPARS)       nthetatest = nclass*nsex*nmature*nshell;
+    if (bInitializeUnfished == FREEPARSSCALED) nthetatest = (nclass*nsex*nmature*nshell-1);
+    ntheta += nthetatest;
+    cout      << "Expecting "   << ntheta << " theta parameters" << endl;
+    gmacs_ctl << "# Expecting " << ntheta << " theta parameters" << endl;
+    echoinput << "Expecting "   << ntheta << " theta parameters" << endl;
+    echoinput << "Thetas" << endl;
+    echoinput << 3          << " for log(R0), log(Rini), and log(Rbar)" << endl;
+    echoinput << 2*nsex     << " for the recruitment distribution parameters" << endl;
+    echoinput << 3          << " for log(sigmaR), steepness and recruitment autocorrelation" << endl;
+    echoinput << nthetatest << " for the parameters to define the initial size-structure" << endl;
+    echoinput << endl;
+    
+    // Estimate initial numbers as absolute
+    if ( bInitializeUnfished == FREEPARS ){
+      int Ipnt = 0;
+      for ( int h = 1; h <= nsex; h++ ){
+        for ( int m = 1; m <= nmature; m++ ){
+          for ( int o = 1; o <= nshell; o++ ){
+            int Ihmo = pntr_hmo(h,m,o);
+            for ( int l = 1; l <= nclass; l++ ) {
+              Ipnt += 1;
+              anystring = "Initial_logN_for_sex_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
+              parname1(Jpnt+Ipnt) = anystring;
+            }// - l
+          }// - o
+        }// - m
+      }// - h
+      PPnt += Ipnt;
+    }// - bInitializeUnfished == FREEPARS
+    
+    // Estimate initial numbers as logistic offsest
+    if ( bInitializeUnfished == FREEPARSSCALED ){
+      int Ipnt = 0; Kpnt = 0;
+      for ( int h = 1; h <= nsex; h++ ) {
+        for ( int m = 1; m <= nmature; m++ ) {
+          for ( int o = 1; o <= nshell; o++ ) {
+            int Ihmo = pntr_hmo(h,m,o);
+            for ( int l = 1; l <= nclass; l++ ) {
+              if (Kpnt!=Refclass-1) { 
+                Ipnt += 1;
+                anystring = "Scaled_logN_for_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
+                parname1(Jpnt+Ipnt) = anystring;
+              }
+              Kpnt += 1; 
+            } // - l loop
+          } // - o loop
+        } // - m loop
+      } // - h loop
+      PPnt += Ipnt;
+    } // - bInitializeUnfished == FREEPARSSCALED
   }
  END_CALCS
 
 
-  !! cout << " * Key parameter controls" << endl;
-  !! ECHOSTR(" * Key parameter controls");
   init_matrix theta_control(1,ntheta,1,7);                 ///> The specifications for the controls
-  !! gmacs_ctl << "# Core parameters" << endl;
-  !! gmacs_ctl << "## Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
-  !! gmacs_ctl << "## Lower & Upper: Range for the parameter" << endl;
-  !! gmacs_ctl << "## Phase: Set equal to a negative number not to estimate" << endl;
-  !! gmacs_ctl << "## Prior type:"  << endl;
-  !! gmacs_ctl << "## 0: Uniform   - parameters are the range of the uniform prior"  << endl;
-  !! gmacs_ctl << "## 1: Normal    - parameters are the mean and sd" << endl;
-  !! gmacs_ctl << "## 2: Lognormal - parameters are the mean and sd of the log" << endl;
-  !! gmacs_ctl << "## 3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
-  !! gmacs_ctl << "## 4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
-  !! gmacs_ctl << "# Initial_value    Lower_bound    Upper_bound Phase Prior_type        Prior_1        Prior_2" << endl;
-  !! for (int i=1;i<=ntheta;i++) {
-  !!    gmacs_ctl << setw(15) << setprecision(8) <<  setfixed() << theta_control(i,1) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,2) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,3) << " ";
-  !!    gmacs_ctl << setw(5) << setfixed() << (int) theta_control(i,4) << " ";
-  !!    gmacs_ctl << setw(10) << setfixed() << (int) theta_control(i,5) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,6) << " ";
-  !!    gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,7) << " # " << parname1(i) << endl;
-  !! }
+ LOC_CALCS
+  cout << " * Key parameter controls" << endl;
+  ECHOSTR(" * Key parameter controls");
+  gmacs_ctl << "# Core parameters" << endl;
+  gmacs_ctl << "## Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
+  gmacs_ctl << "## Lower & Upper: Range for the parameter" << endl;
+  gmacs_ctl << "## Phase: Set equal to a negative number not to estimate" << endl;
+  gmacs_ctl << "## Prior type:"  << endl;
+  gmacs_ctl << "## 0: Uniform   - parameters are the range of the uniform prior"  << endl;
+  gmacs_ctl << "## 1: Normal    - parameters are the mean and sd" << endl;
+  gmacs_ctl << "## 2: Lognormal - parameters are the mean and sd of the log" << endl;
+  gmacs_ctl << "## 3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
+  gmacs_ctl << "## 4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
+  gmacs_ctl << "# Initial_value    Lower_bound    Upper_bound Phase Prior_type        Prior_1        Prior_2" << endl;
+  for (int i=1;i<=ntheta;i++) {
+     gmacs_ctl << setw(15) << setprecision(8) <<  setfixed() << theta_control(i,1) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,2) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,3) << " ";
+     gmacs_ctl << setw(5) << setfixed() << (int) theta_control(i,4) << " ";
+     gmacs_ctl << setw(10) << setfixed() << (int) theta_control(i,5) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,6) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,7) << " # " << parname1(i) << endl;
+  }
+ END_CALCS
   vector theta_ival(1,ntheta);
   vector theta_lb(1,ntheta);
   vector theta_ub(1,ntheta);
@@ -1771,12 +1761,18 @@ DATA_SECTION
   !! cout << " * Allometry" << endl;
   !! ECHOSTR(" * Allometry");
   init_int lw_type;               ///> length-weight type/method (i.e. provide parameters or a vector)
-  !! gmacs_ctl << endl << " ##Allometry" << endl;
-  !! gmacs_ctl << "# weight-at-length input  method  (1 = allometry  [w_l = a*l^b],  2 = vector by sex; 3= matrix by sex)" << endl;
-  !! gmacs_ctl << lw_type << endl;
+  !! gmacs_ctl << endl;
+  !! gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
+  !! gmacs_ctl << "## Allometry" << endl;
+  !! gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
+  !! gmacs_ctl << "# weight-at-length input  method:" << endl;
+  !! gmacs_ctl << "## 1 = allometry  [w_l = a*l^b]" << endl;
+  !! gmacs_ctl << "## 2 = vector by sex" << endl;
+  !! gmacs_ctl << "## 3 = matrix by sex" << endl;
+  !! gmacs_ctl << lw_type << "  #--selected method" << endl;
   !! if (lw_type < 1 || lw_type > 3)
-  !!  { cout << "length-weight type can only be 1,2 or 3; STOPPING" << endl; 
-  !!    gmacs_ctl <<  "length-weight type can only be 1,2 or 3; STOPPING" << endl;
+  !!  { cout << "length-weight type can only be 1,2 or 3; input was " << lw_type << ". STOPPING." << endl; 
+  !!    gmacs_ctl <<  "length-weight type can only be 1,2 or 3; input was " << lw_type << ". STOPPING." << endl;
   !!    exit(1); }
   int lw_dim;
   int lw_dim2;
@@ -1801,8 +1797,8 @@ DATA_SECTION
       for (int m=1;m<=nmature;m++) {
         *(ad_comm::global_datafile) >> lw_alfa(h,m);
         *(ad_comm::global_datafile) >> lw_beta(h,m);
-        echoinput << lw_alfa(h,m) << " " << lw_beta(h,m) << " #--" << endl;
-        gmacs_ctl << lw_alfa(h,m) << " " << lw_beta(h,m) << " #--" << endl;
+        echoinput << lw_alfa(h,m) << " " << lw_beta(h,m) << " #--sex " << h << "; maturity " << m << endl;
+        gmacs_ctl << lw_alfa(h,m) << " " << lw_beta(h,m) << " #--sex " << h << "; maturity " << m << endl;
       }
     }
     //ECHO(lw_alfa); ECHO(lw_beta);
@@ -1855,6 +1851,7 @@ DATA_SECTION
      break;
    }
   ECHO(mean_wt);
+  gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl << endl;
  END_CALCS
 
   // |-----------------------------------|
@@ -1862,12 +1859,16 @@ DATA_SECTION
   // |-----------------------------------|
   !! cout << " * Maturity definition" << endl;
   init_matrix maturity(1,nsex,1,nclass);
-  !! gmacs_ctl << "# Proportion mature by sex and size" << endl;
+  !! gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
+  !! gmacs_ctl << "## Proportion mature by sex and size" << endl;
   !! gmacs_ctl << maturity << endl;
-  !! cout << " * Legal definition" << endl;
+  !! gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl << endl;
+  !! gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
+  !! cout << "## Legal definition" << endl;
   !! gmacs_ctl << "# Proportion legal by sex and size" << endl;
   init_matrix legal(1,nsex,1,nclass);
   !! gmacs_ctl << legal << endl;
+  !! gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl << endl;
   
   // --------------------------------------------------------------------------------------------------------------------------------------
   // |----------------------------|
@@ -1882,7 +1883,7 @@ DATA_SECTION
  
   init_ivector nSizeClassRec(1,nsex);                      ///> Maximum of size-classes to which recruitment must occur
   !! gmacs_ctl << "# Maximum number of size-classes to which recruitment must occur" << endl;
-  !! gmacs_ctl <<nSizeClassRec << endl;
+  !! gmacs_ctl << nSizeClassRec << endl;
   !! ECHO(nSizeClassRec );
   
   init_int use_func_mat;
@@ -1900,84 +1901,102 @@ DATA_SECTION
   !! bUseCustomMatureProbability2.initialize();
 
   imatrix Growth_controls(1,3*nsex,1,3);
-  !! Growth_controls.initialize();
-  !! gmacs_ctl << "# Growth transition" << endl;
-  !! echoinput << "# Growth transition" << endl;
-  !! gmacs_ctl << "##Type_1: Options for the growth matrix" << endl;
-  !! gmacs_ctl << "#  1: Pre-specified growth transition matrix (requires molt probability)" << endl;
-  !! gmacs_ctl << "#  2: Pre-specified size transition matrix (molt probability is ignored)" << endl;
-  !! gmacs_ctl << "#  3: Growth increment is gamma distributed (requires molt probability)" << endl;
-  !! gmacs_ctl << "#  4: Post-molt size is gamma distributed (requires molt probability)" << endl;
-  !! gmacs_ctl << "#  5: Von Bert.: kappa varies among individuals (requires molt probability)" << endl;
-  !! gmacs_ctl << "#  6: Von Bert.: Linf varies among individuals (requires molt probability)" << endl;
-  !! gmacs_ctl << "#  7: Von Bert.: kappa and Linf varies among individuals (requires molt probability)" << endl;
-  !! gmacs_ctl << "#  8: Growth increment is normally distributed (requires molt probability)" << endl;
-  !! gmacs_ctl << "## Type_2: Options for the growth increment model matrix" << endl;
-  !! gmacs_ctl << "#  1: Linear" << endl;
-  !! gmacs_ctl << "#  2: Individual" << endl;
-  !! gmacs_ctl << "#  3: Individual (Same as 2)" << endl;
-  !! gmacs_ctl << "#  4: Power law for mean post-molt size" << endl;
-  !! gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
-  !! gmacs_ctl << "## Type_1 Type_2  Block" << endl;
-  !! echoinput << "## Type_1 Type_2  Block" << endl;
-  !! for (int ig=1;ig<=nsex;ig++)  { *(ad_comm::global_datafile) >> Growth_controls(ig); }
-  !!  for (int ig=1;ig<=nsex;ig++) { gmacs_ctl << "   "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(6) << setfixed() << Growth_controls(ig,ii) << " "; gmacs_ctl << endl; }
-  !! for (int ig=1;ig<=nsex;ig++)  { echoinput << Growth_controls(ig) << endl; }
-  !! for (int ig=1;ig<=nsex;ig++) {
-  !!   bUseCustomGrowthMatrix2(ig) = Growth_controls(ig,1);
-  !!   if (bUseCustomGrowthMatrix2(ig) < 1 || bUseCustomGrowthMatrix2(ig) > 8)
-  !!     { cout << "growth matrix type can only be 1-8; STOPPING" << endl; exit(1); }
-  !! }
-  !! for (int ig=1;ig<=nsex;ig++) {
-  !!    bUseGrowthIncrementModel2(ig) = Growth_controls(ig,2);
-  !!   if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYK) bUseGrowthIncrementModel2(ig) = GROWTH_VARYK;
-  !!   if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYLINF) bUseGrowthIncrementModel2(ig) = GROWTH_VARYLINF;
-  !!   if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYKLINF) bUseGrowthIncrementModel2(ig) = GROWTH_VARYKLINF;
-  !!  }
- 
-  !! gmacs_ctl << "# Molt probability" << endl;
-  !! echoinput << "# Molt probability" << endl;
-  !! gmacs_ctl << "# Type: Options for the molt probability function" << endl;
-  !! gmacs_ctl << "#  0: Pre-specified" << endl;
-  !! gmacs_ctl << "#  1: Constant at 1" << endl;
-  !! gmacs_ctl << "#  2: Logistic" << endl;
-  !! gmacs_ctl << "#  3: Individual" << endl;
-  !! gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
-  !! gmacs_ctl << "## Type Block" << endl;
-  !! echoinput << "## Type Block" << endl;
-  !! for (int ig=1;ig<=nsex;ig++) 
-  !!   { *(ad_comm::global_datafile) >> Growth_controls(nsex+ig,1) >> Growth_controls(nsex+ig,3); }
-  !! for (int ig=1;ig<=nsex;ig++) 
-  !!   { gmacs_ctl << "  " << setw(5) << setfixed() << Growth_controls(nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(nsex+ig,3) << " "; gmacs_ctl << endl; }
-  !! for (int ig=1;ig<=nsex;ig++) 
-  !!   { echoinput << Growth_controls(nsex+ig,1) << " " << Growth_controls(nsex+ig,3) << " "; echoinput << endl; }
-  !! for (int ig=1;ig<=nsex;ig++) {
-  !!   bUseCustomMoltProbability2(ig) = Growth_controls(ig+nsex,1);
-  !!   if (bUseCustomGrowthMatrix2(ig) == GROWTH_FIXEDSIZETRANS && bUseCustomMoltProbability2(ig) != CONSTANT_PROB_MOLT)
-  !!    { cout << "If a custom size transition matrix is provided, the probability of molting must be set constant and equal to 1; STOPPING" << endl; exit(1); }
-  !!  }
+ LOC_CALCS
+  Growth_controls.initialize();
+  gmacs_ctl << "# Growth transition" << endl;
+  echoinput << "# Growth transition" << endl;
+  gmacs_ctl << "##Type_1: Options for the growth matrix" << endl;
+  gmacs_ctl << "#  1: Pre-specified growth transition matrix (requires molt probability)" << endl;
+  gmacs_ctl << "#  2: Pre-specified size transition matrix (molt probability is ignored)" << endl;
+  gmacs_ctl << "#  3: Growth increment is gamma distributed (requires molt probability)" << endl;
+  gmacs_ctl << "#  4: Post-molt size is gamma distributed (requires molt probability)" << endl;
+  gmacs_ctl << "#  5: Von Bert.: kappa varies among individuals (requires molt probability)" << endl;
+  gmacs_ctl << "#  6: Von Bert.: Linf varies among individuals (requires molt probability)" << endl;
+  gmacs_ctl << "#  7: Von Bert.: kappa and Linf varies among individuals (requires molt probability)" << endl;
+  gmacs_ctl << "#  8: Growth increment is normally distributed (requires molt probability)" << endl;
+  gmacs_ctl << "## Type_2: Options for the growth increment model matrix" << endl;
+  gmacs_ctl << "#  1: Linear" << endl;
+  gmacs_ctl << "##     1. intercept " << endl;
+  gmacs_ctl << "##     2. slope" << endl;
+  gmacs_ctl << "##     3. gamma distribution scale parameter (on ln-scale)" << endl;
+  gmacs_ctl << "#  2: Individual" << endl;
+  gmacs_ctl << "#  3: Individual (Same as 2)" << endl;
+  gmacs_ctl << "#  4: Power law for mean post-molt size (3 parameters)" << endl;
+  gmacs_ctl << "##     1. ln-scale intercept " << endl;
+  gmacs_ctl << "##     2. ln-scale slope" << endl;
+  gmacs_ctl << "##     3. gamma distribution scale parameter (on ln-scale)" << endl;
+  gmacs_ctl << "#  5: Alternative power law for mean post-molt size (5 parameters)" << endl;
+  gmacs_ctl << "##     1. reference (small) pre-molt size (constant: must have phase < 0)" << endl;
+  gmacs_ctl << "##     2. mean post-molt size corresponding to 1." << endl;
+  gmacs_ctl << "##     3. reference (large) pre-molt size (constant: must have phase < 0)" << endl;
+  gmacs_ctl << "##     4. mean post-molt size corresponding to 3." << endl;
+  gmacs_ctl << "##     5. gamma distribution scale parameter (on arithmetic scale)" << endl;
+  gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
+  gmacs_ctl << "## Type_1 Type_2  Block" << endl;
+  echoinput << "## Type_1 Type_2  Block" << endl;
+  for (int ig=1;ig<=nsex;ig++)  { *(ad_comm::global_datafile) >> Growth_controls(ig); }
+  for (int ig=1;ig<=nsex;ig++) { 
+    gmacs_ctl << "   "; 
+    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(6) << setfixed() << Growth_controls(ig,ii) << " "; gmacs_ctl << endl; 
+  }
+  for (int ig=1;ig<=nsex;ig++)  { echoinput << Growth_controls(ig) << endl; }
+  for (int ig=1;ig<=nsex;ig++) {
+    bUseCustomGrowthMatrix2(ig) = Growth_controls(ig,1);
+    if (bUseCustomGrowthMatrix2(ig) < 1 || bUseCustomGrowthMatrix2(ig) > 8)
+      { cout << "growth matrix type can only be 1-8; STOPPING" << endl; exit(1); }
+  }
+  for (int ig=1;ig<=nsex;ig++) {
+    bUseGrowthIncrementModel2(ig) = Growth_controls(ig,2);
+    cout<<"growth increment option for sex " << ig << " is " << bUseGrowthIncrementModel2(ig) << endl;
+    if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYK)     bUseGrowthIncrementModel2(ig) = 0;
+    if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYLINF)  bUseGrowthIncrementModel2(ig) = 0;
+    if (bUseCustomGrowthMatrix2(ig) == GROWTH_VARYKLINF) bUseGrowthIncrementModel2(ig) = 0;
+  }
   
-  !! if (nmature==2){
-  !!   gmacs_ctl << "# Mature probability" << endl;
-  !!   gmacs_ctl << "# Type: Options for the mature probability function" << endl;
-  !!   gmacs_ctl << "#  0: Pre-specified" << endl;
-  !!   gmacs_ctl << "#  1: Constant at 1" << endl;
-  !!   gmacs_ctl << "#  2: Logistic" << endl;
-  !!   gmacs_ctl << "#  3: Individual" << endl;
-  !!   gmacs_ctl << "# Block: Block number for time-varying growth   " << endl;
-  !!   gmacs_ctl << "## Type Block" << endl;
-  !!   echoinput << "## Type Block" << endl;
-  !!   for (int ig=1;ig<=nsex;ig++) 
-  !!    { *(ad_comm::global_datafile) >> Growth_controls(2*nsex+ig,1)>> Growth_controls(2*nsex+ig,3); }
-  !!   for (int ig=1;ig<=nsex;ig++) 
-  !!    { gmacs_ctl << "  " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,3) << " "; gmacs_ctl << endl; }
-  !!   for (int ig=1;ig<=nsex;ig++) 
-  !!    { echoinput << Growth_controls(2*nsex+ig,1) << " " << Growth_controls(2*nsex+ig,3) << " "; echoinput << endl; }
-  !!   for (int ig=1;ig<=nsex;ig++){
-  !!     bUseCustomMatureProbability2(ig) = Growth_controls(ig+2*nsex,1);
-  !!    }
-  !!  } //-- if (nmature==2)
-  !!  echoinput << "Growth_controls\n" << Growth_controls << endl;
+  gmacs_ctl << "# Molt probability" << endl;
+  echoinput << "# Molt probability" << endl;
+  gmacs_ctl << "# Type: Options for the molt probability function" << endl;
+  gmacs_ctl << "#  0: Pre-specified" << endl;
+  gmacs_ctl << "#  1: Constant at 1" << endl;
+  gmacs_ctl << "#  2: Logistic" << endl;
+  gmacs_ctl << "#  3: Individual" << endl;
+  gmacs_ctl << "#  Block: Block number for time-varying growth   " << endl;
+  gmacs_ctl << "## Type Block" << endl;
+  echoinput << "## Type Block" << endl;
+  for (int ig=1;ig<=nsex;ig++) 
+    { *(ad_comm::global_datafile) >> Growth_controls(nsex+ig,1) >> Growth_controls(nsex+ig,3); }
+  for (int ig=1;ig<=nsex;ig++) 
+    { gmacs_ctl << "  " << setw(5) << setfixed() << Growth_controls(nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(nsex+ig,3) << " "; gmacs_ctl << endl; }
+  for (int ig=1;ig<=nsex;ig++) 
+    { echoinput << Growth_controls(nsex+ig,1) << " " << Growth_controls(nsex+ig,3) << " "; echoinput << endl; }
+  for (int ig=1;ig<=nsex;ig++) {
+    bUseCustomMoltProbability2(ig) = Growth_controls(ig+nsex,1);
+    if (bUseCustomGrowthMatrix2(ig) == GROWTH_FIXEDSIZETRANS && bUseCustomMoltProbability2(ig) != CONSTANT_PROB_MOLT)
+     { cout << "If a custom size transition matrix is provided, the probability of molting must be set constant and equal to 1; STOPPING" << endl; exit(1); }
+  }
+  
+  if (nmature==2){
+    gmacs_ctl << "# Mature probability" << endl;
+    gmacs_ctl << "# Type: Options for the mature probability function" << endl;
+    gmacs_ctl << "#  0: Pre-specified" << endl;
+    gmacs_ctl << "#  1: Constant at 1" << endl;
+    gmacs_ctl << "#  2: Logistic" << endl;
+    gmacs_ctl << "#  3: Individual" << endl;
+    gmacs_ctl << "# Block: Block number for time-varying growth   " << endl;
+    gmacs_ctl << "## Type Block" << endl;
+    echoinput << "## Type Block" << endl;
+    for (int ig=1;ig<=nsex;ig++) 
+     { *(ad_comm::global_datafile) >> Growth_controls(2*nsex+ig,1)>> Growth_controls(2*nsex+ig,3); }
+    for (int ig=1;ig<=nsex;ig++) 
+     { gmacs_ctl << "  " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,3) << " "; gmacs_ctl << endl; }
+    for (int ig=1;ig<=nsex;ig++) 
+     { echoinput << Growth_controls(2*nsex+ig,1) << " " << Growth_controls(2*nsex+ig,3) << " "; echoinput << endl; }
+    for (int ig=1;ig<=nsex;ig++){
+      bUseCustomMatureProbability2(ig) = Growth_controls(ig+2*nsex,1);
+     }
+  } //-- if (nmature==2)
+  echoinput << "Growth_controls\n" << Growth_controls << endl;
+ END_CALCS
 
   int n_Gpar;
   ivector nparGs(1,3*nsex)
@@ -1989,13 +2008,14 @@ DATA_SECTION
   for (int ig=1;ig<=3*nsex;ig++){
     nparG = 0;
     if (ig <= nsex) {
-      if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL)      nparG = 3;
-      if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL)      nparG = 3;
+      if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL)      {nparG = 3; cout<<"LinearGM: setting nparG=3 for ig "<<ig<<endl;}
+      if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL)      {nparG = 3; cout<<"PwrLawGM: setting npar3=3 for ig "<<ig<<endl;}
+      if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT)   {nparG = 5; cout<<"PwrLawAltGM: setting nparG=5 for ig "<<ig<<endl;}
       if (bUseGrowthIncrementModel2(ig)==INDIVIDUAL_GROWTHMODEL1) nparG = (nclass+1);
       if (bUseGrowthIncrementModel2(ig)==INDIVIDUAL_GROWTHMODEL2) nparG = (nclass+1);
-      if (bUseGrowthIncrementModel2(ig)==GROWTH_VARYK)            nparG = 3;
-      if (bUseGrowthIncrementModel2(ig)==GROWTH_VARYLINF)         nparG = 3;
-      if (bUseGrowthIncrementModel2(ig)==GROWTH_VARYKLINF)        nparG = 4;
+      if (bUseCustomGrowthMatrix2(ig)==GROWTH_VARYK)     nparG = 3;
+      if (bUseCustomGrowthMatrix2(ig)==GROWTH_VARYLINF)  nparG = 3;
+      if (bUseCustomGrowthMatrix2(ig)==GROWTH_VARYKLINF) nparG = 4;
     }
     if (ig >nsex && ig <= 2*nsex) {
       if (bUseCustomMoltProbability2(ig-nsex)==LOGISTIC_PROB_MOLT)     nparG = 2;
@@ -2005,6 +2025,7 @@ DATA_SECTION
       if (bUseCustomMatureProbability2(ig-2*nsex)==LOGISTIC_PROB_MATURE) nparG = 2;
       if (bUseCustomMatureProbability2(ig-2*nsex)==FREE_PROB_MATURE)     nparG = (nclass);
     }
+    cout<<"ig = "<<ig<<" nparG = "<<nparG<<endl;
     nparGs(ig) = nparG; 
   } //-ig 
   cout << "nparGs" << nparGs << endl;
@@ -2043,8 +2064,16 @@ DATA_SECTION
     gmacs_ctl << "##  RW: 0 for no random walk changes; 1 otherwise" << endl;
     gmacs_ctl << "##  RW_blk: Block number for random walks" << endl;
     gmacs_ctl << "##  Sigma_RW: Sigma used for the random walk" << endl;
-    gmacs_ctl << endl;
+    cout<<"assigning growth parameters"<<endl;
     for (int ig=1;ig<=3*nsex;ig++){
+      if (ig<=nsex)  {
+        gmacs_ctl << endl << "### Parameter inputs for growth transitions" << endl;
+      } else if (ig<=2*nsex) {
+        gmacs_ctl << endl << "### Parameter inputs for probability of molting" << endl;
+      } else if (ig<=3*nsex) {
+        gmacs_ctl << endl << "### Parameter inputs for probabilit of maturing" << endl;
+      }
+  
       if (nparGs(ig) > 0) gmacs_ctl << "# Inputs for sex * type " << ig << endl;
       if (nparGs(ig) > 0) gmacs_ctl << "# MAIN PARS: Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
       n_Gpar2 = n_Gpar;
@@ -2061,36 +2090,57 @@ DATA_SECTION
         GtoIG(n_Gpar,2) = ipar;
         GtoIG(n_Gpar,3) = 0;
         iblock = 1;
+        anystring = " missing ";
         for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+"_(ln-scale)";
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-        if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
-
-        if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
-        if (ipar <=nclass){
-          anystring = "Molt_increment_base_"+sexes(h)+"_class_"+str(ipar);
-        } else { 
-          anystring = "Gscale_base_"+sexes(h);
+        if (ig <= nsex){
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+"_(ln-scale)";
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha_base_" +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha0_base_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta_base_"  +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta0_base_" +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
+          cout<< ipar << " " << bUseGrowthIncrementModel2(ig) << " " << anystring << Gpar_control(n_Gpar) <<endl;
+  
+          if ((bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)){
+            if (ipar <=nclass){
+              anystring = "Molt_increment_base_"+sexes(h)+"_class_"+str(ipar);
+            } else { 
+              anystring = "Gscale_base_"+sexes(h);
+            }
+            cout<<"    "<<anystring<<endl;
+          }
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==1)     anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==2)     anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==3)     anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==1)  anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==2)  anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==3)  anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_base_"      +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_base_"     +sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
+          cout<<"    "<<anystring<<endl;
+        }// ig <= nsex
+  
+        if (ig>nsex && ig <= 2*nsex){
+          if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)                anystring = "Molt_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+          cout<<"    "<<anystring<<endl;
         }
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) anystring = "Linf_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) anystring = "Kappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1) anystring = "Linf_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2) anystring = "Kappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) anystring = "Molt_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
-        if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
-        if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) anystring = "Mature_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+  
+        if (ig>2*nsex && ig <= 3*nsex){
+          if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
+          if (bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)                anystring = "Mature_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+          cout<<"    "<<anystring<<endl;
+        }
+        cout<<"printing Gpar_control"<<endl;
         gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
         gmacs_ctl << setw(10) << setfixed() << int(Gpar_control(n_Gpar,4)) << " ";
         for (int ii=5;ii<=6;ii++) {gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";}
@@ -2100,7 +2150,8 @@ DATA_SECTION
         parname1(PPnt+1) = anystring;
         PPnt += 1;
       }
-      if (nparGs(ig) > 0)  gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase Reltve " << endl;
+
+      gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase Reltve " << endl;
       for (int iyr=syr;iyr<=nyrRetro;iyr++){
         for (int ipar=1; ipar<=nparGs(ig);ipar++)  GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar2+ipar;
       }
@@ -2116,9 +2167,9 @@ DATA_SECTION
         float SigmaRW = Gpar_control(jpar,14);
         if (IgBlock !=0){
           // Environmental link
-          if ((IgEnvLink!=0) || (IgRW!=0)) { cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; exit(1); } 
+          if ((IgEnvLink!=0) || (IgRW!=0))      { cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; exit(1); } 
           if ((IgBlock<0 )&& (IgBlock>nblocks)) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
-          if ((IgBlockFn<0) && (IgBlockFn>1)) { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
+          if ((IgBlockFn<0) && (IgBlockFn>1))   { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
           for (int kpar=1;kpar<=blocks(IgBlock);kpar++) {
             iblock = kpar + 1;
             n_Gpar += 1;
@@ -2129,34 +2180,54 @@ DATA_SECTION
             for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++){
               GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;
             }
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+" (ln-scale)";
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+" (ln-scale)";
-            if (ig <= nsex && (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2))
-            if (ipar <=nclass){
-              anystring = "Molt_increment_"+sexes(h)+"_class_"+str(ipar);
-            } else {
-              anystring = "Gscale_"+sexes(h);
+  
+            if (ig <= nsex){
+              if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+" (ln-scale)";
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+" (ln-scale)";
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha_base_" +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha0_base_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta_base_"  +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta0_base_" +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
+
+              if (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2){
+                if (ipar <=nclass){
+                  anystring = "Molt_increment_"+sexes(h)+"_class_"+str(ipar);
+                } else {
+                  anystring = "Gscale_"+sexes(h);
+                }
+              }
             }
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==1) anystring = "Linf_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==2) anystring = "Kappa_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYK && ipar==3) anystring = "SigmaKappa_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==1)  anystring = "Linf_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==2)  anystring = "Kappa_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF && ipar==3)  anystring = "SigmaKappa_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h);
-            if (ig <= nsex && bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h);
-            if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h);
-            if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h);
-            if ((ig>nsex && ig <= 2*nsex) && bUseCustomMoltProbability2(h)==FREE_PROB_MOLT) anystring = "Molt_probability_"+sexes(h)+"_class_"+str(ipar);
-            if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h);
-            if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h);
-            if ((ig>2*nsex && ig <= 3*nsex) && bUseCustomMatureProbability2(h)==FREE_PROB_MATURE) anystring = "Mature_probability_"+sexes(h)+"_class_"+str(ipar);
+  
+            if (ig <= nsex){
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==1)     anystring = "Linf_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==2)     anystring = "Kappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK && ipar==3)     anystring = "SigmaKappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==1)  anystring = "Linf_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==2)  anystring = "Kappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF && ipar==3)  anystring = "SigmaKappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==1) anystring = "Linf_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==2) anystring = "Kappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==3) anystring = "SigmaKappa_"+sexes(h);
+              if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF && ipar==4) anystring = "SigmaKappa_"+sexes(h);
+            }
+  
+            if ((ig>nsex) && (ig <= 2*nsex)){ // probability of molting
+              if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_"+sexes(h);
+              if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_"+sexes(h);
+              if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)                anystring = "Molt_probability_"+sexes(h)+"_class_"+str(ipar);
+            }
+
+            if ((ig>2*nsex) && (ig <= 3*nsex)){ // probability of maturing
+              if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_"+sexes(h);
+              if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_"+sexes(h);
+              if (bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)                anystring = "Mature_probability_"+sexes(h)+"_class_"+str(ipar);
+            }
+  
             anystring = anystring+"_block_group_"+str(IgBlock)+"_block_"+str(kpar);
             gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
             gmacs_ctl << setw(10) << setfixed() << int(Gpar_control(n_Gpar,4)) << " ";
@@ -2274,8 +2345,7 @@ DATA_SECTION
   ivector G_relative(1,n_Gpar);
 
  LOC_CALCS
-  for (int ipar=1;ipar<=n_Gpar;ipar++)
-   {
+  for (int ipar=1;ipar<=n_Gpar;ipar++){
     G_ival(ipar)        = Gpar_control(ipar,1);
     G_lb(ipar)          = Gpar_control(ipar,2);
     G_ub(ipar)          = Gpar_control(ipar,3);
@@ -2287,8 +2357,8 @@ DATA_SECTION
   
     // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
     if ( prior_Gtype(ipar) == UNIFORM_PRIOR )
-     { prior_G_p1(ipar) = G_lb(ipar); prior_G_p2(ipar) = G_ub(ipar); }
-   } //--ipar
+      { prior_G_p1(ipar) = G_lb(ipar); prior_G_p2(ipar) = G_ub(ipar); }
+  } //--ipar
   ECHO(G_ival) 
   ECHO(prior_Gtype); ECHO(prior_G_p1); ECHO(prior_G_p2); ECHO(G_phz) ; ECHO(G_relative);
  END_CALCS
@@ -4485,8 +4555,10 @@ PARAMETER_SECTION
   number rho;                                              ///> autocorrelation coefficient in recruitment
   matrix logN0(1,n_grp,1,nclass);                          ///> initial numbers at length
 
-  matrix alpha(1,nsex,1,maxSizeIncVaries);                 ///> intercept for linear growth increment model
-  matrix beta(1,nsex,1,maxSizeIncVaries);                  ///> slope for the linear growth increment model
+  matrix alpha(1,nsex,1,maxSizeIncVaries);                 ///> intercept for linear growth increment model (or mean postmolt size at alpha0 for PWRLAW_GROWTHMODELALT)
+  matrix alpha0(1,nsex,1,maxSizeIncVaries);                ///> reference (small) pre-molt size yielding mean postmolt size beta for PWRLAW_GROWTHMODELALT model
+  matrix beta(1,nsex,1,maxSizeIncVaries);                  ///> slope for the linear growth increment model (or mean postmolt size at beta0 for PWRLAW_GROWTHMODELALT)
+  matrix beta0(1,nsex,1,maxSizeIncVaries);                 ///> reference (large) pre-molt size yielding mean postmolt size beta for PWRLAW_GROWTHMODELALT model
   matrix gscale(1,nsex,1,maxSizeIncVaries);                ///> scale parameter for the gamma distribution
   matrix Linf(1,nsex,1,maxSizeIncVaries);                  ///> Mean Linf
   matrix Kappa(1,nsex,1,maxSizeIncVaries);                 ///> Mean Kappa
@@ -5046,6 +5118,14 @@ FUNCTION initialize_model_parameters
        beta(h,igrow)    = G_pars(2);
        gscale(h,igrow)  = exp(G_pars(3));
       }
+     if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODELALT)
+      {
+       alpha0(h,igrow)  = G_pars(1);
+       alpha(h,igrow)   = G_pars(2);
+       beta0(h,igrow)   = G_pars(3);
+       beta(h,igrow)    = G_pars(4);
+       gscale(h,igrow)  = G_pars(5);
+      }
      if (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)
       {
        for (int l=1; l<=nclass;l++) molt_increment(h,igrow,l) = G_pars(l);
@@ -5053,21 +5133,21 @@ FUNCTION initialize_model_parameters
       }
 
      // Kappa varies
-     if (bUseGrowthIncrementModel2(h)==GROWTH_VARYK)
+     if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYK)
       {
        Linf(h,igrow)       = G_pars(1);
        Kappa(h,igrow)      = G_pars(2);
        SigmaKappa(h,igrow) = G_pars(3);
       }
      // Linf varies
-     if (bUseGrowthIncrementModel2(h)==GROWTH_VARYLINF)
+     if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYLINF)
       {
        Linf(h,igrow)       = G_pars(1);
        Kappa(h,igrow)      = G_pars(2);
        SigmaLinf(h,igrow)  = G_pars(3);
       }
      // Linf and Kappa varies
-     if (bUseGrowthIncrementModel2(h)==GROWTH_VARYKLINF)
+     if (bUseCustomGrowthMatrix2(h)==GROWTH_VARYKLINF)
       {
        Linf(h,igrow)       = G_pars(1);
        Kappa(h,igrow)      = G_pars(2);
@@ -6003,16 +6083,18 @@ FUNCTION calc_molting_probability
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
   /**
-   * @brief Compute growth increments
-   * @details Presently based on liner form
+   * @brief Compute (mean) growth increments based on linear form
+   * @details Mean growth increments are calculated based on a linear relationship 
+   * between pre-molt size and molt increment size.
    *
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
    * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
+   * @param igrow ??
    *
    * @return dvar_vector of predicted growth increments
   **/
 
-FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ivector iSex, int igrow)
+FUNCTION dvar_vector calc_growth_increments_linear(const dvector vSizes, const ivector iSex, int igrow)
   {
    if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
@@ -6020,8 +6102,7 @@ FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ive
     dvar_vector pMoltInc(1,vSizes.indexmax());
     pMoltInc.initialize();
     int h,i;
-    for ( i = 1; i <= nGrowthObs; i++ )
-     {
+    for ( i = 1; i <= nGrowthObs; i++ ){
       h = iSex(i);
       pMoltInc(i) = alpha(h,igrow) - beta(h,igrow) * vSizes(i);
      }
@@ -6033,49 +6114,158 @@ FUNCTION dvar_vector calc_growth_increments_data(const dvector vSizes, const ive
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
   /**
-   * @brief Molt increment as a linear function of pre-molt size.
+   * @brief Calculate likelihood of observed molt increments based on linear relationship for mean growth and a gamma distribution
+   * @details Growth likelihood is calculated based on a linear relationship for mean molt increment as a function of 
+   * pre-molt size and an assumed gamma distribution about the mean. 
+   * 
+   * @param dMoltInc is a vector of observed molt increments
+   * @param vSizes is a vector of doubles of size data from which to compute predicted values
+   * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
+   * @param igrow index indicating appropriate growth matrix to use
+   *
+   * @return dvariable with negative log likelihood
+  **/
+
+FUNCTION dvariable calc_like_gamma_linear_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+  if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
+    { cerr << "indices don't match..." << endl; ad_exit(1); }
+  RETURN_ARRAYS_INCREMENT();
+    dvariable mnMltInc, r, mu, nll;
+    int h,i;
+    nll.initialize();
+    for ( i = 1; i <= nGrowthObs; i++ ){
+      h = iSex(i);
+      mnMltInc = alpha(h,igrow) - beta(h,igrow) * vSizes(i);//--mean molt increment
+      mu   = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
+      r    = mu * mnMltInc;     //--gamma distribution shape (location) parameter
+      nll += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+    }
+  RETURN_ARRAYS_DECREMENT();
+  return nll;
+
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Calculate likelihood of observed postmolt size based on a power law for mean growth and a gamma distribution for molt increment
+   * @details Growth likelihood is calculated based on a power law relationship for mean post-molt size given pre-molt size
+   * and an assumed gamma distribution for the observed molt increment. 
+   *
+   * @param dMoltInc is a vector of observed molt increments
+   * @param vSizes is a vector of doubles of size data from which to compute predicted values
+   * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
+   * @param igrow index indicating appropriate growth matrix to use
+   *
+   * @return dvariable with negative log likelihood
+  **/
+
+FUNCTION dvariable calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+  if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
+    { cerr << "indices don't match..." << endl; ad_exit(1); }
+  RETURN_ARRAYS_INCREMENT();
+    dvariable mnMltInc, r, mu, nll;
+    int h,i;
+    nll.initialize();
+    for ( i = 1; i <= nGrowthObs; i++ ){
+      h = iSex(i);
+      mnMltInc = exp(alpha(h,igrow) + beta(h,igrow) * log(vSizes(i)))-vSizes(i);//--mean molt increment
+      mu   = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
+      r    = mu * mnMltInc;        //--gamma distribution shape (location) parameter
+      nll += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+    }
+  RETURN_ARRAYS_DECREMENT();
+  return nll;
+  
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Calculate likelihood of observed postmolt size based on an alternative power law for mean growth and a gamma distribution
+   * @details Growth likelihood is calculated based on an alternative power law relationship for mean post-molt size given pre-molt size
+   * and an assumed gamma distribution about the mean. 
+   *
+   * @param dMoltInc is a vector of observed molt increments
+   * @param vSizes is a vector of doubles of size data from which to compute predicted values
+   * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
+   * @param igrow index indicating appropriate growth matrix to use
+   *
+   * @return dvariable with negative log likelihood
+  **/
+
+FUNCTION dvariable calc_like_gamma_pwrlawalt_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+  if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
+    { cerr << "indices don't match..." << endl; ad_exit(1); }
+  RETURN_ARRAYS_INCREMENT();
+    dvariable mnPMZ, mnMltInc, r, mu, nll;
+    int h,i;
+    nll.initialize();
+    for ( i = 1; i <= nGrowthObs; i++ ){
+      h = iSex(i);
+      mnPMZ = alpha(h,igrow)*mfexp(log(beta(h,igrow)/alpha(h,igrow))/log(beta0(h,igrow)/alpha0(h,igrow))*log(vSizes(i)/alpha0(h,igrow)));//--mean postmolt size
+      mnMltInc = mnPMZ-vSizes(i);
+      mu = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
+      r  = mu * mnMltInc;        //--gamma distribution shape (location) parameter
+      nll  += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+    }
+  RETURN_ARRAYS_DECREMENT();
+  return nll;
+
+
+// ----------------------------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Calculate mean molt increment as a (linear or power law) function of pre-molt size.
    *
    * TODO: Option for empirical molt increments.
    *
-   * @param alpha
-   * @param beta
-   * @param mid_points
+   * @param alpha(h,igrow) - h: sex; igrow: ??
+   * @param beta(h,igrow) - h: sex; igrow: ??
+   * @param mid_points of size claasses
    *
    * @return molt_increment
   **/
 FUNCTION calc_growth_increments
 
-  for ( int h = 1; h <= nsex; h++ )
-   {
-    if (bUseGrowthIncrementModel2(h)==LINEAR_GROWTHMODEL)
-     {
-      for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
-       {
-        for ( int l = 1; l <= nclass; l++ )
-         molt_increment(h,igrow,l) = alpha(h,igrow) - beta(h,igrow) * mid_points(l);
-         if (NfunCall==0 || NfunCall==1)
-         if (molt_increment(h,igrow,int(nclass/2)) < 0)
-          {
-          // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
-           for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
-          }
-         } // - for h     
-      } 
-    if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL)
-     {
-       for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
-        {
-         for ( int l = 1; l <= nclass; l++ )
-          molt_increment(h,igrow,l) = exp(alpha(h,igrow) + beta(h,igrow) * log(mid_points(l))) - mid_points(l);
-         if (NfunCall==0 || NfunCall==1)
-          if (molt_increment(h,igrow,int(nclass/2)) < 0)
-           {
-           // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
+  for ( int h = 1; h <= nsex; h++ ){
+    if (bUseGrowthIncrementModel2(h)==LINEAR_GROWTHMODEL){
+      for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++){
+        for ( int l = 1; l <= nclass; l++ ){
+          molt_increment(h,igrow,l) = alpha(h,igrow) - beta(h,igrow) * mid_points(l);
+        }
+        if (NfunCall==0 || NfunCall==1){
+          if (molt_increment(h,igrow,int(nclass/2)) < 0){
+            // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
             for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
-           }
-         } // - for h     
-      }// -- if
-     } //--h
+          }
+        } // if NfunCall...
+      } // - igrow  loop
+    } // bUseGrowthIncrementModel2(h)==LINEAR_GROWTHMODEL
+    if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL){
+      for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++){
+        for ( int l = 1; l <= nclass; l++ ){
+          molt_increment(h,igrow,l) = exp(alpha(h,igrow) + beta(h,igrow) * log(mid_points(l))) - mid_points(l);
+        }
+        if (NfunCall==0 || NfunCall==1){
+          if (molt_increment(h,igrow,int(nclass/2)) < 0){
+            // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
+            for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
+          }
+        } // - if NfunCall...
+      } // -- igrow loop
+    }// -- bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODEL
+    if (bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODELALT){
+      for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++){
+        dvar_vector mnPstMltZs = alpha(h,igrow)*mfexp(log(beta(h,igrow)/alpha(h,igrow))/log(beta0(h,igrow)/alpha0(h,igrow))*log(mid_points/alpha0(h,igrow)));
+        molt_increment(h,igrow) = mnPstMltZs - mid_points;
+        if (NfunCall==0 || NfunCall==1){
+          if (molt_increment(h,igrow,int(nclass/2)) < 0){
+            // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
+            for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
+          }
+        } // - if NfunCall...
+      } // -- igrow loop
+    }// -- bUseGrowthIncrementModel2(h)==PWRLAW_GROWTHMODELALT
+  } //-- h loop
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -8213,28 +8403,27 @@ FUNCTION growth_likelihood
   dvar_matrix YY(1,nclass,1,nclass);
 
   //  5) Likelihood for the size-class change data #2
-  if (GrowthObsType==GROWTHCLASS_DATA || GrowthObsType==GROWTHCLASS_VALS)
-   {
+  if (GrowthObsType==GROWTHCLASS_DATA || GrowthObsType==GROWTHCLASS_VALS){
     // First find all FullY matrices
     FullY.initialize();
-    for (int h = 1; h <=nsex; h++)
-	{
-     for (int k = 1; k<=nSizeIncVaries(h);k++)
-      {
+    for (int h = 1; h <=nsex; h++) {
+      for (int k = 1; k<=nSizeIncVaries(h);k++) {
         // AEP: Note that the molt_probability is based on syr  
-        for (int ii=1;ii<=nclass;ii++)
-         for (int jj=1;jj<=nclass;jj++)
-          if (ii == jj)
-           YY(ii,jj) = 1.0-molt_probability(h,syr,ii)+growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
-          else
-           YY(ii,jj) = growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
+        for (int ii=1;ii<=nclass;ii++){
+          for (int jj=1;jj<=nclass;jj++){
+            if (ii == jj){
+              YY(ii,jj) = 1.0-molt_probability(h,syr,ii)+growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
+            } else {
+              YY(ii,jj) = growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
+            }
+          }
+        }
         FullY(h,k,1) = YY;
         for (int itime=2;itime<=MaxGrowTimeLibSex(h);itime++) FullY(h,k,itime) = FullY(h,k,itime-1)*YY;
-      }
-	}
+      } // k loop
+    } // h loop
 
-    for (int i=1;i<=nGrowthObs;i++)
-     {
+    for (int i=1;i<=nGrowthObs;i++) {
       int h = iMoltIncSex(i);
       int k = iMoltTrans(i);
       int iclassRel = iMoltInitSizeClass(i);
@@ -8247,19 +8436,32 @@ FUNCTION growth_likelihood
       dvariable total = 0;
       for (int i=1;i<=nSizeSex(h);i++) total += FullY(h,k,itimeLib,iclassRel,i)*exp(log_slx_capture(ifleetRec,h,iyearRec,i));
       nloglike(5,h) -= log(Prob/total+0.00001)*freq;
-     }
-   } // Growth data
+    } // i loop
+  } // Growth data
   if ( verbose >= 3 ) cout << "Ok after increment likelihood 2 ..." << endl;
 
   // 5) Likelihood for growth increment data #1
-  if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL && GrowthObsType==GROWTHINC_DATA)
-    {
-    // Predictions are for matrix 1
-    dvar_vector MoltIncPred = calc_growth_increments_data(dPreMoltSize, iMoltIncSex,1);
-    nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
-   }
+  if (GrowthObsType==GROWTHINC_DATA_NORMAL){  //TODO: is thhis correct? why only (1)? why only a "dnorm" likelihood??
+    if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
+      // normal-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+      dvar_vector MoltIncPred = calc_growth_increments_linear(dPreMoltSize, iMoltIncSex,1);
+      nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
+    } 
+  } else if (GrowthObsType==GROWTHINC_DATA_GAMMA){
+    if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
+      // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+      nloglike(5,1) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+    } 
+    if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL){
+      // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+      nloglike(5,1) = calc_like_gamma_pwrlaw_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+    } else 
+    if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODELALT){
+      // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+      nloglike(5,1) = calc_like_gamma_pwrlawalt_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+    } 
+  }
   if ( verbose >= 3 ) cout << "Ok after increment likelihood 1 ..." << endl;
-
 
 // --------------------------------------------------------------------------------------------------
   /**
@@ -11812,9 +12014,15 @@ FUNCTION WriteFiles
    OutInpFile1 << setw(14) << setprecision(8) << setfixed() << theta_control(i,7) <<  " # " << parname1(i) << endl;
   }
  
-  OutInpFile1 << endl << " ##Allometry" << endl;
-  OutInpFile1 << "# weight-at-length input  method  (1 = allometry  [w_l = a*l^b],  2 = vector by sex; 3= matrix by sex)" << endl;
-  OutInpFile1 << 3 << endl;
+  OutInpFile1 << endl;
+  OutInpFile1 << "##  ------------------------------------------------------------------------------------ ##" << endl;
+  OutInpFile1 << "##  Allometry" << endl;
+  OutInpFile1 << "##  ------------------------------------------------------------------------------------ ##" << endl;
+  OutInpFile1 << "# weight-at-length input  method:" << endl;
+  OutInpFile1 << "## 1 = allometry  [w_l = a*l^b]" << endl;
+  OutInpFile1 << "## 2 = vector by sex" << endl;
+  OutInpFile1 << "## 3 = matrix by sex" << endl;
+  OutInpFile1 << 3 << "  #--method" << endl;
   for ( int h = 1; h <= nsex; h++ )
    for ( int m = 1; m <= nmature; m++)
     for ( int i = syr; i <= nyrRetro+1; i++ )
@@ -11828,7 +12036,7 @@ FUNCTION WriteFiles
   OutInpFile1 <<"## GROWTH PARAMETER CONTROLS                                                            ##" << endl;
   OutInpFile1 <<"## ==================================================================================== ##" << endl;
   OutInpFile1 <<"## " << endl;
-  OutInpFile1 << "# Maximum number of size-classes to which recruitment must occur" << endl;
+  OutInpFile1 << "# Maximum number of size-classes to which recruitment must occur (males, then females)" << endl;
   OutInpFile1 <<nSizeClassRec << endl;
   OutInpFile1 << "# Use functional maturity for terminally molting animals (0=no; 1=Yes)?" << endl;
   OutInpFile1 << use_func_mat << endl;
@@ -11843,26 +12051,42 @@ FUNCTION WriteFiles
   OutInpFile1 << "#  6: Von Bert.: Linf varies among individuals (requires molt probability)" << endl;
   OutInpFile1 << "#  7: Von Bert.: kappa and Linf varies among individuals (requires molt probability)" << endl;
   OutInpFile1 << "#  8: Growth increment is normally distributed (requires molt probability)" << endl;
+  OutInpFile1 << endl;
   OutInpFile1 << "## Type_2: Options for the growth increment model matrix" << endl;
   OutInpFile1 << "#  1: Linear" << endl;
+  OutInpFile1 << "##     1. intercept " << endl;
+  OutInpFile1 << "##     2. slope" << endl;
+  OutInpFile1 << "##     3. gamma distribution scale parameter (on ln-scale)" << endl;
   OutInpFile1 << "#  2: Individual" << endl;
   OutInpFile1 << "#  3: Individual (Same as 2)" << endl;
-  OutInpFile1 << "#  4: Power law for mean post-molt size" << endl;
+  OutInpFile1 << "#  4: Power law for mean post-molt size (3 parameters)" << endl;
+  OutInpFile1 << "##     1. ln-scale intercept " << endl;
+  OutInpFile1 << "##     2. ln-scale slope" << endl;
+  OutInpFile1 << "##     3. gamma distribution scale parameter (on ln-scale)" << endl;
+  OutInpFile1 << "#  5: Alternative power law for mean post-molt size (5 parameters)" << endl;
+  OutInpFile1 << "##     1. reference (small) pre-molt size (constant: must have phase < 0)" << endl;
+  OutInpFile1 << "##     2. mean post-molt size corresponding to 1." << endl;
+  OutInpFile1 << "##     3. reference (large) pre-molt size (constant: must have phase < 0)" << endl;
+  OutInpFile1 << "##     4. mean post-molt size corresponding to 3." << endl;
+  OutInpFile1 << "##     5. gamma distribution scale parameter (on arithmetic scale)" << endl;
+  OutInpFile1 << endl;
   OutInpFile1 << "#  Block: Block number for time-varying growth   " << endl;
   OutInpFile1 << "## Type_1 Type_2  Block" << endl;
   for (int ig=1;ig<=nsex;ig++) {  OutInpFile1 << "   "; for (int ii=1;ii<=3;ii++)  OutInpFile1 << setw(6) << setfixed() << Growth_controls(ig,ii) << " ";  OutInpFile1 << endl; }
+  OutInpFile1 << endl;
   OutInpFile1 << "# Molt probability" << endl;
   OutInpFile1 << "# Type: Options for the molt probability function" << endl;
   OutInpFile1 << "#  0: Pre-specified" << endl;
   OutInpFile1 << "#  1: Constant at 1" << endl;
   OutInpFile1 << "#  2: Logistic" << endl;
   OutInpFile1 << "#  3: Individual" << endl;
+  OutInpFile1 << endl;
   OutInpFile1 << "#  Block: Block number for time-varying growth   " << endl;
   OutInpFile1 << "## Type Block" << endl;
   for (int ig=1;ig<=nsex;ig++) 
-   { OutInpFile1 << "  " << setw(5) << setfixed() << Growth_controls(nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(nsex+ig,3) << " "; OutInpFile1 << endl; }
-  if (nmature==2)
-   {
+    { OutInpFile1 << "  " << setw(5) << setfixed() << Growth_controls(nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(nsex+ig,3) << " "; OutInpFile1 << endl; }
+  if (nmature==2){
+    OutInpFile1 << endl;
     OutInpFile1 << "# Mature probability" << endl;
     OutInpFile1 << "# Type: Options for the mature probability function" << endl;
     OutInpFile1 << "#  0: Pre-specified" << endl;
@@ -11872,7 +12096,7 @@ FUNCTION WriteFiles
     OutInpFile1 << "# Block: Block number for time-varying growth   " << endl;
     OutInpFile1 << "## Type Block" << endl;
     for (int ig=1;ig<=nsex;ig++) 
-     { OutInpFile1 << "  " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,3) << " "; OutInpFile1 << endl; }
+      { OutInpFile1 << "  " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,3) << " "; OutInpFile1 << endl; }
    } //-- if (nmature==2)
 
   OutInpFile1 << endl;
@@ -11899,16 +12123,14 @@ FUNCTION WriteFiles
   int n_Gpar; 
   n_Gpar = 0;
   int n_Gpar2; int h; int iblock;
-  for (int ig=1;ig<=3*nsex;ig++)
-   {
+  for (int ig=1;ig<=3*nsex;ig++){
     if (nparGs(ig) > 0) OutInpFile1 << "# Inputs for sex * type " << ig << endl;
     if (nparGs(ig) > 0) OutInpFile1 << "# MAIN PARS: Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
     n_Gpar2 = n_Gpar;
     if (nsex==1) h = 1;
     if (nsex==2 && (ig==1 || ig==3)) h = 1;
     if (nsex==2 && (ig==2 || ig==4)) h = 2;
-    for (int ipar=1; ipar<=nparGs(ig);ipar++)
-     {
+    for (int ipar=1; ipar<=nparGs(ig);ipar++){
       n_Gpar += 1;
       iblock = 1;
       OutInpFile1 << "         "; OutInpFile1<<  setw(12) << setprecision(6) << setfixed() <<G_pars_est(n_Gpar)<< " "; for (int ii=2;ii<=3;ii++) OutInpFile1<< setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
@@ -11916,11 +12138,10 @@ FUNCTION WriteFiles
       for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
       for (int ii=7;ii<=13;ii++) OutInpFile1 << setw(6) << setfixed() << int(Gpar_control(n_Gpar,ii)) << " ";
       OutInpFile1 << setw(8) << setprecision(4) << setfixed() << Gpar_control(n_Gpar,14) << " # " << parname1(PPstoreG+n_Gpar); OutInpFile1 << endl;
-     }
+    }// ipar loop
     if (nparGs(ig) > 0)  OutInpFile1 << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase Reltve " << endl;
      
-    for (int ipar=1; ipar<=nparGs(ig);ipar++)
-     {
+    for (int ipar=1; ipar<=nparGs(ig);ipar++){
       // Are there blocks
       int jpar = n_Gpar2+ipar;
       int IgBlock = int(Gpar_control(jpar,8));
@@ -11930,65 +12151,58 @@ FUNCTION WriteFiles
       int IgRW = int(Gpar_control(jpar,12));
       int IgRWBlock = int(Gpar_control(jpar,13));
       float SigmaRW = Gpar_control(jpar,14);
-      if (IgBlock !=0)
-       {
+      if (IgBlock !=0){
         // Environmental link
-        for (int kpar=1;kpar<=blocks(IgBlock);kpar++)
-         {
+        for (int kpar=1;kpar<=blocks(IgBlock);kpar++){
           iblock = kpar + 1;
           n_Gpar += 1;
           OutInpFile1 << "         "; OutInpFile1<<  setw(12) << setprecision(6) << setfixed() <<G_pars_est(n_Gpar)<< " "; for (int ii=2;ii<=3;ii++) OutInpFile1<< setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
-	  OutInpFile1 << setw(10) << setfixed() << int(Gpar_control(n_Gpar,4)) << " ";
-	  for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
-	  for (int ii=7;ii<=8;ii++) OutInpFile1 << setw(6) << setfixed() << int(Gpar_control(n_Gpar,ii)) << " ";
-	  OutInpFile1 << "# " << parname1(PPstoreG+n_Gpar); OutInpFile1 << endl;
-         } //-- kpar
-       } //-- blocks 
-     if (IgEnvLink !=0) 
-      {
-       n_Gpar += 1;
+          OutInpFile1 << setw(10) << setfixed() << int(Gpar_control(n_Gpar,4)) << " ";
+          for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
+          for (int ii=7;ii<=8;ii++) OutInpFile1 << setw(6) << setfixed() << int(Gpar_control(n_Gpar,ii)) << " ";
+          OutInpFile1 << "# " << parname1(PPstoreG+n_Gpar); OutInpFile1 << endl;
+        } //-- kpar
+      } //-- blocks 
+     if (IgEnvLink !=0) {
+        n_Gpar += 1;
         OutInpFile1 << G_pars_est(n_Gpar) << " "; for (int ii=2;ii<=7;ii++) OutInpFile1 << Gpar_control(n_Gpar,ii) << " ";  OutInpFile1 << Gpar_control(n_Gpar,15) << endl;
       } //--Env link
     } //--ipar
-      
-   } //--ig
+  } //--ig
   
-  for (int ig=1;ig<=nsex;ig++)
-   if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDGROWTHTRANS || bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDSIZETRANS)
-    {
-     if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDGROWTHTRANS) OutInpFile1 << "\n# Using custom growth matrix" << endl;
-     if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDSIZETRANS)  OutInpFile1 << "\n# Using custom size transition matrix" << endl;
-     for (int i=1;i<=nSizeIncVaries(ig);i++)
-      {
-       OutInpFile1 << setw(6) << setprecision(4) << setfixed() << trans(CustomGrowthMatrix(ig,i)) << endl;
+  for (int ig=1;ig<=nsex;ig++){
+    if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDGROWTHTRANS || bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDSIZETRANS){
+      if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDGROWTHTRANS) OutInpFile1 << "\n# Using custom growth matrix" << endl;
+      if (bUseCustomGrowthMatrix2(ig)==GROWTH_FIXEDSIZETRANS)  OutInpFile1 << "\n# Using custom size transition matrix" << endl;
+      for (int i=1;i<=nSizeIncVaries(ig);i++){
+        OutInpFile1 << setw(6) << setprecision(4) << setfixed() << trans(CustomGrowthMatrix(ig,i)) << endl;
       }
     }
+  }
 
   // Read pre-specified molt probability matrices 
-  for (int ig=1;ig<=nsex;ig++)
-   if (bUseCustomMoltProbability2(ig)==FIXED_PROB_MOLT)
-    {
-     OutInpFile1 << "\n# Using custom molt probability" << endl;
-     OutInpFile1 << "#Pre-specified molt probability" << endl;;
-     for (int i=1;i<=nMoltVaries(ig);i++)
-      {
-       for (int l=1;l<= nSizeSex(ig);l++) OutInpFile1 << setw(6) << setprecision(4) << setfixed() << CustomMoltProbabilityMatrix(ig,i,l) << " ";
-       OutInpFile1 << endl;
+  for (int ig=1;ig<=nsex;ig++){
+    if (bUseCustomMoltProbability2(ig)==FIXED_PROB_MOLT){
+      OutInpFile1 << "\n# Using custom molt probability" << endl;
+      OutInpFile1 << "#Pre-specified molt probability" << endl;;
+      for (int i=1;i<=nMoltVaries(ig);i++){
+        for (int l=1;l<= nSizeSex(ig);l++) OutInpFile1 << setw(6) << setprecision(4) << setfixed() << CustomMoltProbabilityMatrix(ig,i,l) << " ";
+        OutInpFile1 << endl;
       }
     }
+  }
 
   // Read pre-specified probability of maturing matrices 
-  for (int ig=1;ig<=nsex;ig++)
-   if (nmature==2 && bUseCustomMatureProbability2(ig)==FIXED_PROB_MATURE)
-    {
-     OutInpFile1 << "\n# Using custom mature probability" << endl;
-     OutInpFile1 << "#Pre-specified mature probability" << endl;
-     for (int i=1;i<=nMatureVaries(ig);i++)
-      {
-       for (int l=1;l<= nSizeSex(ig);l++)  OutInpFile1 << setw(6) << setprecision(4) << setfixed() << CustomMatureProbabilityMatrix(ig,i,l) << " ";
-       OutInpFile1 << endl;
+  for (int ig=1;ig<=nsex;ig++){
+    if (nmature==2 && bUseCustomMatureProbability2(ig)==FIXED_PROB_MATURE){
+      OutInpFile1 << "\n# Using custom mature probability" << endl;
+      OutInpFile1 << "#Pre-specified mature probability" << endl;
+      for (int i=1;i<=nMatureVaries(ig);i++){
+        for (int l=1;l<= nSizeSex(ig);l++)  OutInpFile1 << setw(6) << setprecision(4) << setfixed() << CustomMatureProbabilityMatrix(ig,i,l) << " ";
+        OutInpFile1 << endl;
       }
     }
+  }
 
   OutInpFile1<<  setw(14) << setprecision(8) << setfixed() << endl;
   OutInpFile1<< endl;
@@ -12011,31 +12225,29 @@ FUNCTION WriteFiles
   OutInpFile1 <<"# Sigma_RW: Sigma for the random walk parameters" << endl;
   OutInpFile1 <<"# Mirror_RW: Should time-varying aspects be mirrored (Indexed by ig)" << endl;
   OutInpFile1 <<"## Relative?   Type   Extra  Brkpts  Mirror   Block  Blk_fn Env_L   EnvL_Vr      RW  RW_blk Sigma_RW Mirr_RW" << endl;
-  for (int b=1; b<=nmature*nsex;b++)
-   {
+  for (int b=1; b<=nmature*nsex;b++){
     OutInpFile1 << "    "; for (int ii=1;ii<=11;ii++) OutInpFile1 << setw(7) << setfixed() << int(M_controls(b,ii)) << " " ;
     OutInpFile1 << setw(8) << setprecision(4) << setfixed() << M_controls(b,12) << " ";
     OutInpFile1 << setw(7) << setfixed() << int(M_controls(b,13)) << endl;
-   }
+  }
 
   if (MaxMbreaks > 0) OutInpFile1 <<"# MaxMbreaks" << endl;
-  for (int h=1;h<=nsex;h++)
-   for (int m=1;m<=nmature;m++)
-    {
-     int ig = (h-1)*nmature+m;
-     for (int ii=1;ii<=M_size_breakpnts(ig);ii++) OutInpFile1 << Mbreaks(ig,ii) << " "; OutInpFile1 << " # sex*maturity state: " << sexes(h) << " & " << m << endl;
+  for (int h=1;h<=nsex;h++){
+    for (int m=1;m<=nmature;m++){
+      int ig = (h-1)*nmature+m;
+      for (int ii=1;ii<=M_size_breakpnts(ig);ii++) OutInpFile1 << Mbreaks(ig,ii) << " "; OutInpFile1 << " # sex*maturity state: " << sexes(h) << " & " << m << endl;
     } 
+  }
 
   OutInpFile1 << endl;
   OutInpFile1 << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=n_Mpar;b++)
-   {
+  for (int b=1; b<=n_Mpar;b++) {
     OutInpFile1 << setw(14) << setprecision(8) << setfixed() << M_pars_est(b) << " ";
     for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << M_pars(b,ii) << " ";
     OutInpFile1 << setw(11) << setfixed() << int(M_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << M_pars(b,ii) << " ";
     OutInpFile1 << setw(6) << setfixed() << int(M_pars(b,7)) << " # " << parname1(PPstoreM+b) << endl;;
-   }
+  }
   
   OutInpFile1  << endl;
   OutInpFile1  <<"## ==================================================================================== ##" << endl;
@@ -12105,83 +12317,81 @@ FUNCTION WriteFiles
   OutInpFile1 << "##  Sigma_RW: Sigma used for the random walk" << endl;
   OutInpFile1 << endl;
 
- for (int it=1;it<=2;it++)
-   for (int h=1;h<=nsex;h++)
-    for (int k=1;k<=nfleet;k++)
-     if ( nparSs(it,(h-1)*nfleet+k) > 0)
-      {
-       int ipnt1 = (h-1)*nfleet+k;
-       int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-       int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
-       if (nparSs(it,ipnt1) > 0)  OutInpFile1 << "# Inputs for type*sex*fleet: " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl;
-       if (nparSs(it,ipnt1) > 0)  OutInpFile1 << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
-       n_Spar2 = n_Spar;
-       int ExtraStuff;
-       ExtraStuff = 0;
-       for (int ipar=1;ipar<=nparSs(it,ipnt1);ipar++)
-        {
-         n_Spar += 1;
-         iblock = 1;
-  	 OutInpFile1 << "         "; OutInpFile1 << setw(12) << setprecision(6) << setfixed() << exp(S_pars_est(n_Spar)) << " ";
-	 for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
-	 OutInpFile1 << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
-	 for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
-	 for (int ii=7;ii<=13;ii++) OutInpFile1 << setw(6) << setfixed() << int(Spar_control(n_Spar,ii)) << " ";
-	 OutInpFile1 << setw(8) << setprecision(4) << setfixed() << Spar_control(n_Spar,14) << " # " << parname1(PPstoreS+n_Spar); OutInpFile1 << endl;
-	 if (int(Spar_control(n_Spar,8)) > 0 || int(Spar_control(n_Spar,10)) > 0 || int(Spar_control(n_Spar,12)) > 0) ExtraStuff = 1;
-        }
-       if (ExtraStuff==1) OutInpFile1 << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase Reltve " << endl;
-       for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)
-        {
-         // Are there blocks
-         int jpar = n_Spar2+ipar;
-         int IgBlock = int(Spar_control(jpar,8));
-         int IgBlockFn = int(Spar_control(jpar,9));
-         int IgEnvLink = int(Spar_control(jpar,10));
-         int IgEnvLinkVar = int(Spar_control(jpar,11));
-         int IgRW = int(Spar_control(jpar,12));
-         int IgRWBlock = int(Spar_control(jpar,13));
-         float SigmaRW = Spar_control(jpar,14);
-         if (IgBlock !=0)
-           {
-            for (int kpar=1;kpar<=blocks(IgBlock);kpar++)
-             {
-              iblock = kpar + 1;
+  for (int it=1;it<=2;it++){
+    for (int h=1;h<=nsex;h++){
+      for (int k=1;k<=nfleet;k++){
+        if ( nparSs(it,(h-1)*nfleet+k) > 0){
+          int ipnt1 = (h-1)*nfleet+k;
+          int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
+          int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
+          if (nparSs(it,ipnt1) > 0)  OutInpFile1 << "# Inputs for type*sex*fleet: " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl;
+          if (nparSs(it,ipnt1) > 0)  OutInpFile1 << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
+          n_Spar2 = n_Spar;
+          int ExtraStuff;
+          ExtraStuff = 0;
+          for (int ipar=1;ipar<=nparSs(it,ipnt1);ipar++){
+            n_Spar += 1;
+            iblock = 1;
+            OutInpFile1 << "         "; OutInpFile1 << setw(12) << setprecision(6) << setfixed() << exp(S_pars_est(n_Spar)) << " ";
+            for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
+            OutInpFile1 << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
+            for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
+            for (int ii=7;ii<=13;ii++) OutInpFile1 << setw(6) << setfixed() << int(Spar_control(n_Spar,ii)) << " ";
+            OutInpFile1 << setw(8) << setprecision(4) << setfixed() << Spar_control(n_Spar,14) << " # " << parname1(PPstoreS+n_Spar); OutInpFile1 << endl;
+            if (int(Spar_control(n_Spar,8)) > 0 || int(Spar_control(n_Spar,10)) > 0 || int(Spar_control(n_Spar,12)) > 0) ExtraStuff = 1;
+          }
+          if (ExtraStuff==1) OutInpFile1 << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase Reltve " << endl;
+          for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++){
+            // Are there blocks
+            int jpar = n_Spar2+ipar;
+            int IgBlock = int(Spar_control(jpar,8));
+            int IgBlockFn = int(Spar_control(jpar,9));
+            int IgEnvLink = int(Spar_control(jpar,10));
+            int IgEnvLinkVar = int(Spar_control(jpar,11));
+            int IgRW = int(Spar_control(jpar,12));
+            int IgRWBlock = int(Spar_control(jpar,13));
+            float SigmaRW = Spar_control(jpar,14);
+            if (IgBlock !=0){
+              for (int kpar=1;kpar<=blocks(IgBlock);kpar++){
+                iblock = kpar + 1;
+                n_Spar += 1;
+                OutInpFile1 << "         "; OutInpFile1 << setw(12) << setprecision(6) << setfixed() << exp(S_pars_est(n_Spar)) << " "; 
+                for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
+                OutInpFile1 << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
+                for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
+                for (int ii=7;ii<=8;ii++) OutInpFile1 << setw(6) << setfixed() << int(Spar_control(n_Spar,ii)) << " ";
+                OutInpFile1 << "# " << parname1(PPstoreS+n_Spar); OutInpFile1 << endl;
+              } //-- kpar  
+            } //-- blocks
+            // Environmental link
+            if (IgEnvLink !=0) {
               n_Spar += 1;
-              OutInpFile1 << "         "; OutInpFile1 << setw(12) << setprecision(6) << setfixed() << exp(S_pars_est(n_Spar)) << " "; 
-              for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
-	      OutInpFile1 << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
-	      for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
-	      for (int ii=7;ii<=8;ii++) OutInpFile1 << setw(6) << setfixed() << int(Spar_control(n_Spar,ii)) << " ";
-  	      OutInpFile1 << "# " << parname1(PPstoreS+n_Spar); OutInpFile1 << endl;
-             } //-- kpar  
-           } //-- blocks
-         // Environmental link
-         if (IgEnvLink !=0) 
-          {
-           n_Spar += 1;
-           OutInpFile1 << setw(12) << setprecision(6) << setfixed() << S_pars_est(n_Spar) << " "; 
-           for (int ii=2;ii<=7;ii++) OutInpFile1 << Spar_control(n_Spar,ii) << " "; OutInpFile1 << Spar_control(n_Spar,15) << " # " << parname1(PPstoreS+n_Spar) << endl;
-          } //--Env link
-        }
-       OutInpFile1 << endl;
-      } //it,h,k
+              OutInpFile1 << setw(12) << setprecision(6) << setfixed() << S_pars_est(n_Spar) << " "; 
+              for (int ii=2;ii<=7;ii++) OutInpFile1 << Spar_control(n_Spar,ii) << " "; OutInpFile1 << Spar_control(n_Spar,15) << " # " << parname1(PPstoreS+n_Spar) << endl;
+            } //--Env link
+          }// ipar loop
+          OutInpFile1 << endl;
+        } // if
+      }// k loop
+    }// h loop
+  }// it loop
 
   OutInpFile1<< "# pre-specified selectivity/retention (ordered by type, sex, fleet and year)" << endl;
-  for (int it=1;it<=2;it++)
-   for (int h=1;h<=nsex;h++)
-    for (int k=1;k<=nfleet;k++)
-     if (slx_type_in((it-1)*nsex+h,k) == SELEX_PRESPECIFIED)
-      {
-       OutInpFile1 << "# Pre-specified values for " << seltypes(it) << " for " << sexes(h) <<"s for " <<fleetname(k) << endl;
-       for (int ii=1;ii<=nclass;ii++) OutInpFile1 << setw(9) << setfixed() << ii << " "; OutInpFile1 << endl;
-       int offset = (it-1)*nfleet*nsex*(nyr+1-syr+1)+nfleet*(nyr+1-syr+1)*(h-1)+(nyr+1-syr+1)*(k-1);
-       for (int iyr =syr;iyr<=nyr+1;iyr++)
-        {
-         for (int ii=1;ii<=nclass;ii++) OutInpFile1 << setw(9) << setprecision(7) << setfixed() << CustomSelex(offset+iyr-syr+1,ii) << " ";
-        OutInpFile1 << "# " << iyr << endl;
-        }
-      }
+  for (int it=1;it<=2;it++){
+    for (int h=1;h<=nsex;h++){
+      for (int k=1;k<=nfleet;k++){
+        if (slx_type_in((it-1)*nsex+h,k) == SELEX_PRESPECIFIED){
+          OutInpFile1 << "# Pre-specified values for " << seltypes(it) << " for " << sexes(h) <<"s for " <<fleetname(k) << endl;
+          for (int ii=1;ii<=nclass;ii++) OutInpFile1 << setw(9) << setfixed() << ii << " "; OutInpFile1 << endl;
+          int offset = (it-1)*nfleet*nsex*(nyr+1-syr+1)+nfleet*(nyr+1-syr+1)*(h-1)+(nyr+1-syr+1)*(k-1);
+          for (int iyr =syr;iyr<=nyr+1;iyr++){
+            for (int ii=1;ii<=nclass;ii++) OutInpFile1 << setw(9) << setprecision(7) << setfixed() << CustomSelex(offset+iyr-syr+1,ii) << " ";
+            OutInpFile1 << "# " << iyr << endl;
+          }
+        }// if 
+      }// k loop
+    } // h loop
+  }// it loop
   
   OutInpFile1 << endl;
   OutInpFile1 <<"## ==================================================================================== ##" << endl;
@@ -12200,23 +12410,21 @@ FUNCTION WriteFiles
   OutInpFile1 <<"# RW_blk: Block number for random walks" << endl;
   OutInpFile1 <<"# Sigma_RW: Sigma for the random walk parameters" << endl;
 
-  OutInpFile1 << "## Analytic  Lambda Emphass  Mirror   Block   Env_L EnvL_Vr      RW  RW_blk Sigma_RW" << endl;
-  for (int b=1; b<=nSurveys;b++)
-   {
+  OutInpFile1 << "## Analytic  Lambda Emphasis  Mirror   Block   Env_L EnvL_Vr    RW  RW_blk  Sigma_RW" << endl;
+  for (int b=1; b<=nSurveys;b++){
     OutInpFile1 << "    ";for (int ii=1;ii<=9;ii++) OutInpFile1 << setw(7) << setfixed() << int(q_controls(b,ii)) << " " ;
     OutInpFile1 << setw(8) << setprecision(4) << setfixed() << q_controls(b,10) << " " << endl;;
-   }
+  }
 
   OutInpFile1 << "# Catchability (parameters)" << endl;
   OutInpFile1 << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=n_qpar;b++)
-   {
+  for (int b=1; b<=n_qpar;b++){
     OutInpFile1 << setw(14) << setprecision(8) << setfixed() << survey_q(b) << " ";
     for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
     OutInpFile1 << setw(11) << setfixed() << int(q_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
     OutInpFile1 << setw(6) << setfixed() << int(q_pars(b,7)) << " # Survey_q_parameter_"+str(b) << endl;
-   }
+  }
 
   OutInpFile1 << endl;
   OutInpFile1 <<"## ==================================================================================== ##" << endl;
@@ -12233,22 +12441,20 @@ FUNCTION WriteFiles
   OutInpFile1 <<"# RW_blk: Block number for random walks" << endl;
   OutInpFile1 <<"# Sigma_RW: Sigma for the random walk parameters" << endl;
   OutInpFile1 << "##   Mirror   Block   Env_L EnvL_Vr     RW   RW_blk Sigma_RW" << endl;
-  for (int b=1; b<=nSurveys;b++)
-   {
+  for (int b=1; b<=nSurveys;b++) {
     OutInpFile1 << "    ";for (int ii=1;ii<=6;ii++) OutInpFile1 << setw(7) << setfixed() << int(add_cv_controls(b,ii)) << " " ;
     OutInpFile1 << setw(8) << setprecision(4) << setfixed() << add_cv_controls(b,7) << " " << endl;;
-   }
+  }
   OutInpFile1 << "## Mirror Block Env_L EnvL_Var  RW RW_blk Sigma_RW" << endl;
   OutInpFile1 << "# Additional variance (parameters)" << endl;
   OutInpFile1 << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=n_addcv_par;b++)
-   {
+  for (int b=1; b<=n_addcv_par;b++){
     OutInpFile1 << setw(14) << setprecision(8) << setfixed() << exp(log_add_cv(b)) << " ";
     for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << add_cv_pars(b,ii) << " ";
     OutInpFile1 << setw(11) << setfixed() << int(add_cv_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << add_cv_pars(b,ii) << " ";
     OutInpFile1 << setw(6) << setfixed() << int(add_cv_pars(b,7)) << " # Add_cv_parameter_"+str(b) << endl;
-   }
+  }
 
   OutInpFile1 << endl;
   OutInpFile1 <<"## ==================================================================================== ##" << endl;
@@ -12257,41 +12463,36 @@ FUNCTION WriteFiles
   OutInpFile1 <<"## " << endl;
   OutInpFile1 << "# Controls on F" << endl;
   OutInpFile1 << "#   Initial_male_F Initial_fema_F   Pen_SD (mal)   Pen_SD (fem) Phz_mean_F_mal Phz_mean_F_fem   Lower_mean_F   Upper_mean_F Low_ann_male_F  Up_ann_male_F    Low_ann_f_F     Up_ann_f_F" << endl;
-  for (int b=1; b<=nfleet;b++)
-    {
-     OutInpFile1 << "    ";for (int ii=1;ii<=12;ii++) OutInpFile1 << setw(14) << setprecision(6) << setfixed() << f_controls(b,ii) << " " ;
-     OutInpFile1 << " # " << fleetname(b) << endl;
-    }
+  for (int b=1; b<=nfleet;b++){
+    OutInpFile1 << "    ";for (int ii=1;ii<=12;ii++) OutInpFile1 << setw(14) << setprecision(6) << setfixed() << f_controls(b,ii) << " " ;
+    OutInpFile1 << " # " << fleetname(b) << endl;
+  }
 
   OutInpFile1 << "#\n # Estimates related to fishing mortality" << endl;
   OutInpFile1 << "# Male fishing mortality by fleet" << endl;
   OutInpFile1 << "#"; for (int Ipar=1;Ipar<=nfleet;Ipar++) OutInpFile1 << fleetname(Ipar) << " "; OutInpFile1 << endl;
   OutInpFile1 << "#"; for (int Ipar=1;Ipar<=nfleet;Ipar++) OutInpFile1 << setw(12) << setprecision(8) << setfixed() << log_fbar(Ipar) << " ";  OutInpFile1 << endl;
-  if (nsex > 1)
-   {
+  if (nsex > 1){
     OutInpFile1 << "# Female offset fishing mortality by fleet" << endl;
     OutInpFile1 << "#"; for (int Ipar=1;Ipar<=nfleet;Ipar++) OutInpFile1 << fleetname(Ipar) << " "; OutInpFile1 << endl;
     OutInpFile1 << "#"; for (int Ipar=1;Ipar<=nfleet;Ipar++) OutInpFile1 << setw(12) << setprecision(8) << setfixed() << log_foff(Ipar) << " ";  OutInpFile1 << endl;
-   } 
+  } 
   OutInpFile1 << "# Male annual offset fishing mortality deviations by fleet" << endl;
-  for (int Ipar=1;Ipar<=nfleet;Ipar++)
-   {
+  for (int Ipar=1;Ipar<=nfleet;Ipar++){
     int Jpar = 0;
     OutInpFile1 << "# " << fleetname(Ipar) << " "; 
     for (int iy=syr;iy<=nyrRetro;iy++)
-     for (int j=1;j<=nseason;j++) if (fhit(iy,j,Ipar) >0) OutInpFile1 << setw(12) << setfixed() << iy << " ";
+      for (int j=1;j<=nseason;j++) if (fhit(iy,j,Ipar) >0) OutInpFile1 << setw(12) << setfixed() << iy << " ";
     OutInpFile1 << endl;
     OutInpFile1 << "# " << fleetname(Ipar) << " "; 
     for (int iy=syr;iy<=nyrRetro;iy++)
-     for (int j=1;j<=nseason;j++) 
-      if (fhit(iy,j,Ipar) >0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdev(Ipar,Jpar) << " "; }
+      for (int j=1;j<=nseason;j++) 
+        if (fhit(iy,j,Ipar) >0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdev(Ipar,Jpar) << " "; }
     OutInpFile1 << endl;
-   }
-  if (nsex > 1)
-   {
+  }// ipar loop
+  if (nsex > 1){
     OutInpFile1 << "# Female annual offset fishing mortality deviations by fleet" << endl;
-    for (int Ipar=1;Ipar<=nfleet;Ipar++)
-     {
+    for (int Ipar=1;Ipar<=nfleet;Ipar++){
       int Jpar = 0;
       OutInpFile1 << "# " << fleetname(Ipar) << " "; 
       for (int iy=syr;iy<=nyrRetro;iy++)
@@ -12299,20 +12500,19 @@ FUNCTION WriteFiles
       OutInpFile1 << endl;
       OutInpFile1 << "# " << fleetname(Ipar) << " "; 
       for (int iy=syr;iy<=nyrRetro;iy++)
-       for (int j=1;j<=nseason;j++) 
-        if (yhit(iy,j,Ipar) >0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdov(Ipar,Jpar) << " "; }
+        for (int j=1;j<=nseason;j++) 
+          if (yhit(iy,j,Ipar) >0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdov(Ipar,Jpar) << " "; }
       OutInpFile1 << endl;
-     }
-   } //--if (nsex)  
+    }
+  } //--if (nsex)  
  
   OutInpFile1 << "#\n # Estimates related to recruitment" << endl;
   OutInpFile1 << "# Annual_deviations "; for (int Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++) OutInpFile1 << setw(12) << setfixed() << Ipar << " "; OutInpFile1 << endl;
   OutInpFile1 << "# Annual_deviations "; for (int Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++) OutInpFile1 << setw(12) << setprecision(8) << setfixed() << rec_dev_est(Ipar) << " "; OutInpFile1 << endl;
-  if (nsex > 1)
-   {
+  if (nsex > 1){
     OutInpFile1 << "# Sex_ratio_devians "; for (int Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++) OutInpFile1 << setw(12) << setfixed() << Ipar << " "; OutInpFile1 << endl;
     OutInpFile1 << "# Sex_ratio_devians "; for (int Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++) OutInpFile1 << setw(12) << setprecision(8) << setfixed() << logit_rec_prop_est(Ipar) << " "; OutInpFile1 << endl;
-   }
+  }
 
 
   OutInpFile1 << endl;
@@ -12333,58 +12533,53 @@ FUNCTION WriteFiles
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ) anystring = anystring + " " + fleetname(d3_SizeComps_in(kk,1,-5));
   OutInpFile1 << anystring << endl;
   anystring = "# ";
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     if (d3_SizeComps_in(kk,1,-4)==UNDET_SEX)        anystring = anystring +" male+female";
     if (d3_SizeComps_in(kk,1,-4)==MALES)            anystring = anystring +" male";
     if (d3_SizeComps_in(kk,1,-4)==FEMALES)          anystring = anystring +" female";
-   }
+  }
   OutInpFile1 << anystring << endl;
   anystring = "# ";
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     if (d3_SizeComps_in(kk,1,-3)==TOTALCATCH)       anystring = anystring +" total";
     if (d3_SizeComps_in(kk,1,-3)==RETAINED)         anystring = anystring +" retained";
     if (d3_SizeComps_in(kk,1,-3)==DISCARDED)        anystring = anystring +" discard";
-   }
+  }
   OutInpFile1 << anystring << endl;
   anystring = "# ";
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     if (d3_SizeComps_in(kk,1,-2)==UNDET_SHELL)      anystring = anystring +" all_shell";
     if (d3_SizeComps_in(kk,1,-2)==NEW_SHELL)        anystring = anystring +" newshell";
     if (d3_SizeComps_in(kk,1,-2)==OLD_SHELL)        anystring = anystring +" oldshell";
-   }
+  }
   OutInpFile1 << anystring << endl;
   anystring = "# ";
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     if (d3_SizeComps_in(kk,1,-1)==UNDET_MATURE)       anystring = anystring +" immature+mature";
     if (d3_SizeComps_in(kk,1,-1)==IMMATURE)         anystring = anystring +" immature";
     if (d3_SizeComps_in(kk,1,-1)==MATURE)           anystring = anystring +" mature";
-   }
+  }
   OutInpFile1 << anystring << endl;
  
-  OutInpFile1 << setw(6) << setfixed() << iSizeCompType_in     << " # Type of likelihood" <<  endl;
+  OutInpFile1 << setw(6) << setfixed() << iSizeCompType_in    << " # Type of likelihood" <<  endl;
   OutInpFile1 << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression" <<  endl;
-  OutInpFile1 << setw(6) << setprecision(4) << setfixed()    << bTailCompression_in        << " # Auto tail compression (pmin)" << endl;
-  OutInpFile1 << setw(6) << setfixed() << iCompAggregator    << " # Composition aggregator index" << endl;
-  OutInpFile1 << setw(6) << setfixed() << lf_catch_in        << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
-  OutInpFile1 << setw(6) << setprecision(4) << setfixed()    << lf_lambda_in        << " # Lambda for effective sample size" << endl;
-  OutInpFile1 << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
-  OutInpFile1 << setw(6) << setfixed() << survey_for_q_in        << " # Survey to set Q for this comp" << endl;
+  OutInpFile1 << setw(6) << setprecision(4) << setfixed()     << bTailCompression_in        << " # Auto tail compression (pmin)" << endl;
+  OutInpFile1 << setw(6) << setfixed() << iCompAggregator     << " # Composition aggregator index" << endl;
+  OutInpFile1 << setw(6) << setfixed() << lf_catch_in         << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
+  OutInpFile1 << setw(6) << setprecision(4) << setfixed()     << lf_lambda_in        << " # Lambda for effective sample size" << endl;
+  OutInpFile1 << setw(6) << setprecision(4) << setfixed()     << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
+  OutInpFile1 << setw(6) << setfixed() << survey_for_q_in     << " # Survey to set Q for this comp" << endl;
 
   OutInpFile1 << endl;
   OutInpFile1 << "# The number of following parameters must match max(Composition Aggregator Index) " << endl;
   OutInpFile1 << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=nSizeComps;b++)
-   {
+  for (int b=1; b<=nSizeComps;b++){
     OutInpFile1 << setw(14) << setprecision(8) << setfixed() << exp(log_vn(b)) << " ";
     for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
     OutInpFile1 << setw(11) << setfixed() << int(log_vn_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
     OutInpFile1 << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << " (possibly extended)" << endl;;
-   }
+  }
 
   OutInpFile1 << endl;
   OutInpFile1 <<"## ==================================================================================== ##" << endl;
@@ -12610,12 +12805,15 @@ GLOBALS_SECTION
   
   #undef NOGROWTH_DATA
   #define NOGROWTH_DATA 0
-  #undef GROWTHINC_DATA
-  #define GROWTHINC_DATA 1
+  #undef GROWTHINC_DATA_NORMAL
+  #define GROWTHINC_DATA_NORMAL 1
   #undef GROWTHCLASS_DATA
   #define GROWTHCLASS_DATA 2
   #undef GROWTHCLASS_VALS
   #define GROWTHCLASS_VALS 3
+  #undef GROWTHINC_DATA_GAMMA
+  #define GROWTHINC_DATA_GAMMA 1
+
   #undef NO_CUSTOM_M
   #define NO_CUSTOM_M 0
   #undef WITH_CUSTOM_M
@@ -13171,8 +13369,6 @@ FINAL_SECTION
 // 2025-01-15 ** AEP. (GMACS Version 2.20.18) Added the floor spline selectivity pattern and the stacked logistic selectivity pattern
 // 2025-01-30 ** AEP. (GMACS Version 2.20.20) Updated the weight aggregated comps are computed.
 // 2025-02-15 ** MV.  (GMACS Version 2.20.21) Corrected indexing error for the random walk sigma.
-// 2025-03-28 ** WTS. (GMACS Version 2.20.21a) Corrected error in growth_likelihood function that prevented the likelihood from being calculated 
-//                     if GrowthObsType==GROWTHINC_DATA
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
