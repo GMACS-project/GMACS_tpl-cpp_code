@@ -192,13 +192,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#general-ctl-file-parameter-specifications" id="toc-general-ctl-file-parameter-specifications" class="nav-link active" data-scroll-target="#general-ctl-file-parameter-specifications">General ctl file parameter specifications</a>
-  <ul class="collapse">
-  <li><a href="#basic-flags" id="toc-basic-flags" class="nav-link" data-scroll-target="#basic-flags">Basic flags</a></li>
-  <li><a href="#population-characteristics" id="toc-population-characteristics" class="nav-link" data-scroll-target="#population-characteristics">Population characteristics</a></li>
-  <li><a href="#data-flags" id="toc-data-flags" class="nav-link" data-scroll-target="#data-flags">Data flags</a></li>
-  </ul></li>
-  <li><a href="#ctl-file-options-and-flags" id="toc-ctl-file-options-and-flags" class="nav-link" data-scroll-target="#ctl-file-options-and-flags">ctl file options and flags</a>
+  <li><a href="#general-parameter-specifications" id="toc-general-parameter-specifications" class="nav-link active" data-scroll-target="#general-parameter-specifications">General parameter specifications</a></li>
+  <li><a href="#options-and-flags" id="toc-options-and-flags" class="nav-link" data-scroll-target="#options-and-flags">options and flags</a>
   <ul class="collapse">
   <li><a href="#prior-types" id="toc-prior-types" class="nav-link" data-scroll-target="#prior-types">Prior types</a></li>
   <li><a href="#initial-n" id="toc-initial-n" class="nav-link" data-scroll-target="#initial-n">Initial N</a></li>
@@ -233,8 +228,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="general-ctl-file-parameter-specifications" class="level2">
-<h2 class="anchored" data-anchor-id="general-ctl-file-parameter-specifications">General ctl file parameter specifications</h2>
+<section id="general-parameter-specifications" class="level2">
+<h2 class="anchored" data-anchor-id="general-parameter-specifications">General parameter specifications</h2>
 <ul>
 <li>Initial: Initial value for the parameter (must lie between lower and upper)</li>
 <li>Lower &amp; Upper: Range for the parameter</li>
@@ -271,70 +266,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>RW_blk: Block number for random walks</li>
 <li>Sigma_RW: Sigma used for the random walk</li>
 </ul>
-<section id="basic-flags" class="level3">
-<h3 class="anchored" data-anchor-id="basic-flags">Basic flags</h3>
-<ul>
-<li>0: no (NO)</li>
-<li>1: yes (YES)</li>
-</ul>
 </section>
-<section id="population-characteristics" class="level3">
-<h3 class="anchored" data-anchor-id="population-characteristics">Population characteristics</h3>
-<section id="sex-flags" class="level4">
-<h4 class="anchored" data-anchor-id="sex-flags">Sex flags</h4>
-<ul>
-<li>0: undetermined or single sex (UNDET_SEX)</li>
-<li>1: male (MALES)</li>
-<li>2: female (FEMALES)</li>
-</ul>
-</section>
-<section id="shell-condition-flags" class="level4">
-<h4 class="anchored" data-anchor-id="shell-condition-flags">Shell condition flags</h4>
-<ul>
-<li>0: undetermined (UNDET_SHELL)</li>
-<li>1: new shell (NEW_SHELL)</li>
-<li>2: old shell (OLD_SHELL)</li>
-</ul>
-</section>
-<section id="maturity-state-flags" class="level4">
-<h4 class="anchored" data-anchor-id="maturity-state-flags">Maturity state flags</h4>
-<ul>
-<li>0: undetermined (UNDET_MATURE)</li>
-<li>1: mature (MATURE)</li>
-<li>2: immature (IMMATURE)</li>
-</ul>
-</section>
-</section>
-<section id="data-flags" class="level3">
-<h3 class="anchored" data-anchor-id="data-flags">Data flags</h3>
-<section id="basic-data-types" class="level4">
-<h4 class="anchored" data-anchor-id="basic-data-types">Basic data types</h4>
-<ul>
-<li>1: biomass (BIOMASS)</li>
-<li>2: abundance (ABUNDANCE)</li>
-</ul>
-</section>
-<section id="catch-data-type-flags" class="level4">
-<h4 class="anchored" data-anchor-id="catch-data-type-flags">Catch data type flags</h4>
-<ul>
-<li>0: total catch (TOTALCATCH)</li>
-<li>1: retaied catch (RETAINED)</li>
-<li>2: discarded catch (DISCARDED)</li>
-</ul>
-</section>
-<section id="growth-data-type-flags" class="level4">
-<h4 class="anchored" data-anchor-id="growth-data-type-flags">Growth data type flags</h4>
-<ul>
-<li>0: no growth data (NOGROWTH_DATA)</li>
-<li>1: growth increment data (GROWTHINC_DATA)</li>
-<li>2: data for a growth clsas (??) (GROWTHCLASS_DATA)</li>
-<li>3: values for a growth class (??) (GROWTHCLASS_VALS) #define GROWTHCLASS_VALS 3</li>
-</ul>
-</section>
-</section>
-</section>
-<section id="ctl-file-options-and-flags" class="level2">
-<h2 class="anchored" data-anchor-id="ctl-file-options-and-flags">ctl file options and flags</h2>
+<section id="options-and-flags" class="level2">
+<h2 class="anchored" data-anchor-id="options-and-flags">options and flags</h2>
 <section id="prior-types" class="level3">
 <h3 class="anchored" data-anchor-id="prior-types">Prior types</h3>
 <ul>
