@@ -13370,7 +13370,11 @@ FINAL_SECTION
 // 2025-01-15 ** AEP. (GMACS Version 2.20.18) Added the floor spline selectivity pattern and the stacked logistic selectivity pattern
 // 2025-01-30 ** AEP. (GMACS Version 2.20.20) Updated the weight aggregated comps are computed.
 // 2025-02-15 ** MV.  (GMACS Version 2.20.21) Corrected indexing error for the random walk sigma.
-// 2025-03-28 ** WTS  (GMACS Version 2.20.22) Added growth likelihood options when fitting non-tagging molt increment data. Reformatted several code sections.
+// 2025-03-31 ** WTS  (GMACS Version 2.20.22) Added Tanner crab mean growth model.Added growth likelihood options when 
+//                    fitting non-tagging molt increment data. 
+//                    Corrected logic issue that prevented growth likelihood for non-taggng molt increment data from being calculated 
+//                    (introduced in 2.20.06).. Reformatted several code sections.
+
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
