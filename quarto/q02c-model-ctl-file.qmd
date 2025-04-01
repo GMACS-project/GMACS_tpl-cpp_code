@@ -2,7 +2,7 @@
 title: "model.ctl file"
 ---
 
-## General ctl file parameter specifications 
+## General parameter specifications 
   * Initial: Initial value for the parameter (must lie between lower and upper)
   * Lower & Upper: Range for the parameter
   * Prior type
@@ -29,44 +29,7 @@ title: "model.ctl file"
   * RW_blk: Block number for random walks
   * Sigma_RW: Sigma used for the random walk
 
-### Basic flags
-  * 0: no  (NO)
-  * 1: yes (YES)
-
-### Population characteristics
-#### Sex flags
-  * 0: undetermined or single sex (UNDET_SEX)
-  * 1: male   (MALES)
-  * 2: female (FEMALES)
- 
-#### Shell condition flags
-  * 0: undetermined (UNDET_SHELL)
-  * 1: new shell    (NEW_SHELL)
-  * 2: old shell    (OLD_SHELL)
-
-#### Maturity state flags
-  * 0: undetermined (UNDET_MATURE)
-  * 1: mature       (MATURE)
-  * 2: immature     (IMMATURE)
-
-### Data flags
-#### Basic data types
-  * 1: biomass   (BIOMASS)
-  * 2: abundance (ABUNDANCE)
-
-#### Catch data type flags
-  * 0: total catch (TOTALCATCH)
-  * 1: retaied catch (RETAINED)
-  * 2: discarded catch (DISCARDED)
-  
-#### Growth data type flags
-  * 0: no growth data                  (NOGROWTH_DATA)
-  * 1: growth increment data           (GROWTHINC_DATA)
-  * 2: data for a growth clsas (??)    (GROWTHCLASS_DATA)
-  * 3: values for a growth class (??)  (GROWTHCLASS_VALS)
-  #define GROWTHCLASS_VALS 3
-
-## ctl file options and flags
+## options and flags
 
 ### Prior types
   * 0: Uniform   - parameters are the range of the uniform prior
@@ -149,9 +112,9 @@ title: "model.ctl file"
 #### Selectivity and retention function flags
   * 0: Parametric selectivity    (SELEX_PARAMETRIC)
   * 1: coefficients              (SELEX_COEFFICIENTS)
-  * 2: standaerd logistic        (SELEX_STANLOGISTIC)
-    - size-at-50% selected
-    - slope at 50% selected 
+  * 2: standard logistic         (SELEX_STANLOGISTIC)
+    - ln-scale size-at-50% selected
+    - ln-scale "width" (1/"slope") 
   * 3: alternative logistic      (SELEX_5095LOGISTIC)
     - size-at-50% selected
     - size at 95% selected

@@ -2704,15 +2704,15 @@ DATA_SECTION
   // |--------------------------------|
   !! cout << " * Selectivity parameter controls" << endl;
  
-  imatrix slx_bsex_in(1,2,1,nfleet);                    //> boolean for sex-specific selex
-  imatrix slx_type_in(1,2*nsex,1,nfleet);               //> integer for selectivity type (e.g. logistic, double normal)
-  imatrix slx_include_in(1,2,1,nfleet);                 //> insertion of fleet in another
-  imatrix slx_extra_in(1,2*nsex,1,nfleet);              //> extra parameters for each pattern
-  imatrix slx_max_at_1_in(1,2*nsex,1,nfleet);	        //> determines if selectivity for the maximum size class is forced to be 1
-  imatrix slx_1_at_size(1,2*nsex,1,nfleet);	        //> size class at which selex is 1
-  imatrix slx_nret(1,2*nsex,1,nfleet);                  //> boolean for retention/discard
+  imatrix slx_bsex_in(1,2,1,nfleet);              //> boolean for sex-specific selex
+  imatrix slx_type_in(1,2*nsex,1,nfleet);         //> integer for selectivity type (e.g. logistic, double normal)
+  imatrix slx_include_in(1,2,1,nfleet);           //> insertion of fleet in another
+  imatrix slx_extra_in(1,2*nsex,1,nfleet);        //> extra parameters for each pattern
+  imatrix slx_max_at_1_in(1,2*nsex,1,nfleet);	    //> determines if selectivity for the maximum size class is forced to be 1
+  imatrix slx_1_at_size(1,2*nsex,1,nfleet);	      //> size class at which selex is 1
+  imatrix slx_nret(1,2*nsex,1,nfleet);            //> boolean for retention/discard
   imatrix ret_max_in(1,2*nsex,1,nfleet);	        //> should asymptotic selectivity be estimated?
-  imatrix slx_type_npar(1,2*nsex,1,nfleet);             //> integer for number of selex parameters
+  imatrix slx_type_npar(1,2*nsex,1,nfleet);       //> integer for number of selex parameters
 
   int Nyears3;
   !! Nyears3 = 2*nfleet*nsex*(nyr+1-syr+1);
@@ -2955,32 +2955,32 @@ DATA_SECTION
              if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_";
              if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_";
              if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
-	     if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
-	     if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
-	     if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
-	     if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
-	     if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
-	     if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
-	     if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
-	     if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
-	     if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-	     if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double normal_par_1";
-	     if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double normal_par_2";
-	     if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double normal_par_3";
-	     if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double normal_par_1";
-	     if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double normal_par_2";
-	     if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double normal_par_3";
-	     if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
-	     if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
-	     if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
-	     if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
-	     if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
-	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
-	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
-	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
-	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
-	     if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
-	     anystring += "_block_group_"+str(IgBlock)+"_block_"+str(kpar); 
+            if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
+            if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
+            if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
+            if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
+            if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
+            if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
+            if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
+            if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
+            if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double normal_par_1";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double normal_par_2";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double normal_par_3";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double normal_par_1";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double normal_par_2";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double normal_par_3";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
+            if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
+            if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
+            if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
+            if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
+            if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+            if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+            if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+            if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+            if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
+            anystring += "_block_group_"+str(IgBlock)+"_block_"+str(kpar); 
 
              gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
 	     gmacs_ctl << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
@@ -3000,31 +3000,31 @@ DATA_SECTION
            n_Spar += 1;
            anystring = "Env_link_"+fleetname(k)+"_"+sexes(h)+"_";
            if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
-	   if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
-	   if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
-	   if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
-	   if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
-	   if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
-	   if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
-	   if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
-	   if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
-	   if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-	   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double normal_par_1";
-	   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double normal_par_2";
-	   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double normal_par_3";
-	   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double normal_par_1";
-	   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double normal_par_2";
-	   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double normal_par_3";
-	   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
-	   if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
-	   if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
-	   if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
-	   if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
-	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
-	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
-	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
-	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
-	   if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
+          if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
+          if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
+          if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
+          if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
+          if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
+          if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
+          if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
+          if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
+          if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double normal_par_1";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double normal_par_2";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double normal_par_3";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double normal_par_1";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double normal_par_2";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double normal_par_3";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
+          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
+          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
+          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
+          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
+          if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+          if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+          if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+          if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+          if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
            
            parname1(PPnt+1) = anystring;
            PPnt += 1;
@@ -5275,110 +5275,103 @@ FUNCTION initialize_model_parameters
       } //-- h & Igrow
    if (verbose >= 3) cout<<"--finished setting maturity pars"<<endl;
      
-   // Get selectivity parameters
-   nsel_use = 0;
-   S_pars.initialize();
-   for (int it=1;it<=2;it++)
-    for (int h=1;h<=nsex;h++)
-     for (int k=1;k<=nfleet;k++)
-     if ( nparSs(it,(h-1)*nfleet+k) > 0)
-      {
-       int is = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-       for ( int isel = 1; isel<=nSelVaries(is); isel++)
-        {
-         nsel_use += 1;
-         int OK; int irow; int irefrow; int iyr;
-         OK = 0; irow = 0;
-         int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
+  // Get selectivity parameters
+  nsel_use = 0;
+  S_pars.initialize();
+  for (int it=1;it<=2;it++){
+    for (int h=1;h<=nsex;h++){
+      for (int k=1;k<=nfleet;k++){
+        if ( nparSs(it,(h-1)*nfleet+k) > 0){
+          int is = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
+          for ( int isel = 1; isel<=nSelVaries(is); isel++){
+            nsel_use += 1;
+            int OK; int irow; int irefrow; int iyr;
+            OK = 0; irow = 0;
+            int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
 
-         for (int ivec=1;ivec<=nyrRetro+1-syr+1;ivec++)
-          if (SelPnt(ipnt3+ivec,nclass+6)==isel && OK==0) { OK=1; irow=ipnt3+ivec; }
-         iyr = SelPnt(irow,nclass+5);
-         if (isel==1) irefrow = irow;
-         sel_patterns2(nsel_use) = irow;
+            for (int ivec=1;ivec<=nyrRetro+1-syr+1;ivec++)
+              if (SelPnt(ipnt3+ivec,nclass+6)==isel && OK==0) { OK=1; irow=ipnt3+ivec; }
+            iyr = SelPnt(irow,nclass+5);
+            if (isel==1) irefrow = irow;
+            sel_patterns2(nsel_use) = irow;
 
-        // Extract parameters 
-        int ParNo; int RefParNo;
-        for (int ipar=1;ipar<=nclass+1;ipar++)
-         if (SelPnt(irow,ipar) != 0)
-          {
-           RefParNo = SelPnt(irefrow,ipar);
-           if (SelPnt(irow,ipar) >0 && SelPnt(irow,ipar) < 10000)
-            {
-             ParNo = SelPnt(irow,ipar);
-             if (isel==1) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
-             if (isel>0 && S_relative(ParNo)==0) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
-             if (isel>0 && S_relative(ParNo)==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(S_pars_est(ParNo));
-            }
-           else
-            {
-             if (SelPnt(irow,ipar) > 0)
-              {
-               int EnvLinkVar = SelPnt(irow,ipar) - int(SelPnt(irow,ipar)/100.0)*100;
-               int EnvLink = int(SelPnt(irow,ipar)/100) - int(SelPnt(irow,ipar)/10000)*100;
-               int ParNo = int(SelPnt(irow,ipar)/10000) - int(SelPnt(irow,ipar)/1000000)*100;
-               if (EnvLink==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) + S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
-               if (EnvLink==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
-               if (EnvLink==3) S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar)); 
+            // Extract parameters 
+            int ParNo; int RefParNo;
+            for (int ipar=1;ipar<=nclass+1;ipar++){
+              if (SelPnt(irow,ipar) != 0) {
+                RefParNo = SelPnt(irefrow,ipar);
+                if (SelPnt(irow,ipar) >0 && SelPnt(irow,ipar) < 10000) {
+                  ParNo = SelPnt(irow,ipar);
+                  if (isel==1) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
+                  if (isel>0 && S_relative(ParNo)==0) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
+                  if (isel>0 && S_relative(ParNo)==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * exp(S_pars_est(ParNo));
+                } else {
+                  if (SelPnt(irow,ipar) > 0){
+                    int EnvLinkVar =     SelPnt(irow,ipar)        - int(SelPnt(irow,ipar)/100.0)*100;
+                    int EnvLink    = int(SelPnt(irow,ipar)/100)   - int(SelPnt(irow,ipar)/10000)*100;
+                    int ParNo      = int(SelPnt(irow,ipar)/10000) - int(SelPnt(irow,ipar)/1000000)*100;
+                    if (EnvLink==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) +     S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+                    if (EnvLink==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) *     S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+                    if (EnvLink==3) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * exp(S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar)); 
+                  } else {
+                    int SelPnt2 = -1*SelPnt(irow,ipar);
+                    int Devpar = SelPnt2  - int(SelPnt2/100.0)*100;
+                    S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(par_devs(Devpar)); 
+                  }
+                }
               }
-             else
-              {
-               int SelPnt2 = -1*SelPnt(irow,ipar);
-               int Devpar = SelPnt2  - int(SelPnt2/100.0)*100;
-               S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(par_devs(Devpar)); 
-              }
-            }
-          } //--ipar
-        } //-is  
-      }//- it, h, k    
-   if (verbose >= 3) cout<<"--finished setting selectivity"<<endl;
+            } //--ipar loop
+          } //-isel loop  
+        }//- if nparSs(it,(h-1)*nfleet+k) > 0
+      } // - k loop
+    } // - h loop
+  } // - it loop  
+  if (verbose >= 3) cout<<"--finished setting selectivity"<<endl;
 
-   // Natural mortality
-   dvar_matrix M_out(syr,nyrRetro,1,nclass);
-   for (int h=1;h<=nsex;h++)
-    for (int m=1;m<=nmature;m++)
-     {
+  // Natural mortality
+  dvar_matrix M_out(syr,nyrRetro,1,nclass);
+  for (int h=1;h<=nsex;h++){
+    for (int m=1;m<=nmature;m++){
       int ig = (h-1)*nmature + m;
-      if (M_mirror(ig)==0)
-       {
+      if (M_mirror(ig)==0){
         M(h,m) = timevarparM(3,ig, nyr, M_relative(ig), M_type(ig), 
-                             M_size_breakpnts(ig), M_block(ig), M_block_fn(ig), 
-                             M_env_link(ig), M_env_var(ig), 
-                             M_extra(ig),M_RW(ig), M_RW_blk(ig), n_Mpar, MToIg, M_pars_est); 
-        if (M_mirror_RW(ig) > 0)
-         {
+                              M_size_breakpnts(ig), M_block(ig), M_block_fn(ig), 
+                              M_env_link(ig), M_env_var(ig), 
+                              M_extra(ig),M_RW(ig), M_RW_blk(ig), n_Mpar, MToIg, M_pars_est); 
+        if (M_mirror_RW(ig) > 0){
           int h2 = isex(M_mirror_RW(ig)); int m2 =imature(M_mirror_RW(ig));
           dvar_vector Mmult = elem_div(M(h,m,syr-1),M(h2,m2,syr-1));
           for (int iyr=syr;iyr<=nyr;iyr++) M(h,m,iyr) = elem_prod(M(h2,m2,iyr),Mmult);
-         }
-       }
-      else
-       { M(h,m) = M( isex(M_mirror(ig)),imature(M_mirror(ig)) ); }
-     }
-   if (verbose >= 3) cout<<"--finished setting M"<<endl;
+        }
+      } else {
+        M(h,m) = M( isex(M_mirror(ig)),imature(M_mirror(ig)) ); 
+      }
+    }
+  }
+  if (verbose >= 3) cout<<"--finished setting M"<<endl;
  
-   // SurveyQ
-   for (int is=1;is<=nSurveys;is++)
-    {
-     if (q_mirror(is)==0)
+  // SurveyQ
+  for (int is=1;is<=nSurveys;is++){
+    if (q_mirror(is)==0){
       SurveyQT(is) = timevarparV(1,is, nyrRetro+1, q_block(is), q_env_link(is), q_env_var(is), 
-                              q_RW(is), q_RW_blk(is), n_qpar, qToSurv,survey_q); 
-     else
+                                 q_RW(is), q_RW_blk(is), n_qpar, qToSurv,survey_q); 
+    } else {
       SurveyQT(is) = SurveyQT(q_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
     }
-   if (verbose >= 3) cout<<"--finished survey Q"<<endl;
+  }
+  if (verbose >= 3) cout<<"--finished survey Q"<<endl;
    
-   // Additional variance
-   for (int is=1;is<=nSurveys;is++)
-    {
-     if (add_cv_mirror(is)==0)
-        AddVarQT(is) = timevarparV(2,is, nyrRetro+1, add_cv_block(is), add_cv_env_link(is), add_cv_env_var(is), 
-                                   add_cv_RW(is), add_cv_RW_blk(is), n_addcv_par, AddcvToSurv, log_add_cv); 
-     else
+  // Additional variance
+  for (int is=1;is<=nSurveys;is++){
+    if (add_cv_mirror(is)==0){
+      AddVarQT(is) = timevarparV(2,is, nyrRetro+1, add_cv_block(is), add_cv_env_link(is), add_cv_env_var(is), 
+                                 add_cv_RW(is), add_cv_RW_blk(is), n_addcv_par, AddcvToSurv, log_add_cv); 
+    } else {
       AddVarQT(is) = AddVarQT(add_cv_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
     }
-   if (verbose >= 3) cout<<"--finished AddV"<<endl;
-   //exit(1);
+  }
+  if (verbose >= 3) cout<<"--finished AddV"<<endl;
+  //exit(1);
 
 // =======================================================================================================================================
 // =======================================================================================================================================

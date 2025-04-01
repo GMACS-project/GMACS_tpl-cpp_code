@@ -45,6 +45,13 @@ to be specified in the ctl file) are also given as sub-bullets (TODO: finish).
   * 3: values for a growth class (??)  (GROWTHCLASS_VALS)
   * 4: gamma-distributed growth increment data  (GROWTHINC_DATA_GAMMA)
 
+For 1 (GROWTHINC_DATA_NORMAL), the difference between the observed growth increment
+and the predicted (the "error") is assumed to be normally-distributed with an assumed CV, but note that this 
+is not necessarily reflective of the predicted growth transition matrix. The "error" can be regarded 
+as including both the variability for any individual molt increment and any measurement error. 
+For 4, the "error" is simply the difference between the observed molt increment and 
+the predicted mean, and thus the likelihood is consistent with the transition matrix..
+
 ## ctl file options and flags
 
 ### Prior types
@@ -135,7 +142,7 @@ See code in include/selex.hpp for more details on specific functions.
     - 1 parameter per class (documentation says logit-scale, but code implies ln-scale)
   * 2: standard logistic         (SELEX_STANLOGISTIC; gsm::LogisticCurve)
     - ln-scale size-at-50% selected
-    - ln-scale slope at 50% selected 
+    - ln-scale width 
   * 3: alternative logistic      (SELEX_5095LOGISTIC; gsm::LogisticCurve95)
     - ln-scale size-at-50% selected
     - ln-scale size at 95% selected
