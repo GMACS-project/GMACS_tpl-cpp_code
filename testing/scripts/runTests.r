@@ -1,4 +1,4 @@
-#--script to run tests
+#--script to run tests: USE runTests1.r instead!!
 #' 
 #' @title Run tests
 #' @description Function to run tests using models from the GMACS_Models repo

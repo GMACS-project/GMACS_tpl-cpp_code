@@ -158,74 +158,87 @@ runTests<-function(repoDir,
       ###--compare parameter values from run for tst with "old" values---- 
       lstFNs[["par_file"]] = list(old=file.path(repoDir,"all_models",tst,dfrFNs$par_file[1]),
                                   new=file.path(tst,"gmacs.par"));
-      if (!compareWith=="none"){
-        res = TRUE;
-        pars_new = readParFile("gmacs.par");
-        if (compareWith=="par")
-          comp_file = file.path(repoDir,"all_models",tst,dfrFNs$par_file[1]);
-        if (compareWith=="pin")
-          comp_file = "gmacs.pin";
-        if (!file.exists(comp_file)) {
-          res = paste0(comp_file," does not exist for '",tst,"'. Can't test parameter values directly.")
-          warning(res,immediate.=TRUE);
-          res = NULL;
-        } else {
-          pars_old = readParFile(comp_file);
-          if (nrow(pars_new)!=nrow(pars_old)){
-            str = paste0("Comparing new, old par files: number of rows differ! ",nrow(pars_new)," ",nrow(pars_old));
-            res = list(new=pars_new,old=pars_old);
-            warning(str,immediate.=TRUE);
+      pars_new = readParFile("gmacs.par");
+      if (is.null(pars_new)){
+        res = paste0("Model run failed for '",tst,"'!!!")
+        warning(res,immediate.=TRUE);
+        res = NULL;
+        ###--add failed test results to results list----
+        results[[tst]] = list(lstFNs=lstFNs,
+                              ran=FALSE,
+                              pars=NULL,
+                              allOutNew=NULL,
+                              allOutOld=NULL);
+      } else {
+        if (!compareWith=="none"){
+          res = TRUE;
+          if (compareWith=="par")
+            comp_file = file.path(repoDir,"all_models",tst,dfrFNs$par_file[1]);
+          if (compareWith=="pin")
+            comp_file = "gmacs.pin";
+          if (!file.exists(comp_file)) {
+            res = paste0(comp_file," does not exist for '",tst,"'. Can't test parameter values directly.")
+            warning(res,immediate.=TRUE);
+            res = NULL;
           } else {
-            idx = which(abs(pars_new$value-pars_old$value) > 1.0e-5);
-            if (length(idx)>0){ 
-              res = dplyr::bind_cols(param=pars_new$name[idx],new=pars_new$value[idx],old=pars_old$value[idx]) |> 
-                      dplyr::mutate(abs_dif=abs(new-old));
-              str = paste0("Detected differences for ",paste(pars_new$name[idx],collapse=", "));
+            pars_old = readParFile(comp_file);
+            if (nrow(pars_new)!=nrow(pars_old)){
+              str = paste0("Comparing new, old par files: number of rows differ! ",nrow(pars_new)," ",nrow(pars_old));
+              res = list(new=pars_new,old=pars_old);
               warning(str,immediate.=TRUE);
             } else {
-              str = paste0("'",tst,"' passed!");
-              message(str);
+              idx = which(abs(pars_new$value-pars_old$value) > 1.0e-5);
+              if (length(idx)>0){ 
+                res = dplyr::bind_cols(param=pars_new$name[idx],new=pars_new$value[idx],old=pars_old$value[idx]) |> 
+                        dplyr::mutate(abs_dif=abs(new-old));
+                str = paste0("Detected differences for ",paste(pars_new$name[idx],collapse=", "));
+                warning(str,immediate.=TRUE);
+              } else {
+                str = paste0("'",tst,"' passed!");
+                message(str);
+              }
             }
           }
+          res_pars = res;
+        } else {
+          res_pars = NULL;
         }
-        res_pars = res;
-      } else {
-        res_pars = NULL;
+          
+        ###--compare Gmacsall.out values from run for tst with "old" values----
+        res = TRUE;
+        fnNew = file.path("Gmacsall.out");
+        fnOld = file.path(repoDir,"all_models",tst,"Gmacsall.out");
+        lstFNs[["Gmacsall.out"]] = list(old=fnOld,
+                                        new=file.path(tst,fnNew));
+        if (file.exists(fnNew)) {
+          tblNew <- read.table(fnNew,fill=T,comment="?",col.names=paste0("col",1:200));
+        } else {
+          warning(fnNew," does not exist.\n",immediate.=TRUE);
+          res = FALSE;
+        }
+        if (file.exists(fnOld)) {
+          tblOld <- read.table(fnOld,fill=T,comment="?",col.names=paste0("col",1:200));
+        } else {
+          warning(fnOld," does not exist.\n",immediate.=TRUE);
+          res = FALSE;
+        }
+        if (!res){
+          warning("#--Skipping Gmacsall.out comparisons.----\n\n",immediate.=TRUE);
+          res = NULL;
+          pg  = NULL;
+        } else {
+          ####--use wtsGMACS to read files----
+          lstAlloutNew = wtsGMACS::readGmacsAllout(fnNew);
+          lstAllOutOld = wtsGMACS::readGmacsAllout(fnOld);
+        }
+  
+        ###--add test results to results list----
+        results[[tst]] = list(lstFNs=lstFNs,
+                              ran=TRUE,
+                              pars=res_pars,
+                              allOutNew=lstAlloutNew,
+                              allOutOld=lstAllOutOld);
       }
-        
-      ###--compare Gmacsall.out values from run for tst with "old" values----
-      res = TRUE;
-      fnNew = file.path("Gmacsall.out");
-      fnOld = file.path(repoDir,"all_models",tst,"Gmacsall.out");
-      lstFNs[["Gmacsall.out"]] = list(old=fnOld,
-                                      new=file.path(tst,fnNew));
-      if (file.exists(fnNew)) {
-        tblNew <- read.table(fnNew,fill=T,comment="?",col.names=paste0("col",1:200));
-      } else {
-        warning(fnNew," does not exist.\n",immediate.=TRUE);
-        res = FALSE;
-      }
-      if (file.exists(fnOld)) {
-        tblOld <- read.table(fnOld,fill=T,comment="?",col.names=paste0("col",1:200));
-      } else {
-        warning(fnOld," does not exist.\n",immediate.=TRUE);
-        res = FALSE;
-      }
-      if (!res){
-        warning("#--Skipping Gmacsall.out comparisons.----\n\n",immediate.=TRUE);
-        res = NULL;
-        pg  = NULL;
-      } else {
-        ####--use wtsGMACS to read files----
-        lstAlloutNew = wtsGMACS::readGmacsAllout(fnNew);
-        lstAllOutOld = wtsGMACS::readGmacsAllout(fnOld);
-      }
-
-      ###--add test results to results list----
-      results[[tst]] = list(lstFNs=lstFNs,
-                            pars=res_pars,
-                            allOutNew=lstAlloutNew,
-                            allOutOld=lstAllOutOld);
 
       ###--move out of current run folder up a folder level to testDir----
       setwd("..");

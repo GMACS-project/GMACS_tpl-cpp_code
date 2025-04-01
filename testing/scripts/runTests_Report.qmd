@@ -84,95 +84,102 @@ params:
   for (md in mds){
     #--testing: md = names(res)[7];
     cat("## Results for",md,"\n\n");
-    if (!is.null(res[[md]]$allout$res)){
-      cat(paste("*",res[[md]]$allout$res))
-      cat("\n\n")
+    if (is.null(res[[md]]$ran)) {
+      cat("###--'ran' flag is not present. Check results carefully for duplication with previous model.\n\n")
     }
-    ###--comparisons from par files----
-    if (is.null(res[[md]]$pars)){
-      cat("Old parameter values were not available for comparison. \n\n")
+    if ((!is.null(res[[md]]$ran))&&(!res[[md]]$ran)){
+      cat("Model run **failed**. No results to show.\n\n")
     } else {
-      ##--objective function value
-      dfrPars = res[[md]]$pars[1,];
-      cat(paste0("The objective function values for the new and old models are \n\n",
-                 "* ",prettyNum(dfrPars$new)," and ",prettyNum(dfrPars$old)," (|diff| = ",prettyNum(dfrPars$abs_dif),").\n\n"));
-      ##--max gradient value
-      dfrPars = res[[md]]$pars[2,];
-      cat(paste0("The maximum gradient values for the new and old models at convergence are \n\n",
-                 "* ",prettyNum(dfrPars$new)," and ",prettyNum(dfrPars$old)," (|diff| = ",prettyNum(dfrPars$abs_dif),").\n\n"));
-    }
-    
-    ###--likelihood comparisons----
-    #cat("Values for various likelihoods are given in Tables ?? by type and fleet.\n ");
-    lksNewByFlt = res[[md]]$allOutNew$Likelihoods_by_type_and_fleet;
-    lksOldByFlt = res[[md]]$allOutOld$Likelihoods_by_type_and_fleet;
-    names(lksNewByFlt$Recruitment_penalities) = "Net_likelihood";
-    names(lksNewByFlt$Growth_likelihood)      = "Net_likelihood";
-    names(lksOldByFlt$Recruitment_penalities) = "Net_likelihood";
-    names(lksOldByFlt$Growth_likelihood)      = "Net_likelihood";
-    getKbl<-function(cols){
-      lst = list();
-      for (col in cols){
-        if (!is.null(lksNewByFlt[[col]])&&!is.null(lksOldByFlt[[col]])){
-          dfr = dplyr::bind_rows(dplyr::bind_cols(lksNewByFlt[[col]]) |> dplyr::mutate(model="new",
-                                                                                       type=col,
-                                                                                       index=dplyr::row_number()),
-                                  dplyr::bind_cols(lksOldByFlt[[col]]) |> dplyr::mutate(model="old",
-                                                                                        type=col,
-                                                                                        index=dplyr::row_number())) |>
-                  dplyr::select(model,type,index,likelihood=Net_likelihood) |> 
-                  tidyr::pivot_wider(names_from=model,values_from=likelihood) |> 
-                  dplyr::mutate(difference=new-old);
-          lst[[col]] = dfr;
-          rm(dfr);
-        }
+      if (!is.null(res[[md]]$allout$res)){
+        cat(paste("*",res[[md]]$allout$res))
+        cat("\n\n")
       }
-      dfr = dplyr::bind_rows(lst) |> dplyr::mutate(type=stringr::str_replace(type,"_"," ")); rm(lst);
-      tblr = tabular(Factor(type)*Factor(index)~(new+old+difference)*sum*DropEmpty(empty="--"),data=dfr);
-      colLabels(tblr) = colLabels(tblr)[1,];
-      kblr = wtsQMD::convert_tblr_to_kbl(tblr,col_spec=c(1,2),isPDF=wtsQMD::isOutputPDF());
-      return(kblr)
+      ###--comparisons from par files----
+      if (is.null(res[[md]]$pars)){
+        cat("Old parameter values were not available for comparison. \n\n")
+      } else {
+        ##--objective function value
+        dfrPars = res[[md]]$pars[1,];
+        cat(paste0("The objective function values for the new and old models are \n\n",
+                   "* ",prettyNum(dfrPars$new)," and ",prettyNum(dfrPars$old)," (|diff| = ",prettyNum(dfrPars$abs_dif),").\n\n"));
+        ##--max gradient value
+        dfrPars = res[[md]]$pars[2,];
+        cat(paste0("The maximum gradient values for the new and old models at convergence are \n\n",
+                   "* ",prettyNum(dfrPars$new)," and ",prettyNum(dfrPars$old)," (|diff| = ",prettyNum(dfrPars$abs_dif),").\n\n"));
+      }
+      
+      ###--likelihood comparisons----
+      #cat("Values for various likelihoods are given in Tables ?? by type and fleet.\n ");
+      lksNewByFlt = res[[md]]$allOutNew$Likelihoods_by_type_and_fleet;
+      lksOldByFlt = res[[md]]$allOutOld$Likelihoods_by_type_and_fleet;
+      names(lksNewByFlt$Recruitment_penalities) = "Net_likelihood";
+      names(lksNewByFlt$Growth_likelihood)      = "Net_likelihood";
+      names(lksOldByFlt$Recruitment_penalities) = "Net_likelihood";
+      names(lksOldByFlt$Growth_likelihood)      = "Net_likelihood";
+      getKbl<-function(cols){
+        lst = list();
+        for (col in cols){
+          if (!is.null(lksNewByFlt[[col]])&&!is.null(lksOldByFlt[[col]])){
+            dfr = dplyr::bind_rows(dplyr::bind_cols(lksNewByFlt[[col]]) |> dplyr::mutate(model="new",
+                                                                                         type=col,
+                                                                                         index=dplyr::row_number()),
+                                    dplyr::bind_cols(lksOldByFlt[[col]]) |> dplyr::mutate(model="old",
+                                                                                          type=col,
+                                                                                          index=dplyr::row_number())) |>
+                    dplyr::select(model,type,index,likelihood=Net_likelihood) |> 
+                    tidyr::pivot_wider(names_from=model,values_from=likelihood) |> 
+                    dplyr::mutate(difference=new-old);
+            lst[[col]] = dfr;
+            rm(dfr);
+          }
+        }
+        dfr = dplyr::bind_rows(lst) |> dplyr::mutate(type=stringr::str_replace(type,"_"," ")); rm(lst);
+        tblr = tabular(Factor(type)*Factor(index)~(new+old+difference)*sum*DropEmpty(empty="--"),data=dfr);
+        colLabels(tblr) = colLabels(tblr)[1,];
+        kblr = wtsQMD::convert_tblr_to_kbl(tblr,col_spec=c(1,2),isPDF=wtsQMD::isOutputPDF());
+        return(kblr)
+      }
+      mdp = stringr::str_replace_all(md,"_","-");
+      kbl = getKbl(cols=c("Catches","Index","Size_composition","Tagging","Growth_likelihood","Recruitment_penalties"));
+      lbl = paste0("tbl-Likes",mdp);
+      cap = paste0("Comparison of various likelihoods by type and fleet (the latter indicated by an index value) for ",md,".");
+      cat(paste0("See [@tbl-Likes",mdp,"] for a comparion of various likelihoods ",
+                 "by type and fleet (the latter indicated by an index value).\n\n"))
+      lstTbls = c(lstTbls,insertKblIntoQMD(kbl,lbl,cap,ori="P"));
+      rm(kbl,lbl,cap);
+  
+      ###--plot comparisons----
+      smryNew = res[[md]]$allOutNew$Summary;
+      cols = names(smryNew);
+      if (any(stringr::str_count(cols,"female")>0)){
+        cols = c(cols[1:12],"log(Recruits_female)","SD(log(Recruits_female))",cols[13:(length(cols)-2)])
+        names(smryNew) = cols;
+      }
+      dfrNew = smryNew |> 
+                 dplyr::select(Year,SSB,Recruit_male,Total_mortality,Retained_mortality) |> 
+                 dplyr::mutate(dplyr::across(where(is.character),as.numeric)) |> 
+                 dplyr::mutate(model="new");
+      smryOld = res[[md]]$allOutOld$Summary;
+      cols = names(smryOld);
+      if (any(stringr::str_count(cols,"female")>0)){
+        cols = c(cols[1:12],"log(Recruits_female)","SD(log(Recruits_female))",cols[13:(length(cols)-2)])
+        names(smryOld) = cols;
+      }
+      dfrOld = smryOld |> 
+                 dplyr::select(Year,SSB,Recruit_male,Total_mortality,Retained_mortality) |> 
+                 dplyr::mutate(dplyr::across(where(is.character),as.numeric)) |> 
+                 dplyr::mutate(model="old");
+      dfrComp = dplyr::bind_rows(dfrNew,dfrOld);
+      p1 = makePlot(dfrComp,Recruit_male) + theme(legend.position="none");
+      p2 = makePlot(dfrComp,SSB);
+      p3 = makePlot(dfrComp,Total_mortality) + theme(legend.position="none");
+      p4 = makePlot(dfrComp,Retained_mortality) + theme(legend.position="none");
+      pg = cowplot::plot_grid(p1,p2,p3,p4,nrow=2);
+      lbl = wtsQMD::getLabel(xtra=md);
+      pth = wtsQMD::getFigFN(xtra=md);
+      lstFigs = c(lstFigs,wtsQMD::printGGplot(pg,cap=paste0("Results for ",md,"."),ori="P",lbl=lbl,pth=pth));
+      cat(paste0("See comparison plots in Figure [-@",lbl,"].\n\n"));
     }
-    mdp = stringr::str_replace_all(md,"_","-");
-    kbl = getKbl(cols=c("Catches","Index","Size_composition","Tagging","Growth_likelihood","Recruitment_penalties"));
-    lbl = paste0("tbl-Likes",mdp);
-    cap = paste0("Comparison of various likelihoods by type and fleet (the latter indicated by an index value) for ",md,".");
-    cat(paste0("See [@tbl-Likes",mdp,"] for a comparion of various likelihoods ",
-               "by type and fleet (the latter indicated by an index value).\n\n"))
-    lstTbls = c(lstTbls,insertKblIntoQMD(kbl,lbl,cap,ori="P"));
-    rm(kbl,lbl,cap);
-
-    ###--plot comparisons----
-    smryNew = res[[md]]$allOutNew$Summary;
-    cols = names(smryNew);
-    if (any(stringr::str_count(cols,"female")>0)){
-      cols = c(cols[1:12],"log(Recruits_female)","SD(log(Recruits_female))",cols[13:(length(cols)-2)])
-      names(smryNew) = cols;
-    }
-    dfrNew = smryNew |> 
-               dplyr::select(Year,SSB,Recruit_male,Total_mortality,Retained_mortality) |> 
-               dplyr::mutate(dplyr::across(where(is.character),as.numeric)) |> 
-               dplyr::mutate(model="new");
-    smryOld = res[[md]]$allOutOld$Summary;
-    cols = names(smryOld);
-    if (any(stringr::str_count(cols,"female")>0)){
-      cols = c(cols[1:12],"log(Recruits_female)","SD(log(Recruits_female))",cols[13:(length(cols)-2)])
-      names(smryOld) = cols;
-    }
-    dfrOld = smryOld |> 
-               dplyr::select(Year,SSB,Recruit_male,Total_mortality,Retained_mortality) |> 
-               dplyr::mutate(dplyr::across(where(is.character),as.numeric)) |> 
-               dplyr::mutate(model="old");
-    dfrComp = dplyr::bind_rows(dfrNew,dfrOld);
-    p1 = makePlot(dfrComp,Recruit_male) + theme(legend.position="none");
-    p2 = makePlot(dfrComp,SSB);
-    p3 = makePlot(dfrComp,Total_mortality) + theme(legend.position="none");
-    p4 = makePlot(dfrComp,Retained_mortality) + theme(legend.position="none");
-    pg = cowplot::plot_grid(p1,p2,p3,p4,nrow=2);
-    lbl = wtsQMD::getLabel(xtra=md);
-    pth = wtsQMD::getFigFN(xtra=md);
-    lstFigs = c(lstFigs,wtsQMD::printGGplot(pg,cap=paste0("Results for ",md,"."),ori="P",lbl=lbl,pth=pth));
-    cat(paste0("See comparison plots in Figure [-@",lbl,"].\n\n"));
   }
 ```
 
