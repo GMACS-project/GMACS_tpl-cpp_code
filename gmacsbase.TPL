@@ -95,7 +95,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.22; ** AEP & WTS **; Compiled 2025-03-31");
+ !! TheHeader = adstring("## GMACS Version 2.20.24; ** WTS **; Compiled 2025-04-07");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -436,7 +436,7 @@ DATA_SECTION
   init_ivector nSizeSex(1,nsex);                           ///> Number of size-classes by sex
   
   int n_grp;                                               ///> number of sex/newshell/oldshell groups
-  int nlikes;                                              ///> 1      2     3           4         5
+  int nlikes;                                              ///> number of likelihood components
 
   int Nyears;
   !! Nyears =(nyrRetro-syr+1);
@@ -445,7 +445,7 @@ DATA_SECTION
 
  LOC_CALCS
   n_grp = nsex * nshell * nmature;
-  nlikes = 5;          ///> catch, cpue, size comps, recruits, molt increments
+  nlikes = 6;          ///> catch, cpue, size comps, recruits, growth data from tagging, non-tagging molt increments
   gmacs_data << syr << " # Start year" << endl;
   gmacs_data << nyrRetro << " # End year (retro)" << endl;
   gmacs_data << nseason << " # Number of seasons" << endl;
@@ -1090,17 +1090,23 @@ DATA_SECTION
         gmacs_data << x_   << "   #--sex type (male(s), female(s), undetermined)" << endl;
         gmacs_data << m_   << "   #--maturity type (immature, mature, undetermined)" << endl;
         gmacs_data << s_   << "   #--shell condition (new_shell, old_shell, undetermined)" << endl;
+        //--read in size comps, keep info written to gmacs_data same as input
+        //--but adjust internal array d3_SizeComps_in for specified number of columns in model by sex
         (*pGD) >> nSizeCompRows_in(iZC);
         (*pGD) >> nSizeCompCols_in(iZC);
         gmacs_data << nSizeCompRows_in(iZC) << "   #--number of rows in dataframe" << endl;
-        gmacs_data << nSizeCompCols_in(iZC) << "   #--number of columns in dataframe" << endl;
+        cout << nSizeCompRows_in(iZC) << "   #--number of rows in dataframe" << endl;
+        cout << nSizeCompCols_in(iZC) << "   #--number of input columns in dataframe" << endl;
         cout << ct_ << " " << flt_ << " " << x_ << " " << m_ << " " << s_ << endl;
         ict_  = substStuff.catchTypeID(ct_);
         iflt_ = substStuff.fleetID(flt_,fleetname);
         ix_   = substStuff.sexID(x_);
         im_   = substStuff.matID(m_);
         is_   = substStuff.shellID(s_);
-        d3_SizeComps_in(iZC).allocate(1,nSizeCompRows_in(iZC),-7,nSizeCompCols_in(iZC));
+        int nColsP = min(nSizeSex[ix_],nSizeCompCols_in(iZC));//--drop columns > nSizeSex for this sex
+        gmacs_data << nSizeCompCols_in(iZC) << "   #--number of columns in dataframe" << endl;
+        cout << nColsP << "   #--final number of columns read in from dataframe (max = " << nSizeSex[ix_] << ")" << endl;
+        d3_SizeComps_in(iZC).allocate(1,nSizeCompRows_in(iZC),-7,nColsP);
         gmacs_data << "#Year  Season  Stage1_EffN  DataVec" << endl;
         for (int rw=1;rw<=nSizeCompRows_in(iZC);rw++){
           //cout << "rw = " << rw << endl;
@@ -1112,9 +1118,14 @@ DATA_SECTION
           d3_SizeComps_in(iZC,rw)(-2) = is_;
           d3_SizeComps_in(iZC,rw)(-1) = im_;
           //cout<< "*" << d3_SizeComps_in(iZC,rw)(-5,-1) << "*" << endl;//fleet,sex,catch type,shell,maturity
-          (*pGD) >> d3_SizeComps_in(iZC,rw)(0,nSizeCompCols_in(iZC)); //--the remainder
-          gmacs_data << d3_SizeComps_in(iZC,rw)(0,nSizeCompCols_in(iZC)) << endl;
+          (*pGD) >> d3_SizeComps_in(iZC,rw)(0,nColsP); //--the remainder
+          gmacs_data << d3_SizeComps_in(iZC,rw)(0,nColsP);
+          { double skip;
+            for (int i=1;i<=(nSizeCompCols_in(iZC)-nColsP);i++) {(*pGD) >> skip; gmacs_data<< " " << skip;}
+            gmacs_data << endl;
+          }
         }//--rw
+        nSizeCompCols_in(iZC) = nColsP;
       } //--iZC
       cout <<"finished reading new format size comps" << endl;
     } else {
@@ -1200,6 +1211,8 @@ DATA_SECTION
   !!       GrowthObsType != GROWTHCLASS_DATA && GrowthObsType != GROWTHCLASS_VALS)
   !!   { cout << "GrowthObsType can only be 0,1, 2, 3 or 4; STOPPING" << endl; exit(1); }
   init_int nGrowthObs;                                     ///> Number of data points
+  int nGrowthObsP; //--number of non-tagging growth observations (or 1)
+  !!if((GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA)&&(nGrowthObs>0)) {nGrowthObsP = nGrowthObs;} else {nGrowthObsP=1;}
   int NGrowthInputs;
   !!if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA) NGrowthInputs = 4; else NGrowthInputs = 8;
   !!if (GrowthObsType==GROWTHINC_DATA_NORMAL || GrowthObsType==GROWTHINC_DATA_GAMMA) gmacs_data << "## Size increments" << endl;
@@ -1572,7 +1585,7 @@ DATA_SECTION
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
     gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised)), 5 = zero population" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(8)) << " # Reference size-class for initial conditons = 3" << endl;
     gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
@@ -1591,7 +1604,7 @@ DATA_SECTION
     echoinput << model_controls(4) << " # Phase for recruitment estimation" << endl;
     echoinput << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
     echoinput << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-    echoinput << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
+    echoinput << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised)), 5 = zero population" << endl;
     echoinput << model_controls(8) << " # Reference size-class for initial conditons = 3" << endl;
     echoinput << model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
     echoinput << model_controls(10) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
@@ -1617,8 +1630,8 @@ DATA_SECTION
     parname1(Jpnt+4) = "Recruitment_rb-males";
     Jpnt = Jpnt + 5;
     if (nsex>1) {
-      parname1(Jpnt)  = "Recruitment_ra-females";
-      parname1(Jpnt+1) = "Recruitment_rb-females";
+      parname1(Jpnt)  = "Recruitment_ra-females (ln-scale offset to males!)";
+      parname1(Jpnt+1) = "Recruitment_rb-females (ln-scale offset to males!)";
       Jpnt += 2;
     }
     parname1(Jpnt)   = "log(SigmaR)";
@@ -1632,6 +1645,7 @@ DATA_SECTION
     if (bInitializeUnfished == FISHEDEQN)      nthetatest = nfleet;
     if (bInitializeUnfished == FREEPARS)       nthetatest = nclass*nsex*nmature*nshell;
     if (bInitializeUnfished == FREEPARSSCALED) nthetatest = (nclass*nsex*nmature*nshell-1);
+    if (bInitializeUnfished == ZEROPOP)        nthetatest = 0;
     ntheta += nthetatest;
     cout      << "Expecting "   << ntheta << " theta parameters" << endl;
     gmacs_ctl << "# Expecting " << ntheta << " theta parameters" << endl;
@@ -1681,6 +1695,24 @@ DATA_SECTION
       } // - h loop
       PPnt += Ipnt;
     } // - bInitializeUnfished == FREEPARSSCALED
+    // initial numbers are zeros
+    if ( bInitializeUnfished == ZEROPOP ){
+      // int Ipnt = 0;
+      // for ( int h = 1; h <= nsex; h++ ){
+      //   for ( int m = 1; m <= nmature; m++ ){
+      //     for ( int o = 1; o <= nshell; o++ ){
+      //       int Ihmo = pntr_hmo(h,m,o);
+      //       for ( int l = 1; l <= nclass; l++ ) {
+      //         Ipnt += 1;
+      //         anystring = "Initial_logN_for_sex_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
+      //         parname1(Jpnt+Ipnt) = anystring;
+      //       }// - l
+      //     }// - o
+      //   }// - m
+      // }// - h
+      // PPnt += Ipnt;
+    }// - bInitializeUnfished == ZEROPOP
+    
   }
  END_CALCS
 
@@ -1738,16 +1770,30 @@ DATA_SECTION
    { cout << "Error: cannot estimate LogRini when unfished steady state is selected" << endl;  exit(1); }
   if ( bInitializeUnfished == FISHEDEQN && theta_phz(1) > 0 )
    { cout << "Error: cannot estimate LogR0 when fished steady state is selected" << endl;  exit(1); }
-  if ( bInitializeUnfished == FREEPARS && theta_phz(1) > 0 )
-   {
+  if ( bInitializeUnfished == FREEPARS && theta_phz(1) > 0 ){
     cout << "Error: cannot estimate LogR0 when individual parameters are estimated" << endl;
     exit(1);
-   }
-  if ( bInitializeUnfished == FREEPARS && theta_phz(2) > 0 )
-   {
+  }
+  if ( bInitializeUnfished == FREEPARS && theta_phz(2) > 0 ){
     cout << "Error: cannot estimate LogRini when individual parameters are estimated" << endl;
     exit(1);
-   }
+  }
+  if ( bInitializeUnfished == FREEPARSSCALED && theta_phz(1) > 0 ){
+    cout << "Error: cannot estimate LogR0 when individual parameters are estimated" << endl;
+    exit(1);
+  }
+  if ( bInitializeUnfished == FREEPARSSCALED && theta_phz(2) > 0 ){
+    cout << "Error: cannot estimate LogRini when individual parameters are estimated" << endl;
+    exit(1);
+  }
+  if ( bInitializeUnfished == ZEROPOP && theta_phz(1) > 0 ){
+    cout << "Error: cannot estimate LogR0 when initial population is 0" << endl;
+    exit(1);
+  }
+  if ( bInitializeUnfished == ZEROPOP && theta_phz(2) > 0 ){
+    cout << "Error: cannot estimate LogRini when initial population is 0" << endl;
+    exit(1);
+  }
  END_CALCS
 
 
@@ -2069,17 +2115,17 @@ DATA_SECTION
       if (ig<=nsex)  {
         gmacs_ctl << endl << "### Parameter inputs for growth transitions" << endl;
       } else if (ig<=2*nsex) {
-        gmacs_ctl << endl << "### Parameter inputs for probability of molting" << endl;
+        gmacs_ctl << endl << "### Parameter inputs for probability of molting for sex" << ig-nsex << endl;
       } else if (ig<=3*nsex) {
-        gmacs_ctl << endl << "### Parameter inputs for probabilit of maturing" << endl;
+        gmacs_ctl << endl << "### Parameter inputs for probability of maturing for sex "<< ig-2*nsex << endl;
       }
   
       if (nparGs(ig) > 0) gmacs_ctl << "# Inputs for sex * type " << ig << endl;
       if (nparGs(ig) > 0) gmacs_ctl << "# MAIN PARS: Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
       n_Gpar2 = n_Gpar;
       if (nsex==1) h = 1;
-      if (nsex==2 && (ig==1 || ig==3)) h = 1;
-      if (nsex==2 && (ig==2 || ig==4)) h = 2;
+      if (nsex==2 && (ig==1 || ig==3 || ig==5)) h = 1;
+      if (nsex==2 && (ig==2 || ig==4 || ig==6)) h = 2;
       for (int iyr=syr;iyr<=nyrRetro;iyr++){
         GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+2) = ig;
         GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+3) = iyr;
@@ -2093,17 +2139,17 @@ DATA_SECTION
         anystring = " missing ";
         for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
         if (ig <= nsex){
-          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h);
-          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h);
-          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_base_"+sexes(h)+"_(ln-scale)";
-          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_base_"+sexes(h);
-          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
-          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha_base_" +sexes(h);
-          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha0_base_"+sexes(h);
-          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta_base_"  +sexes(h);
-          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta0_base_" +sexes(h);
-          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+"_(ln-scale)";
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+"_(ln-scale)";
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha0_base_" +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha_"+sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta0_base_"  +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta_" +sexes(h);
+          if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_"+sexes(h)+"_(ln-scale)";
           cout<< ipar << " " << bUseGrowthIncrementModel2(ig) << " " << anystring << Gpar_control(n_Gpar) <<endl;
   
           if ((bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2)){
@@ -2188,11 +2234,11 @@ DATA_SECTION
               if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h)+" (ln-scale)";
               if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==2) anystring = "Beta_"+sexes(h);
               if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODEL && ipar==3) anystring = "Gscale_"+sexes(h)+" (ln-scale)";
-              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha_base_" +sexes(h);
-              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha0_base_"+sexes(h);
-              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta_base_"  +sexes(h);
-              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta0_base_" +sexes(h);
-              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_base_"+sexes(h)+"_(ln-scale)";
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==1) anystring = "Alpha0_base_" +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==2) anystring = "Alpha_base_"+sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==3) anystring = "Beta0_base_"  +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==4) anystring = "Beta_base_" +sexes(h);
+              if (bUseGrowthIncrementModel2(ig)==PWRLAW_GROWTHMODELALT && ipar==5) anystring = "Gscale_"+sexes(h)+"_(ln-scale)";
 
               if (bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL1 || bUseGrowthIncrementModel2(h)==INDIVIDUAL_GROWTHMODEL2){
                 if (ipar <=nclass){
@@ -3926,7 +3972,8 @@ DATA_SECTION
   ilike_vector(3) = nSizeComps;
   like_names      = like_names + adstring("SizeComps ");
   ilike_vector(4) = 3;
-  ilike_vector(5) = nsex;
+  ilike_vector(5) = nsex; //--tagging-related growth data
+  ilike_vector(6) = nsex; //--non-tagging growth data
  END_CALCS
 
   // |---------------------------------------------------------|
@@ -4469,8 +4516,8 @@ PARAMETER_SECTION
   // ln(Rbar)  = theta(4)
   // ra        = theta(5)
   // rbeta     = theta(6)
-  // ra        = theta(7)
-  // rbeta     = theta(8)
+  // ra        = theta(7)  //--females
+  // rbeta     = theta(8)  //--females
   // logSigmaR = theta(9+)
   // steepness = theta(10)
   // rho       = theta(11)
@@ -4614,7 +4661,7 @@ PARAMETER_SECTION
   5darray SS_pass(1,nsex,1,nmature,1,nseason,1,nclass,1,nclass);          ///> Survival Rate
   
   4darray d4_N(1,n_grp,syr,nyrRetro+1,1,nseason,1,nclass);          ///> Numbers-at-sex/mature/shell/year/season/length.
-  4darray d4_N_init(1,n_grp,1,NyrEquil,1,nseason,1,nclass);         ///> N matrix
+  4darray d4_N_init(1,n_grp,1,NyrEquil,1,nseason,1,nclass);         ///> N matrix for equilibrium calculations
   3darray d3_newShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> New shell crabs-at-length.
   3darray d3_oldShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> Old shell crabs-at-length.
 
@@ -4637,6 +4684,11 @@ PARAMETER_SECTION
 
   // Use to compute the likelihood of the tagging data
   5darray FullY(1,nsex,1,maxSizeIncVaries,1,MaxGrowTimeLib,1,nclass,1,nclass);
+
+  // predictions for non-tagging growth observations
+  vector prdPstMltSizes(1,nGrowthObsP); //--predicted postmolt sizes 
+  vector nllGrowth(1,nGrowthObsP);      //--nlls for growth 
+  number grwthPosFun;                   //--penalty for negative mean growth
 
   // Passing variable
   number ssb_pass;                                         ///> SSB passed back
@@ -4842,14 +4894,27 @@ PRELIMINARY_CALCS_SECTION
   calc_growth_increments();                 if ( verbose >= 3 ) cout << "Ok after calc_growth_increments in Prelim ..." << endl;
   calc_molting_probability();               if ( verbose >= 3 ) cout << "Ok after calc_molting_probability in Prelim ..." << endl;
   calc_mature_probability();                if ( verbose >= 3 ) cout << "Ok after calc_mature_probability in Prelim ..." << endl;
-  for ( int h = 1; h <= nsex; h++ )
-   for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++)
-    for ( int l = 1; l <= nclass; l++ )
-     if (molt_increment(h,igrow,l) < 0)
-     {
-       cout << "Error: Initial value of the growth increment for matrix " << igrow << " and sex " << h << " and size-class " << l << " is negative: " << molt_increment(h,igrow,l) << "; STOPPING" << endl;
-       exit(1);
-     }
+  int chk_gi = 0;
+  for ( int h = 1; h <= nsex; h++ ){
+    for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++){
+      for ( int l = 1; l <= nclass; l++ ){
+        if (molt_increment(h,igrow,l) < 0){
+          cout << "Error: Initial value of the growth increment for matrix " << igrow << " and sex " << h << " and size-class " << l << " is negative: " << molt_increment(h,igrow,l) << "; STOPPING" << endl;
+          chk_gi=1;
+        }
+      }
+    }
+  }
+  if (chk_gi){
+    cout << "Detected error: Initial value of a growth increment is NEGATIVE"<<endl;
+    for ( int h = 1; h <= nsex; h++ ){
+      for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++){
+        cout<<"h,    igrow,    "<<mid_points<<endl;
+        cout<<h<<", "<<igrow<<", "<<molt_increment(h,igrow)<<endl;
+      }
+    }
+    exit(-1);
+  }
   calc_growth_transition();                 if ( verbose >= 3 ) cout << "Ok after calc_growth_transition in Prelim ..." << endl;
   init_selectivities();                     if ( verbose >= 3 ) cout << "Ok after init_selectivities in Prelim ..." << endl;
   calc_selectivities();                     if ( verbose >= 3 ) cout << "Ok after calc_selectivities in Prelim ..." << endl;
@@ -4965,6 +5030,7 @@ PROCEDURE_SECTION
   // General outputs
   if ( mceval_phase() ) write_eval();
   if ( NfunCall == StopAfterFnCall ) {
+    cout<<"Stopping after "<<NfunCall<<" function calls--creating output"<<endl;
       CreateOutput();
       CreateOutput_OldFormat();
       cout<<"--------------------------------------"<<endl;
@@ -5032,7 +5098,7 @@ FUNCTION initialize_model_parameters
           logN0(Ihmo,l) = theta(Jpnt+Ipnt);
          }
        }
-    }
+    }//--FREEPARS
 
   // Estimate initial numbers as logistic offsest
   TempSS = 0;
@@ -5057,7 +5123,24 @@ FUNCTION initialize_model_parameters
           Kpnt += 1;    
          } //--l
        }
-   }
+   }//--FREEPARSSCALED
+  // initial numbers are zeros
+  if ( bInitializeUnfished == ZEROPOP )
+   {
+    Ipnt = 0;
+    for ( int h = 1; h <= nsex; h++ )
+     for ( int m = 1; m <= nmature; m++ )
+      for ( int o = 1; o <= nshell; o++ )
+       {
+        Ihmo = pntr_hmo(h,m,o);
+        for ( int l = 1; l <= nclass; l++ )
+         {
+          Ipnt += 1;
+          logN0(Ihmo,l) = -1.0e3;//--results in small arithmetic-scale values
+         }
+       }
+    }//--ZEROPOP
+
   if (verbose >= 3) cout<<"--finished setting initial devs()"<<endl;
  
   // Get Growth && Molting parameters
@@ -6037,33 +6120,38 @@ FUNCTION calc_molting_probability
   double tiny = 0.000;
 
   molt_probability.initialize();
-  for ( int i = syr; i <= nyrRetro; i++ )
-   for ( int h = 1; h <= nsex; h++ )
-    {
-     int igrow  = iYrsMoltChanges(h,i);
+  for ( int i = syr; i <= nyrRetro; i++ ){
+    for ( int h = 1; h <= nsex; h++ ){
+      int igrow  = iYrsMoltChanges(h,i);
      
-     // Pre-specified molt probability
-     if (bUseCustomMoltProbability2(h)==FIXED_PROB_MOLT)
-      molt_probability(h)(i) = CustomMoltProbabilityMatrix(h,igrow);
-     // Uniform probability of maturing
-     if (bUseCustomMoltProbability2(h) == CONSTANT_PROB_MOLT)
-      {
-       for ( int i = syr; i <= nyrRetro; i++ )
-        for ( int l = 1; l <= nclass; l++ )
-          molt_probability(h,i,l) = 1.0;
+      // Pre-specified molt probability
+      if (bUseCustomMoltProbability2(h)==FIXED_PROB_MOLT)
+        molt_probability(h)(i) = CustomMoltProbabilityMatrix(h,igrow);
+      // Uniform probability of maturing
+      if (bUseCustomMoltProbability2(h) == CONSTANT_PROB_MOLT){
+        for ( int i = syr; i <= nyrRetro; i++ )
+          for ( int l = 1; l <= nclass; l++ )
+            molt_probability(h,i,l) = 1.0;
       }
-     // Estimated mature probability of maturing
-     if (bUseCustomMoltProbability2(h) == LOGISTIC_PROB_MOLT)
-      {
-       dvariable mu = molt_mu(h,igrow);
-       dvariable sd = mu * molt_cv(h,igrow);
+      // Estimated mature probability of maturing
+      if (bUseCustomMoltProbability2(h) == LOGISTIC_PROB_MOLT){
+        dvariable mu = molt_mu(h,igrow);
+        dvariable sd = mu * molt_cv(h,igrow);
         molt_probability(h)(i) = 1.0 - ((1.0 - 2.0 * tiny) * plogis(dvar_mid_points, mu, sd) + tiny);
       }
 
-     // Estimated free probability of molting
-     if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)
-      molt_probability(h)(i) = molt_probability_in(h,igrow);
-    }
+      // Estimated free probability of molting
+      if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)
+        molt_probability(h)(i) = molt_probability_in(h,igrow);
+
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(molt_probability(h)(i))))) {
+          cout << "Molt probability has NaNs for sex, year " << h << " " << i << endl;
+          exit(-1);
+        }
+      }
+    }//--h loop
+  }//--i loop
 
 
   /**
@@ -6099,6 +6187,12 @@ FUNCTION dvar_vector calc_growth_increments_linear(const dvector vSizes, const i
     for ( i = 1; i <= nGrowthObs; i++ ){
       h = iSex(i);
       pMoltInc(i) = alpha(h,igrow) - beta(h,igrow) * vSizes(i);
+      if ((verbose>3)&&(NfunCall<2)){
+        if (verbose>3 && std::isnan(value(pMoltInc(i)))){
+          cout << "Linear growth increments are NaNs for GrowthObs " << i << endl;
+          exit(-1);
+        }
+      }
      }
      
     RETURN_ARRAYS_DECREMENT();
@@ -6120,19 +6214,23 @@ FUNCTION dvar_vector calc_growth_increments_linear(const dvector vSizes, const i
    * @return dvariable with negative log likelihood
   **/
 
-FUNCTION dvariable calc_like_gamma_linear_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+FUNCTION dvar_vector calc_like_gamma_linear_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
   if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
   RETURN_ARRAYS_INCREMENT();
-    dvariable mnMltInc, r, mu, nll;
+    dvariable mnMltInc, r, mu;
+    dvar_vector nll(1,nsex);
     int h,i;
-    nll.initialize();
+    nll.initialize(); nllGrowth.initialize(); prdPstMltSizes.initialize();
     for ( i = 1; i <= nGrowthObs; i++ ){
       h = iSex(i);
       mnMltInc = alpha(h,igrow) - beta(h,igrow) * vSizes(i);//--mean molt increment
-      mu   = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
-      r    = mu * mnMltInc;     //--gamma distribution shape (location) parameter
-      nll += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+      prdPstMltSizes(i) = mnMltInc + vSizes(i);             //--predicted post-molt size
+      mu   = 1.0/gscale(h,igrow);         //--inverse scale (rate) parameter
+      r    = mu * mnMltInc;               //--gamma distribution shape (location) parameter
+      r    = posfun(r,0.0001,grwthPosFun);//--needs to be kept positive
+      nllGrowth(i) = -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+      nll(h)      += nllGrowth(i);
     }
   RETURN_ARRAYS_DECREMENT();
   return nll;
@@ -6153,19 +6251,23 @@ FUNCTION dvariable calc_like_gamma_linear_growth(const dvector dMoltInc, const d
    * @return dvariable with negative log likelihood
   **/
 
-FUNCTION dvariable calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
   if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
   RETURN_ARRAYS_INCREMENT();
-    dvariable mnMltInc, r, mu, nll;
+    dvariable mnMltInc, r, mu;
+    dvar_vector nll(1,nsex);
     int h,i;
-    nll.initialize();
+    nll.initialize(); nllGrowth.initialize(); prdPstMltSizes.initialize();
     for ( i = 1; i <= nGrowthObs; i++ ){
       h = iSex(i);
       mnMltInc = exp(alpha(h,igrow) + beta(h,igrow) * log(vSizes(i)))-vSizes(i);//--mean molt increment
+      prdPstMltSizes(i) = mnMltInc + vSizes(i);             //--predicted post-molt size
       mu   = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
       r    = mu * mnMltInc;        //--gamma distribution shape (location) parameter
-      nll += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+      r    = posfun(r,0.0001,grwthPosFun);//--needs to be kept positive
+      nllGrowth(i) = -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+      nll(h)  += nllGrowth(i);
     }
   RETURN_ARRAYS_DECREMENT();
   return nll;
@@ -6186,20 +6288,23 @@ FUNCTION dvariable calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const d
    * @return dvariable with negative log likelihood
   **/
 
-FUNCTION dvariable calc_like_gamma_pwrlawalt_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+FUNCTION dvar_vector calc_like_gamma_pwrlawalt_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
   if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
   RETURN_ARRAYS_INCREMENT();
-    dvariable mnPMZ, mnMltInc, r, mu, nll;
+    dvariable mnPMZ, mnMltInc, r, mu;
+    dvar_vector nll(1,nsex);
     int h,i;
-    nll.initialize();
+    nll.initialize(); nllGrowth.initialize(); prdPstMltSizes.initialize();
     for ( i = 1; i <= nGrowthObs; i++ ){
       h = iSex(i);
-      mnPMZ = alpha(h,igrow)*mfexp(log(beta(h,igrow)/alpha(h,igrow))/log(beta0(h,igrow)/alpha0(h,igrow))*log(vSizes(i)/alpha0(h,igrow)));//--mean postmolt size
-      mnMltInc = mnPMZ-vSizes(i);
+      prdPstMltSizes(i) = alpha(h,igrow)*mfexp(log(beta(h,igrow)/alpha(h,igrow))/log(beta0(h,igrow)/alpha0(h,igrow))*log(vSizes(i)/alpha0(h,igrow)));//--predicted postmolt size
+      mnMltInc = prdPstMltSizes(i)-vSizes(i);//mean molt increment
       mu = 1.0/gscale(h,igrow);  //--inverse scale (rate) parameter
       r  = mu * mnMltInc;        //--gamma distribution shape (location) parameter
-      nll  += -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+      r  = posfun(r,0.0001,grwthPosFun);//--needs to be kept positive
+      nllGrowth(i) = -log_gamma_density(dMoltInc(i),r,mu);//ADMB log-scale gamma distribution function
+      nll(h)  += nllGrowth(i);
     }
   RETURN_ARRAYS_DECREMENT();
   return nll;
@@ -6226,10 +6331,14 @@ FUNCTION calc_growth_increments
         for ( int l = 1; l <= nclass; l++ ){
           molt_increment(h,igrow,l) = alpha(h,igrow) - beta(h,igrow) * mid_points(l);
         }
-        if (NfunCall==0 || NfunCall==1){
+        if (NfunCall<2){
           if (molt_increment(h,igrow,int(nclass/2)) < 0){
             // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
             for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
+          }
+          if (std::isnan(value(sum(molt_increment(h,igrow))))){
+            cout << "Linear growth increments are NaNs for sex, igrow " << h << " " << igrow << endl;
+            exit(-1);
           }
         } // if NfunCall...
       } // - igrow  loop
@@ -6239,10 +6348,14 @@ FUNCTION calc_growth_increments
         for ( int l = 1; l <= nclass; l++ ){
           molt_increment(h,igrow,l) = exp(alpha(h,igrow) + beta(h,igrow) * log(mid_points(l))) - mid_points(l);
         }
-        if (NfunCall==0 || NfunCall==1){
+        if (NfunCall<2){
           if (molt_increment(h,igrow,int(nclass/2)) < 0){
             // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
             for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
+          }
+          if (std::isnan(value(sum(molt_increment(h,igrow))))){
+            cout << "PWRLAW growth increments are NaNs for sex, igrow " << h << " " << igrow << endl;
+            exit(-1);
           }
         } // - if NfunCall...
       } // -- igrow loop
@@ -6251,10 +6364,14 @@ FUNCTION calc_growth_increments
       for ( int igrow = 1; igrow<=nSizeIncVaries(h); igrow++){
         dvar_vector mnPstMltZs = alpha(h,igrow)*mfexp(log(beta(h,igrow)/alpha(h,igrow))/log(beta0(h,igrow)/alpha0(h,igrow))*log(mid_points/alpha0(h,igrow)));
         molt_increment(h,igrow) = mnPstMltZs - mid_points;
-        if (NfunCall==0 || NfunCall==1){
+        if (NfunCall<2){
           if (molt_increment(h,igrow,int(nclass/2)) < 0){
             // cout << "Growth increments seem to be too negative for initial call for matrix "<< igrow << " and sex " << h << endl;
             for ( int l = 1; l <= nclass; l++) cout << molt_increment(h,igrow,l) << endl;
+          }
+          if (std::isnan(value(sum(molt_increment(h,igrow))))){
+            cout << "PWRLAWALT growth increments are NaNs for sex, igrow " << h << " " << igrow << endl;
+            exit(-1);
           }
         } // - if NfunCall...
       } // -- igrow loop
@@ -6317,6 +6434,12 @@ FUNCTION calc_growth_transition
          }
         gt(nSizeSex(h),nSizeSex(h)) = 1.0;
         growth_transition(h,k) = gt;
+        if ((verbose>3)&&(NfunCall<2)){
+          if (std::isnan(value(sum(growth_transition(h,k))))){
+            cout << "GROWTH_INCGAMMA GTM has NaNs for sex, k " << h << " " << k << endl;
+            exit(-1);
+          }
+        }
        }
      }
 
@@ -6337,7 +6460,13 @@ FUNCTION calc_growth_transition
           gt(l)(l,nSizeSex(h)) = gt(l)(l,nSizeSex(h)) / sum(gt(l));
          }
         growth_transition(h,k) = gt;
-       }
+        if ((verbose>3)&&(NfunCall<2)){
+          if (std::isnan(value(sum(growth_transition(h,k))))){
+            cout << "GROWTH_SIZEGAMMA GTM has NaNs for sex, k " << h << " " << k << endl;
+            exit(-1);
+          }
+        }
+      }
      }
 
     // Set the growth-transition matrix (size after increment is normal)
@@ -6362,6 +6491,12 @@ FUNCTION calc_growth_transition
          }
         gt(nclass,nclass) = 1.0;
         growth_transition(h,k) = gt;
+        if ((verbose>3)&&(NfunCall<2)){
+          if (std::isnan(value(sum(growth_transition(h,k))))){
+            cout << "GROWTH_NORMAL GTM has NaNs for sex, k " << h << " " << k << endl;
+            exit(-1);
+          }
+        }
        }
      }
 
@@ -6566,26 +6701,33 @@ FUNCTION calc_mature_probability
   double tiny = 0.000;
 
   mature_probability.initialize();
-  for ( int i = syr; i <= nyrRetro; i++ )
-   for ( int h = 1; h <= nsex; h++ )
-    {
-     int igrow  = iYrsMatureChanges(h,i);
+  for ( int i = syr; i <= nyrRetro; i++ ){
+    for ( int h = 1; h <= nsex; h++ ){
+      int igrow  = iYrsMatureChanges(h,i);
      
-     // Pre-specified mature probability
-     if (bUseCustomMatureProbability2(h)==FIXED_PROB_MATURE)
-      mature_probability(h)(i) = CustomMatureProbabilityMatrix(h,igrow);
-     // Estimated logistic probability of maturing
-     if (bUseCustomMatureProbability2(h) == LOGISTIC_PROB_MATURE)
-      {
-       dvariable mu = mature_mu(h,igrow);
-       dvariable sd = mu * mature_cv(h,igrow);
-       mature_probability(h)(i) = 1.0 - ((1.0 - 2.0 * tiny) * plogis(dvar_mid_points, mu, sd) + tiny);
+      // Pre-specified mature probability
+      if (bUseCustomMatureProbability2(h)==FIXED_PROB_MATURE)
+        mature_probability(h)(i) = CustomMatureProbabilityMatrix(h,igrow);
+      // Estimated logistic probability of maturing
+      if (bUseCustomMatureProbability2(h) == LOGISTIC_PROB_MATURE){
+        dvariable mu = mature_mu(h,igrow);
+        dvariable sd = mu * mature_cv(h,igrow);
+        mature_probability(h)(i) = 1.0 - ((1.0 - 2.0 * tiny) * plogis(dvar_mid_points, mu, sd) + tiny);
       }
 
-     // Estimated free probability of maturing
-     if (bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)
-      mature_probability(h)(i) = mature_probability_in(h,igrow);
-    }
+      // Estimated free probability of maturing
+      if (bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)
+        mature_probability(h)(i) = mature_probability_in(h,igrow); 
+
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(mature_probability(h)(i))))) {
+          cout << "Mature probability has NaNs for sex, year " << h << " " << i << endl;
+          exit(-1);
+        }
+      }
+  
+    }//--h loop
+  }//--i loop
 
 
 // ============================================================================================================================================
@@ -6603,13 +6745,19 @@ FUNCTION calc_recruitment_size_distribution
   dvar_vector x(1,nclass+1);
 
   rec_sdd.initialize();
-  for ( int h=1; h <=nsex; h++)
-   {
+  for ( int h=1; h <=nsex; h++){
     ralpha = ra(h) / rbeta(h);
     for ( int l = 1; l <= nclass+1; l++ )  x(l) = cumd_gamma(size_breaks(l) / rbeta(h), ralpha);
     rec_sdd(h) = first_difference(x);
     for (int l=nSizeClassRec(h)+1;l<=nclass;l++) rec_sdd(h,l) = 0;
     rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
+    if ((verbose>3)&&(NfunCall<2)){
+      cout<<"In calc_recruitment_size_distribution for sex "<<h<<endl;
+      cout<<"ra, rbeta = "<<ra(h)<<" "<<rbeta(h)<<endl;
+      cout<<"x = "<<x<<endl;
+      cout<<"rec_sdd = "<<rec_sdd(h)<<endl;
+      if (std::isnan(value(sum(rec_sdd(h))))) exit(-1);
+    }
    }
    
 // ============================================================================================================================================
@@ -6670,12 +6818,11 @@ FUNCTION calc_initial_numbers_at_length
   // Reset the probability of molting to first year value
   ProbMolt.initialize();
   for (int h = 1; h <= nsex; h++ )
-   for (int l=1;l<=nclass;l++)
-    ProbMolt(h,l,l) = molt_probability(h,syr,l);
+    for (int l=1;l<=nclass;l++)
+      ProbMolt(h,l,l) = molt_probability(h,syr,l);
 
   // Initial recruitment
-  switch( bInitializeUnfished )
-   {
+  switch( bInitializeUnfished ){
     case UNFISHEDEQN:                                      ///> Unfished conditions
       log_initial_recruits = logR0;
       break;
@@ -6688,9 +6835,12 @@ FUNCTION calc_initial_numbers_at_length
     case FREEPARSSCALED:                                   ///> Free parameters revised
       log_initial_recruits = logRini;
       break;
-   }
+    case ZEROPOP:                                         //> "Free" parameters for zero population
+      log_initial_recruits = -1.0e3;
+      break;
+  }
   for ( int h = 1; h <= nsex; h++ )
-   { recruits(h)(syr) = mfexp(log_initial_recruits); }
+    { recruits(h)(syr) = mfexp(log_initial_recruits); }
   totrecruits(syr) = float(nsex)*mfexp(log_initial_recruits);
 
   // Analytical equilibrium soln
@@ -6704,8 +6854,7 @@ FUNCTION calc_initial_numbers_at_length
   _S.initialize();
 
   Eqn_basis = CONSTANTREC;                                ///> Need to run brute force with constant recruitment
-  switch( bInitializeUnfished )
-   {
+  switch( bInitializeUnfished ){
     case UNFISHEDEQN:                                     ///> Unfished conditions
      bSteadyState = UNFISHEDEQN;
      for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
@@ -6738,13 +6887,307 @@ FUNCTION calc_initial_numbers_at_length
          d4_N(ig)(syr)(1) = mfexp(log_initial_recruits+logN0(ig))/scale;
         }
      break;
-   }
+    case ZEROPOP:                                 ///> zero population
+     for ( int h = 1; h <= nsex; h++ )
+      for ( int m = 1; m <= nmature; m++ )
+       for ( int o = 1; o <= nshell; o++ )
+        {
+         int ig = pntr_hmo(h,m,o);
+         d4_N(ig)(syr)(1) = 0.0;
+        }
+     break;
+  }
+  if ((verbose>3)&&(NfunCall<2)){
+    cout<<"--calc_initial_numbers_at_length--"<<endl;
+    cout<<"--h   m   o   d4_N"<<endl;
+    for ( int h = 1; h <= nsex; h++ ){
+      for ( int m = 1; m <= nmature; m++ ){
+        for ( int o = 1; o <= nshell; o++ ){
+          int ig = pntr_hmo(h,m,o);
+          cout<< h << " " << m << " " << o << " " << d4_N(ig)(syr)(1) << endl;
+        }
+      }
+    }
+  }
 
 // --------------------------------------------------------------------------------------------------------------------------------------
-
   /**
-   * @brief Update numbers-at-length
+   * @brief Get numbers-at-length by Case
+   * @param ig - population category index (value from pntr_hmo(h,m,o))
+   * @param i - year index
+   * @param j - season index
+   * @param Case - flag indicating type of numbers-at-length array to update
+   * @return dvar_vector from one of d4_N, d4N_init, numbers_proj_gytl
+   */
+FUNCTION dvar_vector getNumbersAtLengthByCase(const int ig, const int i, const int j, const int Case)
+  int h = isex(ig);
+  int m = imature(ig);
+  int o = ishell(ig);
+  if (verbose>4) cout<<"In getNumbersAtLengthByCase(ig,i,j,Case): "<<ig<<" "<<i<<" "<<j<<" "<<Case<<" h,m,o = "<<h<<" "<<m<<" "<<o<<endl;
+  if (Case==1) {
+    if (verbose>4) cout<<"--in:\n"      <<d4_N(ig)(i)(j)<<endl;
+    //if (verbose>4) cout<<"--mortality\n"<<S(h,m)(i)(j)<<endl;
+    if (verbose>4) cout<<"--after mortality\n" <<d4_N(ig)(i)(j)*S(h,m)(i)(j)<<endl;
+    return (d4_N(ig)(i)(j)*S(h,m)(i)(j));
+  }
+  if (Case==2) {
+    if (verbose>4) cout<<d4_N_init(ig)(i)(j)<<endl;
+    //if (verbose>4) cout<<SS_pass(h,m,j)<<endl;
+    return d4_N_init(ig,i,j)*SS_pass(h,m,j);
+  }
+  if (Case==3) {
+    if (verbose>4) cout<<numbers_proj_gytl(ig,i,j)<<endl;
+    //if (verbose>4) cout<<SS_pass(h,m,j)<<endl;
+    return numbers_proj_gytl(ig,i,j)*SS_pass(h,m,j);
+  }
+  if (verbose>4) cout<<numbers_proj_gytl(ig,i,j)<<endl;
+  //if (verbose>4) cout<<SS_pass(h,m,j)<<endl;
+  return numbers_proj_gytl(ig,i,j)*SS_pass(h,m,j);//--Case == 4
+
+// --------------------------------------------------------------------------------------------------------------------------------------
+  /**
+   * @brief Update numbers-at-length by Case to next season/year
+   * @param next - updated population numbers by index (value from pntr_hmo(h,m,o))
+   * @param i - current year index
+   * @param j - current season index
+   * @param Case - flag indicating type of numbers-at-length array to update
+   */
+FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, const int j, const int Case)
+  //if (verbose>3){
+    cout<<"Starting updateNumbersAtLengthByCase i, j, Case "<<i<<" "<<j<<" "<<Case<<endl;
+    cout<<"--next is\n"<<next<<endl;
+  //}
+  for (int ig=1;ig<=n_grp;ig++){
+    if (j==nseason){
+      //--next is year i+1, season 1
+      if (Case==1) d4_N(ig,i+1,1) = next(ig);
+      if (Case==2) d4_N_init(ig,i+1,1) = next(ig);
+      if (Case==3) numbers_proj_gytl(ig,i+1,1) = next(ig);
+      if (Case==4) numbers_proj_gytl(ig,i+1,1) = next(ig);
+    } else {
+      //--next is year i, season j+1
+      if (Case==1) d4_N(ig,i,j+1) = next(ig);
+      if (Case==2) d4_N_init(ig,i,j+1) = next(ig);
+      if (Case==3) numbers_proj_gytl(ig,i,j+1) = next(ig);
+      if (Case==4) numbers_proj_gytl(ig,i,j+1) = next(ig);
+    }
+  }
+
+  cout<<"updates to 'next' time step:"<<endl;
+  if (j==nseason){
+    cout<<"new values for year "<<i+1<<" season 1"<<endl;
+    for (int ig=1;ig<=n_grp;ig++){
+      if (Case==1) cout<<d4_N(ig,i+1,1)<<endl;
+      if (Case==2) cout<<d4_N_init(ig,i+1,1)<<endl;
+      if (Case==3) cout<<numbers_proj_gytl(ig,i+1,1)<<endl;
+      if (Case==4) cout<<numbers_proj_gytl(ig,i+1,1)<<endl;
+    } 
+  } else {
+    cout<<"new values for year "<<i<<" season "<<j+1<<endl;
+    for (int ig=1;ig<=n_grp;ig++){
+      if (Case==1) cout<<d4_N(ig,i,j+1)<<endl;
+      if (Case==2) cout<<d4_N_init(ig,i,j+1)<<endl;
+      if (Case==3) cout<<numbers_proj_gytl(ig,i,j+1)<<endl;
+      if (Case==4) cout<<numbers_proj_gytl(ig,i,j+1)<<endl;
+    }
+  }
+
+// --------------------------------------------------------------------------------------------------------------------------------------
+  /**
+   * @brief Update numbers-at-length (REVISED)
+   * @author William Stockhausen (william.stockhausen@noaa.gov)
+   * @param i - year
+   * @param j - season
+   * @param Case - flag indicating type of numbers-at-length array to update
+   * @details Numbers at length are propagated each year for each sex based on the size transition matrix and a vector of size-specifc survival rates. 
+   * This is for one season
+   * The columns of the size-transition matrix are multiplied by the size-specific survival rate (a scalar). 
+   * New recruits are added based on the estimated average recruitment and annual deviate, multiplied by a vector of size-proportions (rec_sdd).
+   **/
+
+FUNCTION void update_population_numbers_at_length_season_new(const int i, const int j, const int Case)
+  if ((verbose>3)&&(NfunCall<2))cout << "\n\nStarting update_population_numbers_at_length_season_new(year="<<i<<",season="<<j<<",Case="<<Case<<")"<< endl;
+  
+  dvar_matrix next(1,n_grp,1,nclass); next.initialize();
+  for (int h=1;h<=nsex;h++){
+    int isizeTrans = isizeTrans_pass(h);
+    //-----------NMATURE = 1; NSHELL = 1
+    if ((nmature==1)&&(nshell==1)){
+      //----terminal molt is irrelevant (no change in maturity state)
+      if (verbose==4 && i==syr) {cout << "Case-A: 1 shell condition and 1 maturity state. sex = "<< h << endl;}
+      int ig = pntr_hmo(h,1,1);
+      dvar_vector n = getNumbersAtLengthByCase(ig,i,j,Case);//includes mortality
+      dvar_vector ns(1,nclass); ns.initialize();
+      dvar_vector os(1,nclass); os.initialize();
+      dvar_vector nn(1,nclass); nn.initialize();
+      if (j == season_growth) {
+        os = elem_prod(n, 1.0 - molt_prob_pass(h));                                        // did not molt
+        ns = elem_prod(n, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew
+        nn = os + ns;                                                                      // combined
+      } else {
+        nn = n;//no growth
+      }
+      // Recruitment
+      if (j == season_recruitment) nn += rec_pass(h);
+      next(ig) = nn;
+      if ((verbose>3)&&(NfunCall<2)){
+        cout<<"n  = "<<n <<endl;
+        cout<<"ns = "<<ns<<endl;
+        cout<<"os = "<<os<<endl;
+        cout<<"nn = "<<nn<<endl;
+        if (std::isnan(value(sum(nn)))) {
+          cout<<"in update_PNAL_season Case-A--NaNs detected for " << endl;
+          cout <<"Case   i    j   h    ig" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<h<<" "<<ig<<endl;
+          exit(-1);
+        }
+      }
+    }//--(nmature==1)&&(nshell==1)
+
+    //-----------NMATURE = 1; NSHELL = 2
+    if ((nmature==1)&&(nshell==2)){
+      if (verbose==4 && i==syr) {cout << "Case C: 2 shell conditions and 1 maturity state. sex = "<< h << endl;}
+    }//--(nmature==1)&&(nshell==2)
+
+    //-----------NMATURE = 2; NSHELL = 1
+    if ((nmature==2)&&(nshell==1)){
+      if (verbose==4 && i==syr) {cout << "Case B: 1 shell condition and 2 maturity states. sex = "<< h << endl;}
+      int ig_mat = pntr_hmo(h,1,1);
+      int ig_imm = pntr_hmo(h,2,1);
+      dvar_vector n_imm = getNumbersAtLengthByCase(ig_imm,i,j,Case);//includes mortality
+      dvar_vector n_mat = getNumbersAtLengthByCase(ig_mat,i,j,Case);//includes mortality
+      dvar_vector ns_imm(1,nclass); ns_imm.initialize();
+      dvar_vector os_imm(1,nclass); os_imm.initialize();
+      dvar_vector ns_mat(1,nclass); ns_mat.initialize();
+      dvar_vector os_mat(1,nclass); os_mat.initialize();
+      dvar_vector nn_imm(1,nclass); nn_imm.initialize();
+      dvar_vector nn_mat(1,nclass); nn_mat.initialize();
+      if (j == season_growth) {
+        os_imm = elem_prod(n_imm, 1.0 - molt_prob_pass(h));                             // did not molt, stays immature
+        ns_imm = elem_prod(n_imm, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // molted and grew (might or might not mature)
+        if (Term_molt==0){
+          os_mat = elem_prod(n_mat, 1.0 - molt_prob_pass(h));                             // previously mature, did not molt
+          ns_mat = elem_prod(n_mat, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // previously mature, molted and grew
+        } else {//Terminal_molt==1
+          os_mat = n_mat;  // previously mature, did not molt (couldn't)
+          ns_mat = 0.0;    // previously mature, molted and grew  <-could not happen with terminal molt
+        }
+        nn_imm = os_imm + elem_prod(ns_imm,1.0-mature_prob_pass(h));       // combine imms
+        nn_mat = os_mat + ns_mat + elem_prod(ns_imm,mature_prob_pass(h));  // combine mats w/ formerly imm that molted to maturity
+      } else {
+        nn_imm = n_imm; 
+        nn_mat = n_mat;
+      }
+      // Recruitment
+      if (j == season_recruitment) {
+        cout<<"rec_sdd(h)  = "<<rec_sdd(h)<<endl;
+        cout<<"rec_pass(h) = "<<rec_pass(h)<<endl;
+        nn_imm += rec_pass(h);//recruitment only to immatures
+      }
+      next(ig_imm) = nn_imm;
+      next(ig_mat) = nn_mat;
+      if ((verbose>3)&&(NfunCall<2)){
+        cout<<"n_imm   = "<<n_imm <<endl;
+        cout<<"n_mat   = "<<n_mat <<endl;
+        cout<<"ns_imm  = "<<ns_imm<<endl;
+        cout<<"os_imm  = "<<os_imm<<endl;
+        cout<<"ns_mat  = "<<ns_mat<<endl;
+        cout<<"os_mat  = "<<os_mat<<endl;
+        cout<<"next(ig_imm)  = "<<next(ig_imm) <<endl;
+        cout<<"next(ig_mat)  = "<<next(ig_mat) <<endl;
+        if (std::isnan(value(sum(nn_imm+nn_mat)))) {
+          cout<<"in update_PNAL_season Case-B--NaNs detected for " << endl;
+          cout <<"Case   i    j   h   ig_imm    ig_mat" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<" "<<h<<" "<<ig_imm<<" "<<ig_mat<<endl;
+          exit(-1);
+        }
+      }
+    }//--(nmature==2)&&(nshell==1)
+
+    //-----------NMATURE = 2; NSHELL = 2
+    if ((nmature==2)&&(nshell==2)){
+      if (verbose==4 && i==syr) {cout << "Case D: 2 shell conditions and 2 maturity states. sex = "<< h << endl;}
+      int ig_imm_ns = pntr_hmo(h,IMMATURE,NEW_SHELL);
+      int ig_imm_os = pntr_hmo(h,IMMATURE,OLD_SHELL);
+      int ig_mat_ns = pntr_hmo(h,  MATURE,NEW_SHELL);
+      int ig_mat_os = pntr_hmo(h,  MATURE,OLD_SHELL);
+      dvar_vector n_imm_ns = getNumbersAtLengthByCase(ig_imm_ns,i,j,Case);//includes mortality
+      dvar_vector n_imm_os = getNumbersAtLengthByCase(ig_imm_os,i,j,Case);//includes mortality
+      dvar_vector n_mat_ns = getNumbersAtLengthByCase(ig_mat_ns,i,j,Case);//includes mortality
+      dvar_vector n_mat_os = getNumbersAtLengthByCase(ig_mat_os,i,j,Case);//includes mortality
+      dvar_vector ns_imm(1,nclass); ns_imm.initialize();
+      dvar_vector os_imm(1,nclass); os_imm.initialize();
+      dvar_vector ns_mat(1,nclass); ns_mat.initialize();
+      dvar_vector os_mat(1,nclass); os_mat.initialize();
+      dvar_vector nn_imm_ns(1,nclass); nn_imm_ns.initialize();
+      dvar_vector nn_imm_os(1,nclass); nn_imm_os.initialize();
+      dvar_vector nn_mat_ns(1,nclass); nn_mat_ns.initialize();
+      dvar_vector nn_mat_os(1,nclass); nn_mat_os.initialize();
+      if (j == season_growth) {
+        os_imm = elem_prod(n_imm_ns, 1.0 - molt_prob_pass(h));                                         // did not molt (stayed immature)
+        ns_imm = (elem_prod(n_imm_ns, molt_prob_pass(h)) + n_imm_os)* growth_transition(h,isizeTrans); // molted and grew (might or might not mature); previous imm_os molts
+        if (Term_molt==0){
+          os_mat = elem_prod(n_mat_ns, 1.0 - molt_prob_pass(h));                             // previously mature, did not molt
+          ns_mat = elem_prod(n_mat_ns, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // previously mature, molted and grew
+        } else {//Terminal_molt==1
+          os_mat = n_mat_os + n_mat_ns;  // previously mature, did not molt (couldn't)
+          ns_mat = 0.0;                  // previously mature, molted and grew  <-could not happen with terminal molt
+        }
+        nn_imm_ns = elem_prod(os_imm+ns_imm,1.0-mature_prob_pass(h));      // immature crab that molted, but not to maturity
+        nn_imm_os = os_imm;                                                // immature crab that didn't molt
+        nn_mat_ns = ns_mat + elem_prod(os_imm+ns_imm,mature_prob_pass(h)); // previously-mature crab that molted + immature crab that molted to maturity
+        nn_mat_os = os_mat;                                                // previously-mature crab that did not molt
+      } else {//--no growth this season
+        nn_imm_ns = n_imm_ns; 
+        nn_imm_os = n_imm_os; 
+        nn_mat_ns = n_mat_ns;
+        nn_mat_os = n_mat_os;
+      }
+      // Recruitment
+      if (j == season_recruitment) {
+        cout<<"rec_sdd(h)  = "<<rec_sdd(h)<<endl;
+        cout<<"rec_pass(h) = "<<rec_pass(h)<<endl;
+        nn_imm_ns += rec_pass(h);//recruitment only to immatures
+      }
+      next(ig_imm_ns) = nn_imm_ns;
+      next(ig_imm_os) = nn_imm_os;
+      next(ig_mat_ns) = nn_mat_ns;
+      next(ig_mat_os) = nn_mat_os;
+      if ((verbose>3)&&(NfunCall<2)){
+        cout<<"n_imm_ns = "<<n_imm_ns <<endl;
+        cout<<"n_imm_os = "<<n_imm_os <<endl;
+        cout<<"n_mat_ns = "<<n_mat_ns <<endl;
+        cout<<"n_mat_os = "<<n_mat_os <<endl;
+        cout<<"ns_imm   = "<<ns_imm<<endl;
+        cout<<"os_imm   = "<<os_imm<<endl;
+        cout<<"ns_mat   = "<<ns_mat<<endl;
+        cout<<"os_mat   = "<<os_mat<<endl;
+        cout<<"next(ig_imm_ns)  = "<<next(ig_imm_ns) <<endl;
+        cout<<"next(ig_imm_os)  = "<<next(ig_imm_os) <<endl;
+        cout<<"next(ig_mat_ns)  = "<<next(ig_mat_ns) <<endl;
+        cout<<"next(ig_mat_os)  = "<<next(ig_mat_os) <<endl;
+        if (std::isnan(value(sum(nn_imm_ns+nn_imm_os+nn_mat_ns+nn_mat_os)))) {
+          cout<<"in update_PNAL_season Case-D--NaNs detected for " << endl;
+          cout <<"Case   i    j   h   ig_imm_ns    ig_imm_os   ig_mat_ns   ig_mat_os" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<" "<<h<<" "<<ig_imm_ns<<" "<<ig_imm_os<<" "<<ig_mat_ns<<" "<<ig_mat_os<<endl;
+          exit(-1);
+        }
+      }
+    }//--(nmature==2)&&(nshell==2)
+  }//--h loop
+
+  cout<<"after calc, before upate. next numbers:\n"<<next<<endl;
+  
+  // update the n-matrix
+  updateNumbersAtLengthByCase(next,i,j,Case);
+ 
+ // --------------------------------------------------------------------------------------------------------------------------------------
+  /**
+   * @brief Update numbers-at-length for a season(ORIGINAL)
    * @author Team
+   * @param i - year
+   * @param j - season
+   * @param Case - flag indicating type of numbers-at-length array to update
    * @details Numbers at length are propagated each year for each sex based on the size transition matrix and a vector of size-specifc survival rates. 
    * This is for one season
    * The columns of the size-transition matrix are multiplied by the size-specific survival rate (a scalar). 
@@ -6752,6 +7195,7 @@ FUNCTION calc_initial_numbers_at_length
    **/
 
 FUNCTION void update_population_numbers_at_length_season(const int i, const int j, const int Case)
+  if ((verbose>3)&&(NfunCall<2))cout << "\n\nStarting update_population_numbers_at_length_season_old(year="<<i<<",season="<<j<<",Case="<<Case<<")"<< endl;
   int h,o,m,isizeTrans;
 
   dvar_vector rt(1,nclass);
@@ -6762,47 +7206,95 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
   dvar_vector  t2(1,nclass);
   dvar_matrix next(1,n_grp,1,nclass);
 
-  // reset next
+  // Loop over groups to indicate order of traversal
+  if ((verbose>3)&&(NfunCall<2)) {
+    cout <<"Group sequence:"<<endl;
+    for (int ig = 1; ig <= n_grp; ig++){
+      // Extract group
+      h = isex(ig);
+      isizeTrans  = isizeTrans_pass(h);
+      m = imature(ig);
+      o = ishell(ig);
+      cout <<"\nig sex mature shell (h,m,o) = "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+    }
+  }
+
+  dvar_vector  (1,nclass);
+
+  // initialize all
+  rt.initialize();
+  x.initialize();
+  y.initialize();
+  z.initialize();
+  t1.initialize();
+  t2.initialize();
   next.initialize();
   
-  // Loop over groupds
-  for (int ig = 1; ig <= n_grp; ig++)
-   {
+  // Loop over groups
+  for (int ig = 1; ig <= n_grp; ig++){
    
     // Extract group
     h = isex(ig);
     isizeTrans  = isizeTrans_pass(h);
     m = imature(ig);
     o = ishell(ig);
+    if ((verbose>3)&&(NfunCall<2)) cout <<"\nig sex mature shell (h,m,o) = "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
 
     // Numbers-at-age for this group
     if (Case==1) x = d4_N(ig)(i)(j);
     if (Case==2) x = d4_N_init(ig,i,j);
     if (Case==3) x = numbers_proj_gytl(ig,i,j);
     if (Case==4) x = numbers_proj_gytl(ig,i,j);
+    if ((verbose>3)&&(NfunCall<2)){
+      cout<<"--original"<<x<<endl;
+      if (std::isnan(value(sum(x)))) {
+        cout<<"in update_PNAL_season--NaNs detected for " << endl;
+        cout <<"Case   i    j   ig    h    m     o" << endl;
+        cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+        exit(-1);
+      }
+    }
     // Mortality (natural and fishing)
     if (Case==1) x = x * S(h,m)(i)(j);
     if (Case==2) x = x * SS_pass(h,m,j);
     if (Case==3) x = x * SS_pass(h,m,j);
     if (Case==4) x = x * SS_pass(h,m,j);
+    if ((verbose>3)&&(NfunCall<2)){
+      cout<<"--after mortality: "<<x<<endl;
+      if (std::isnan(value(sum(x)))) {
+        cout<<"in update_PNAL_season after SS_pass applied--NaNs detected for " << endl;
+        cout <<"Case   i    j   ig    h    m     o" << endl;
+        cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+        exit(-1);
+      }
+    }
     
     // What to do next depends on which group (shell and maturity) we are in
     // ======================================================================
     
     // Case-A: one shell condition and one maturity state
-    if (nshell == 1 && nmature == 1) 
-     {
+    if (nshell == 1 && nmature == 1) {
       // Molting and growth
       if (j == season_growth) {
        y = elem_prod(x, 1.0 - molt_prob_pass(h));                                        // did not molt, become oldshell
        x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew, stay newshell
-       x = x + y;                                                                       // only one shell type so combine
+       x = x + y;                                                                        // only one shell type so combine
        }
       // Recruitment
       if (j == season_recruitment) x += rec_pass(h);
       next(ig) += x;
       if (verbose==4 && i==syr) cout << "Case-A: one shell condition and one maturity state" << endl;
-     } // nshell == 1 && nmature == 1
+      if ((verbose>3)&&(NfunCall<2)){
+        cout<<x<<endl;
+        cout<<y<<endl;
+        if (std::isnan(value(sum(x)))) {
+          cout<<"in update_PNAL_season Case-A--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    } // nshell == 1 && nmature == 1
 
 
     //-------------------------------------------------------------------------------------------------------------------------------
@@ -6832,10 +7324,24 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       next(ig-1) += z; next(ig) += x;
       if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-B1: no terminal molt, one shell condition, and two maturity states; IMMATURE" << endl;
       if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-C1: Terminal molt, one shell condition, and two maturity states; IMMATURE" << endl;
-     } // Term_molt==0 or 1 &&  nshell == 1 && nmature == 2 && m == IMMATURE
+      if ((verbose>3)&&(NfunCall<2)){
+        cout<<"molt prob: "<<molt_prob_pass(h)<<endl;
+        cout<<"mat  prob: "<<mature_prob_pass(h)<<endl;
+        cout<<"grwth trns:"<<endl<<growth_transition(h,isizeTrans)<<endl;
+        cout<<x<<endl;
+        cout<<y<<endl;
+        cout<<z<<endl;
+        if (std::isnan(value(sum(x+z)))) {
+          if (Term_molt==0) cout<<"in update_PNAL_season Case-B1--NaNs detected for " << endl;
+          if (Term_molt==1) cout<<"in update_PNAL_season Case-C1--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    } // Term_molt==0 or 1 &&  nshell == 1 && nmature == 2 && m == IMMATURE
 
-    if (Term_molt==0 && nshell == 1 && nmature == 2 && m == MATURE) 
-     {
+    if (Term_molt==0 && nshell == 1 && nmature == 2 && m == MATURE) {
       // Molting and growth
       if (j == season_growth) {
        y = elem_prod(x, 1.0 - molt_prob_pass(h));                                       // did not molt, become oldshell
@@ -6844,19 +7350,36 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
        }
       next(ig) += x;
       if (verbose==4 && i==syr) cout << "Case-B2: no terminal molt, one shell condition, and two maturity states; MATURE" << endl;
-     } // Term_molt==0 && nshell == 1 && nmature == 2 && m == MATURE
+      if ((verbose>3)&&(NfunCall<2)){
+        cout<<x<<endl;
+        cout<<y<<endl;
+        if (std::isnan(value(sum(x)))) {
+          cout<<"in update_PNAL_season Case-B2--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    } // Term_molt==0 && nshell == 1 && nmature == 2 && m == MATURE
 
-    // Terminal molt: No molting, growth, or recruitment for mature animals if there is a terminal motl
-    if (Term_molt==1 && nshell == 1 && nmature == 2 && m == MATURE) 
-     {
+    // Terminal molt: No molting, growth, or recruitment for mature animals if there is a terminal molt
+    if (Term_molt==1 && nshell == 1 && nmature == 2 && m == MATURE) {
       next(ig) += x;
       if (verbose==4 && i==syr) cout << "Case-C2: Terminal molt, one shell condition, and two maturity states; MATURE" << endl;
-     } // Term-Molt == 1 && nshell == 1 && nmature == 2 && m == MATURE
+      if ((verbose>3)&&(NfunCall<2)){
+        cout<<x<<endl;
+        if (std::isnan(value(sum(x)))) {
+          cout<<"in update_PNAL_season Case-C2--NaNs detected for " << endl;
+          cout<<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    } // Term-Molt == 1 && nshell == 1 && nmature == 2 && m == MATURE
          
     //-------------------------------------------------------------------------------------------------------------------------------
     // Case-D: No-terminal molt; two shell conditions, one maturity stage
-    if (Term_molt==0 && nshell == 2  && nmature == 1 && o == NEW_SHELL) 
-     {
+    if (Term_molt==0 && nshell == 2  && nmature == 1 && o == NEW_SHELL) {
       // Molting and growth
       if (j == season_growth){
        y = elem_prod(x, 1.0 - molt_prob_pass(h));                              // did not molt, become oldshell
@@ -6866,53 +7389,84 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       if (j == season_recruitment) x += rec_pass(h);
       next(ig) += x;
       if (verbose==4 && i==syr) cout << "Case-D1: No-terminal molt, two shell condition, and one maturity state; NEW_SHELL" << endl;
-     } // Term_molt==0 && nshell == 0 && o == NEW_SHELL
+      if ((verbose>3)&&(NfunCall<2)){
+        cout<<x<<endl;        
+        cout<<y<<endl;
+        if (std::isnan(value(sum(x+y)))) {
+          cout<<"in update_PNAL_season Case-D1--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    } // Term_molt==0 && nshell == 0 && o == NEW_SHELL
          
-    if (Term_molt==0 && nshell == 2  && nmature == 1 && o == OLD_SHELL) 
-     {
+    if (Term_molt==0 && nshell == 2  && nmature == 1 && o == OLD_SHELL) {
       // Molting and growth
       z.initialize();
       if (j == season_growth) {
-       z = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
-       x = elem_prod(x, 1 - molt_prob_pass(h)) + y;                           // did not molt, remain oldshell and add the newshell that become oldshell
-       }
+        z = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
+        x = elem_prod(x, 1 - molt_prob_pass(h)) + y;                           // did not molt, remain oldshell and add the newshell that become oldshell
+      }
       next(ig-1) += z; next(ig) += x;
       if (verbose==4 && i==syr) cout << "Case-D2: No-terminal molt, two shell condition, and one maturity state; OLD_SHELL" << endl;
-     } // Term_molt==0 && nshell == 0 && o == OLD_SHELL
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(x+z)))) {
+          cout<<"in update_PNAL_season Case-D2--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    } // Term_molt==0 && nshell == 0 && o == OLD_SHELL
 
     //-------------------------------------------------------------------------------------------------------------------------------
     // Cases-E and F: Two shell conditions, two maturity stages
-    if (verbose==4 && i==syr) cout << Term_molt << " " << j << " " << ig << " " << h << " " << o << " " << m << endl;
-    if (nshell == 2 && nmature == 2 && o == NEW_SHELL && m == IMMATURE) 
-     {
+    //if (verbose==4 && i==syr) cout << Term_molt << " " << j << " " << ig << " " << h << " " << o << " " << m << endl;
+    if (nshell == 2 && nmature == 2 && o == NEW_SHELL && m == IMMATURE) {
       // Molting and growth
       z.initialize();
       y.initialize();
-       if (j == season_growth) {
+      if (j == season_growth) {
          y = elem_prod(x, 1.0 - molt_prob_pass(h));                                                // did not molt (immature old shell)
          x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);                    // molted and grew (new shell)
          z = elem_prod(x , mature_prob_pass(h)) ; 		                                        // molted to maturity (mature new shell)
          x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                            // did not molt to maturity (immature new shell)
         if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-E1: no terminal molt, two shell condition, and two maturity states; NEW_SHELL & IMMATURE " << ig << endl;
         if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F1: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & IMMATURE " << ig << endl;
-       }
+      }
       if (j == season_recruitment) x += rec_pass(h);
       next(ig-2) += z; next(ig) += x; next(ig+1) += y;
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(x+y+z)))) {
+          if (Term_molt==0) cout<<"in update_PNAL_season Case-E1--NaNs detected for " << endl;
+          if (Term_molt==1) cout<<"in update_PNAL_season Case-F1--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
       }
-    if (Term_molt==0 && nshell == 2 && nmature == 2 && o == NEW_SHELL && m == MATURE) 
-     {
+    }
+    if (Term_molt==0 && nshell == 2 && nmature == 2 && o == NEW_SHELL && m == MATURE) {
       // Molting and growth
       y.initialize();
-       if (j == season_growth) {
+      if (j == season_growth) {
          y = elem_prod(x, 1.0 - molt_prob_pass(h));                                                // did not molt (mature old shell)
          x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);                    // molted and grew (mature new shell)
         if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-E2: no terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
-       }
+      }
       if (j == season_recruitment) x += rec_pass(h);
       next(ig) += x; next(ig+1) += y;
-     }
-    if (Term_molt==1 && nshell == 2 && nmature == 2 && o == NEW_SHELL && m == MATURE) 
-     {
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(x+y)))) {
+          cout<<"in update_PNAL_season Case-E2--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    }
+    if (Term_molt==1 && nshell == 2 && nmature == 2 && o == NEW_SHELL && m == MATURE) {
       // Only become oldshell
       y.initialize();
       if (j == season_growth) {
@@ -6921,10 +7475,17 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
        if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F2: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
        }
       next(ig+1) += y;  next(ig) += x;
-     }
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(x+y)))) {
+          cout<<"in update_PNAL_season Case-F2--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    }
     
-    if (nshell == 2 && nmature == 2 && o == OLD_SHELL && m==IMMATURE) 
-     {
+    if (nshell == 2 && nmature == 2 && o == OLD_SHELL && m==IMMATURE) {
       // Molting and growth
       z.initialize();
       y.initialize();
@@ -6937,10 +7498,18 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
          if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F3: Terminal molt, two shell condition, and two maturity states; OLD_SHELL & IMMATURE " << ig << endl;
        }
       next(ig-3) += z; next(ig-1) += x; next(ig) += y;
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(x+y+z)))) {
+          if (Term_molt==0) cout<<"in update_PNAL_season Case-E3--NaNs detected for " << endl;
+          if (Term_molt==1) cout<<"in update_PNAL_season Case-F3--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
      }
      
-    if (Term_molt==0 && nshell == 2 && nmature == 2 && o == OLD_SHELL && m==MATURE) 
-     {
+    if (Term_molt==0 && nshell == 2 && nmature == 2 && o == OLD_SHELL && m==MATURE) {
       // Molting and growth
       y.initialize();
       if (j == season_growth) {
@@ -6949,37 +7518,57 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
          if (verbose==4 && i==syr) cout << "Case-E4: No-terminal molt, two shell condition, and two maturity states; OLD_SHELL & MATURE " << ig << endl;
        }
       next(ig) += x; next(ig-1) += y;
-     }
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(x+y)))) {
+          cout<<"in update_PNAL_season Case-E4--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
+    }
     
-    if (Term_molt==1 && nshell == 2 && nmature == 2 && o == OLD_SHELL && m==MATURE) 
-     {
+    if (Term_molt==1 && nshell == 2 && nmature == 2 && o == OLD_SHELL && m==MATURE) {
       if (j == season_growth) {
-       if (verbose==4 && i==syr) cout << "Case-F4: Terminal molt, rwo shell condition, and two maturity states; OLD_SHELL & MATURE " << ig << endl;
-       }
+        if (verbose==4 && i==syr) cout << "Case-F4: Terminal molt, two shell condition, and two maturity states; OLD_SHELL & MATURE " << ig << endl;
+      }
       next(ig) += x;
+      if ((verbose>3)&&(NfunCall<2)){
+        if (std::isnan(value(sum(x)))) {
+          cout<<"in update_PNAL_season Case-F4--NaNs detected for " << endl;
+          cout <<"Case   i    j   ig    h    m     o" << endl;
+          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+          exit(-1);
+        }
+      }
      }
-   
-   } // grp
+  } //--ig loop 
 
-   // update the n-matrix
-   if (Case==1) 
-    for (int ig=1;ig<=n_grp;ig++)
-    if (j == nseason)
-     { d4_N(ig)(i+1)(1) = next(ig); }
-     else 
-     { d4_N(ig)(i)(j+1) = next(ig); }
-   if (Case==2) 
-    for (int ig=1;ig<=n_grp;ig++)
-    if (j == nseason)
-     { d4_N_init(ig)(i+1)(1) = next(ig); }
-     else 
-     { d4_N_init(ig)(i)(j+1) = next(ig); }
-   if (Case==3 || Case==4) 
-    for (int ig=1;ig<=n_grp;ig++)
-    if (j == nseason)
-     { numbers_proj_gytl(ig)(i+1)(1) = next(ig); }
-     else 
-     { numbers_proj_gytl(ig)(i)(j+1) = next(ig); }
+  // update the n-matrix
+  if (Case==1) {
+    for (int ig=1;ig<=n_grp;ig++){
+      if (j == nseason)
+        { d4_N(ig)(i+1)(1) = next(ig); }
+      else 
+        { d4_N(ig)(i)(j+1) = next(ig); }
+    }
+  }
+  if (Case==2) {
+    for (int ig=1;ig<=n_grp;ig++){
+      if (j == nseason)
+        { d4_N_init(ig)(i+1)(1) = next(ig); }
+      else 
+        { d4_N_init(ig)(i)(j+1) = next(ig); }
+    }
+  }
+  if (Case==3 || Case==4) {
+    for (int ig=1;ig<=n_grp;ig++){
+      if (j == nseason)
+        { numbers_proj_gytl(ig)(i+1)(1) = next(ig); }
+      else 
+        { numbers_proj_gytl(ig)(i)(j+1) = next(ig); }
+    }
+  }
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -6997,6 +7586,7 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
    * @param rec_sdd is the vector of recruitment size proportions. It has dimension (1,nclass)
   **/
 FUNCTION update_population_numbers_at_length
+  if ((verbose>3)&&(NfunCall<2)) cout<<"--Starting update_population_numbers_at_length--"<<endl;
   int isizeTrans;
   
   dmatrix Id = identity_matrix(1,nclass);
@@ -7007,35 +7597,46 @@ FUNCTION update_population_numbers_at_length
 
   // Specify recuitment by year
   for (int i = syr; i <= nyrRetro; i++ ){
-   for (int h = 1; h <= nsex; h++ )
-    {
-     if ( bInitializeUnfished == UNFISHEDEQN )
-      recruits(h,i) = mfexp(logR0)*float(nsex);
-     else
-      recruits(h,i) = mfexp(logRbar)*float(nsex);
-     // This splits recruitment out proportionately into males and females
-     totrecruits(i) = recruits(h)(i)*mfexp(rec_dev(i))/float(nsex);
-     if (nsex == 1) recruits(h)(i) *= mfexp(rec_dev(i));
-     if (nsex == 2 && h == MALES) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
-     if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
-     }//--h
+    for (int h = 1; h <= nsex; h++ ){
+      if (verbose>4) if ((verbose>3)&&(NfunCall<2)) cout<<"---looping for recruits: i(yr) h(sex): "<<i<<" "<<h<<endl;
+      if ( bInitializeUnfished == UNFISHEDEQN ){
+        recruits(h,i) = mfexp(logR0)*float(nsex);
+      } else {
+        recruits(h,i) = mfexp(logRbar)*float(nsex);
+      }
+      // This splits recruitment out proportionately into males and females
+      totrecruits(i) = recruits(h)(i)*mfexp(rec_dev(i))/float(nsex);
+      if (nsex == 1) {
+        recruits(h)(i) *= mfexp(rec_dev(i));
+      } else if (nsex == 2) {
+        if (h == MALES)   recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
+        if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
+      }
+      if ((verbose>4) && NfunCall<2){
+        cout<<recruits(h)(i)<<endl;
+        if (std::isnan(value(recruits(h)(i)))) {
+          cout << "In update_population_numbers_at_length: recruits has NaNs for year, sex " << i << " " << h << endl;
+          exit(-1);
+        }
+      }
+    }//--h
   }//--i
 
   // Now loop over year and season 
-  for (int i = syr; i <= nyrRetro; i++)
-   {
+  for (int i = syr; i <= nyrRetro; i++){
+    if ((verbose>3)&&(NfunCall<2)) cout<<"\n\n---looping to update pop Ns: i(yr): "<<i<<endl;
     // Pass the molt probabilities
-    for (int h=1;h<=nsex;h++)
-     {
-      isizeTrans_pass(h) = iYrsIncChanges(h,i);
-      rec_pass(h) = recruits(h,i) * rec_sdd(h);                                                ///> recruitment as a function of class 
-      molt_prob_pass(h) = molt_probability(h,i);                                               ///> probability of molting
-      for (int l=1;l<=nclass;l++)
-      if (nmature==2) mature_prob_pass(h) = mature_probability(h,i);                           ///> probability of maturity
-      }  
-    // Now fo the year-update
-    for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,1);     ///> Update the sesonal-dynamics
-   } //--i
+    for (int h=1;h<=nsex;h++){
+      isizeTrans_pass(h) = iYrsIncChanges(h,i);                       ///> size transition
+      rec_pass(h)        = recruits(h,i) * rec_sdd(h);                ///> recruitment as a function of class 
+      molt_prob_pass(h)  = molt_probability(h,i);                     ///> probability of molting
+      if (nmature==2) mature_prob_pass(h) = mature_probability(h,i);  ///> probability of maturing
+    }  
+    // Now for the year-update
+    for (int j = 1; j <= nseason; j++) {
+      update_population_numbers_at_length_season(i,j,1);     ///> Update the sesonal-dynamics: Case = 1
+    }//--j loop
+  } //--i loop 
    
 // =================================================================================================================================================
 
@@ -7790,15 +8391,21 @@ FUNCTION calc_predicted_composition
           }
 
           if ( h != UNDET_SEX ) {                                          ///> sex specific
-            if (verbose>3) cout<<"--sex-specific observations in comp"<< endl;
+            if (verbose>3) {
+              cout<<"--sex-specific observations in size comps ii, jj : "<< ii << " " << jj << endl;
+              cout <<"year: "<< i <<" seas: " << j << "fleet: " << k << "sex: "<<h<<" "<< d3_SizeComps_in(ii)(jj) << endl;
+            }
             dvar_vector sel = mfexp(log_slx_capture(k,h,i));
+            if (std::isnan(value(sum(sel)))) cout<< "NaNs in log_slx_capture" <<endl;
             dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
+            if (std::isnan(value(sum(ret)))) cout<< "NaNs in log_slx_retaind" <<endl;
             dvar_vector dis = mfexp(log_slx_discard(k,h,i));
+            if (std::isnan(value(sum(dis)))) cout<< "NaNs in log_slx_discard" <<endl;
 
             // AEPCAL--check the maturity index for Z2 and Z1
 
             if (lf_catch_in(ii)==CATCH_COMP) {
-              if (verbose>3) cout <<"----catch comp"<< endl;
+              if (verbose>3) cout <<"----catch comp: sex-specific"<< endl;
               // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
               // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
               if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
@@ -7826,6 +8433,10 @@ FUNCTION calc_predicted_composition
                   int ig = pntr_hmo(h,m,o);
                   if ( shell == 0 ) nal += d4_N(ig,i,j);
                   if ( shell == o ) nal += d4_N(ig,i,j);
+                  if (std::isnan(value(sum(d4_N(ig,i,j))))){
+                    cout << "d4_N(ig,i,j) is NaN for h,m,o,i,j: "<<h<<" "<<m<<" "<<o<<" "<<i<<" "<<j<<endl;
+                    cout << d4_N(ig,i,j) <<endl;
+                  }
                 }//--o loop
               }//--m loop
             }//--nmature == 1
@@ -7834,6 +8445,10 @@ FUNCTION calc_predicted_composition
               for ( int m = 1; m <= nmature; m++ ){
                 for ( int o = 1; o <= nshell; o++ ) {
                   int ig = pntr_hmo(h,m,o);
+                  if (std::isnan(value(sum(d4_N(ig,i,j))))){
+                    cout << "d4_N(ig,i,j) is NaN for h,m,o,i,j: "<<h<<" "<<m<<" "<<o<<" "<<i<<" "<<j<<endl;
+                    cout << d4_N(ig,i,j) <<endl;
+                  }
                   if ( bmature == 0 ) nal += d4_N(ig,i,j);
                   if ( bmature == m ) nal += d4_N(ig,i,j);
                 }//--o loop
@@ -7843,12 +8458,20 @@ FUNCTION calc_predicted_composition
             switch ( type ) {
               case RETAINED:                                            ///> retained
                 dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1);
+                if (std::isnan(value(sum(dNtmp)))) cout<< "NaNs in RETAINED dNtmp " << dNtmp << endl;
                 break;
               case DISCARDED:                                           ///> discarded
                 dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1);
+                if (std::isnan(value(sum(dNtmp)))) cout<< "NaNs in DISCARDED dNtmp " << dNtmp << endl;
                 break;
               case TOTALCATCH:                                          ///> both retained and discarded
                 dNtmp += elem_prod(elem_prod(nal, sel),tempZ1);
+                if (std::isnan(value(sum(dNtmp)))) {
+                  cout<< "NaNs in TOTALCATCH dNtmp " << dNtmp << endl;
+                  cout<< "nal: " << nal << endl;
+                  cout<< "sel: " << sel << endl;
+                  cout<< "tempZ1: " << tempZ1 << endl;
+                }
                 break;
             }//--switch(type)
             //end of sex-specific: h != UNDET_SEX
@@ -7858,11 +8481,14 @@ FUNCTION calc_predicted_composition
             for ( int h = 1; h <= nsex; h++ ){
               if (verbose>3) cout <<"------h = " << h << endl;
               dvar_vector sel = mfexp(log_slx_capture(k,h,i));
+              if (std::isnan(value(sum(sel)))) cout<< "NaNs in log_slx_capture" <<endl;
               dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
+              if (std::isnan(value(sum(ret)))) cout<< "NaNs in log_slx_retaind" <<endl;
               dvar_vector dis = mfexp(log_slx_discard(k,h,i));
+              if (std::isnan(value(sum(dis)))) cout<< "NaNs in log_slx_discard" <<endl;
               // AEPCAL--check the maturity index
               if (lf_catch_in(ii)==CATCH_COMP) {
-                if (verbose>3) cout <<"------catch comp"<< endl;
+                if (verbose>3) cout <<"------catch comp: sexes combined"<< endl;
                 // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
                 // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
                 if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
@@ -7874,6 +8500,7 @@ FUNCTION calc_predicted_composition
                   tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
                   cout << "not coded yet" << endl; exit(1);
                 }
+                if (std::isnan(value(sum(tempZ1)))) cout<< "NaNs in tempZ1" <<endl;
               }//--lf_catch_in(ii)==CATCH_COMP
     	        if (lf_catch_in(ii)==SURVEY_COMP) {
                 if (verbose>3) cout <<"------survey comp" << endl;
@@ -7904,6 +8531,13 @@ FUNCTION calc_predicted_composition
           }//--else sexes combined
           d3_pre_size_comps_in(ii)(jj)        = dNtmp(1,nbins);
           d3_pre_size_comps_in(ii)(jj)(nbins) = sum(dNtmp(nbins,nclass));
+          if (std::isnan(value(sum(d3_pre_size_comps_in(ii,jj))))){
+            cout << "line 8494"<<endl;
+            cout << " ii,jj = "<< ii <<", "<< jj  << endl;
+            cout << "d3_pre_size_comps_in(ii,jj) is NaN: " << d3_pre_size_comps_in(ii,jj) << endl;
+            exit(-1);
+          }
+
           // Now apply tail compression (perhaps)
           if (bTailCompression_in(ii) == 1) {
             if (verbose>3) cout <<"------doing tail compression" << endl;
@@ -7919,6 +8553,12 @@ FUNCTION calc_predicted_composition
               d3_pre_size_comps_in(ii,jj,kk) = 0;
             }//--kk
             d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,2)) = cumsum;
+            if (std::isnan(value(d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,2))))){
+              cout << "line 8516"<<endl;
+              cout << " ii,jj = "<< ii <<", "<< jj <<", "<< tailcompind(ii,jj,2) << endl;
+              cout << "d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,2)) is NaN"<< endl;
+              exit(-1);
+            }
           }//--bTailCompression_in(ii) == 1
         }// if check on whether to include year
       } // jj loop (years)
@@ -7948,6 +8588,13 @@ FUNCTION calc_predicted_composition
             }
             if (verbose>3) cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
             if (verbose>3) cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
+            if (std::isnan(value(d3_pre_size_comps_in(kk,ii,jj)))){
+              cout << "line 8551" << endl;
+              cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
+              cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
+              cout << "d3_pre_size_comps_in(kk,ii,jj) is NaN"<< endl;
+              exit(-1);
+            }
             d3_pre_size_comps(k,i,j) = qmult*d3_pre_size_comps_in(kk,ii,jj); 
           } // if check on iyr
         }//--ii loop
@@ -7956,12 +8603,19 @@ FUNCTION calc_predicted_composition
  
    // This normalizes all observations by row
    if (verbose) cout<<"--Normalizing comps" << endl;
-   for ( int k = 1; k <= nSizeComps; k++ ){
+    for ( int k = 1; k <= nSizeComps; k++ ){
       for ( int i = 1; i <= nSizeCompRows(k); i++ ){
-        if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) )
+        if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) ){
           d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
+          if (std::isnan(value(sum(d3_pre_size_comps_in(k,i))))){
+            cout << "line 8570" << endl;
+            cout << " k,i    = "<< k <<", "<< i << endl;
+            cout << "d3_pre_size_comps_in(k,i) is NaN: " << d3_pre_size_comps_in(k,i) << endl;
+            exit(-1);
+          }
+        }
       }//--i loop
-   }//--k loop
+    }//--k loop
   
   if (verbose >= 3) {
     ECHO(d3_pre_size_comps_in)
@@ -8358,13 +9012,18 @@ FUNCTION length_likelihood
        break;
      }
 
-    if ( ploglike != NULL )                                                                   ///> extract the residuals
-     d3_res_size_comps(ii) = ploglike->residual(log_effn, P);
+    if ( ploglike != NULL ){                                                                   ///> extract the residuals
+      d3_res_size_comps(ii) = ploglike->residual(log_effn, P);
+    } else {
+      //no residuals 
+      d3_res_size_comps(ii) = 0.0;
+    }
 
     if ( ploglike != NULL )                                                                   ///> Compute the likelihood
      {
       dvariable nll = ploglike->nloglike(log_effn, P);
       nloglike(3,ii) += nll;
+      if (verbose >= 3) ECHO(ii)
       if (verbose >= 3) ECHO(nll)
       delete ploglike;
      }
@@ -8393,12 +9052,13 @@ FUNCTION recruitment_likelihood
 // --------------------------------------------------------------------------------------------------
 // Label 405: growth_likelihood
 FUNCTION growth_likelihood
-  dvariable Prob;
-  dvar_matrix YY(1,nclass,1,nclass);
-
-  //  5) Likelihood for the size-class change data #2
+  
+  //  5) Likelihood for the tagging-related size-class change data #2
   if (GrowthObsType==GROWTHCLASS_DATA || GrowthObsType==GROWTHCLASS_VALS){
-    // First find all FullY matrices
+    dvariable Prob;
+    dvar_matrix YY(1,nclass,1,nclass);
+    nloglike(5).initialize();
+      // First find all FullY matrices
     FullY.initialize();
     for (int h = 1; h <=nsex; h++) {
       for (int k = 1; k<=nSizeIncVaries(h);k++) {
@@ -8431,31 +9091,34 @@ FUNCTION growth_likelihood
       for (int i=1;i<=nSizeSex(h);i++) total += FullY(h,k,itimeLib,iclassRel,i)*exp(log_slx_capture(ifleetRec,h,iyearRec,i));
       nloglike(5,h) -= log(Prob/total+0.00001)*freq;
     } // i loop
-  } // Growth data
-  if ( verbose >= 3 ) cout << "Ok after increment likelihood 2 ..." << endl;
+  } // Tagging-related growth data
+  if ( verbose >= 3 ) cout << "Ok after tagging-related increment likelihood ..." << endl;
 
-  // 5) Likelihood for growth increment data #1
-  if (GrowthObsType==GROWTHINC_DATA_NORMAL){  //TODO: is thhis correct? why only (1)? why only a "dnorm" likelihood??
+  // 6) Likelihood for non-tagging growth increment data
+  if (GrowthObsType==GROWTHINC_DATA_NORMAL){  
+    nloglike(6).initialize(); grwthPosFun.initialize();
     if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
       // normal-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
       dvar_vector MoltIncPred = calc_growth_increments_linear(dPreMoltSize, iMoltIncSex,1);
-      nloglike(5,1) = dnorm(log(dMoltInc) - log(MoltIncPred), dMoltIncCV);
+      for (int i=MoltIncPred.indexmin();i<=MoltIncPred.indexmax();i++)
+        nloglike(6,iMoltIncSex(i)) += dnorm(log(dMoltInc(i)) - log(MoltIncPred(i)), dMoltIncCV(i));//negative log likelihood
     } 
   } else if (GrowthObsType==GROWTHINC_DATA_GAMMA){
+    nloglike(6).initialize();
     if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
       // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
-      nloglike(5,1) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+      nloglike(6) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
     } 
     if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL){
       // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
-      nloglike(5,1) = calc_like_gamma_pwrlaw_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+      nloglike(6) = calc_like_gamma_pwrlaw_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
     } else 
     if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODELALT){
       // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
-      nloglike(5,1) = calc_like_gamma_pwrlawalt_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+      nloglike(6) = calc_like_gamma_pwrlawalt_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
     } 
   }
-  if ( verbose >= 3 ) cout << "Ok after increment likelihood 1 ..." << endl;
+  if ( verbose >= 3 ) cout << "Ok after non-tagging-related growth increment likelihood ..." << endl;
 
 // --------------------------------------------------------------------------------------------------
   /**
@@ -8589,18 +9252,24 @@ FUNCTION calc_objective_function
   w_nloglike = sum(elem_prod(nloglike(1),catch_emphasis)) + sum(elem_prod(nloglike(2),cpue_emphasis)) + sum(elem_prod(nloglike(3),lf_emphasis));
   w_nloglike += sum(nloglike(4));
   w_nloglike += sum(nloglike(5))*tag_emphasis;
+  w_nloglike += sum(nloglike(6));
 
-  objfun =  w_nloglike + sum(elem_prod(nlogPenalty,Penalty_emphasis))+ sum(priorDensity) + TempSS;
+  objfun =  w_nloglike + sum(elem_prod(nlogPenalty,Penalty_emphasis))+ sum(priorDensity) + TempSS + grwthPosFun;
 
   // Summary tables
-  if ( verbose >= 2 ) cout << "Priors: " << priorDensity << endl;
-  if ( verbose >= 2 ) cout << "TempSS: " << TempSS << endl;
-  if ( verbose >= 2 ) cout << "Penalties: " << nlogPenalty << endl;
-  if ( verbose >= 2 ) cout << "Penalties: " << elem_prod(nlogPenalty,Penalty_emphasis) << " " << TempSS << endl;
-  if ( verbose >= 2 ) cout << "Likelihoods: " << endl;
-  if ( verbose >= 2 ) cout << nloglike << endl;
+  if (verbose>=2){
+    cout << "Priors: " << priorDensity << endl;
+    cout << "TempSS: " << TempSS << endl;
+    cout << "Penalties: " << nlogPenalty << endl;
+    cout << "Penalties: " << elem_prod(nlogPenalty,Penalty_emphasis) << " " << TempSS << endl;
+    cout << "posfun pen." << grwthPosFun << endl;
+    cout << "Likelihoods: " << endl;
+    cout << nloglike << endl;
+  }
 
-  if ( verbose >= 1 && !sd_phase()) cout  << "fn Call: " << current_phase() << " " << NfunCall << " " << objfun << " " << w_nloglike << " " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << " " << sum(priorDensity)+TempSS << endl;
+  if ( verbose >= 1 && !sd_phase()) cout  << "fn Call: " << current_phase() << " " << NfunCall << " " 
+                                          << objfun << " " << w_nloglike << " " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << " " 
+                                          << sum(priorDensity)+TempSS << " " << grwthPosFun << endl;
 
 // ==================================================================================================================================================
 // === Main routines ended
@@ -8762,8 +9431,9 @@ FUNCTION dvar_vector calc_ssba()
   **/
 // Label 501: calc_brute_equilibrium
 FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRefSexR2, const int YrRef, const int YrRefGrow, 
-											const int YrRefM1, const int YrRefM2, const int YrRefSea1, const int YrRefSea2,
-											const int YrRefSel1, const int YrRefSel2, const int ninit)
+                     const int YrRefM1, const int YrRefM2, const int YrRefSea1, const int YrRefSea2,
+                     const int YrRefSel1, const int YrRefSel2, const int ninit)
+  if ((verbose>3)&&(NfunCall<2)) cout<<"--Starting calc_brute_equilibrium"<<endl;
   int isizeTrans;
   double xi;                                                               ///> discard mortality rate
   dvariable log_ftmp;
@@ -8813,71 +9483,70 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
   // Initialize the Fs
   FF1.initialize();
   for ( int h = 1; h <= nsex; h++ )
-   for ( int j = 1; j <= nseason; j++ )
-    for ( int l = 1; l <= nclass; l++)
-     FF2(h,j,l) = 1.0e-10;
+    for ( int j = 1; j <= nseason; j++ )
+      for ( int l = 1; l <= nclass; l++)
+        FF2(h,j,l) = 1.0e-10;
 
   // compute the F matrix
-  for ( int k = 1; k <= nfleet; k++ )
-   for ( int h = 1; h <= nsex; h++ )
-    for ( int j = 1; j <= nseason; j++ )
-     if ( fhit(YrRef,j,k) )
-      {
-       log_ftmp = log_fimpbar(k);
-       if (h==2) log_ftmp += log_foff(k);
-       _ft(k,h,j) = mfexp(log_ftmp);
-       
-       // Discard mortality rate
-       sel.initialize(); ret.initialize(); vul.initialize();
-       for (int iy=YrRefSel1; iy<=YrRefSel2;iy++)
-        {
-         sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
-         ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
-         xi  = dmr(iy,k);          
-         sel += sel1;                                                            // Selectivity
-         ret += ret1;                                                            // Retention
-         vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi);                       // Vulnerability
-        }
-       sel /= float(YrRefSel2-YrRefSel1+1);
-       ret /= float(YrRefSel2-YrRefSel1+1);
-       vul /= float(YrRefSel2-YrRefSel1+1);
-       FF1(h,j) += _ft(k,h,j) * vul;
-       FF2(h,j) += _ft(k,h,j) * sel;
-     }
+  for ( int k = 1; k <= nfleet; k++ ){
+    for ( int h = 1; h <= nsex; h++ ){
+      for ( int j = 1; j <= nseason; j++ ){
+        if ( fhit(YrRef,j,k) ){
+          log_ftmp = log_fimpbar(k);
+          if (h==2) log_ftmp += log_foff(k);
+          _ft(k,h,j) = mfexp(log_ftmp);
+          
+          // Discard mortality rate
+          sel.initialize(); ret.initialize(); vul.initialize();
+          for (int iy=YrRefSel1; iy<=YrRefSel2;iy++){
+            sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
+            ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
+            xi  = dmr(iy,k);          
+            sel += sel1;                                                            // Selectivity
+            ret += ret1;                                                            // Retention
+            vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi);                       // Vulnerability
+          }
+          sel /= float(YrRefSel2-YrRefSel1+1);
+          ret /= float(YrRefSel2-YrRefSel1+1);
+          vul /= float(YrRefSel2-YrRefSel1+1);
+          FF1(h,j) += _ft(k,h,j) * vul;
+          FF2(h,j) += _ft(k,h,j) * sel;
+        }//--if
+      }//--j loop
+    }//--h loop
+  }//--k loop
+
   // computer the total mortality
   ZZ1.initialize(); ZZ2.initialize(); SS_pass.initialize();
-  
-  for(int m = 1; m <=nmature;m++)
-  for ( int h = 1; h <= nsex; h++ )
-   for ( int j = 1; j <= nseason; j++ )
-    {
-     Mbar.initialize();
-     for (int iy=YrRefM1; iy<=YrRefM2;iy++) Mbar += M(h,m,iy);
-     Mbar /= float(YrRefM2-YrRefM1+1);
-     Mprop = 0;
-     for (int iy=YrRefSea1; iy<=YrRefSea2;iy++) Mprop += m_prop(iy,j);
-     Mprop /= float(YrRefSea2-YrRefSea1+1);
-     ZZ1(h,m,j) = Mprop * Mbar + FF1(h,j);
-     ZZ2(h,m,j) = Mprop * Mbar + FF2(h,j);
-     if (season_type(j) == 0) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-ZZ1(h,m,j,l)/ZZ2(h,m,j,l)*(1.0-mfexp(-ZZ2(h,m,j,l)));
-     if (season_type(j) == 1) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-ZZ1(h,m,j,l));
-    }
-	
+  for(int m = 1; m <=nmature;m++){
+    for ( int h = 1; h <= nsex; h++ ){
+      for ( int j = 1; j <= nseason; j++ ){
+        Mbar.initialize();
+        for (int iy=YrRefM1; iy<=YrRefM2;iy++) Mbar += M(h,m,iy);
+        Mbar /= float(YrRefM2-YrRefM1+1);
+        Mprop = 0;
+        for (int iy=YrRefSea1; iy<=YrRefSea2;iy++) Mprop += m_prop(iy,j);
+        Mprop /= float(YrRefSea2-YrRefSea1+1);
+        ZZ1(h,m,j) = Mprop * Mbar + FF1(h,j);
+        ZZ2(h,m,j) = Mprop * Mbar + FF2(h,j);
+        if (season_type(j) == 0) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-ZZ1(h,m,j,l)/ZZ2(h,m,j,l)*(1.0-mfexp(-ZZ2(h,m,j,l)));
+        if (season_type(j) == 1) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-ZZ1(h,m,j,l));
+      }//--j loop
+    }//--h loop
+  }//--m loop
+
   // recruitment distribution
-  if (nsex>1)
-   {
+  if (nsex>1){
     TotalSex1 = 0; TotalAll = 0;
-    for (int i=YrRefSexR1;i<=YrRefSexR2;i++)
-     {
+    for (int i=YrRefSexR1;i<=YrRefSexR2;i++){
       TotalSex1 += 1 / (1 + mfexp(-logit_rec_prop(i)));
       TotalAll += 1;
-     }
+    }
     SexRatio = TotalSex1/TotalAll;
     spr_sexr = SexRatio;
 	
     // Reset
-    switch( bSteadyState )
-     {
+    switch( bSteadyState ){
       case UNFISHEDEQN: // Unfished conditions
        rtt(1) = mfexp(logR0) * SexRatio * rec_sdd(1);
        rtt(2) = mfexp(logR0) * (1 - SexRatio) * rec_sdd(2);
@@ -8898,13 +9567,14 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
        rtt(1) = spr_rbar(1) * rec_sdd(1);
        rtt(2) = spr_rbar(2) * rec_sdd(2);
        break;
+      case ZEROPOP: // "free" parameters fixed at zero
+       rtt(1) = mfexp(logRbar) * SexRatio * rec_sdd(1);
+       rtt(2) = mfexp(logRbar) * (1 - SexRatio) * rec_sdd(2);
+       break;
      }
-   }
-  else
-   {
+  } else {
     spr_sexr = 1;
-    switch( bSteadyState )
-     {
+    switch( bSteadyState ){
       case UNFISHEDEQN: // Unfished conditions
        rtt(1) = mfexp(logR0) * rec_sdd(1);
        break;
@@ -8920,95 +9590,83 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
       case REFPOINTS: // Reference points
        rtt(1) = spr_rbar(1) * rec_sdd(1);
        break;
-     }
-   }
+      case ZEROPOP: // "free" parameters fixed at zero: zero population start
+       rtt(1) = mfexp(logRbar) * rec_sdd(1);
+       break;
+    }
+  }
 
- // Pass the molt probabilities
- for (int h=1;h<=nsex;h++)
-  {
-   isizeTrans_pass(h) = iYrsIncChanges(h,YrRefGrow);
-   molt_prob_pass(h) = molt_probability(h,YrRefGrow);                              ///> probability of molting
-   if (nmature==2) mature_prob_pass(h) = mature_probability(h,YrRefGrow);          ///> probability of maturity
-  } //-- j  
+  // Pass the molt probabilities
+  for (int h=1;h<=nsex;h++){
+    isizeTrans_pass(h) = iYrsIncChanges(h,YrRefGrow);
+    molt_prob_pass(h) = molt_probability(h,YrRefGrow);                              ///> probability of molting
+    if (nmature==2) mature_prob_pass(h) = mature_probability(h,YrRefGrow);          ///> probability of maturity
+  } //-- h loop  
 
 
   // Now project to find the equilibrium
-  for ( int i = 1; i < ninit; i++ )
-   {
+  for ( int i = 1; i < ninit; i++ ){
     // Recruitment
-    if (Eqn_basis != CONSTANTREC)
-     {
-      if (Stock_rec_prj==RICKER)
-       {
+    if (Eqn_basis != CONSTANTREC){
+      if (Stock_rec_prj==RICKER){
         ssb_use = ssb_prj(nyrRetro+i-Age_at_rec_prj);
         TotalRec = SR_alpha_prj*ssb_use*exp(-1*SR_beta_prj*ssb_use);
-        if (nsex>1)
-         {
-	  if(BRP_rec_sexR == 0)
-	   {
-	    rtt(1) = TotalRec * 1 / (1 + mfexp(-logit_rec_prop(YrRef))) * rec_sdd(1);
-	    rtt(2) = TotalRec * (1 - 1 / (1 + mfexp(-logit_rec_prop(YrRef)))) * rec_sdd(2);
-	   }
-	  else
-	   {
-	    rtt(1) = TotalRec * SexRatio * rec_sdd(1);
-	    rtt(2) = TotalRec * (1 - SexRatio) * rec_sdd(2);
-	   }
-         }
-        else
-         rtt(1) = TotalRec * rec_sdd(1);
-       }
-      if (Stock_rec_prj==BEVHOLT)
-       {
+        if (nsex>1){
+          if(BRP_rec_sexR == 0){
+            rtt(1) = TotalRec * 1 / (1 + mfexp(-logit_rec_prop(YrRef))) * rec_sdd(1);
+            rtt(2) = TotalRec * (1 - 1 / (1 + mfexp(-logit_rec_prop(YrRef)))) * rec_sdd(2);
+          } else {
+            rtt(1) = TotalRec * SexRatio * rec_sdd(1);
+            rtt(2) = TotalRec * (1 - SexRatio) * rec_sdd(2);
+          }
+        } else {
+          rtt(1) = TotalRec * rec_sdd(1);
+        }
+      }//--Stock_rec_prj==RICKER
+      if (Stock_rec_prj==BEVHOLT){
         ssb_use = ssb_prj(nyrRetro+i-Age_at_rec_prj);
         TotalRec = SR_alpha_prj*ssb_use/(SR_beta_prj+ssb_use);
-        if (nsex>1)
-         {
-          if(BRP_rec_sexR == 0)
-	   {
+        if (nsex>1){
+          if(BRP_rec_sexR == 0){
             rtt(1) = TotalRec * 1 / (1 + mfexp(-logit_rec_prop(YrRef))) * rec_sdd(1);
-	    rtt(2) = TotalRec * (1 - 1 / (1 + mfexp(-logit_rec_prop(YrRef)))) * rec_sdd(2);
-	   }
-	  else
-	   {
+            rtt(2) = TotalRec * (1 - 1 / (1 + mfexp(-logit_rec_prop(YrRef)))) * rec_sdd(2);
+          } else {
             rtt(1) = TotalRec * SexRatio * rec_sdd(1);
-	    rtt(2) = TotalRec * (1 - SexRatio) * rec_sdd(2);
-	   }
-         }
-        else
-         rtt(1) = TotalRec * rec_sdd(1);
-       }
-     }
+            rtt(2) = TotalRec * (1 - SexRatio) * rec_sdd(2);
+          }
+        } else {
+          rtt(1) = TotalRec * rec_sdd(1);
+        }
+      }//--Stock_rec_prj==BEVHOLT
+    }//-- Eqn_basis != CONSTANTREC
   
     // Projections for Case 2
     // Pass the molt probabilities
     for (int h=1;h<=nsex;h++) rec_pass(h) = rtt(h);                                                           ///> recruitment as a function of class 
-    // Now fo the year-update
+    // Now for the year-update
     for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,2);                     ///> Update the seasonal-dynamics
      
     // Project SSB
-    for ( int ig = 1; ig <= n_grp; ig++ )
-     {
+    for ( int ig = 1; ig <= n_grp; ig++ ){
       int h = isex(ig);
       int o = ishell(ig);
       int m = imature(ig);
       double lam;
       h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
-     if (nmature ==1)
-      ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
-      if(nmature ==2 && use_func_mat==0)
-    	if (m==1)
-    	 {
-         ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * mean_wt(h,m,YrRef);
-    	  }
-    	if (nmature ==2 && use_func_mat==1)
-    	 if(m==1)
-    	  {
+      if (nmature ==1)
+        ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
+      if(nmature ==2 && use_func_mat==0){
+        if (m==1){
+          ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * mean_wt(h,m,YrRef);
+        }
+      }
+      if (nmature ==2 && use_func_mat==1){
+        if(m==1){
           ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
-         }
-      } //--ig
-
-   } //--i
+        }
+      }
+    } //--ig loop
+  } //--i loop (1 to ninit)
 
   // Extract the equilibrium numbers (for return)
   for ( int ig = 1; ig <= n_grp; ig++ ) equilibrium_numbers(ig) = d4_N_init(ig)(ninit)(1);
@@ -9018,11 +9676,12 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
 
   // Projected catches
   for ( int j = 1; j <= nseason; j++ )
-   for ( int ig = 1; ig <= n_grp; ig++ )
-    d4_Npass(ig,j) = d4_N_init(ig)(ninit-1)(j);
+    for ( int ig = 1; ig <= n_grp; ig++ )
+      d4_Npass(ig,j) = d4_N_init(ig)(ninit-1)(j);
   out = calc_predicted_project(nyrRetro, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass, _ft, ZZ1, ZZ2);
   oflret_pass = out(1); ofltot_pass = out(2);
   
+  if ((verbose>3)&&(NfunCall<2)) cout<<"--finished calc_brute_equilibrium"<<endl;
   return(equilibrium_numbers);
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -10085,17 +10744,24 @@ FUNCTION calc_sdreport
   **/
 FUNCTION void get_all_sdnr_MAR()
   {
-   for ( int k = 1; k <= nSurveys; k++ )
-    {
-     //dvector stdtmp = cpue_sd(k) * 1.0 / cpue_lambda(k);
-     //dvar_vector restmp = elem_div(log(elem_div(obs_cpue(k), pre_cpue(k))), stdtmp) + 0.5 * stdtmp;
-     //sdnr_MAR_cpue(k) = calc_sdnr_MAR(value(restmp));
+    if ((verbose>3)&&(NfunCall<2)) cout<<"Starting get_all_sdnr_MAR()"<<endl;
+    sdnr_MAR_lf.initialize();
+    for ( int k = 1; k <= nSurveys; k++ ){
+      //dvector stdtmp = cpue_sd(k) * 1.0 / cpue_lambda(k);
+      //dvar_vector restmp = elem_div(log(elem_div(obs_cpue(k), pre_cpue(k))), stdtmp) + 0.5 * stdtmp;
+      //sdnr_MAR_cpue(k) = calc_sdnr_MAR(value(restmp));
     }
-   for ( int k = 1; k <= nSizeComps; k++ )
-    {
-     sdnr_MAR_lf(k) = calc_sdnr_MAR(value(d3_res_size_comps(k)));
+    for ( int k = 1; k <= nSizeComps; k++ ){
+      if ((verbose>3)&&(NfunCall<2)) {
+        cout<<"Starting calc_sdnr_MAR for k = "<<k<<endl;
+        cout<<"size comp has "<<nSizeCompRows(k)<<" rows"<<endl;
+      }
+      if (nSizeCompRows(k)>0)
+        sdnr_MAR_lf(k) = calc_sdnr_MAR(value(d3_res_size_comps(k)));
+        if ((verbose>3)&&(NfunCall<2)) cout<<"Finished calc_sdnr_MAR for k = "<<k<<endl;
     }
-   Francis_weights = calc_Francis_weights();
+    Francis_weights = calc_Francis_weights();
+    if ((verbose>3)&&(NfunCall<2)) cout<<"Finished get_all_sdnr_MAR()"<<endl;
   }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -10115,6 +10781,10 @@ FUNCTION dvector calc_sdnr_MAR(dvector tmpVec)
 
 FUNCTION dvector calc_sdnr_MAR(dmatrix tmpMat)
   {
+    if ((verbose>3)&&(NfunCall<2)) {
+      cout<<"Strarting calc_sdnr_MAR"<<endl;
+      cout<<size_count(tmpMat)<< " "<<tmpMat.indexmin()<<" "<<tmpMat.indexmax()<<endl;
+    }
     dvector tmpVec(1,size_count(tmpMat));
     dvector out(1,2);
     int dmin,dmax;
@@ -10129,6 +10799,7 @@ FUNCTION dvector calc_sdnr_MAR(dmatrix tmpMat)
     dvector w = sort(tmp);
     out(1) = std_dev(tmpVec);                 // sdnr
     out(2) = w(floor(0.5*(size_count(w)+1))); // MAR
+    if ((verbose>3)&&(NfunCall<2)) cout<<"Finished calc_sdnr_MAR"<<endl;
     return out;
   }
 
@@ -10142,10 +10813,12 @@ FUNCTION dvector calc_sdnr_MAR(dmatrix tmpMat)
   **/
 FUNCTION dvector calc_Francis_weights()
   {
+   if ((verbose>3)&&(NfunCall<2)) cout<<"Starting calc_Francis_weights"<<endl;
    int j,nobs;
    double Obs, Pre, Var;
    dvector lfwt(1,nSizeComps);
 
+   lfwt = 0.0;//--initiaize
    for ( int k = 1; k <= nSizeComps; k++ ){
      nobs = nSizeCompRows(k);
      dvector resid(1,nobs);
@@ -10176,6 +10849,7 @@ FUNCTION dvector calc_Francis_weights()
       }
      lfwt(k) = 1.0 / (square(std_dev(resid)) * ((nobs - 1.0) / (nobs * 1.0)));
     }
+    if ((verbose>3)&&(NfunCall<2)) cout<<"Fniished calc_Francis_weights"<<endl;
     return lfwt;
    }
 
@@ -10232,6 +10906,7 @@ FUNCTION adstring to_str(const dvar_vector& v)
 
 // Label 600: CreateOutput
 FUNCTION CreateOutput
+  if ((verbose>3)&&(NfunCall<2)) cout<<"Starting CreateOutput"<<endl;
   int Ipar,Jpar,Npar,NparEst;
   int nnnn;                                                          //
   dvariable MaxGrad;                                                 //> Maximum gradient
@@ -10348,10 +11023,12 @@ FUNCTION CreateOutput
   OutFile1 << "Index_data: " << sum(nloglike(2)) << " " << sum(elem_prod(nloglike(2),cpue_emphasis)) << endl;
   OutFile1 << "Size_data: " << sum(nloglike(3)) << " " << sum(elem_prod(nloglike(3),lf_emphasis)) << endl;
   OutFile1 << "Stock_recruitment: " << sum(nloglike(4)) << " " << sum(nloglike(4)) << endl;
-  OutFile1 << "Tagging_data: " << sum(nloglike(5)) << " " << sum(nloglike(5)) << endl;
+  OutFile1 << "Tagging_data: " << sum(nloglike(5)) << " " << sum(nloglike(5))*tag_emphasis << endl;
+  OutFile1 << "Growth_data: " << sum(nloglike(6)) << " " << sum(nloglike(6)) << endl;
   OutFile1 << "Penalties: " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
   OutFile1 << "Priors: " << sum(priorDensity) << endl;
   OutFile1 << "Initial_size_structure: " << TempSS << endl;
+  OutFile1 << "Positive_growth_penalty: " << grwthPosFun << endl;
   OutFile1 << "Total: " << objfun << endl;
   OutFile1 << ">EOL<"<<endl;
   OutFile1 << endl;
@@ -10383,7 +11060,8 @@ FUNCTION CreateOutput
       OutFile1 << "Net_likelihood: " << nloglike(5)*tag_emphasis << endl;
     OutFile1 << ">EOL<"<<endl;
     OutFile1 << "--Growth_likelihood: list" << endl;
-      OutFile1 << "Raw_likelihood    : " << nloglike(5) << endl;
+      OutFile1 << "Raw_likelihood    : " << nloglike(6) << endl;
+      OutFile1 << "posfun: " << grwthPosFun << endl;
     OutFile1 << ">EOL<"<<endl;
   OutFile1 << ">EOL<"<<endl<<endl;
 
@@ -11768,7 +12446,21 @@ FUNCTION CreateOutput
   }
   REPVEC(nlogPenalty);
   REPVEC(priorDensity);
+  OutFile1 << "grwthPosFun: " << grwthPosFun << endl;
+  RepFile1 << "grwthPosFun: " << grwthPosFun << endl;
   OutFile1 << endl;
+  RepFile1 << endl;
+
+  if ((nGrowthObs>0)&&((GrowthObsType==GROWTHINC_DATA_GAMMA)||(GrowthObsType==GROWTHINC_DATA_NORMAL))){
+    OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
+    OutFile1 << endl << "## Fits to non-tagging growth data" << endl;
+    OutFile1 << "growth_data: dataframe" << endl;
+    OutFile1 << "sex  premolt_size  obs_postmolt_size  prd_postmolt_size  nll"<<endl;
+    for (int i=1;i<=nGrowthObs;i++){
+      OutFile1 << iMoltIncSex(i) <<" "<< dPreMoltSize(i) <<" "<< dPreMoltSize(i)+dMoltInc(i) <<" "<< prdPstMltSizes(i) <<" "<< nllGrowth(i) << endl;
+    }
+    OutFile1 << ">EOD<" <<endl;
+  }
 
   //================================================
   //==Report likelihood to .REP file  
@@ -11781,8 +12473,13 @@ FUNCTION CreateOutput
   OutFile2 << elem_prod(nloglike(3),lf_emphasis) << endl;
   OutFile2 << "Recruit_pen" << endl;
   OutFile2 <<  nloglike(4) << endl;
-  OutFile2 << "Growth_like" << endl;
+  OutFile2 << "Tagging_like" << endl;
   OutFile2 <<  nloglike(5) << endl;
+  OutFile2 << "Growth_like" << endl;
+  OutFile2 <<  nloglike(6) << endl;
+
+  OutFile2 << "Growth_posfun" << endl;
+  OutFile2 <<  grwthPosFun << endl;
 
   OutFile2 << "MeanF_pen " << endl;
   OutFile2 << nlogPenalty(1)*Penalty_emphasis(1) << endl;
@@ -11804,7 +12501,9 @@ FUNCTION CreateOutput
   OutFile2 << nlogPenalty(12)*Penalty_emphasis(12) << endl;
   OutFile2 << endl;
 
+  if ((verbose>3)&&(NfunCall<2)) cout<<"CreateOutput: almost finished"<<endl;
   WriteFiles();
+  if ((verbose>3)&&(NfunCall<2)) cout<<"CreateOutput: finished"<<endl;
    
 // =====================================================================================================================================
 
@@ -11874,6 +12573,7 @@ FUNCTION CreateOutput_OldFormat
   OutFile1 << "Size_data: " << sum(nloglike(3)) << " " << sum(elem_prod(nloglike(3),lf_emphasis)) << endl;
   OutFile1 << "Stock_recruitment: " << sum(nloglike(4)) << " " << sum(nloglike(4)) << endl;
   OutFile1 << "Tagging_data: " << sum(nloglike(5)) << " " << sum(nloglike(5)) << endl;
+  OutFile1 << "Growth_data: " << sum(nloglike(6)) << " " << sum(nloglike(6)) << endl;
   OutFile1 << "Penalties: " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
   OutFile1 << "Priors: " << sum(priorDensity) << endl;
   OutFile1 << "Initial_size_structure: " << TempSS << endl;
@@ -11901,7 +12601,7 @@ FUNCTION CreateOutput_OldFormat
   OutFile1 << "Emphasis      : " << tag_emphasis << endl;
   OutFile1 << "Net_likelihood: " << nloglike(5)*tag_emphasis << endl;
   OutFile1 << "Growth_likelihood" << endl;
-  OutFile1 << "Raw_likelihood    : " << nloglike(5) << endl;
+  OutFile1 << "Raw_likelihood    : " << nloglike(6) << endl;
   OutFile1 << endl;
 
   OutFile1 << "#Penalties" << endl;
@@ -12689,14 +13389,13 @@ FUNCTION CreateOutput_OldFormat
     }
 
   // Mature probability
-  if (nmature==2)
-   {
+  if (nmature==2){
     OutFile1 << endl << "# Mature probability" << endl;
     OutFile1 << "#Sex Year "; for (int i=1;i<=nclass;i++) OutFile1 << i << " "; OutFile1 << endl; 
     for (int h=1; h<=nsex; h++)
-     for (int i=syr;i<=nyrRetro;i++)
-     OutFile1 << sexes(h) << " " << i << " " << mature_probability(h,i) << endl;
-   }
+      for (int i=syr;i<=nyrRetro;i++)
+        OutFile1 << sexes(h) << " " << i << " " << mature_probability(h,i) << endl;
+  }
 	
 // Special output
   if (verbose > 3) cout<<"writing MyOutput"<<endl;
@@ -12704,8 +13403,7 @@ FUNCTION CreateOutput_OldFormat
   if (verbose > 3) cout<<"Finished MyOutput"<<endl;
 
   // Projection stuff
-  if ( last_phase() || NfunCall == StopAfterFnCall)
-   {
+  if ( last_phase() || NfunCall == StopAfterFnCall){
     cout<<"last phase"<<endl;
     OutFile1 << endl;
 
@@ -12713,13 +13411,12 @@ FUNCTION CreateOutput_OldFormat
     OutFile1 << "# Reference points" << endl;
 
     OutFile1 << "# Which combinations of season (rows) and fleet (column) have F>0 in the forecast" << endl;
-    for (int j=1;j<=nseason;j++)
-     {
+    for (int j=1;j<=nseason;j++){
       OutFile1 << " " << j << " ";
       for (int g=1;g<=nfleet;g++) OutFile1 << fhitfut(j,g) << " ";
       OutFile1 << endl;
-     }
-     OutFile1 << endl;
+    }
+    OutFile1 << endl;
 
     // calculate the reference points
     if (CalcRefPoints!=0 && nyrRetroNo==0) calc_spr_reference_points2(1);
@@ -12740,7 +13437,7 @@ FUNCTION CreateOutput_OldFormat
     REPORT2(spr_fofl);
     REPORT(spr_cofl_ret);
     if (Compute_yield_prj==1) REPORT(spr_yield);
-   }
+  }
 
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Simple likelihood" << endl;
@@ -12761,8 +13458,10 @@ FUNCTION CreateOutput_OldFormat
   OutFile2 << elem_prod(nloglike(3),lf_emphasis) << endl;
   OutFile2 << "Recruit_pen" << endl;
   OutFile2 <<  nloglike(4) << endl;
-  OutFile2 << "Growth_like" << endl;
+  OutFile2 << "Tagging_like" << endl;
   OutFile2 <<  nloglike(5) << endl;
+  OutFile2 << "Growth_like" << endl;
+  OutFile2 <<  nloglike(6) << endl;
 
   OutFile2 << "MeanF_pen " << endl;
   OutFile2 << nlogPenalty(1)*Penalty_emphasis(1) << endl;
@@ -12783,15 +13482,21 @@ FUNCTION CreateOutput_OldFormat
   OutFile2 << "Fdovs (flt)" <<endl;
   OutFile2 << nlogPenalty(12)*Penalty_emphasis(12) << endl;
   OutFile2 << endl;
-   //--already did WriteFiles()
+  //--already did WriteFiles()
+  //if ((verbose>3)&&(NfunCall<2)) {cout<<"CreateOutput_OldFormat: finished"<<endl;}
+
 // =====================================================================================================================================
 
 // Andre done from here
 
 REPORT_SECTION
+  cout<<"Starting REPORT_SECTION"<<endl;
   CreateOutput();
+  cout<<"REPORT_SECTION: finished CreateOutput"<<endl;
   CreateOutput_OldFormat();
+  cout<<"REPORT_SECTION: finished CreateOutput_OldFormat"<<endl;
   save_gradients(gradients);
+  cout<<"REPORT_SECTION: finished save_gradients"<<endl;
   if (last_phase()) for (int i=1;i<=NEstPars;i++) gradientOut(i) = gradients(i);
   
   cout<<"Finished REPORT_SECTION"<<endl;
@@ -12800,6 +13505,7 @@ REPORT_SECTION
 
 FUNCTION WriteFiles
 
+  if ((verbose>3)&&(NfunCall<2)) cout<<"Starting WriteFiles"<<endl;
   OutInpFile1.close();
   OutInpFile1.open("gmacs_out.dat");
   
@@ -13047,7 +13753,7 @@ FUNCTION WriteFiles
   OutInpFile1 << "## Type_1 Type_2  Block" << endl;
   for (int ig=1;ig<=nsex;ig++) {  OutInpFile1 << "   "; for (int ii=1;ii<=3;ii++)  OutInpFile1 << setw(6) << setfixed() << Growth_controls(ig,ii) << " ";  OutInpFile1 << endl; }
   OutInpFile1 << endl;
-  OutInpFile1 << "# Molt probability" << endl;
+  OutInpFile1 << "## Molt probability" << endl;
   OutInpFile1 << "# Type: Options for the molt probability function" << endl;
   OutInpFile1 << "#  0: Pre-specified" << endl;
   OutInpFile1 << "#  1: Constant at 1" << endl;
@@ -13060,13 +13766,13 @@ FUNCTION WriteFiles
     { OutInpFile1 << "  " << setw(5) << setfixed() << Growth_controls(nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(nsex+ig,3) << " "; OutInpFile1 << endl; }
   if (nmature==2){
     OutInpFile1 << endl;
-    OutInpFile1 << "# Mature probability" << endl;
+    OutInpFile1 << "## Mature probability" << endl;
     OutInpFile1 << "# Type: Options for the mature probability function" << endl;
     OutInpFile1 << "#  0: Pre-specified" << endl;
     OutInpFile1 << "#  1: Constant at 1" << endl;
     OutInpFile1 << "#  2: Logistic" << endl;
     OutInpFile1 << "#  3: Individual" << endl;
-    OutInpFile1 << "# Block: Block number for time-varying growth   " << endl;
+    OutInpFile1 << "# Block: Block number for time-varying probability of maturing" << endl;
     OutInpFile1 << "## Type Block" << endl;
     for (int ig=1;ig<=nsex;ig++) 
       { OutInpFile1 << "  " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,1) << " " << setw(5) << setfixed() << Growth_controls(2*nsex+ig,3) << " "; OutInpFile1 << endl; }
@@ -13101,8 +13807,8 @@ FUNCTION WriteFiles
     if (nparGs(ig) > 0) OutInpFile1 << "# MAIN PARS: Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
     n_Gpar2 = n_Gpar;
     if (nsex==1) h = 1;
-    if (nsex==2 && (ig==1 || ig==3)) h = 1;
-    if (nsex==2 && (ig==2 || ig==4)) h = 2;
+    if (nsex==2 && (ig==1 || ig==3 || ig==5)) h = 1;
+    if (nsex==2 && (ig==2 || ig==4 || ig==6)) h = 2;
     for (int ipar=1; ipar<=nparGs(ig);ipar++){
       n_Gpar += 1;
       iblock = 1;
@@ -13588,6 +14294,7 @@ FUNCTION WriteFiles
   OutInpFile1 << endl;
   OutInpFile1 << "# eof_ctl" << endl;
   OutInpFile1 << eof_ctl << endl;
+  cout<<"Finished WriteFiles"<<endl;
   //exit(1); 
  
 // =====================================================================================================================================
@@ -13858,6 +14565,8 @@ GLOBALS_SECTION
   #define FREEPARSSCALED 3
   #undef REFPOINTS
   #define REFPOINTS 4
+  #undef ZEROPOP
+  #define ZEROPOP 5
 
   #undef SELEX_PARAMETRIC
   #define SELEX_PARAMETRIC 0
@@ -14369,7 +15078,15 @@ FINAL_SECTION
 //                    "personal.rep-old", "simdata.out-old", and "Gmacsall.std-old" in the 2.20.06 format (before the output was niceified for R). Was
 //                    supposed to help Cody by providing "old"-style output, but he was working with a really old (2.01.M.02 **CSS** 2023-04-12) 
 //                    version of GMACS. However, this may benefit users who work with the gmr R package or other code based on the older format.
-//                    
+// 2025-04-01 ** WTS. (GMACS Version 2.20.24) Added macro var ZEROPOP (=5)option to initialize numbers-at-size in start year at 0. The 
+//                    logN0 is set to -1.0e3.
+// 2025-04-07 ** WTS. Fixed incorrectly listed sex in gmacs_in.ctl and gmacs_out.ctl files for probability of maturing when two sex are specified. 
+//                    Fixed problem in get_all_sdnr_MAR when d3_res_size_comps(k) was missing (nSizeComps(k=0) because size comps were "extended").
+//                    Distinguished between tagging-related (nloglike(5)) and non-tagging-related growth data likelihoods (now nloglike(6)) in code and 
+//                    Gmacsall.out file. Non-tagging growth likelihoods are now output by indivdual observation in Gamcsall.out as a dataframe ("growth_data").
+//                    Added grwthPosFun to objective function to penalize negative growth (estimated r's [shape factors] in growth-related gamma distribution).
+//                    Input size comps in "new" format now respect sex-specific numbers of columns: all input columns are repeated to gmacs_data (file "gmacs_in.dat"), 
+//                    but only the sex-specific number of columns is kept in the internal arrays.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
