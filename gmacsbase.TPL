@@ -6206,12 +6206,15 @@ FUNCTION dvar_vector calc_growth_increments_linear(const dvector vSizes, const i
    * @details Growth likelihood is calculated based on a linear relationship for mean molt increment as a function of 
    * pre-molt size and an assumed gamma distribution about the mean. 
    * 
+   * Individual predicted postmolt sizes are given in "prdPstMltSizes" vector.
+   * Associated inidivudal negative log-likelihood scores are given in "nllGrowth" vector.
+   * 
    * @param dMoltInc is a vector of observed molt increments
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
    * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
    * @param igrow index indicating appropriate growth matrix to use
    *
-   * @return dvariable with negative log likelihood
+   * @return dvar_vector with negative log likelihood by sex
   **/
 
 FUNCTION dvar_vector calc_like_gamma_linear_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
@@ -6243,12 +6246,15 @@ FUNCTION dvar_vector calc_like_gamma_linear_growth(const dvector dMoltInc, const
    * @details Growth likelihood is calculated based on a power law relationship for mean post-molt size given pre-molt size
    * and an assumed gamma distribution for the observed molt increment. 
    *
+   * Individual predicted postmolt sizes are given in "prdPstMltSizes" vector.
+   * Associated inidivudal negative log-likelihood scores are given in "nllGrowth" vector.
+   * 
    * @param dMoltInc is a vector of observed molt increments
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
    * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
    * @param igrow index indicating appropriate growth matrix to use
    *
-   * @return dvariable with negative log likelihood
+   * @return dvar_vector with negative log likelihood by sex
   **/
 
 FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
@@ -6279,13 +6285,16 @@ FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const
    * @brief Calculate likelihood of observed postmolt size based on an alternative power law for mean growth and a gamma distribution
    * @details Growth likelihood is calculated based on an alternative power law relationship for mean post-molt size given pre-molt size
    * and an assumed gamma distribution about the mean. 
+   * 
+   * Individual predicted postmolt sizes are given in "prdPstMltSizes" vector.
+   * Associated inidivudal negative log-likelihood scores are given in "nllGrowth" vector.
    *
    * @param dMoltInc is a vector of observed molt increments
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
    * @param iSex is an integer vector indexing sex (1 = male, 2 = female)
    * @param igrow index indicating appropriate growth matrix to use
    *
-   * @return dvariable with negative log likelihood
+   * @return dvar_vector with negative log likelihood by sex
   **/
 
 FUNCTION dvar_vector calc_like_gamma_pwrlawalt_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
@@ -6317,8 +6326,8 @@ FUNCTION dvar_vector calc_like_gamma_pwrlawalt_growth(const dvector dMoltInc, co
    *
    * TODO: Option for empirical molt increments.
    *
-   * @param alpha(h,igrow) - h: sex; igrow: ??
-   * @param beta(h,igrow) - h: sex; igrow: ??
+   * @param alpha(h,igrow) - h: sex; igrow: growth martix index
+   * @param beta(h,igrow) - h: sex; igrow: growth matrix index
    * @param mid_points of size claasses
    *
    * @return molt_increment
@@ -10907,6 +10916,7 @@ FUNCTION adstring to_str(const dvar_vector& v)
 // Label 600: CreateOutput
 FUNCTION CreateOutput
   if ((verbose>3)&&(NfunCall<2)) cout<<"Starting CreateOutput"<<endl;
+  writeToRepFile1 = 1;//--turn on writing to gmacs.rep1
   int Ipar,Jpar,Npar,NparEst;
   int nnnn;                                                          //
   dvariable MaxGrad;                                                 //> Maximum gradient
@@ -12446,8 +12456,7 @@ FUNCTION CreateOutput
   }
   REPVEC(nlogPenalty);
   REPVEC(priorDensity);
-  OutFile1 << "grwthPosFun: " << grwthPosFun << endl;
-  RepFile1 << "grwthPosFun: " << grwthPosFun << endl;
+  REPVEC(grwthPosFun)
   OutFile1 << endl;
   RepFile1 << endl;
 
@@ -12511,6 +12520,7 @@ FUNCTION CreateOutput
 FUNCTION CreateOutput_OldFormat
   //--creates output files "Gmacsall.out-old", "gmacs.rep-old", "personal.rep-old", 
   //--"simdata.out-old", and "Gmacsall.std-old" in ver. 2.20.06 format
+  writeToRepFile1 = 0;//--turn off writing to gmacs.rep1
   int Ipar,Jpar,Npar,NparEst;
   int nnnn;                                                          //
   dvariable MaxGrad;                                                 //> Maximum gradient
@@ -14333,6 +14343,8 @@ GLOBALS_SECTION
   ofstream RepFile1;
   ofstream OutInpFile1; 
 
+  int writeToRepFile1 = 1;//--flag to write to RepFile1 (gmacs.rep1): used in CheckBounds (turned on in CreateOutput, off in CreateOutput_OldFormat)
+
   // Define objects for report file, echoinput, etc.
   /**
   \def report(object)
@@ -14791,27 +14803,27 @@ GLOBALS_SECTION
   }
 // --------------------------------------------------------------------------------------------------
 
- double CheckBounds(const prevariable& xx, double lower, double upper)
-  {
-   RETURN_ARRAYS_INCREMENT();
-   int Status;
-   double Range;
+  double CheckBounds(const prevariable& xx, double lower, double upper){
+    RETURN_ARRAYS_INCREMENT();
+    int Status;
+    double Range;
 
-   Status = 0;
-   Range = upper - lower;
-   if (xx < lower+Range*0.01) Status =-1;
-   if (xx > upper-Range*0.01) Status = 1;
-   OutFile1 << lower << " " << upper << " ";
-   if (Status == 0) OutFile1 << "ok" << " ";
-   if (Status ==-1) OutFile1 << "*-" << " ";
-   if (Status == 1) OutFile1 << "*+" << " ";
+    Status = 0;
+    Range = upper - lower;
+    if (xx < lower+Range*0.01) Status =-1;
+    if (xx > upper-Range*0.01) Status = 1;
+    OutFile1 << lower << " " << upper << " ";
+    if (Status == 0) OutFile1 << "ok" << " ";
+    if (Status ==-1) OutFile1 << "*-" << " ";
+    if (Status == 1) OutFile1 << "*+" << " ";
 
-   RepFile1 << lower << " " 
-            << upper << " "
-            << Status << " ";
-
-   RETURN_ARRAYS_DECREMENT();
-   return (Status);
+    if (writeToRepFile1){
+      RepFile1 << lower << " " 
+                << upper << " "
+                << Status << " ";
+    }
+    RETURN_ARRAYS_DECREMENT();
+    return (Status);
   }
 
 // --------------------------------------------------------------------------------------------------
@@ -15087,6 +15099,7 @@ FINAL_SECTION
 //                    Added grwthPosFun to objective function to penalize negative growth (estimated r's [shape factors] in growth-related gamma distribution).
 //                    Input size comps in "new" format now respect sex-specific numbers of columns: all input columns are repeated to gmacs_data (file "gmacs_in.dat"), 
 //                    but only the sex-specific number of columns is kept in the internal arrays.
+// 2025-04-07 ** WTS. Added writeToRepFile1 flag to signal whether or not to write results in CheckBounds to RepFile1 (yes from CreateOutput, no from CreateOutput_OldFormat).
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
