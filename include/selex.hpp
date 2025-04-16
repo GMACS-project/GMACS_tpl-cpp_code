@@ -41,6 +41,7 @@
  * | Double normal     | pDubnorm6        | DoubleNormal6           |
  * | Stacked logistic  | plogis           | StackedLogistic         |
  * | Spline            | spline_cubic_val | SelectivitySpline       |
+ * | Ascending normal  | asc_normal       | AscNormal               |
 **/
 
 #ifndef SELEX_HPP
@@ -152,8 +153,30 @@ namespace gsm {
         return selex;
     }
 
-
     /**
+     * @brief 2-parameter ascending normal function (plateau after s50)
+     * @details Return type will be the same as x, so x:
+     *            should be a dvar_vector if sL, s50, sR are dvariables
+     *            should be a dvector     if sL, s50, sR are doubles
+     *
+     * @param T x - Independent variable (e.g. age or size) as data vector or dvar vector
+     * @param T2 sL - ascending limb width
+     * @param T2 s50 - size/age at full selection (50% of complete cdf)
+     *
+     * @return selectivity at values of x. Return type will be same as x.
+    **/
+   template<class T, class T2>
+   inline
+   const T asc_normal(const T &x, const T2 &sL, const T2 &s50)
+   {
+       T2 slp  = T2(5.0);//use pretty steep slope for join
+       T selLH = mfexp(-0.5*square((x-s50)/sL));// ascending limb
+       T join  = 1.0/(1.0+exp(-slp*(x-s50)));//0 for x<s50, 1 for x>s50
+       T selex = elem_prod(1.0-join,selLH) + join;
+       return selex;
+   }
+
+   /**
      * @brief 3-parameter double normal function (no plateau)
      * @details Return type will be the same as x, so x:
      *            should be a dvar_vector if sL, s50, sR are dvariables
@@ -504,6 +527,71 @@ namespace gsm {
                     y  -= log(mean(mfexp(y)));
                     return y;
             }
+    };
+
+    // AscNormal: 2-parameter ascending normal selectivity
+    /**
+     * @brief 2-parameter ascending normal curve
+     * @details Uses gsm::asc_normal<T> function.
+     *
+     * @param T data vector or dvar vector
+     * @param T2 double or dvariable for left-hand width, size at dome
+    **/
+    template<class T,class T2>
+    class AscNormal: public Selex<T>
+    {
+      private:
+        T2 m_sL;  //--left-hand width
+        T2 m_s50; //--size at dome
+
+      public:
+        /**
+         * Class constructor.
+         *
+         * @param sL - width of lefthand limb  (default=1)
+         * @param s50 - size at dome           (default=1)
+         */
+          AscNormal(T2 sL = T2(1), T2 s50 = T2(1))
+          : m_sL(sL), m_s50(s50) {}
+
+          T2 GetSL()  const { return m_sL; }
+          T2 GetS50() const { return m_s50; }
+
+          void SetSL(T2 &sL)   { this->m_sL = sL; }
+          void SetS50(T2 &s50) { this->m_s50 = s50; }
+          void SetParams(T2 &sL, T2 &s50){
+              this->m_sL = sL;
+              this->m_s50 = s50;
+          }
+
+          /**
+           * @brief selex
+           * @param T x - independent variable--must be compatible with T2
+           * @return selex with type T
+           */
+          const T Selectivity(const T &x) const {
+              return gsm::asc_normal(x, m_sL, m_s50);
+          }
+
+          /**
+           * @brief calculate log(selex)
+           * @param T x - independent variable--must be compatible with T2
+           * @return log(selex) with type T
+           */
+          const T logSelectivity(const T &x) const {
+              return log(gsm::asc_normal(x, m_sL, m_s50));
+          }
+
+          /**
+           * @brief calculate log(selex/mean(selex))
+           * @param T x - independent variable--must be compatible with T2
+           * @return log(selex/mean(selex)) with type T
+           */
+          const T logSelexMeanOne(const T &x) const {
+              T y = log(gsm::asc_normal(x, m_sL, m_s50));
+              y  -= log(mean(mfexp(y)));
+              return y;
+          }
     };
 
     // DoubleNormal: 3-parameter double normal (dome shaped) selectivity

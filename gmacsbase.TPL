@@ -95,7 +95,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.24; ** WTS **; Compiled 2025-04-07");
+ !! TheHeader = adstring("## GMACS Version 2.20.24; ** WTS **; Compiled 2025-04-16");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -346,6 +346,10 @@ DATA_SECTION
 
   //check for commandline overide of pinfile use (if set, overrides value from gmacs.dat)
  LOCAL_CALCS
+    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-stopAfterFnCall",opt))>-1 ){
+      StopAfterFnCall = atoi(ad_comm::argv[on+1]);
+      cout<<"#--StopAfterFnCall set to: "<<StopAfterFnCall<<endl;
+    }
     if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-verbose",opt))>-1 ){
       verbose = atoi(ad_comm::argv[on+1]);
       cout<<"#--verbose level set to: "<<verbose<<endl;
@@ -2197,7 +2201,7 @@ DATA_SECTION
         PPnt += 1;
       }
 
-      gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase Reltve " << endl;
+      gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase     Reltve " << endl;
       for (int iyr=syr;iyr<=nyrRetro;iyr++){
         for (int ipar=1; ipar<=nparGs(ig);ipar++)  GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar2+ipar;
       }
@@ -2853,8 +2857,9 @@ DATA_SECTION
        if (slx_type_in(ipnt,k) == SELEX_5095LOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
        if (slx_type_in(ipnt,k) == SELEX_ONE_PAR_LOGISTIC) nparS = 1;                  ///> logisticOne has 1 parameter
        if (slx_type_in(ipnt,k) == SELEX_DECLLOGISTIC) nparS = 2+slx_extra_in(h,k);    ///> declining logistic has 2 + extra parameters
-       if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM) nparS = 3;                        ///> double normal has 3 parameters
-       if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM4) nparS = 4;                       ///> double normal has 4 parameters
+       if (slx_type_in(ipnt,k) == SELEX_ASCNORM)     nparS = 2;                       ///> ascending normal has 2 parameters
+       if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM)  nparS = 3;                       ///> double normal has 3 parameters
+       if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM4) nparS = 4;                       ///> double normal 4 has 4 parameters
        if (slx_type_in(ipnt,k) == SELEX_UNIFORM1) nparS = 0;                          ///> uniform has 0 parameters
        if (slx_type_in(ipnt,k) == SELEX_UNIFORM0) nparS = 0;                          ///> uniform has 0 parameters
        if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE) nparS = 2 * slx_extra_in(h,k);  ///> spline has parameters for knots and values
@@ -2941,13 +2946,15 @@ DATA_SECTION
          if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
          if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
          if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double normal_par_1";
-         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double normal_par_2";
-         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double normal_par_3";
-         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double normal_par_1";
-         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double normal_par_2";
-         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double normal_par_3";
-         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
+         if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1";
+         if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2";
+         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
+         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
+         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
+         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
+         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
+         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
+         if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
          if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
@@ -2968,7 +2975,11 @@ DATA_SECTION
          parname1(PPnt+1) += anystring;
          PPnt += 1;
         }
-       if (ExtraStuff==1) gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase Reltve " << endl;
+       if (ExtraStuff==1) {
+        gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
+       } else {
+        gmacs_ctl << "# NO EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
+       }
        for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
         for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)  SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar2+ipar;
        for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)
@@ -3010,13 +3021,15 @@ DATA_SECTION
             if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
             if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
             if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double normal_par_1";
-            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double normal_par_2";
-            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double normal_par_3";
-            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double normal_par_1";
-            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double normal_par_2";
-            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double normal_par_3";
-            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
+            if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1";
+            if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
+            if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
             if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
             if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
             if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
@@ -3055,13 +3068,15 @@ DATA_SECTION
           if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
           if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
           if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double normal_par_1";
-          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double normal_par_2";
-          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double normal_par_3";
-          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double normal_par_1";
-          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double normal_par_2";
-          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double normal_par_3";
-          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double normal_par_4";
+          if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1";
+          if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
+          if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
           if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
           if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
           if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
@@ -4510,18 +4525,17 @@ PARAMETER_SECTION
  END_CALCS
 
   // Leading parameters
-  // M         = theta(1)
-  // ln(Ro)    = theta(2)
-  // ln(R1)    = theta(3)
-  // ln(Rbar)  = theta(4)
-  // ra        = theta(5)
-  // rbeta     = theta(6)
-  // ra        = theta(7)  //--females
-  // rbeta     = theta(8)  //--females
-  // logSigmaR = theta(9+)
-  // steepness = theta(10)
-  // rho       = theta(11)
-  // logN0     = theta(12,...)
+  // ln(Ro)    = theta(1)
+  // ln(R1)    = theta(2)
+  // ln(Rbar)  = theta(3)
+  // ra        = theta(4)
+  // rbeta     = theta(5)
+  // ra        = theta(6)  //--females
+  // rbeta     = theta(7)  //--females
+  // logSigmaR = theta(8+)
+  // steepness = theta(9)
+  // rho       = theta(10)
+  // logN0     = theta(11,...)
   init_bounded_number_vector theta(1,ntheta,theta_lb,theta_ub,theta_phz);
   !! ECHO(theta);
   init_bounded_number_vector G_pars_est(1,n_Gpar,G_lb,G_ub,G_phz);
@@ -4991,6 +5005,7 @@ PROCEDURE_SECTION
   if ( verbose >= 3 ) cout << "Ok after observation models ..." << endl;
 
   // objective function ...
+  nloglike.initialize();
   calc_prior_densities();                                  if ( verbose >= 3 ) cout << "Ok after calc_prior_densities ..." << endl;
   calc_objective_function();                               if ( verbose >= 3 ) cout << "Ok after calc_objective_function ..." << endl;
 
@@ -5663,15 +5678,14 @@ FUNCTION init_selectivities
 
   //create pointer array
   if (ppSLX){
-      for (int k=0;k<nsel_use;k++) delete ppSLX[k];
-      delete ppSLX; ppSLX=0;
+    for (int k=0;k<nsel_use;k++) delete ppSLX[k];
+    delete ppSLX; ppSLX=0;
   }
   ppSLX = new class gsm::Selex<dvar_vector>*[nsel_use];
 
   // Specify non-mirrored selectivity
   class gsm::Selex<dvar_vector> *pSLX;
-  for (int is=1; is<= nsel_use; is++)
-   {
+  for (int is=1; is<= nsel_use; is++){
     int ipnt = sel_patterns2(is);
     int it = SelPnt(ipnt, nclass+2);
     int h = SelPnt(ipnt, nclass+3);
@@ -5679,14 +5693,12 @@ FUNCTION init_selectivities
     int iyr = SelPnt(ipnt, nclass+5);
     //cout << is << " " << it << " " << h << " " << k << " " << iyr << endl;
     int ipnt2 = (it-1)*nsex+h;
-    if (slx_type_in(ipnt2,k) < 0 || (h==2 && slx_bsex_in(it,k) ==0)) 
-     {ppSLX[is-1]=0;} 
-    else
-     {
+    if (slx_type_in(ipnt2,k) < 0 || (h==2 && slx_bsex_in(it,k) ==0)) {
+      ppSLX[is-1]=0;
+    } else {
       dvar_vector temp_slx2(1,slx_extra_in(ipnt2,k));
       dvar_vector knots(1,slx_extra_in(ipnt2,k));
-      switch ( slx_type_in(ipnt2,k) )
-       {
+      switch ( slx_type_in(ipnt2,k) ){
         case SELEX_PARAMETRIC:                               ///> parametric
          for (int i = 1; i <= nclass; i++) { temp_slx1(i) = S_pars(is,i); }
          pv = temp_slx1;
@@ -5716,19 +5728,33 @@ FUNCTION init_selectivities
          for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) { temp_slx2(i) = S_pars(is,2+i);  }
          pSLX = new class gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>(p1,p2,temp_slx2);
          break;
+         case SELEX_ASCNORM:                               ///> ascending normal
+         p1 = mfexp(S_pars(is,1));
+         p2 = mfexp(S_pars(is,2));
+         pSLX = new class gsm::AscNormal<dvar_vector,dvariable>(p1,p2);
+         echoinput << "SELEX_ASCNORM for " << is << ": " << p1 << " " << p2 << endl;
+         echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+         echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+        break;
         case SELEX_DOUBLENORM:                               ///> double normal
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
          p3 = mfexp(S_pars(is,3));
          pSLX = new class gsm::DoubleNormal<dvar_vector,dvariable>(p1,p2,p3);
-         break;
+         echoinput << "SELEX_DOUBLENORM for " << is << ": " << p1 << " " << p2 << " " << p3 << endl;
+         echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+         echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+        break;
         case SELEX_DOUBLENORM4:                               ///> double normal4
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
          p3 = mfexp(S_pars(is,3));
          p4 = mfexp(S_pars(is,4));
          pSLX = new class gsm::DoubleNormal4<dvar_vector,dvariable>(p1,p2,p3,p4);
-         break;
+         echoinput << "SELEX_DOUBLENORM4 for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << endl;
+         echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+         echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+        break;
         case SELEX_STACKED_LOGISTIC:                          ///> Cody's stacked logistic
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
@@ -5759,11 +5785,10 @@ FUNCTION init_selectivities
          //x_vals are knots           (a dvar_vector)
          pSLX = new class gsm::SelectivitySpline<dvar_vector,dvar_vector>(temp_slx2,knots);
          break;
-       
-       } // switch
+      } // switch
       ppSLX[is-1] = pSLX;//save pointer to the instantiated selectivity object
-      } //-- else   
-   }
+    } //-- else   
+  }
 
 // =======================================================================================================================================
 // =======================================================================================================================================
@@ -5812,9 +5837,9 @@ FUNCTION calc_selectivities
     int iyr  = SelPnt(ipnt, nclass+5);
     //cout << is << " " << it << " " << h << " " << k << " " << iyr << endl;
     int ipnt2 = (it-1)*nsex+h;
-    if ((slx_type_in(ipnt2,k) < 0) || ((h==2) && (slx_bsex_in(it,k) ==0))) 
-     {int ipnt = 1; } 
-    else {
+    if ((slx_type_in(ipnt2,k) < 0) || ((h==2) && (slx_bsex_in(it,k) ==0))){ 
+      int ipnt = 1; 
+    } else {
       dvar_vector temp_slx2(1,slx_extra_in(ipnt2,k));
       dvar_vector knots(1,max(2,slx_extra_in(ipnt2,k)));
       switch ( slx_type_in(ipnt2,k) ) {
@@ -5852,12 +5877,28 @@ FUNCTION calc_selectivities
          ((gsm::DeclineLogistic<dvar_vector,dvariable,dvariable,dvar_vector>*) ppSLX[is-1])->SetParams(p1,p2,temp_slx2);
          pSLX = ppSLX[is-1];
          break;
+         case SELEX_ASCNORM:                               ///> ascending normal
+         p1 = mfexp(S_pars(is,1));
+         p2 = mfexp(S_pars(is,2));
+         ((gsm::AscNormal<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2);
+         pSLX = ppSLX[is-1];
+         if (verbose>4){
+           echoinput << "SELEX_ASCNORM for " << is << ": " << p1 << " " << p2 << endl;
+           echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+           echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+         }
+         break;
         case SELEX_DOUBLENORM:                               ///> double normal
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
          p3 = mfexp(S_pars(is,3));
          ((gsm::DoubleNormal<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3);
          pSLX = ppSLX[is-1];
+         if (verbose>4){
+           echoinput << "SELEX_DOUBLENORM for " << is << ": " << p1 << " " << p2 << " " << p3 << endl;
+           echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+           echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+         }
          break;
         case SELEX_DOUBLENORM4:                               ///> double normal4
          p1 = mfexp(S_pars(is,1));
@@ -5866,6 +5907,11 @@ FUNCTION calc_selectivities
          p4 = mfexp(S_pars(is,4));
          ((gsm::DoubleNormal4<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3,p4);
          pSLX = ppSLX[is-1];
+         if (verbose>4){
+           echoinput << "SELEX_DOUBLENORM4 for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << endl;
+           echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+           echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+         }
          break;
         case SELEX_STACKED_LOGISTIC:                             ///> Cody's stacked logistic
          p1 = mfexp(S_pars(is,1));
@@ -5886,14 +5932,13 @@ FUNCTION calc_selectivities
          break;
         case SELEX_CUBIC_SPLINE_FLOOR:                             ///> cubic spline with a floor
          break;
-        
-       } // switch
-      if (slx_type_in(ipnt2,k) ==  SELEX_CUBIC_SPLINE ||  slx_type_in(ipnt2,k) == SELEX_CUBIC_SPLINE_FLOOR)
-       {
+      } // switch
+
+      if (slx_type_in(ipnt2,k) ==  SELEX_CUBIC_SPLINE ||  slx_type_in(ipnt2,k) == SELEX_CUBIC_SPLINE_FLOOR){
         dvector knots2(1,slx_extra_in(ipnt2,k));
         dvar_vector vals(1,slx_extra_in(ipnt2,k));
-        for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) knots(i) = mfexp(S_pars(is,i)); 
-        for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) temp_slx2(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); 
+        for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) {knots(i) = mfexp(S_pars(is,i));} 
+        for (int i = 1; i <= slx_extra_in(ipnt2,k); i++) {temp_slx2(i) = S_pars(is,slx_extra_in(ipnt2,k)+i); }
         ((gsm::SelectivitySpline<dvar_vector,dvar_vector>*) ppSLX[is-1])->initSpline(temp_slx2,knots);
         dvector jyr(1,nclass);
         pSLX = ppSLX[is-1];
@@ -5902,26 +5947,27 @@ FUNCTION calc_selectivities
         jyr.fill_seqadd(0, 1.0 / (nclass - 1));
         vcubic_spline_function csf(knots2, vals);
         selx = csf(jyr);
-        if (slx_type_in(ipnt2,k) == SELEX_CUBIC_SPLINE_FLOOR)
-         for (int iclass=1;iclass<=nSizeSex(h);iclass++)
-          {
-           if (mid_points(iclass) <= knots(1)) selx(iclass) =  S_pars(is,slx_extra_in(ipnt2,k)+1);
-           if (mid_points(iclass) >= knots(slx_extra_in(ipnt2,k))) selx(iclass) =  S_pars(is,2*slx_extra_in(ipnt2,k));
+        if (slx_type_in(ipnt2,k) == SELEX_CUBIC_SPLINE_FLOOR){
+          for (int iclass=1;iclass<=nSizeSex(h);iclass++){
+            if (mid_points(iclass) <= knots(1)) selx(iclass) =  S_pars(is,slx_extra_in(ipnt2,k)+1);
+            if (mid_points(iclass) >= knots(slx_extra_in(ipnt2,k))) selx(iclass) =  S_pars(is,2*slx_extra_in(ipnt2,k));
           }
-       }
+        }
+      }
        
-      if (slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE & slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE_FLOOR) selx = pSLX->logSelectivity(dvar_mid_points);  
-      if (slx_type_in(ipnt2,k)==SELEX_PARAMETRIC || slx_type_in(ipnt2,k)==SELEX_COEFFICIENTS) selex_smooth_pen += dnorm(first_difference(selx), 1.0);
-      if (slx_type_in(ipnt2,k)==SELEX_CUBIC_SPLINE) selex_smooth_pen += dnorm(first_difference(selx), 1.0);
-      if (slx_type_in(ipnt2,k)==SELEX_CUBIC_SPLINE_FLOOR) selex_smooth_pen += dnorm(first_difference(selx), 1.0);
-      if (ret_max_in(ipnt2,k)>0) selx += S_pars(is,3);
-      if (slx_max_at_1_in(ipnt2,k)==1) selx -= selx(nclass);
-      if (slx_max_at_1_in(ipnt2,k)==0 && slx_1_at_size(ipnt2,k)!=0) selx -= selx(slx_1_at_size(ipnt2,k));
+      if (slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE & slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE_FLOOR) {selx = pSLX->logSelectivity(dvar_mid_points);}  
+      if (slx_type_in(ipnt2,k)==SELEX_PARAMETRIC || slx_type_in(ipnt2,k)==SELEX_COEFFICIENTS)        {selex_smooth_pen += dnorm(first_difference(selx), 1.0);}
+      if (slx_type_in(ipnt2,k)==SELEX_CUBIC_SPLINE)       {selex_smooth_pen += dnorm(first_difference(selx), 1.0);}
+      if (slx_type_in(ipnt2,k)==SELEX_CUBIC_SPLINE_FLOOR) {selex_smooth_pen += dnorm(first_difference(selx), 1.0);}
+      if (ret_max_in(ipnt2,k)>0)       {selx += S_pars(is,3);}
+      if (slx_max_at_1_in(ipnt2,k)==1) {selx -= selx(nclass);}
+      if (slx_max_at_1_in(ipnt2,k)==0 && slx_1_at_size(ipnt2,k)!=0) {selx -= selx(slx_1_at_size(ipnt2,k));}
+
       sel_store(is) = selx;
       if (it==1) log_slx_capture(k,h,iyr) = selx;
       if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
-     } //-- else   
-   }
+    } //-- else   
+  }//--is
   
   int nsel_pnt = 0;
   for (int it=1;it<=2;it++)
@@ -5934,14 +5980,14 @@ FUNCTION calc_selectivities
          case SELEX_UNIFORM1:                                  ///> uniform 1
           for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
            {
-            if (it==1) for (int i=1;i<=nclass;i++) log_slx_capture(k,h,iyr,i) = log(1.0-TINY);
+            if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = log(1.0-TINY);}
             if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(1.0-TINY); log_slx_discard(k,h,iyr,i) = log(TINY); }
            }
           break;
          case SELEX_UNIFORM0:                                  ///> uniform 1
           for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
            {
-            if (it==1) for (int i=1;i<=nclass;i++) log_slx_capture(k,h,iyr,i) = -100;
+            if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = -100;}
             if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = -100; log_slx_discard(k,h,iyr,i) = log(1-TINY); }
            }
           break;
@@ -5949,67 +5995,63 @@ FUNCTION calc_selectivities
           for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
            {
             int offset = (it-1)*nfleet*nsex*(nyr+1-syr+1)+nfleet*(nyr+1-syr+1)*(h-1)+(nyr+1-syr+1)*(k-1)+iyr-syr+1;
-            if (it==1) for (int i=1;i<=nclass;i++) log_slx_capture(k,h,iyr,i) = log(CustomSelex(offset,i));
+            if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = log(CustomSelex(offset,i));}
             if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(CustomSelex(offset,i)); log_slx_discard(k,h,iyr,i) = log(1.0 - CustomSelex(offset,i) + TINY); }
            }
           break;
          default:
-          // Mirror case
-          if (slx_type_in(ipnt2,k) < 0)
-           {
-            for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-             {
-             if (it==1) log_slx_capture(k,h,iyr) = log_slx_capture(-slx_type_in(ipnt2,k),h,iyr);
-             if (it==2) { log_slx_retaind(k,h,iyr) =log_slx_retaind(-slx_type_in(ipnt2,k),h,iyr); 
-                          log_slx_discard(k,h,iyr) = log_slx_discard(-slx_type_in(ipnt2,k),h,iyr); }
-             }              
-           }
-          else
-           {
+          if (slx_type_in(ipnt2,k) < 0){
+            // Mirror case
+            for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+              if (it==1) { log_slx_capture(k,h,iyr) = log_slx_capture(-slx_type_in(ipnt2,k),h,iyr);}
+              if (it==2) { log_slx_retaind(k,h,iyr) = log_slx_retaind(-slx_type_in(ipnt2,k),h,iyr); 
+                           log_slx_discard(k,h,iyr) = log_slx_discard(-slx_type_in(ipnt2,k),h,iyr); }
+            }              
+          } else {
+            //non-mirror case
             int ipnt1 = (it-1)*nsex+h;
             int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-            if (h==1 || slx_bsex_in(it,k)==1)
-             {
-              for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-               {
+            if (h==1 || slx_bsex_in(it,k)==1){
+              for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
                 int isel_vec = nsel_pnt+iYrsSelChanges(ipnt2,iyr);
                 selx = sel_store(isel_vec);
-                if (it==1) log_slx_capture(k,h,iyr) = selx;
+                if (it==1) { log_slx_capture(k,h,iyr) = selx;}
                 if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
-               }
-              nsel_pnt += nSelVaries(ipnt2);
               }
-            else
-             {
-              for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-               {
+              nsel_pnt += nSelVaries(ipnt2);
+            } else {
+              for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
                 if (it==1) selx = log_slx_capture(k,1,iyr);
                 if (it==2) selx = log_slx_retaind(k,1,iyr);
                 if (it==1) log_slx_capture(k,h,iyr) = selx;
                 if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
-               }
-             } //--if  
-            } //-if
-         } //-- switch
+              }
+            } //--if  
+          } //-if
+        } //-- switch
       } //-- it,h,k
    
   // Check for one fleet inside another 
-  for (int it=1;it<=1;it++)
-   for (int h=1;h<=nsex;h++)
-    for (int k=1;k<=nfleet;k++)
-     if (slx_include_in(1,k) > 0)
-      {
-       for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
-        log_slx_capture(k,h,iyr) += log_slx_capture(slx_include_in(1,k),h,iyr);
+  for (int it=1;it<=1;it++){
+    for (int h=1;h<=nsex;h++){
+      for (int k=1;k<=nfleet;k++){
+        if (slx_include_in(1,k) > 0){
+          for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
+            log_slx_capture(k,h,iyr) += log_slx_capture(slx_include_in(1,k),h,iyr);
+        }
       }
+    }
+  }
     
-  //echoinput << "log_slx_capture" << endl;
-  //echoinput << exp(log_slx_capture) << endl;
-  //echoinput << "log_slx_retaind" << endl;
-  //echoinput << exp(log_slx_retaind) << endl;
-  //echoinput << "log_slx_discard" << endl;
-  //echoinput << exp(log_slx_discard) << endl;
- 	
+  if (verbose>4){
+    ECHO(log_slx_capture)
+    ECHO(exp(log_slx_capture) )
+    ECHO(log_slx_retaind)
+    ECHO(exp(log_slx_retaind))
+    ECHO(log_slx_discard)
+    ECHO(exp(log_slx_discard))
+  }
+  
 // --------------------------------------------------------------------------------------------------
 
   /**
@@ -6043,7 +6085,7 @@ FUNCTION calc_fishing_mortality
       for ( int l = 1; l <= nclass; l++)
        F2(h,i,j,l) = 1.0e-10;
 
-  // fishing morrtality generally
+  // fishing mortality generally
   ft.initialize(); fout.initialize();
   for ( int k = 1; k <= nfleet; k++ )
    for ( int h = 1; h <= nsex; h++ )
@@ -6744,6 +6786,10 @@ FUNCTION calc_mature_probability
   /**
    * @brief calculate size distribution for new recuits.
    * @details Based on the gamma distribution, calculates the probability of a new recruit being in size-interval size.
+   * NOTE: Two approaches to using the gamma distribution are implemented here: using the cumulative distribution 
+   *       (the "original" GMACS approach) and using the density (as implemented in TCSAM02). The latter was implemented for 
+   *       comparison with TCSAM02 results. To switch between the two approaches, you must change the "if" statement below and 
+   *       recompile the code. CURRENTLY, the TCSAM02 approach is active.
    *
    * @param ra is the mean of the distribution
    * @param rbeta scales the variance of the distribution
@@ -6756,10 +6802,21 @@ FUNCTION calc_recruitment_size_distribution
   rec_sdd.initialize();
   for ( int h=1; h <=nsex; h++){
     ralpha = ra(h) / rbeta(h);
-    for ( int l = 1; l <= nclass+1; l++ )  x(l) = cumd_gamma(size_breaks(l) / rbeta(h), ralpha);
-    rec_sdd(h) = first_difference(x);
-    for (int l=nSizeClassRec(h)+1;l<=nclass;l++) rec_sdd(h,l) = 0;
-    rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
+    if (false){
+      //--standard GMACS approach
+      for ( int l = 1; l <= nclass+1; l++ )  x(l) = cumd_gamma(size_breaks(l) / rbeta(h), ralpha);
+      rec_sdd(h) = first_difference(x);
+      for (int l=nSizeClassRec(h)+1;l<=nclass;l++) rec_sdd(h,l) = 0;
+      rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
+    } else {
+      //--TCSAM02 approach
+      dvector dzs = mid_points+(mid_points[2]-mid_points[1])/2.0-mid_points[1];
+      dvariable aR = ra(h) / rbeta(h);//--gamma distribution "shape" parameter
+      dvariable bR = rbeta(h);        //--gamma distribution "scale" parameter
+      rec_sdd(h) = elem_prod(pow(dzs,(aR/bR)-1.0),mfexp(-dzs/bR));
+      for (int l=nSizeClassRec(h)+1;l<=nclass;l++) rec_sdd(h,l) = 0;
+      rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
+    }
     if ((verbose>3)&&(NfunCall<2)){
       cout<<"In calc_recruitment_size_distribution for sex "<<h<<endl;
       cout<<"ra, rbeta = "<<ra(h)<<" "<<rbeta(h)<<endl;
@@ -7591,7 +7648,8 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
    * @param logRbar
    * @param d4_N is the numbers in each group (sex/maturity/shell), year, season and length. It has dimension (1,n_grp,syr,nyrRetro+1,1,nseason,1,nclass)
    * @param recruits is the vector of average recruits each year. It has dimension (syr,nyrRetro)
-   * @param rec_dev is an init_bounded_dev_vector of recruitment deviation parameters. It has dimension (syr+1,nyrRetro,-7.0,7.0,rdv_phz)
+   * @param rec_dev is the vector of realized recruitment deviation parameters. It has dimension (syr,nyrRetro). It is derived from rec_dev_est,
+   *        which is an init_bounded_dev_vector of recruitment deviation parameters rec_dev_est(rdv_syr,rdv_eyr,-12.0,12.0,rdv_phz).
    * @param rec_sdd is the vector of recruitment size proportions. It has dimension (1,nclass)
   **/
 FUNCTION update_population_numbers_at_length
@@ -8544,6 +8602,7 @@ FUNCTION calc_predicted_composition
             cout << "line 8494"<<endl;
             cout << " ii,jj = "<< ii <<", "<< jj  << endl;
             cout << "d3_pre_size_comps_in(ii,jj) is NaN: " << d3_pre_size_comps_in(ii,jj) << endl;
+            CreateOutput();
             exit(-1);
           }
 
@@ -8983,6 +9042,7 @@ FUNCTION length_likelihood
   // 3) Likelihood for size composition data.
   if (verbose >= 3) ECHOSTR("Starting length-likelihood")
   d3_res_size_comps.initialize();
+  if (verbose >= 3) ECHO(nSizeComps)
   for ( int ii = 1; ii <= nSizeComps; ii++ )
    {
     dmatrix O = d3_obs_size_comps(ii);                                                        ///> Observed length frequency
@@ -9000,6 +9060,7 @@ FUNCTION length_likelihood
     bool bCmp = 0;
     class acl::negativeLogLikelihood *ploglike;                                               ///> Negative log-likelihood
 
+    if (verbose >= 3) ECHO(iSizeCompType(ii))
     switch ( iSizeCompType(ii) )                                                               ///> Select option for size-comp data
      {
       case 0:                                                                                 ///> ignore composition data in model fitting.
@@ -9035,17 +9096,21 @@ FUNCTION length_likelihood
       if (verbose >= 3) ECHO(ii)
       if (verbose >= 3) ECHO(nll)
       delete ploglike;
+      if (verbose>=3) ECHOSTR("After delete")
      }
    }//--loop ii
-  if ( verbose >= 3 ) cout << "Ok after composition likelihood ..." << endl;
+  if ( verbose >= 3 ) ECHOSTR("Ok after composition likelihood ...")
 
 // --------------------------------------------------------------------------------------------------
 // Label 404: recruitment_likelihood
 FUNCTION recruitment_likelihood
+  if ( verbose >= 3 ) ECHOSTR("Starting recruitment likelihood ...")
 
   // 4) Likelihood for recruitment deviations.
   dvariable sigR = mfexp(logSigmaR);
+  if ( verbose >= 3 ) ECHO(res_recruit)
   nloglike(4,1) = dnorm(res_recruit, sigR);                          ///> Post first year devs
+  if ( verbose >= 3 ) ECHO(nloglike(4,1))
   switch ( nSRR_flag )
     {
      case 0:                                                         ///> Constant recruitment
@@ -9056,12 +9121,14 @@ FUNCTION recruitment_likelihood
     }
   if ( active(logit_rec_prop_est) )                                  ///> Sex-ratio devs
    nloglike(4,3) = dnorm(logit_rec_prop_est, 2.0);
-  if ( verbose >= 3 ) cout << "Ok after recruitment likelihood ..." << endl;
+   if ( verbose >= 3 ) ECHO(logit_rec_prop_est)
+   if ( verbose >= 3 ) ECHO(nloglike(4,3))
+   if ( verbose >= 3 ) ECHOSTR("Ok after recruitment likelihood ...")
 
 // --------------------------------------------------------------------------------------------------
 // Label 405: growth_likelihood
 FUNCTION growth_likelihood
-  
+  if (verbose>=3) ECHOSTR("Strarting growth likelihood")
   //  5) Likelihood for the tagging-related size-class change data #2
   if (GrowthObsType==GROWTHCLASS_DATA || GrowthObsType==GROWTHCLASS_VALS){
     dvariable Prob;
@@ -9127,7 +9194,7 @@ FUNCTION growth_likelihood
       nloglike(6) = calc_like_gamma_pwrlawalt_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
     } 
   }
-  if ( verbose >= 3 ) cout << "Ok after non-tagging-related growth increment likelihood ..." << endl;
+  if ( verbose >= 3 ) ECHOSTR("Ok after non-tagging-related growth increment likelihood ...")
 
 // --------------------------------------------------------------------------------------------------
   /**
@@ -9206,14 +9273,14 @@ FUNCTION calc_objective_function
    
    if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
 
-  // 5-6) Penalties on recruitment devs.
+  // 6) Smoothness penalty on recruitment devs.
   //if ( !last_phase() )
    {
     if ( active(rec_dev_est) ) nlogPenalty(6) = dnorm(first_difference(rec_dev), 1.0);
    }
    if (verbose >= 3) cout<<"finished penalties on rec_devs"<<endl;
 
-  // 7) Smoothness penalty on the recruitment devs
+  // 7) Penalty on sex ratio
   if (nsex > 1) {
     SumRecF = 0; SumRecM = 0;
     for ( int i = syr; i <= nyrRetro; i++ )
@@ -11741,7 +11808,7 @@ FUNCTION CreateOutput
   
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Size_fit_summary: dataframe" << endl;
-  RepFile1 << "origID aggID year season fleet comp_type sex maturity shell_cond size inpSS inpN aggObs aggPrd aggRes" << endl;
+  RepFile1 << "origID aggID year season fleet comp_type sex maturity shell size inpSS inpN aggObs aggPrd aggRes" << endl;
   for (int idx=1;idx<=nMapInpToAggSizeComps;idx++){
     int kk = mapInpToAggSizeComps(idx)(1);//--input size comp df index
     int ii = mapInpToAggSizeComps(idx)(2);//--input size comp df row
@@ -12211,7 +12278,7 @@ FUNCTION CreateOutput
   
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "N_YXMSZ: dataframe" << endl;
-  RepFile1 << "year sex maturity shell_con " << strMidpoints << endl;
+  RepFile1 << "year sex maturity shell " << strMidpoints << endl;
   for (int ig=1;ig<=n_grp;ig++){
     int ix = isex(ig); int im = imature(ig); int ic = ishell(ig);
     for (int i=syr;i<=LastYrforN;i++)
@@ -12222,7 +12289,7 @@ FUNCTION CreateOutput
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "B_YXMSZ: dataframe" << endl;
-  RepFile1 << "year sex maturity shell_con " << strMidpoints << endl;
+  RepFile1 << "year sex maturity shell " << strMidpoints << endl;
   for (int ig=1;ig<=n_grp;ig++){
     int ix = isex(ig); int im = imature(ig); int ic = ishell(ig);
     for (int i=syr;i<=LastYrforN;i++) {
@@ -14029,7 +14096,12 @@ FUNCTION WriteFiles
             OutInpFile1 << setw(8) << setprecision(4) << setfixed() << Spar_control(n_Spar,14) << " # " << parname1(PPstoreS+n_Spar); OutInpFile1 << endl;
             if (int(Spar_control(n_Spar,8)) > 0 || int(Spar_control(n_Spar,10)) > 0 || int(Spar_control(n_Spar,12)) > 0) ExtraStuff = 1;
           }
-          if (ExtraStuff==1) OutInpFile1 << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase Reltve " << endl;
+          if (ExtraStuff==1) {
+            OutInpFile1 << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
+          } else {
+            OutInpFile1 << "# NO EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
+            OutInpFile1 << "##--they would be defined here, but aren't required given the MAIN PARS defined above."<<endl<<endl;
+          }
           for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++){
             // Are there blocks
             int jpar = n_Spar2+ipar;
@@ -14608,6 +14680,8 @@ GLOBALS_SECTION
   #define SELEX_CUBIC_SPLINE_FLOOR 12
   #undef SELEX_STACKED_LOGISTIC
   #define SELEX_STACKED_LOGISTIC 13
+  #undef SELEX_ASCNORM
+  #define SELEX_ASCNORM 14
 
   #undef GROWTH_FIXEDGROWTHTRANS
   #define GROWTH_FIXEDGROWTHTRANS 1
@@ -15100,6 +15174,9 @@ FINAL_SECTION
 //                    Input size comps in "new" format now respect sex-specific numbers of columns: all input columns are repeated to gmacs_data (file "gmacs_in.dat"), 
 //                    but only the sex-specific number of columns is kept in the internal arrays.
 // 2025-04-07 ** WTS. Added writeToRepFile1 flag to signal whether or not to write results in CheckBounds to RepFile1 (yes from CreateOutput, no from CreateOutput_OldFormat).
+// 2025-04-15 ** WTS. Added lines to OutInpFile noting where EXTRA PARS would be defined if they were needed (not obvious starting from a ctl file w/out EXTRA PARS).
+// 2025-04-16 ** WTS. Added commandline input option "-StopAfterFnCall xx" to override StopAfterFnCall setting in gmacs.dat file with value of "xx".
+//                    Converted "Double normal" as output label to "Double_normal" to be consistent w/ other output labels and facilitate parsing.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
