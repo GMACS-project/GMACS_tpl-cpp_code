@@ -3907,15 +3907,18 @@ DATA_SECTION
 
   // Ths does the tail compression
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
+    echoinput << "kk: " << kk << endl;
    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
+      echoinput << "    ii: " << ii << endl;
       // Tail compression is on
       if (bTailCompression_in(kk) == 1){
+        echoinput << "tail compression is on" << endl;
         pmin =bTailCompression_pmin_in(kk);
         TempSize.initialize();
-        cout << d3_obs_size_comps_in(kk,ii) << endl;
+        echoinput << d3_obs_size_comps_in(kk,ii) << endl;
         for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) TempSize(jj) = d3_obs_size_comps_in(kk,ii,jj);
         TotalSize = sum(TempSize);
-        TempSize /= TotalSize;
+        TempSize /= TotalSize; 
         int end = 0;
         cumsum.initialize(); 
         for (int jj=1;jj<=nSizeCompCols_in(kk) & end==0;jj++){
@@ -3939,7 +3942,7 @@ DATA_SECTION
         //--normalize to input sample size
         //for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TempSize(jj);
         for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj);
-        cout << d3_obs_size_comps_in(kk,ii) << endl;
+        echoinput<< kk << " " << ii << " " << d3_obs_size_comps_in(kk,ii) << endl;
         //exit(1);
       } else { //--no tail compression
         tailcompind(kk,ii,1) = 1; tailcompind(kk,ii,2) = nSizeCompCols_in(kk); 
@@ -3952,17 +3955,22 @@ DATA_SECTION
   
   int oldk = 9999;
   // This aggregates the size composition data by appending size comps horizontally
+  echoinput << "extending input size comps horizontally" << endl;
   int idx = 1;//--row index into mapInpToAggSizeComps
   //cout << "nMapInpToAggSizeComps = " << nMapInpToAggSizeComps << endl;
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
+    echoinput << "kk: " << kk << endl;
     int k = iCompAggregator(kk);
     if ( oldk != k ) j = 0;
     oldk = k;
     for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ ) {
+      echoinput << "\tjj: " << jj << endl;
       j += 1;
       for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
+        echoinput << "\t\tii: " << ii << endl;
         if ((d3_SizeComps_in(kk,ii,-7) <= nyrRetro) || 
            ((d3_SizeComps_in(kk,ii,-7) == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6)) == 1) ){
+          echoinput << "idx: " << idx << "k: " << k << " j: " << j << " = " << d3_obs_size_comps_in(kk,ii,jj) << endl;
           d3_obs_size_comps(k,ii,j) = d3_obs_size_comps_in(kk,ii,jj); //--_in now sums to input sample size over jj
           //cout << idx << " inp: " << kk << " " << ii << " " << jj << " agg: " << k << " " << ii << " " << j << endl;
           mapInpToAggSizeComps(idx)(1) = kk; //--input size comp dataframe index
@@ -3976,34 +3984,35 @@ DATA_SECTION
       }//--ii
      }//--jj
    }//--kk
+   echoinput << "finished extending " << endl;
 
    // The size composition sample sizes are calculated as the sum of the aggregated sample sizes
+   echoinput << "calculate aggregated sample sizes" << endl;
   size_comp_sample_size.initialize();
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
-    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
-     if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) )
-      {
-       size_comp_sample_size(k,ii) += size_comp_sample_size_in(kk,ii);//--add up component input sample sies
-       size_comp_year(k,ii) = size_comp_year_in(kk,ii);
-       size_comp_season(k,ii) = size_comp_season_in(kk,ii);
+    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
+      if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) ){
+        size_comp_sample_size(k,ii) += size_comp_sample_size_in(kk,ii);//--add up component input sample sies
+        size_comp_year(k,ii) = size_comp_year_in(kk,ii);
+        size_comp_season(k,ii) = size_comp_season_in(kk,ii);
       }
-   }
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+    }
+  }
+
+  //--check for mismatch in years for size compositions being aggregated
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
-    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
-     if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) )
-      {
-       if ( size_comp_year(k,ii) != size_comp_year_in(kk,ii) )
-        {
+    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
+      if (d3_SizeComps_in(kk,ii,-7) <= nyrRetro || (d3_SizeComps_in(kk,ii,-7) == nyrRetro+1 && d3_SizeComps_in(kk,ii,-6) == 1) ){
+        if ( size_comp_year(k,ii) != size_comp_year_in(kk,ii) ){
          cout << "Error: mismatch in years for size-compositions being aggregated" << endl;
          cout << "       see the " << size_comp_year_in(kk,ii) << " year in size composition " << kk << " in the .dat file" << endl;
           exit(1);
         }
       }
-   }
+    }//--ii
+  }//--kk
 
   // This normalizes all observations by row
   ECHOSTR("extended, normalized d3_obs_size_comps")
