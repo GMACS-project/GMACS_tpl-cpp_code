@@ -89,13 +89,15 @@
 // -i : print info
 // -retro x : do retrospective run with 'x' peels
 // -verbose : set verbose level (overrides gmacs.dat setting)
-// - ainp fn : use pin file fn (or gmacs.pin if fn is missing)
-// - apin fn : use pin file fn (or gmacs.pin if fn is missing)
-// - pin fn : use pin file fn (or gmacs.pin if fn is missing)
+// -ainp fn : use pin file fn (or gmacs.pin if fn is missing)
+// -apin fn : use pin file fn (or gmacs.pin if fn is missing)
+// -pin fn : use pin file fn (or gmacs.pin if fn is missing)
+// -stopAfterFnCall x: stop after "x" objective function calls
+// -verbose x: print out with verbose level "x"
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.25; ** WTS **; Compiled 2025-04-17");
+ !! TheHeader = adstring("## GMACS Version 2.20.26; ** WTS **; Compiled 2025-04-21");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -2911,26 +2913,27 @@ DATA_SECTION
       for (int h=1;h<=nsex;h++){
         for (int k=1;k<=nfleet;k++){
           if ( nparSs(it,(h-1)*nfleet+k) > 0){
-            int ipnt1 = (h-1)*nfleet+k;
-            int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-            int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
-            int ipnt4 = (it-1)*nsex+h;
+            int ipnt1 = (h-1)*nfleet+k;  //--index into sex,fleet
+            int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;//--index into sel/ret,sex,fleet
+            int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;//--index into sel/ret,sex,fleet w/ step by Nyears2
+            int ipnt4 = (it-1)*nsex+h;//--index into sel/ret, sex
             if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# Inputs for type*sex*fleet: " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl;
             if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
             n_Spar2 = n_Spar;
             for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
-              SelPnt(ipnt3+iyr-syr+1,nclass+2) = it;
-              SelPnt(ipnt3+iyr-syr+1,nclass+3) = h;
-              SelPnt(ipnt3+iyr-syr+1,nclass+4) = k;
-              SelPnt(ipnt3+iyr-syr+1,nclass+5) = iyr;
+              //--ipnt3 is index into sel/ret,sex,fleet,year
+              SelPnt(ipnt3+iyr-syr+1,nclass+2) = it; //--sel/ret flag
+              SelPnt(ipnt3+iyr-syr+1,nclass+3) = h;  //--sex
+              SelPnt(ipnt3+iyr-syr+1,nclass+4) = k;  //--fleet
+              SelPnt(ipnt3+iyr-syr+1,nclass+5) = iyr;//--year
             }
             int ExtraStuff;
             ExtraStuff = 0;
             for (int ipar=1;ipar<=nparSs(it,ipnt1);ipar++){
               n_Spar += 1;
-              StoIG(n_Spar,1) = ipnt2;
-              StoIG(n_Spar,2) = ipar;
-              StoIG(n_Spar,3) = 0;
+              StoIG(n_Spar,1) = ipnt2; //--index identifying sel/ret, sex, and fleet
+              StoIG(n_Spar,2) = ipar;  //--parameter index
+              StoIG(n_Spar,3) = 0;     //--??
               iblock = 1;
               for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii);
               if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_base_";
@@ -2984,6 +2987,7 @@ DATA_SECTION
             }
             for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++){
               // Are there blocks
+              ECHO(ipar)
               int jpar = n_Spar2+ipar;
               int IgBlock = int(Spar_control(jpar,8));
               int IgBlockFn = int(Spar_control(jpar,9));
@@ -2995,7 +2999,7 @@ DATA_SECTION
               if (IgBlock !=0){
                 // Environmental link
                 if ((IgEnvLink!=0) || (IgRW!=0))      
-                  { cout << "Error: you can't have blocks and RWs at the same time - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); } 
+                  { cout << "Error: you can't have anenvironmental linkage with blocks and RWs at the same time - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); } 
                 if ((IgBlock<0) && (IgBlock>nblocks)) 
                   { cout << "Error: block out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
                 if ((IgBlockFn<0) && (IgBlockFn>1))   
@@ -3101,13 +3105,22 @@ DATA_SECTION
               } //--IgEnvLink !=0
               // Random walk
               if (IgRW !=0) {
+                ECHOSTR2("Starting RW block for a selectivity function parameter ",ipar)
                 n_devvars += 1;
+                ECHO(n_devvars)
                 devpoints(n_devvars,1) = 3; devpoints(n_devvars,2) = ipnt2; devpoints(n_devvars,3) = n_deviations+1;
                 if (IgRWBlock <=0) { cout << "Error: There needs to a block for random walk - " << seltypes(it) << " " << sexes(h) << " " << " par " << ipar <<   endl;  exit(1); }
                 if (IgRWBlock > nblocks) { cout << "Error: The block for selectivity parameter random walk is out of range - " << seltypes(it) << " " << sexes(h) << " " << " par " << ipar <<  endl;  exit(1); }
+                ECHOSTR("setting SelPnt for RW for par ")
+                int iblkcntr = 0;
                 for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++){
+                  echoinput << "kpar: " << kpar << " blocks(IgRWBlock): " << blocks(IgRWBlock) << " IgRW: " << IgRW << endl;
                   for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++){
-                    SelPnt(ipnt3+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
+                    //SelPnt(ipnt3+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
+                    SelPnt(ipnt3+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iblkcntr+1);
+                    iblkcntr++;
+                    echoinput << SelPnt(ipnt3+iyr-syr+1,ipar) << " " << ipar << " " << ipnt3+iyr-syr+1 << " "  << IgRWBlock << " "
+                              << n_deviations << " " << iyr << " " << blocklimits(IgRWBlock,kpar,1) << endl;
                   }
                 }
                 for (int iblk=1;iblk<=blocks(IgRWBlock);iblk++)
@@ -3119,6 +3132,8 @@ DATA_SECTION
                 devpoints(n_devvars,8) = h;
                 devpoints(n_devvars,9) = k;
                 rdevpoints(n_devvars,1) =  SigmaRW;
+                ECHOSTR("##type(?) ipnt2  start(ndeviations)  end(ndeviations) IgRWBlock  ipar  sel/ret  sex  fleet")
+                ECHO(devpoints(n_devvars))                                                                                                    
               } //--IgRW !=0
             } //-- ipar (if)
             gmacs_ctl << endl;
@@ -3148,59 +3163,62 @@ DATA_SECTION
   int maxSelVaries;
   int nsel_patterns;
 
-  !! {
-  !!  int inew;
-  !!  nsel_patterns = 0;
-  !!  nSelVaries.initialize();
-  !!  for (int it=1;it<=2;it++)
-  !!   for (int h=1;h<=nsex;h++)
-  !!    for (int k=1;k<=nfleet;k++)
-  !!     {
-  !!      inew = 1;
-  !!      int ipnt1 = (h-1)*nfleet+k;
-  !!      int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-  !!      int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
-  !!      SelPnt(ipnt3+1,nclass+6) = 1;
-  !!      iYrsSelChanges(ipnt2,syr) = 1;
-  !!      nsel_patterns += 1; sel_patterns(nsel_patterns) = ipnt3+1;
-  !!      for (int iyr=syr+1;iyr<=nyrRetro+1;iyr++)
-  !!       {
-  !!        int OK = 1; int Match=-1;
-  !!        for (int iyr2=syr;iyr2<iyr;iyr2++)
-  !!         {
-  !!         int OK2 = 0;
-  !!         for (int ipar=1;ipar<=nclass;ipar++)
-  !!          if (SelPnt(ipnt3+iyr-syr+1,ipar)!=SelPnt(ipnt3+iyr2-syr+1,ipar)) OK2 = 1;
-  !!          if (OK2 == 0 && Match < 0) Match = iyr2;
-  !!          if (OK2==0) OK = 0; 
-  !!         }
-  !!        if (OK==1) { inew += 1; SelPnt(ipnt3+iyr-syr+1,nclass+6) = inew; nsel_patterns += 1; sel_patterns(nsel_patterns) = ipnt3+iyr-syr+1; }
-  !!        if (OK==0) { SelPnt(ipnt3+iyr-syr+1,nclass+6) = SelPnt(ipnt3+Match-syr+1,nclass+6); }
-  !!        iYrsSelChanges(ipnt2,iyr) = SelPnt(ipnt3+iyr-syr+1,nclass+6);
-  !!       }
-  !!      nSelVaries(ipnt2) = inew;
-  !!     } //-- it,h,k
-  !!  maxSelVaries = max(nSelVaries); 
-  !!  echoinput << "nSelVaries " << nSelVaries << endl;
-  !!  echoinput << "maxSelVaries " << maxSelVaries << endl;
-  !!  echoinput << "iYrsSelChanges " << endl;
-  !!  echoinput << iYrsSelChanges << endl;
-  !!  echoinput << SelPnt << endl;
-  !!  echoinput << "sel_patterns" << endl;
-  !!  echoinput << sel_patterns << endl;
+ LOC_CALCS
+  {
+    int inew;
+    nsel_patterns = 0;
+    nSelVaries.initialize();
+    for (int it=1;it<=2;it++){
+      for (int h=1;h<=nsex;h++){
+        for (int k=1;k<=nfleet;k++){
+          inew = 1;
+          int ipnt1 = (h-1)*nfleet+k;
+          int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
+          int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
+          SelPnt(ipnt3+1,nclass+6) = 1;
+          iYrsSelChanges(ipnt2,syr) = 1;
+          nsel_patterns += 1; sel_patterns(nsel_patterns) = ipnt3+1;
+          for (int iyr=syr+1;iyr<=nyrRetro+1;iyr++){
+            int OK = 1; int Match=-1;
+            for (int iyr2=syr;iyr2<iyr;iyr2++){
+              int OK2 = 0;
+              for (int ipar=1;ipar<=nclass;ipar++)
+                if (SelPnt(ipnt3+iyr-syr+1,ipar)!=SelPnt(ipnt3+iyr2-syr+1,ipar)) OK2 = 1;
+              if (OK2 == 0 && Match < 0) Match = iyr2;
+              if (OK2==0) OK = 0; 
+            }//--iyr2
+            if (OK==1) { inew += 1; SelPnt(ipnt3+iyr-syr+1,nclass+6) = inew; nsel_patterns += 1; sel_patterns(nsel_patterns) = ipnt3+iyr-syr+1; }
+            if (OK==0) { SelPnt(ipnt3+iyr-syr+1,nclass+6) = SelPnt(ipnt3+Match-syr+1,nclass+6); }
+            iYrsSelChanges(ipnt2,iyr) = SelPnt(ipnt3+iyr-syr+1,nclass+6);
+          }//--iyr
+          nSelVaries(ipnt2) = inew;
+        } //-- k (fleet)
+      }//--h (sex)
+    }//--it
+    maxSelVaries = max(nSelVaries); 
+    echoinput << "nSelVaries " << nSelVaries << endl;
+    echoinput << "maxSelVaries " << maxSelVaries << endl;
+    echoinput << "iYrsSelChanges " << endl;
+    echoinput << iYrsSelChanges << endl;
+    echoinput << SelPnt << endl;
+    echoinput << "sel_patterns" << endl;
+    echoinput << sel_patterns << endl;
   
-  !!  // Get selectivity parameters
-  !!  nsel_use = 0;
-  !!  for (int it=1;it<=2;it++)
-  !!   for (int h=1;h<=nsex;h++)
-  !!    for (int k=1;k<=nfleet;k++)
-  !!    if ( nparSs(it,(h-1)*nfleet+k) > 0)
-  !!     {
-  !!      int is = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-  !!      int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-  !!      nsel_use +=  nSelVaries(ipnt2);
-  !!     }
-  !! }
+    // Get selectivity parameters
+    nsel_use = 0;
+    for (int it=1;it<=2;it++){
+      for (int h=1;h<=nsex;h++){
+        for (int k=1;k<=nfleet;k++){
+          if ( nparSs(it,(h-1)*nfleet+k) > 0){
+            int is = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
+            int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
+            nsel_use +=  nSelVaries(ipnt2);
+          }//--if
+        }//--k (fleet)
+      }//--h (sex)
+    }//--it (sel or ret)
+  }
+ END_CALCS
 
   // Set up the specifications for the selectivity parameters
   vector S_ival(1,n_Spar);
@@ -14536,6 +14554,13 @@ GLOBALS_SECTION
   #define ECHOSTR(str) echoinput << (str) << endl;
 
   /**
+  \def ECHOSTR2(str,val)
+  Prints character string and value to echoinput %ofstream file.
+  */
+ #undef ECHOSTR2
+ #define ECHOSTR2(str,val) echoinput << (str) << " " << val << endl;
+
+ /**
   \def WriteFileName(object)
   Prints name and value of \a object to gmacs_files.in %ofstream.
   */
@@ -15198,6 +15223,9 @@ FINAL_SECTION
 //                    Added ascending normal selectivity function code to selex.hpp, SELEX_ASCNORM flag (14) to select it, and associated in/out ctl code .
 // 2025-04-17 ** WTS. Incremented version number to 2.20.25. Reformatted some code related to ctl-file q input specification, added survey info to 
 //                    gmacs_in.ctl and OutInpFile1 file output for q specification.
+// 2025-04-21 ** WTS. Incremented version number to 2.20.26. Found issue with RW parameters for selectivity when RW block group has multiple blocks. Fixed 
+//                    for selectivity but may be an issue for other processes when RW parameters are specified. 
+
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
