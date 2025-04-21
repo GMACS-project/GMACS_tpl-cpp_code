@@ -1211,7 +1211,7 @@ DATA_SECTION
   // |-----------------------|
   // | GROWTH INCREMENT DATA |
   // |-----------------------|
-  !! cout << " * Growth data" << endl;
+  !! ECHO(" * Growth data inputs")
   init_int GrowthObsType;                                  ///> Type of observation (increment or change in size-class)
   !! if (GrowthObsType != NOGROWTH_DATA && GrowthObsType != GROWTHINC_DATA_NORMAL && GrowthObsType != GROWTHINC_DATA_GAMMA &&
   !!       GrowthObsType != GROWTHCLASS_DATA && GrowthObsType != GROWTHCLASS_VALS)
@@ -1347,7 +1347,7 @@ DATA_SECTION
   // |--------------------|
   // | ENVIRONMENTAL DATA |
   // |--------------------|
-  !! cout << " * Environmental data" << endl;
+  !! ECHO(" * Environmental data inputs")
   !! gmacs_data << endl << "# Environmental data" << endl;
    init_int fmtEIs_in;                                           ///> environmental indices format flag (0=old style, 1=new style)
   !! ECHO(fmtEIs_in)
@@ -1418,6 +1418,7 @@ DATA_SECTION
   !! gmacs_data << eof << endl;
   !! if ( eof != 9999 ) {cout << "EOF not '9999'. Error reading data" << endl; exit(1);}
   !! cout << "end of data section" << endl;
+  !! ECHOSTR("end of data section")
 
   // Integer pass variables
   ivector isizeTrans_pass(1,nsex);
@@ -3784,37 +3785,34 @@ DATA_SECTION
   gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
   gmacs_ctl << setw(6) << setfixed()                       << survey_for_q_in     << " # Survey to set Q for this comp" << endl;
   nSizeCompCols.initialize();
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
     // Currently this only works if the number of rows in each size composition group are the same and have the same years. If not then gmacs throws an error.
     nSizeCompRows(k) = nSizeCompRows_in(kk);
     // We are appending the arrays horizontally.
     nSizeCompCols(k) += nSizeCompCols_in(kk);
     // Again, we are using only the last specification here, may want to add a check to ensure the user specifies that these are the same and throw an error if not.
-    iSizeCompType(k) = iSizeCompType_in(kk);
+    iSizeCompType(k)    = iSizeCompType_in(kk);
     bTailCompression(k) = bTailCompression_in(kk);
-    lf_catch(k) = lf_catch_in(kk);
-    lf_lambda(k) = lf_lambda_in(kk);
+    lf_catch(k)    = lf_catch_in(kk);
+    lf_lambda(k)   = lf_lambda_in(kk);
     lf_emphasis(k) = lf_emphasis_in(kk);
-   }
+  }
 
   gmacs_ctl << endl;
   gmacs_ctl << "# Effective sample size parameters (number matches max(Composition Aggregator code)) " << endl;
   gmacs_ctl << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
-  for (int b=1; b<=nSizeComps;b++)
-   {
+  for (int b=1; b<=nSizeComps;b++){
     for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
     gmacs_ctl << setw(11) << setfixed() << int(log_vn_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
     gmacs_ctl << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << "(possibly extended)" << endl;;
-   }
+  }
   echoinput << endl;
   echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
   echoinput << log_vn_pars << endl;
   
-  for ( int k = 1; k <= nSizeComps; k++ )
-   {
+  for ( int k = 1; k <= nSizeComps; k++ ){
     log_vn_ival(k)        = log(log_vn_pars(k,1));
     log_vn_lb(k)          = log(log_vn_pars(k,2));
     log_vn_ub(k)          = log(log_vn_pars(k,3));
@@ -3822,43 +3820,37 @@ DATA_SECTION
     prior_log_vn_p1(k)    = log(log_vn_pars(k,5));
     prior_log_vn_p2(k)    = log(log_vn_pars(k,6));
     log_vn_phz(k)         = int(log_vn_pars(k,7));
-   }
+  }
    
-  for ( int k = 1; k <= nSizeComps; k++ )
-   {
+  for ( int k = 1; k <= nSizeComps; k++ ){
     // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
     if ( prior_log_vn_type(k) == UNIFORM_PRIOR )
      { prior_log_vn_p1(k) = log_vn_lb(k); prior_log_vn_p2(k) = log_vn_ub(k); }
-   }
+  }
   ECHO(prior_log_vn_type); ECHO(prior_log_vn_p1); ECHO(prior_log_vn_p2); ECHO(log_vn_phz);
   
   // Names of parameters
-  for ( int ii=1;ii<=nSizeComps;ii++ )
-   {
+  for ( int ii=1;ii<=nSizeComps;ii++ ){
     PPnt += 1;
     parname1(PPnt) = "Log_vn_aggregated_size_comp"+str(ii); 
-   }
+  }
   
   // Do the checks mentioned above
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ )
-   {
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
-    if ( nSizeCompRows(k) != nSizeCompRows_in(kk) )
-     {
+    if ( nSizeCompRows(k) != nSizeCompRows_in(kk) ){
       cout << "Error: dimension mismatch in size-compositions being aggregated " << kk << " " << k << " " << nSizeCompRows_in(kk) << " "<<  nSizeCompRows(k) << endl;
       exit(1);
-     }
-    if ( iSizeCompType(k) != iSizeCompType_in(kk) )
-     {
+    }
+    if ( iSizeCompType(k) != iSizeCompType_in(kk) ){
       cout << "Error: mismatch in type of likelihood for size-compositions being aggregated" << endl;
       exit(1);
-     }
-    if ( bTailCompression(k) != bTailCompression_in(kk) )
-     {
+    }
+    if ( bTailCompression(k) != bTailCompression_in(kk) ){
       cout << "Error: mismatch in auto tail compression for size-compositions being aggregated" << endl;
       exit(1);
-     }
-   }
+    }
+  }
  END_CALCS
 
   int nMapInpToAggSizeComps;//--number of rows in map from input to aggregated size comps
@@ -3866,6 +3858,8 @@ DATA_SECTION
   int rowCount;
   nMapInpToAggSizeComps = 0;
   // This aggregates the size composition data by appending size comps horizontally
+  echoinput << "Appended d3_obs_size_comp row sizes" << endl;
+  echoinput << "kk_(input_idx)  k_(agg_idx)  row_size(k)  " << endl;
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
     rowCount = 0;
@@ -3877,8 +3871,11 @@ DATA_SECTION
        }
     }
     nSizeCompRows(k) = rowCount;
+    echoinput << kk << "     " << k << "     " << nSizeCompRows(k) << endl;
   }//--kk
+  echoinput << endl << "nMapInpToAggSizeComps = " << nMapInpToAggSizeComps << endl;
  END_CALCS
+
 
   //--"map" from input size comps df, row, col to aggregated size comps df, row, col
   imatrix mapInpToAggSizeComps(1,nMapInpToAggSizeComps,1,6);
@@ -3887,7 +3884,7 @@ DATA_SECTION
   matrix size_comp_sample_size(1,nSizeComps,1,nSizeCompRows);
   matrix size_comp_year(1,nSizeComps,1,nSizeCompRows);
   matrix size_comp_season(1,nSizeComps,1,nSizeCompRows);
-  ivector ilike_vector(1,nlikes)
+  ivector ilike_vector(1,nlikes);
   vector TempSize(1,nclass);
   vector cumsum(1,nclass);
   number pmin;
@@ -3897,56 +3894,61 @@ DATA_SECTION
 
  LOC_CALCS
   int i,j;
-   
+
+  //--initialize all of the arrays defined above
+  d3_obs_size_comps.initialize();
+  size_comp_sample_size.initialize();
+  size_comp_year.initialize();
+  size_comp_season.initialize();
+  ilike_vector.initialize();
+  TempSize.initialize();
+  cumsum.initialize();
+  tailcompind.initialize();
+
   // Ths does the tail compression
-  for ( int kk = 1; kk <= nSizeComps_in; kk++ ) 
-   for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ )
-    {
-     // Tail compression is on
-     if (bTailCompression_in(kk) == 1)
-      {
-       pmin =bTailCompression_pmin_in(kk);
-       TempSize.initialize();
-       cout << d3_obs_size_comps_in(kk,ii) << endl;
-       for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) TempSize(jj) = d3_obs_size_comps_in(kk,ii,jj);
-       TotalSize = sum(TempSize);
-       TempSize /= TotalSize;
-       int end = 0;
-       cumsum.initialize(); 
-       for (int jj=1;jj<=nSizeCompCols_in(kk) & end==0;jj++)
-        {
-         if (jj==1) cumsum(jj) = TempSize(jj);
-         if (jj>1) cumsum(jj) = cumsum(jj-1) + TempSize(jj);
-         TempSize(jj) = 0;
-         if (cumsum(jj) > pmin) end = jj;
+  for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
+   for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
+      // Tail compression is on
+      if (bTailCompression_in(kk) == 1){
+        pmin =bTailCompression_pmin_in(kk);
+        TempSize.initialize();
+        cout << d3_obs_size_comps_in(kk,ii) << endl;
+        for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) TempSize(jj) = d3_obs_size_comps_in(kk,ii,jj);
+        TotalSize = sum(TempSize);
+        TempSize /= TotalSize;
+        int end = 0;
+        cumsum.initialize(); 
+        for (int jj=1;jj<=nSizeCompCols_in(kk) & end==0;jj++){
+          if (jj==1) cumsum(jj) = TempSize(jj);
+          if (jj>1) cumsum(jj) = cumsum(jj-1) + TempSize(jj);
+          TempSize(jj) = 0;
+          if (cumsum(jj) > pmin) end = jj;
         }
-       TempSize(end) = cumsum(end);
-       tailcompind(kk,ii,1) = end;
-       end = nSizeCompCols_in(kk)+1;
-       int nsizecompscols = nSizeCompCols_in(kk);
-       for (int jj=nSizeCompCols_in(kk);jj>=1;jj--)
-         {
-         if (jj==nSizeCompCols_in(kk)) cumsum(jj) = TempSize(jj);
-         if (jj<nSizeCompCols_in(kk)) cumsum(jj) = cumsum(jj+1) + TempSize(jj);
-         TempSize(jj) = 0;
-         if (cumsum(jj) > pmin) { end = jj; jj = -1; }
+        TempSize(end) = cumsum(end);
+        tailcompind(kk,ii,1) = end;
+        end = nSizeCompCols_in(kk)+1;
+        int nsizecompscols = nSizeCompCols_in(kk);
+        for (int jj=nSizeCompCols_in(kk);jj>=1;jj--){
+          if (jj==nSizeCompCols_in(kk)) cumsum(jj) = TempSize(jj);
+          if (jj<nSizeCompCols_in(kk)) cumsum(jj) = cumsum(jj+1) + TempSize(jj);
+          TempSize(jj) = 0;
+          if (cumsum(jj) > pmin) { end = jj; jj = -1; }
         }
-       TempSize(end) = cumsum(end);
-       tailcompind(kk,ii,2) = end;
-       //--normalize to input sample size
-       //for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TempSize(jj);
-       for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj);
-       cout << d3_obs_size_comps_in(kk,ii) << endl;
-       //exit(1);
-      }
-     else
-      { //--no tail compression
+        TempSize(end) = cumsum(end);
+        tailcompind(kk,ii,2) = end;
+        //--normalize to input sample size
+        //for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TempSize(jj);
+        for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj);
+        cout << d3_obs_size_comps_in(kk,ii) << endl;
+        //exit(1);
+      } else { //--no tail compression
         tailcompind(kk,ii,1) = 1; tailcompind(kk,ii,2) = nSizeCompCols_in(kk); 
         //--normalize to input sample size
         //d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*(d3_obs_size_comps_in(kk,ii)/sum(d3_obs_size_comps_in(kk,ii)));
         d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*d3_obs_size_comps_in(kk,ii);
       }
-    }//--loops over ii and kk
+    }//--ii loop (nSizeCompRows_in(kk))
+  }//-- kk loop (nSizeComps_in)
   
   int oldk = 9999;
   // This aggregates the size composition data by appending size comps horizontally
@@ -4004,12 +4006,23 @@ DATA_SECTION
    }
 
   // This normalizes all observations by row
-  for ( int k = 1; k <= nSizeComps; k++ )
-   for ( int i = 1; i <= nSizeCompRows(k); i++ )
-    if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) )
-     d3_obs_size_comps(k,i) /= sum(d3_obs_size_comps(k,i));//--now sums to 1 over 3rd index for "aggregated" comp
+  ECHOSTR("extended, normalized d3_obs_size_comps")
+  echoinput << "SizeCompK    SizeCompRowI   year   size comp->" << endl;
+  for ( int k = 1; k <= nSizeComps; k++ ) {
+    if (nSizeCompRows(k)>0){
+      for ( int i = 1; i <= nSizeCompRows(k); i++ ){
+        if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) ){
+          d3_obs_size_comps(k,i) /= sum(d3_obs_size_comps(k,i));//--now sums to 1 over 3rd index for "aggregated" comp
+        }
+        echoinput << k << "   " << i << "   " << size_comp_year(k,i) << "   " << d3_obs_size_comps(k,i) << endl;
+      }//--i loop (size comp rows)
+    } else {
+      echoinput << k << "   " << 0 << "   " << 0 << "   this portion used to make extended comp " << endl;
+    }
+  }//--k loop (size comps)
 
-  ECHO(d3_obs_size_comps);
+  //ECHO(d3_obs_size_comps);
+  ECHOSTR("Done with d3_obs_size_comps")
   ilike_vector(1) = nCatchDF;
   like_names      =  adstring("Catch ");
   ilike_vector(2) = nSurveys;
@@ -4024,7 +4037,7 @@ DATA_SECTION
   // |---------------------------------------------------------|
   // | TAGGING CONTROLS                                        |
   // |---------------------------------------------------------|
-  !! cout << " * Tagging controls" << endl;
+  !! ECHOSTR(" * Tagging controls")
   !! gmacs_ctl << endl;
   !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
   !! gmacs_ctl <<"## EMPHASIS FACTORS                                                                     ##" << endl;
