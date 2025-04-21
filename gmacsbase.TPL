@@ -3970,7 +3970,7 @@ DATA_SECTION
         echoinput << "\t\tii: " << ii << endl;
         if ((d3_SizeComps_in(kk,ii,-7) <= nyrRetro) || 
            ((d3_SizeComps_in(kk,ii,-7) == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6)) == 1) ){
-          echoinput << "idx: " << idx << "k: " << k << " j: " << j << " = " << d3_obs_size_comps_in(kk,ii,jj) << endl;
+          echoinput << "idx: " << idx << " k: " << k << " j: " << j << " = " << d3_obs_size_comps_in(kk,ii,jj) << endl;
           d3_obs_size_comps(k,ii,j) = d3_obs_size_comps_in(kk,ii,jj); //--_in now sums to input sample size over jj
           //cout << idx << " inp: " << kk << " " << ii << " " << jj << " agg: " << k << " " << ii << " " << j << endl;
           mapInpToAggSizeComps(idx)(1) = kk; //--input size comp dataframe index
@@ -3984,7 +3984,7 @@ DATA_SECTION
       }//--ii
      }//--jj
    }//--kk
-   echoinput << "finished extending " << endl;
+   echoinput << "finished extending. idx = " << idx << endl;
 
    // The size composition sample sizes are calculated as the sum of the aggregated sample sizes
    echoinput << "calculate aggregated sample sizes" << endl;
