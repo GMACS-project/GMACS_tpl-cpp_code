@@ -3784,6 +3784,7 @@ DATA_SECTION
   gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_lambda_in        << " # Lambda for effective sample size" << endl;
   gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
   gmacs_ctl << setw(6) << setfixed()                       << survey_for_q_in     << " # Survey to set Q for this comp" << endl;
+  nSizeCompRows.initialize();
   nSizeCompCols.initialize();
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
@@ -3858,8 +3859,8 @@ DATA_SECTION
   int rowCount;
   nMapInpToAggSizeComps = 0;
   // This aggregates the size composition data by appending size comps horizontally
-  echoinput << "Appended d3_obs_size_comp row sizes" << endl;
-  echoinput << "kk_(input_idx)  k_(agg_idx)  row_size(k)  " << endl;
+  if (verbose>4) echoinput << "Appended d3_obs_size_comp row sizes" << endl;
+  if (verbose>4) echoinput << "kk_(input_idx)  k_(agg_idx)  row_size(k)  " << endl;
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
     rowCount = 0;
@@ -3871,9 +3872,10 @@ DATA_SECTION
        }
     }
     nSizeCompRows(k) = rowCount;
-    echoinput << kk << "     " << k << "     " << nSizeCompRows(k) << endl;
+    if (verbose>4) echoinput << kk << "     " << k << "     " << nSizeCompRows(k) << endl;
   }//--kk
   echoinput << endl << "nMapInpToAggSizeComps = " << nMapInpToAggSizeComps << endl;
+  echoinput << endl << "nSizeCompRows = " << nSizeCompRows << endl;
  END_CALCS
 
 
@@ -3907,15 +3909,15 @@ DATA_SECTION
 
   // Ths does the tail compression
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
-    echoinput << "kk: " << kk << endl;
-   for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
-      echoinput << "    ii: " << ii << endl;
+    if (verbose>4) echoinput << "kk: " << kk << endl;
+    for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
+      if (verbose>4) echoinput << "    ii: " << ii << endl;
       // Tail compression is on
       if (bTailCompression_in(kk) == 1){
-        echoinput << "tail compression is on" << endl;
+        if (verbose>4) echoinput << "tail compression is on" << endl;
         pmin =bTailCompression_pmin_in(kk);
         TempSize.initialize();
-        echoinput << d3_obs_size_comps_in(kk,ii) << endl;
+        if (verbose>4) echoinput << d3_obs_size_comps_in(kk,ii) << endl;
         for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) TempSize(jj) = d3_obs_size_comps_in(kk,ii,jj);
         TotalSize = sum(TempSize);
         TempSize /= TotalSize; 
@@ -3942,7 +3944,7 @@ DATA_SECTION
         //--normalize to input sample size
         //for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TempSize(jj);
         for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj);
-        echoinput<< kk << " " << ii << " " << d3_obs_size_comps_in(kk,ii) << endl;
+        if (verbose>4) echoinput<< kk << " " << ii << " " << d3_obs_size_comps_in(kk,ii) << endl;
         //exit(1);
       } else { //--no tail compression
         tailcompind(kk,ii,1) = 1; tailcompind(kk,ii,2) = nSizeCompCols_in(kk); 
@@ -3959,18 +3961,18 @@ DATA_SECTION
   int idx = 1;//--row index into mapInpToAggSizeComps
   //cout << "nMapInpToAggSizeComps = " << nMapInpToAggSizeComps << endl;
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
-    echoinput << "kk: " << kk << endl;
+    if (verbose>4) echoinput << "kk: " << kk << endl;
     int k = iCompAggregator(kk);
     if ( oldk != k ) j = 0;
     oldk = k;
     for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ ) {
-      echoinput << "\tjj: " << jj << endl;
+      if (verbose>4) echoinput << "\tjj: " << jj << endl;
       j += 1;
       for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
-        echoinput << "\t\tii: " << ii << endl;
+        if (verbose>4) echoinput << "\t\tii: " << ii << endl;
         if ((d3_SizeComps_in(kk,ii,-7) <= nyrRetro) || 
            ((d3_SizeComps_in(kk,ii,-7) == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6)) == 1) ){
-          echoinput << "idx: " << idx << " k: " << k << " j: " << j << " = " << d3_obs_size_comps_in(kk,ii,jj) << endl;
+          if (verbose>4) echoinput << "idx: " << idx << " k: " << k << " j: " << j << " = " << d3_obs_size_comps_in(kk,ii,jj) << endl;
           d3_obs_size_comps(k,ii,j) = d3_obs_size_comps_in(kk,ii,jj); //--_in now sums to input sample size over jj
           //cout << idx << " inp: " << kk << " " << ii << " " << jj << " agg: " << k << " " << ii << " " << j << endl;
           mapInpToAggSizeComps(idx)(1) = kk; //--input size comp dataframe index
@@ -3982,12 +3984,12 @@ DATA_SECTION
           idx++; //--increment row index into mapInpToAggSizeComps
         }
       }//--ii
-     }//--jj
-   }//--kk
-   echoinput << "finished extending. idx = " << idx << endl;
+    }//--jj
+  }//--kk
+  echoinput << "finished extending. idx = " << idx << endl;
 
-   // The size composition sample sizes are calculated as the sum of the aggregated sample sizes
-   echoinput << "calculate aggregated sample sizes" << endl;
+  // The size composition sample sizes are calculated as the sum of the aggregated sample sizes
+  echoinput << "calculate aggregated sample sizes" << endl;
   size_comp_sample_size.initialize();
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
     int k = iCompAggregator(kk);
@@ -15247,6 +15249,7 @@ FINAL_SECTION
 //                    gmacs_in.ctl and OutInpFile1 file output for q specification.
 // 2025-04-21 ** WTS. Incremented version number to 2.20.26. Found issue with RW parameters for selectivity when RW block group has multiple blocks. Fixed 
 //                    for selectivity but may be an issue for other processes when RW parameters are specified. 
+//                    Also tracked down what turned out to be an uninitialized array problem (nSizeCompRows) that sent Windows runs off into NeverNeverLand.
 
 
 // To-do list
