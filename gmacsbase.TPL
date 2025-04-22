@@ -8482,7 +8482,10 @@ FUNCTION calc_relative_abundance
    *  [ ] Add maturity component for data sets with mature old and mature new.
   **/
 FUNCTION calc_predicted_composition
-    if (verbose>3) cout<<"--Starting calc_predicted_composition"<<endl;
+    if (verbose>3) {
+      ECHOSTR("--Starting calc_predicted_composition")
+      cout<<"--Starting calc_predicted_composition"<<endl;
+    }
     dvar_vector dNtmp(1,nclass);                                      ///> temporary Ns
     dvar_vector nal(1,nclass);                                        ///> numbers or biomass at length.
     dvar_vector tempZ1(1,nclass);                                     ///> total mortality
@@ -8653,7 +8656,7 @@ FUNCTION calc_predicted_composition
           d3_pre_size_comps_in(ii)(jj)        = dNtmp(1,nbins);
           d3_pre_size_comps_in(ii)(jj)(nbins) = sum(dNtmp(nbins,nclass));
           if (std::isnan(value(sum(d3_pre_size_comps_in(ii,jj))))){
-            cout << "line 8494"<<endl;
+            cout << "line 8659"<<endl;
             cout << " ii,jj = "<< ii <<", "<< jj  << endl;
             cout << "d3_pre_size_comps_in(ii,jj) is NaN: " << d3_pre_size_comps_in(ii,jj) << endl;
             CreateOutput();
@@ -8730,7 +8733,7 @@ FUNCTION calc_predicted_composition
         if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) ){
           d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
           if (std::isnan(value(sum(d3_pre_size_comps_in(k,i))))){
-            cout << "line 8570" << endl;
+            cout << "line 8736" << endl;
             cout << " k,i    = "<< k <<", "<< i << endl;
             cout << "d3_pre_size_comps_in(k,i) is NaN: " << d3_pre_size_comps_in(k,i) << endl;
             exit(-1);
@@ -9094,66 +9097,72 @@ FUNCTION index_likelihood
 FUNCTION length_likelihood
 
   // 3) Likelihood for size composition data.
-  if (verbose >= 3) ECHOSTR("Starting length-likelihood")
+  if (verbose >= 3) {
+    cout << "Starting length-likelihood" << endl;
+    ECHOSTR("Starting length-likelihood")
+  }
   d3_res_size_comps.initialize();
   if (verbose >= 3) ECHO(nSizeComps)
-  for ( int ii = 1; ii <= nSizeComps; ii++ )
-   {
-    dmatrix O = d3_obs_size_comps(ii);                                                        ///> Observed length frequency
-    dvar_matrix P = d3_pre_size_comps(ii);                                                    ///> Predicted length-frequency
-    dvar_vector log_effn = log(mfexp(log_vn(ii)) * size_comp_sample_size(ii) * lf_lambda(ii));///> Effective sample size
-    for (int jrow=1;jrow<=nSizeCompRows(ii);jrow++)
-     {
-      if (size_comp_year(ii,jrow) < syr) 
-      { 
-       for (int k=1;k<=nSizeCompCols(ii);k++)
-         { O(jrow,k) = 1.0/float(nclass); P(jrow,k) = 1.0/float(nclass); }
-       }
-     } // -- jrow
+  for ( int ii = 1; ii <= nSizeComps; ii++ ){
+    if (nSizeCompRows(ii)>0){
+      if (verbose >= 3) echoinput << "calculating len-like for ii = " << ii << endl;
+      dmatrix O = d3_obs_size_comps(ii);                                                        ///> Observed length frequency
+      dvar_matrix P = d3_pre_size_comps(ii);                                                    ///> Predicted length-frequency
+      dvar_vector log_effn = log(mfexp(log_vn(ii)) * size_comp_sample_size(ii) * lf_lambda(ii));///> Effective sample size
+      for (int jrow=1;jrow<=nSizeCompRows(ii);jrow++){
+        if (size_comp_year(ii,jrow) < syr) { 
+          for (int k=1;k<=nSizeCompCols(ii);k++) { O(jrow,k) = 1.0/float(nclass); P(jrow,k) = 1.0/float(nclass); }
+        }
+      } // -- jrow
 
-    bool bCmp = 0;
-    class acl::negativeLogLikelihood *ploglike;                                               ///> Negative log-likelihood
+      bool bCmp = 0;
+      class acl::negativeLogLikelihood *ploglike;                                               ///> Negative log-likelihood
 
-    if (verbose >= 3) ECHO(iSizeCompType(ii))
-    switch ( iSizeCompType(ii) )                                                               ///> Select option for size-comp data
-     {
-      case 0:                                                                                 ///> ignore composition data in model fitting.
-       ploglike = NULL;
-       break;
-      case 1:                                                                                 ///> multinomial with fixed or estimated n
-       ploglike = new class acl::multinomial(O, bCmp);
-       break;
-      case 2:                                                                                 ///> robust approximation to the multinomial
-       ploglike = new class acl::robust_multi(O, bCmp);
-       break;
-      case 5:                                                                                 ///> Dirichlet
-       ploglike = new class acl::dirichlet(O, bCmp);
-       break;
-      case 6:                                                                                 ///> Dirichlet-multinomial with Thorson 2016 rec'd parameterization
-       dvariable log_th = log_vn(ii);//--log-scale theta parameter
-       dvector iss = size_comp_sample_size(ii) * lf_lambda(ii);
-       ploglike = new class acl::dirichlet_alt(O, log_th, iss, bCmp);
-       break;
-     }
+      if (verbose >= 3) ECHO(iSizeCompType(ii))
+      switch ( iSizeCompType(ii) )                                                               ///> Select option for size-comp data
+      {
+        case 0:                                                                                 ///> ignore composition data in model fitting.
+        ploglike = NULL;
+        break;
+        case 1:                                                                                 ///> multinomial with fixed or estimated n
+        ploglike = new class acl::multinomial(O, bCmp);
+        break;
+        case 2:                                                                                 ///> robust approximation to the multinomial
+        ploglike = new class acl::robust_multi(O, bCmp);
+        break;
+        case 5:                                                                                 ///> Dirichlet
+        ploglike = new class acl::dirichlet(O, bCmp);
+        break;
+        case 6:                                                                                 ///> Dirichlet-multinomial with Thorson 2016 rec'd parameterization
+        dvariable log_th = log_vn(ii);//--log-scale theta parameter
+        dvector iss = size_comp_sample_size(ii) * lf_lambda(ii);
+        ploglike = new class acl::dirichlet_alt(O, log_th, iss, bCmp);
+        break;
+      }
 
-    if ( ploglike != NULL ){                                                                   ///> extract the residuals
-      d3_res_size_comps(ii) = ploglike->residual(log_effn, P);
+      if ( ploglike != NULL ){                                                                   ///> extract the residuals
+        d3_res_size_comps(ii) = ploglike->residual(log_effn, P);
+      } else {
+        //no residuals 
+        d3_res_size_comps(ii) = 0.0;
+      }
+
+      if ( ploglike != NULL ){                                                                   ///> Compute the likelihood
+        dvariable nll = ploglike->nloglike(log_effn, P);
+        nloglike(3,ii) += nll;
+        if (verbose >= 3) ECHO(ii)
+        if (verbose >= 3) ECHO(nll)
+        delete ploglike;
+        if (verbose>=3) ECHOSTR("After delete")
+      }
     } else {
-      //no residuals 
-      d3_res_size_comps(ii) = 0.0;
+      if (verbose >= 3) echoinput << "skipping ii = " << ii << "; it's part of an extended comp." << endl;
     }
-
-    if ( ploglike != NULL )                                                                   ///> Compute the likelihood
-     {
-      dvariable nll = ploglike->nloglike(log_effn, P);
-      nloglike(3,ii) += nll;
-      if (verbose >= 3) ECHO(ii)
-      if (verbose >= 3) ECHO(nll)
-      delete ploglike;
-      if (verbose>=3) ECHOSTR("After delete")
-     }
-   }//--loop ii
-  if ( verbose >= 3 ) ECHOSTR("Ok after composition likelihood ...")
+  }//--loop ii
+  if ( verbose >= 3 ) {
+    ECHOSTR("Ok after composition likelihood ...")
+    cout<< "Ok after composition likelihood ..." << endl;
+  }
 
 // --------------------------------------------------------------------------------------------------
 // Label 404: recruitment_likelihood
@@ -15250,6 +15259,7 @@ FINAL_SECTION
 // 2025-04-21 ** WTS. Incremented version number to 2.20.26. Found issue with RW parameters for selectivity when RW block group has multiple blocks. Fixed 
 //                    for selectivity but may be an issue for other processes when RW parameters are specified. 
 //                    Also tracked down what turned out to be an uninitialized array problem (nSizeCompRows) that sent Windows runs off into NeverNeverLand.
+//                    Also added logic to skip calculating length likelihoods for the size comps that are the "extended" part of other comps.
 
 
 // To-do list
