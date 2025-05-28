@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.28; ** WTS **; Compiled 2025-04-25");
+ !! TheHeader = adstring("## GMACS Version 2.20.29; ** WTS **; Compiled 2025-05-27");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -964,7 +964,7 @@ DATA_SECTION
       d3_array inpDFs(1,nSurveys);
       for (int idf = 1;idf<=nSurveys;idf++){
         gmacs_data << "#----------------" << endl;
-        gmacs_data << "# relative abundance dataframe number " << idf << endl;
+        gmacs_data << "# relative abundance index dataframe number " << idf << endl;
         (*pGD) >> unitsType;  idUnits(idf) = substStuff.unitsTypeID(unitsType);
         (*pGD) >> indexType;  idIndex(idf) = substStuff.indexTypeID(indexType);
         (*pGD) >> fleet;      idFlt(idf) = substStuff.fleetID(fleet,fleetname);
@@ -999,7 +999,7 @@ DATA_SECTION
           dSurveyData(jrw, 7) = inpDFs(idf,irw,5); //--cv
           dSurveyData(jrw, 8) = inpDFs(idf,irw,6); //--units scaling
           dSurveyData(jrw, 9) = inpDFs(idf,irw,7); //--cpue timing
-          dSurveyData(jrw,10) = idf;               //--rad dataframe id
+          dSurveyData(jrw,10) = idf;               //--rai dataframe id
           jrw++;
         }//--irw
       }//--idf
@@ -1023,7 +1023,7 @@ DATA_SECTION
   gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
   gmacs_data << "## Maturity: 1 = mature, 2 = immature, 0 = both" << endl;
   gmacs_data << "## Units of survey: 1 = biomass, 2 = numbers" << endl;
-  gmacs_data << "# row q_Index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAD_id" << endl;
+  gmacs_data << "# row q_Index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAI_id" << endl;
   for (int irow=1;irow<=nSurveyRows; irow++){
     int iyr = dSurveyData(irow,1);
     if ((syr <= iyr)&&(( iyr <= nyrRetro) || ((iyr == nyrRetro+1) && (dSurveyData(irow,2) == 1)))){
@@ -1514,7 +1514,7 @@ DATA_SECTION
   // |---------------------------------------------------------|
   !! cout << " * General controls" << endl;
   !! ECHOSTR(" * General controls");
-  init_vector model_controls(1,17);
+  init_vector model_controls(1,18);
   int rdv_syr;                                             ///> First year of estimates devs
   int rdv_eyr;                                             ///> First year of estimates devs
   int Term_molt;                                           ///> Consider terminal molting?
@@ -1535,6 +1535,7 @@ DATA_SECTION
   int bias2;                                               ///> First full bias-correction
   int bias3;                                               ///> Last full bias-correction
   int bias4;                                               ///> Last year of bias-correction
+  int recZ_flag;                                           ///> recruitment size distribution option (0: standard way; 1: Tanner crab approach)
   vector Rec_bias(syr,nyr);
  
  LOC_CALCS
@@ -1580,6 +1581,7 @@ DATA_SECTION
     bias2               = int(model_controls(15));  
     bias3               = int(model_controls(16));  
     bias4               = int(model_controls(17));  
+    recZ_flag           = int(model_controls(18));  
     
     for (int Iy=syr;Iy<=nyr;Iy++){
       if (Iy <= bias1){
@@ -1614,6 +1616,7 @@ DATA_SECTION
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(18)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
     gmacs_ctl << endl;
     echoinput << endl << "# Extra controls" << endl;
     echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
@@ -1633,6 +1636,7 @@ DATA_SECTION
     echoinput << model_controls(15) << " # First full bias-correction" << endl;
     echoinput << model_controls(16) << " # Last full bias-correction" << endl;
     echoinput << model_controls(17) << " # Last year of bias-correction" << endl;
+    echoinput << model_controls(18) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
     echoinput << endl;
 
     // Default number of parameters
@@ -6877,7 +6881,7 @@ FUNCTION calc_recruitment_size_distribution
   rec_sdd.initialize();
   for ( int h=1; h <=nsex; h++){
     ralpha = ra(h) / rbeta(h);
-    if (false){
+    if (recZ_flag==0){
       //--standard GMACS approach
       for ( int l = 1; l <= nclass+1; l++ )  x(l) = cumd_gamma(size_breaks(l) / rbeta(h), ralpha);
       rec_sdd(h) = first_difference(x);
@@ -6885,11 +6889,15 @@ FUNCTION calc_recruitment_size_distribution
       rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
     } else {
       //--TCSAM02 approach
+      cout<<"--------Using TCSAM02 approach to calculate rec size dist--------"<<endl<<endl;
       dvector dzs = mid_points+(mid_points[2]-mid_points[1])/2.0-mid_points[1];
       dvariable aR = ra(h) / rbeta(h);//--gamma distribution "shape" parameter
       dvariable bR = rbeta(h);        //--gamma distribution "scale" parameter
       rec_sdd(h) = elem_prod(pow(dzs,(aR/bR)-1.0),mfexp(-dzs/bR));
-      for (int l=nSizeClassRec(h)+1;l<=nclass;l++) rec_sdd(h,l) = 0;
+      for (int l=nSizeClassRec(h)+1;l<=nclass;l++) {
+        rec_sdd(h,nSizeClassRec(h)) += rec_sdd(h,l); //--compress tail
+        rec_sdd(h,l) = 0;
+      }
       rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
     }
     if ((verbose>3)&&(NfunCall<2)){
@@ -14645,7 +14653,8 @@ FINAL_SECTION
 // 2025-04-24 ** WTS. Added foffdevs_phz vector to set phases for female offset F devs (log_fdovs. phases had been set by foff_phz, 
 //                    but needed to be turned "off" when no female F devs were defined.) Changed logN0 to -100 when ZEROPOP option is selected (had been -1000).
 //                    Incremented version to 2.20.28.
-
+// 2025-05-27 ** WTS. Added input for 'recZ_flag' to CTL file as model_controls(18). Flag determines parameterization for recruitment size distribution in 
+//                    calc_recruitment_size_distribution (0=standard approach; 1=Tanner approach). Incremented version to 2.20.29.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
