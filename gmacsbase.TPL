@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.29; ** WTS **; Compiled 2025-05-27");
+ !! TheHeader = adstring("## GMACS Version 2.20.29; ** WTS **; Compiled 2025-05-29");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -933,7 +933,7 @@ DATA_SECTION
   init_int fmtRAD; ///> Format type (0: old format, 1: new format)
   !!gmacs_data << fmtRAD    << "  #--input format type (0: old format, 1: new format)" << endl;
   init_int nSurveys;                                                 ///> Number of survey series
-  !! gmacs_data << nSurveys << "  #--Number of dataframes" << endl; //TODO: change name to nSurveyDFs
+  !! gmacs_data << nSurveys << "  #--Number of relative abundance index dataframes (i.e., surveys)" << endl; //TODO: change name to nSurveyDFs
   ivector SurveyType(1,nSurveys);                               ///> Type of survey
   int nSurveyRows;                                              ///> total number of rows in survey dataframes
   matrix dSurveyData;                                           ///> survey data
@@ -941,11 +941,12 @@ DATA_SECTION
   {
     cifstream* pGD = ad_comm::global_datafile;
     if (fmtRAD==0){
+      int chk;
       //old format
       gmacs_data << "# Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame" << endl;
       (*pGD) >> SurveyType;
       gmacs_data << SurveyType << endl;
-      gmacs_data << "# Number of data rows, by data frame" << endl;
+      gmacs_data << "# Total number of data rows" << endl;
       (*pGD) >> nSurveyRows;
       gmacs_data << "#   NOTE: this is not correct for retrospective analyses" << endl;
       gmacs_data << nSurveyRows << endl;
@@ -955,7 +956,24 @@ DATA_SECTION
       dSurveyData.allocate(1,nSurveyRows,0,10);//wts: added rai_id to accommodate blocks in q
       (*pGD) >> dSurveyData;
       gmacs_data << "# Survey data:"<<endl;
+      gmacs_data << "## Q_index: index of associated q. Multiple q's (e.g., in time blocks) can now be estimated for each relative abundance index/survey." << endl;
+      gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
+      gmacs_data << "## Maturity: 1 = mature, 2 = immature, 0 = both" << endl;
+      gmacs_data << "## Units of survey: 1 = biomass, 2 = numbers" << endl;
+      gmacs_data << "## Time: CPUE timing within season" << endl;
+      gmacs_data << "## RAI_id: integer id for the associated survey" << endl;
+      gmacs_data << "# Q_index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAI_id" << endl;
       gmacs_data << dSurveyData <<endl;
+      (*pGD) >> chk;
+      gmacs_data << chk << " # chk" <<endl;
+      if (chk!=999){
+        cout<<endl<<"####################################################################################"<<endl;
+        cout<<"Error reading 'original format' relative abundance index data for surveys. "<<endl;
+        cout<<"Input matrix should have 11 columns: Q_index Year Season Fleet Sex Maturity Obs CV Units CPUE_time RAI_id. "<<endl;
+        cout<<"The check value 999 should follow immediately afterward." << endl <<"Please check your formatting." << endl;
+        cout<<"####################################################################################"<<endl;
+        exit(-1);
+      }
     } else {
       //new format
       adstring indexType, unitsType, fleet, sexType, matType, shlType;
@@ -1019,11 +1037,13 @@ DATA_SECTION
   cpue_time = column(dSurveyData,9);
   rai_id    = column(dSurveyData,10);
   if (fmtRAD) gmacs_data << "# old format:" << endl;
-  gmacs_data << "## Index: One q is estimated for each index (the number of index values should match nSurveys" << endl;
+  gmacs_data << "## Q_index: index of associated q. Multiple q's (e.g., in time blocks) can now be estimated for each relative abundance index/survey." << endl;
   gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
   gmacs_data << "## Maturity: 1 = mature, 2 = immature, 0 = both" << endl;
   gmacs_data << "## Units of survey: 1 = biomass, 2 = numbers" << endl;
-  gmacs_data << "# row q_Index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAI_id" << endl;
+  gmacs_data << "## Time: CPUE timing within season" << endl;
+  gmacs_data << "## RAI_id: integer id for the associated survey" << endl;
+  gmacs_data << "# row Q_index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAI_id" << endl;
   for (int irow=1;irow<=nSurveyRows; irow++){
     int iyr = dSurveyData(irow,1);
     if ((syr <= iyr)&&(( iyr <= nyrRetro) || ((iyr == nyrRetro+1) && (dSurveyData(irow,2) == 1)))){
@@ -1033,10 +1053,10 @@ DATA_SECTION
      gmacs_data << (int) dSurveyData(irow,3) << " ";//fleet
      gmacs_data << (int) dSurveyData(irow,4) << " ";//sex
      gmacs_data << (int) dSurveyData(irow,5) << " ";//maturity
-     gmacs_data << dSurveyData(irow)(6,7) << " ";//obs, cv
-     gmacs_data << (int) dSurveyData(irow,8) << " ";//data type
-     gmacs_data << dSurveyData(irow,9) << " ";      //CPUE time
-     gmacs_data << dSurveyData(irow,10) << " ";     //rai_id
+     gmacs_data << dSurveyData(irow)(6,7)    << " ";//obs, cv
+     gmacs_data << (int) dSurveyData(irow,8) << " ";//units type
+     gmacs_data << dSurveyData(irow,9)       << " ";//CPUE time
+     gmacs_data << dSurveyData(irow,10)      << " ";//rai_id
      anystring = "# " + fleetname(dSurveyData(irow,3));
      if (dSurveyData(irow,4)==UNDET_SEX)        anystring = anystring +"_male+female";
      if (dSurveyData(irow,4)==MALES)            anystring = anystring +"_male";
@@ -1804,10 +1824,10 @@ DATA_SECTION
     cout << "Error: cannot estimate LogR0 when individual parameters are estimated" << endl;
     exit(1);
   }
-  if ( bInitializeUnfished == FREEPARSSCALED && theta_phz(2) > 0 ){
-    cout << "Error: cannot estimate LogRini when individual parameters are estimated" << endl;
-    exit(1);
-  }
+  // if ( bInitializeUnfished == FREEPARSSCALED && theta_phz(2) > 0 ){
+  //   cout << "Error: cannot estimate LogRini when individual parameters are estimated" << endl;
+  //   exit(1);
+  // }
   if ( bInitializeUnfished == ZEROPOP && theta_phz(1) > 0 ){
     cout << "Error: cannot estimate LogR0 when initial population is 0" << endl;
     exit(1);
@@ -2235,7 +2255,13 @@ DATA_SECTION
         float SigmaRW = Gpar_control(jpar,14);
         if (IgBlock !=0){
           // Environmental link
-          if ((IgEnvLink!=0) || (IgRW!=0))      { cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; exit(1); } 
+          if ((IgEnvLink!=0) || (IgRW!=0))      { 
+            cout << "Error: you can't have blocks and RWs at the same time - growth line " << ig << " par " << ipar <<  endl; 
+            cout << "Gpar_control("<<jpar<<"): " << endl;
+            cout << "Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
+            cout << Gpar_control(jpar) << endl;
+            exit(1); 
+          } 
           if ((IgBlock<0 )&& (IgBlock>nblocks)) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
           if ((IgBlockFn<0) && (IgBlockFn>1))   { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
           for (int kpar=1;kpar<=blocks(IgBlock);kpar++) {
@@ -2244,7 +2270,8 @@ DATA_SECTION
             GtoIG(n_Gpar,1) = ig;
             GtoIG(n_Gpar,2) = ipar;
             GtoIG(n_Gpar,3) = 0;
-            for (int ii=1;ii<=7;ii++) {*(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);*(ad_comm::global_datafile) >> Gpar_control(n_Gpar,15);}
+            for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
+            *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,15);
             for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++){
               GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;
             }
@@ -2893,7 +2920,7 @@ DATA_SECTION
  END_CALCS;
 
   // Storage by year
-  imatrix SelPnt(1,2*nsex*nfleet*Nyears2,1,nclass+6);
+  imatrix SelPnt(1,2*nsex*nfleet*Nyears2,1,nclass+7);
 
   matrix Spar_control(1,1000,1,15);
   imatrix StoIG(1,1000,1,4);
@@ -2920,7 +2947,7 @@ DATA_SECTION
     gmacs_ctl << "##  Block_fn: 0:absolute values; 1:exponential" << endl;
     gmacs_ctl << "##  Env_L: Environmental link - options are 0:none; 1:additive; 2:multiplicative; 3:exponential" << endl;
     gmacs_ctl << "##  EnvL_var: Environmental variable" << endl;
-    gmacs_ctl << "##  RW: 0 for no random walk changes; 1 otherwise" << endl;
+    gmacs_ctl << "##  RW: 0: no random walk changes; 1: devs are exponentiated and multiplied; 2: devs are additive (sel params only)" << endl;
     gmacs_ctl << "##  RW_blk: Block number for random walks" << endl;
     gmacs_ctl << "##  Sigma_RW: Sigma used for the random walk" << endl;
     gmacs_ctl << endl;
@@ -3121,6 +3148,7 @@ DATA_SECTION
               // Random walk
               if (IgRW !=0) {
                 ECHOSTR2("Starting RW block for a selectivity function parameter ",ipar)
+                if (IgRW != 1 && IgRW != 2) { cout << "Error: RW block values can only be 1 or 2 - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); } 
                 n_devvars += 1;
                 ECHO(n_devvars)
                 devpoints(n_devvars,1) = 3; devpoints(n_devvars,2) = ipnt2; devpoints(n_devvars,3) = n_deviations+1;
@@ -3133,6 +3161,7 @@ DATA_SECTION
                   for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++){
                     //SelPnt(ipnt3+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
                     SelPnt(ipnt3+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iblkcntr+1);
+                    SelPnt(ipnt3+iyr-syr+1,nclass+7) = IgRW;
                     iblkcntr++;
                     echoinput << SelPnt(ipnt3+iyr-syr+1,ipar) << " " << ipar << " " << ipnt3+iyr-syr+1 << " "  << IgRWBlock << " "
                               << n_deviations << " " << iyr << " " << blocklimits(IgRWBlock,kpar,1) << endl;
@@ -3215,6 +3244,7 @@ DATA_SECTION
     echoinput << "maxSelVaries " << maxSelVaries << endl;
     echoinput << "iYrsSelChanges " << endl;
     echoinput << iYrsSelChanges << endl;
+    echoinput << "SelPnt " << endl;
     echoinput << SelPnt << endl;
     echoinput << "sel_patterns" << endl;
     echoinput << sel_patterns << endl;
@@ -5450,6 +5480,11 @@ FUNCTION initialize_model_parameters
   // Get selectivity parameters
   nsel_use = 0;
   S_pars.initialize();
+  if (verbose >=4 ) {
+    cout<< endl << "#--Expanded selectivity parameters" << endl;
+    cout << "t " << "it" << " "<< "h" << " "<< "k" << " "<< "isel" << " "<<  "irow" << " " << "iyr" << " " << "ipar" << " "<< "SelPnt" << " "<< "ParNo";
+    cout << " "<< "S_pars_est(RefParNo)"<< " " << "S_pars_est(ParNo)" << " "<< "EnvData(iyr,EnvLinkVar)" << " " << "S_pars(nsel_use,ipar)" << endl;
+  }
   for (int it=1;it<=2;it++){
     for (int h=1;h<=nsex;h++){
       for (int k=1;k<=nfleet;k++){
@@ -5477,6 +5512,10 @@ FUNCTION initialize_model_parameters
                   if (isel==1) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
                   if (isel>0 && S_relative(ParNo)==0) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
                   if (isel>0 && S_relative(ParNo)==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * exp(S_pars_est(ParNo));
+                  if (verbose >=4 ) {
+                    cout << "1 " << it << " "<< h << " "<< k << " "<< isel << " " << irow << " " << iyr << " " << ipar << " "<< SelPnt(irow,ipar) << " "<< ParNo;
+                    cout << " "<< S_pars_est(RefParNo)<< " " << S_pars_est(ParNo) << " "<< "--NA--" << " " << S_pars(nsel_use,ipar) << endl;
+                  }
                 } else {
                   if (SelPnt(irow,ipar) > 0){
                     int EnvLinkVar =     SelPnt(irow,ipar)        - int(SelPnt(irow,ipar)/100.0)*100;
@@ -5485,10 +5524,19 @@ FUNCTION initialize_model_parameters
                     if (EnvLink==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) +     S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
                     if (EnvLink==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) *     S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
                     if (EnvLink==3) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * exp(S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar)); 
+                    if (verbose >=4 ) {
+                      cout << "2 " << it << " "<< h << " "<< k << " "<< isel << " " << irow << " " << iyr << " " << ipar << " "<< SelPnt(irow,ipar) << " "<< ParNo;
+                      cout << " "<< S_pars_est(RefParNo)<< " " << S_pars_est(ParNo) << " "<< EnvData(iyr,EnvLinkVar) << " " << S_pars(nsel_use,ipar) << endl;
+                    }
                   } else {
                     int SelPnt2 = -1*SelPnt(irow,ipar);
                     int Devpar = SelPnt2  - int(SelPnt2/100.0)*100;
-                    S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(par_devs(Devpar)); 
+                    if (SelPnt(irow,nclass+7)==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(par_devs(Devpar)); 
+                    if (SelPnt(irow,nclass+7)==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) + par_devs(Devpar); 
+                    if (verbose >=4 ) {
+                      cout << "3 " << it << " "<< h << " "<< k << " "<< isel << " " << irow << " " << iyr << " " << ipar << " "<< SelPnt2 << " "<< Devpar;
+                      cout << " "<< S_pars_est(RefParNo)<< " " << par_devs(Devpar) << " "<< "--NA--" << " " << S_pars(nsel_use,ipar) << endl;
+                    }
                   }
                 }
               }
@@ -6066,7 +6114,7 @@ FUNCTION calc_selectivities
             if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(1.0-TINY); log_slx_discard(k,h,iyr,i) = log(TINY); }
            }
           break;
-         case SELEX_UNIFORM0:                                  ///> uniform 1
+         case SELEX_UNIFORM0:                                  ///> uniform 0
           for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
            {
             if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = -100;}
@@ -9073,6 +9121,7 @@ FUNCTION calc_predicted_composition
    if (verbose) cout<<"--Normalizing comps" << endl;
     for ( int k = 1; k <= nSizeComps; k++ ){
       for ( int i = 1; i <= nSizeCompRows(k); i++ ){
+        if (verbose>=4) cout<< k << "  " << i << endl;
         if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) ){
           d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
           if (std::isnan(value(sum(d3_pre_size_comps_in(k,i))))){
@@ -13094,26 +13143,27 @@ FUNCTION WriteFiles
   OutInpFile1 << "##--RELATIVE ABUNDANCE DATA-----------------------------------" << endl;
   OutInpFile1 << "##------------------------------------------------------------" << endl;
   OutInpFile1 << "0  #--input format type (0: old format, 1: new format)" << endl;
-  OutInpFile1 << "## Index: One q is estimated for each index (the number of index values should match nSurveys" << endl;
+  OutInpFile1 << nSurveys    << "  ##  Number  of  relative  abundance indices (must match number of surveys)" << endl;
+  OutInpFile1 << SurveyType  << "  ##  Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame" << endl;
+  OutInpFile1 << nSurveyRows << "  ##  Total number of rows" << endl;
+  OutInpFile1 << "##--------" << endl;
+  OutInpFile1 << "## Q_index: index of associated q. Multiple q's (e.g., in time blocks) can now be estimated for each relative abundance index/survey." << endl;
   OutInpFile1 << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
   OutInpFile1 << "## Maturity: 1 = mature, 2 = immature, 0 = both" << endl;
   OutInpFile1 << "## Units of survey: 1 = biomass, 2 = numbers" << endl;
-  OutInpFile1 << "##  Number  of  relative  abundance indicies" << endl;
-  OutInpFile1 << nSurveys << endl;
-  OutInpFile1 << "# Type of 'survey' catchability (1=Selectivity; 2=Selectivity+Retention), by data frame" << endl;
-  OutInpFile1 << SurveyType << endl;
-  OutInpFile1 << "##  Number of rows in index" << endl;
-  OutInpFile1 << nSurveyRows << endl;
-  OutInpFile1 << "#Index	Year	Season	Fleet	Sex	Maturity	Value	CV	Type	Time # original" << endl;
+  OutInpFile1 << "## Time: CPUE timing within season" << endl;
+  OutInpFile1 << "## RAI_id: integer id for the associated survey" << endl;
+  OutInpFile1 << "#Q_index	Year	Season	Fleet	Sex	Maturity	Value	CV	Units	Time	RAI_id	# original" << endl;
   for (int i=1;i<=nSurveyRows;i++)
    {
     for(int j=0;j<=5;j++) OutInpFile1 << dSurveyData(i,j) << "\t ";
     OutInpFile1 << pre_cpue(i) << "\t ";
-    for(int j=7;j<=9;j++) OutInpFile1 << dSurveyData(i,j) << "\t ";
+    for(int j=7;j<=10;j++) OutInpFile1 << dSurveyData(i,j) << "\t ";
     OutInpFile1 << "# " << dSurveyData(i,6) << endl;
    } 
+  OutInpFile1 << 999 << " # chk" << endl;
 
-  OutInpFile1 << "\n" << endl;
+  OutInpFile1 << endl;
   OutInpFile1 << "##------------------------------------------------------------" << endl;
   OutInpFile1 << "##--SIZE COMPOSITION DATA-------------------------------------" << endl;
   OutInpFile1 << "##------------------------------------------------------------" << endl;
@@ -13524,7 +13574,7 @@ FUNCTION WriteFiles
   OutInpFile1 << "##  Block_fn: 0:absolute values; 1:exponential" << endl;
   OutInpFile1 << "##  Env_L: Environmental link - options are 0:none; 1:additive; 2:multiplicative; 3:exponential" << endl;
   OutInpFile1 << "##  EnvL_var: Environmental variable" << endl;
-  OutInpFile1 << "##  RW: 0 for no random walk changes; 1 otherwise" << endl;
+  OutInpFile1 << "##  RW: 0: no random walk changes; 1: devs are exponentiated and multiplied; 2: devs are additive (sel params only)" << endl;
   OutInpFile1 << "##  RW_blk: Block number for random walks" << endl;
   OutInpFile1 << "##  Sigma_RW: Sigma used for the random walk" << endl;
   OutInpFile1 << endl;
@@ -14127,10 +14177,10 @@ GLOBALS_SECTION
   #define SELEX_5095LOGISTIC 3
   #undef SELEX_DOUBLENORM
   #define SELEX_DOUBLENORM 4
-  #undef SELEX_UNIFORM1
-  #define SELEX_UNIFORM1 5
   #undef SELEX_UNIFORM0
-  #define SELEX_UNIFORM0 6
+  #define SELEX_UNIFORM0 5
+  #undef SELEX_UNIFORM1
+  #define SELEX_UNIFORM1 6
   #undef SELEX_DOUBLENORM4
   #define SELEX_DOUBLENORM4 7
   #undef SELEX_DECLLOGISTIC
@@ -14655,6 +14705,17 @@ FINAL_SECTION
 //                    Incremented version to 2.20.28.
 // 2025-05-27 ** WTS. Added input for 'recZ_flag' to CTL file as model_controls(18). Flag determines parameterization for recruitment size distribution in 
 //                    calc_recruitment_size_distribution (0=standard approach; 1=Tanner approach). Incremented version to 2.20.29.
+// 2025-05-28 ** WTS. Reassigned SELEX_UNIFORM0 and SELX_UNIFORM1 values from (6,5) to (5,6) to agree with ctl file comments. 
+//                    Kept version at 2.20.29 since this has not been pushed to "main" yet. 
+//                    Changed useage of RW parameter definition value FOR SELECTIVITY PARAMETERS ONLY. Was 0: RW devs off; >0: RW devs on. 
+//                    Now, for selectivity parameters only,: 0: RW devs off; 1: RW devs on w/ newpar = refpar*exp(dev) [as previously]; 
+//                    2: newpar = refpar + dev [new option--way to go for many parametric selectivity]. Changed description for selectivity sections 
+//                    of output ctl files. For other parameter types, the behavior is the same as previously (TODO: check if this behavior should be changed, as well).
+// 2025-05-29 ** WTS. Added a check on the size of dataframe read in as dSurveyData when using original format to assure RAI_id column has been added. 
+//                    After dSurveyData is read in, an integer 'chk' is read from the input data file. If this is not equal to 999, then an error is printed and the program exits. 
+//                    Also, revised some information output to various files to clarify things a bit more. Finally, corrected an error reading parameter information
+//                    for time-blocked "extra" growth parameters (did not affect non-time-blocked growth parameters).
+
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?

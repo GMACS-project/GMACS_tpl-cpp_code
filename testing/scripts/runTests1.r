@@ -51,20 +51,28 @@ runTests<-function(repoDir,
   
   #--get testing repo info----
   if (printPathInfo) cat("testing repo dir: '",repoDir,"'\n",sep="");
-  dfrTsts1 = readr::read_csv(file.path(repoDir,"models-for_testing.csv")) |> 
+  fn = file.path(repoDir,"models-for_testing.csv");
+  if (!file.exists(fn)) stop("Error. Could not find testing file",fn,"\n");
+  dfrTsts1 = readr::read_csv(fn) |> 
                dplyr::filter(current_model_folder!="") |> 
                dplyr::rename(path=current_model_folder);
   if (!is.null(stocks)) dfrTsts1 = dfrTsts1 |> dplyr::filter(stock %in% stocks);
-  dfrTsts2 = readr::read_csv(file.path(repoDir,"models-all.csv")) |> 
+  fn = file.path(repoDir,"models-all.csv")
+  if (!file.exists(fn)) stop("Error. Could not find testing file",fn,"\n");
+  dfrTsts2 = readr::read_csv(fn) |> 
                dplyr::inner_join(dfrTsts1,by="path");
   
   #--source required scripts----
-  source(file.path(scriptsDir,"readParFile.R"));
+  fn = file.path(scriptsDir,"readParFile.R");
+  if (!file.exists(fn)) stop("Error. Could not find scripts file",fn,"\n");
+  source(fn);
   
   #--copy gmacs executable to testDir (current WD at this point)
   exeName = "gmacs";
   if (Sys.info()["sysname"]=="Windows") exeName = "gmacs.exe";
-  res = file.copy(from=file.path(exeDir,exeName),to=exeName,overwrite=TRUE);
+  fn = file.path(exeDir,exeName);
+  if (!file.exists(fn)) stop("Error. Could not find gmacs exe file",fn,"\n");
+  res = file.copy(from=fn,to=exeName,overwrite=TRUE);
   if (!res) stop("Could not find gmacs executable in",exeDir);
   
   #--run tests----
@@ -93,7 +101,9 @@ runTests<-function(repoDir,
     res = TRUE;
     lstFNs = list();
     for (fn in c("gmacs_dat","dat_file","ctl_file","prj_file")){
-        resfn = file.copy(from=file.path(repoDir,"all_models",tst,dfrFNs[1,fn]),to=tst,overwrite=TRUE);
+        fnp = file.path(repoDir,"all_models",tst,dfrFNs[1,fn]);
+        if (!file.exists(fnp)) stop("Error. Could not find file",fnp,"\n");
+        resfn = file.copy(from=fnp,to=tst,overwrite=TRUE);
         if (resfn) {
           lstFNs[[fn]]=list(old=file.path(repoDir,"all_models",tst,dfrFNs[1,fn]),
                             new=file.path(tst,dfrFNs[1,fn]));
@@ -282,6 +292,31 @@ if (FALSE) {
   results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
                      repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
                      exeDir=exeDir,
+                     testDir=".", #--current working directory
+                     scriptsDir=file.path(dirPrj,"testing/scripts"),
+                     verbose=0);
+}
+
+##--run BBRKC only (on Mac)----
+if (FALSE) {
+  #
+  #--NOTE: make sure all paths to directories/files are correct for your system
+  #
+  ##--the following assumes: 
+  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
+  ###-------e.g.: at "dirPrj/testing/current_test_runs"
+  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS-project/GMACS_Models"
+  ###--3. The gmacs executable is under the "dirPrj/_build" directory
+  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
+  #
+  require(wtsGMACS)
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  exeDir = file.path(dirPrj,"_build");
+  #--run tests
+  results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
+                     repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
+                     exeDir=file.path(dirPrj,"_build"),
+                     stocks="BBRKC",
                      testDir=".", #--current working directory
                      scriptsDir=file.path(dirPrj,"testing/scripts"),
                      verbose=0);
