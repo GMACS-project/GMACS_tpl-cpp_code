@@ -2890,33 +2890,32 @@ DATA_SECTION
  LOC_CALCS 
   n_Spar = 0; int nparS; nparSs.initialize();  
   slx_type_npar.initialize();
-  for (int it=1;it<=2;it++)
-   for (int k=1;k<=nfleet;k++) 
-    {
-     for (int h=1;h<=slx_bsex_in(it,k)+1;h++)
-      {
-       nparS = 0;
-       int ipnt = (it-1)*nsex+h;
-       if (slx_type_in(ipnt,k) == SELEX_PARAMETRIC)   nparS = nclass;                 ///> non-parametric
-       if (slx_type_in(ipnt,k) == SELEX_COEFFICIENTS) nparS = slx_extra_in(h,k);      ///> coefficients
-       if (slx_type_in(ipnt,k) == SELEX_STANLOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
-       if (slx_type_in(ipnt,k) == SELEX_5095LOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
-       if (slx_type_in(ipnt,k) == SELEX_ONE_PAR_LOGISTIC) nparS = 1;                  ///> logisticOne has 1 parameter
-       if (slx_type_in(ipnt,k) == SELEX_DECLLOGISTIC) nparS = 2+slx_extra_in(h,k);    ///> declining logistic has 2 + extra parameters
-       if (slx_type_in(ipnt,k) == SELEX_ASCNORM)     nparS = 2;                       ///> ascending normal has 2 parameters
-       if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM)  nparS = 3;                       ///> double normal has 3 parameters
-       if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM4) nparS = 4;                       ///> double normal 4 has 4 parameters
-       if (slx_type_in(ipnt,k) == SELEX_UNIFORM1) nparS = 0;                          ///> uniform has 0 parameters
-       if (slx_type_in(ipnt,k) == SELEX_UNIFORM0) nparS = 0;                          ///> uniform has 0 parameters
-       if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE) nparS = 2 * slx_extra_in(h,k);  ///> spline has parameters for knots and values
-       if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE_FLOOR) nparS = 2 * slx_extra_in(h,k); ///> spline has parameters for knots and values
-       if (slx_type_in(ipnt,k) == SELEX_STACKED_LOGISTIC) nparS = 5;                  ///> stacked logistic has five parameters
-       if (slx_type_in(ipnt,k)< 0) nparS = 0;                                         ///> mirror has 0 parameters
-       nparS += ret_max_in(ipnt,k); 
-       slx_type_npar(ipnt,k) = nparS;
-       nparSs(it,(h-1)*nfleet+k) = nparS;
+  for (int it=1;it<=2;it++){
+    for (int k=1;k<=nfleet;k++) {
+      for (int h=1;h<=slx_bsex_in(it,k)+1;h++){
+        nparS = 0;
+        int ipnt = (it-1)*nsex+h;
+        if (slx_type_in(ipnt,k) == SELEX_PARAMETRIC)   nparS = nclass;                 ///> non-parametric
+        if (slx_type_in(ipnt,k) == SELEX_COEFFICIENTS) nparS = slx_extra_in(h,k);      ///> coefficients
+        if (slx_type_in(ipnt,k) == SELEX_STANLOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
+        if (slx_type_in(ipnt,k) == SELEX_5095LOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
+        if (slx_type_in(ipnt,k) == SELEX_ONE_PAR_LOGISTIC) nparS = 1;                  ///> logisticOne has 1 parameter
+        if (slx_type_in(ipnt,k) == SELEX_DECLLOGISTIC) nparS = 2+slx_extra_in(h,k);    ///> declining logistic has 2 + extra parameters
+        if (slx_type_in(ipnt,k) == SELEX_ASCNORM)     nparS = 2;                       ///> ascending normal has 2 parameters
+        if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM)  nparS = 3;                       ///> double normal has 3 parameters
+        if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM4) nparS = 4;                       ///> double normal 4 has 4 parameters
+        if (slx_type_in(ipnt,k) == SELEX_UNIFORM1) nparS = 0;                          ///> uniform has 0 parameters
+        if (slx_type_in(ipnt,k) == SELEX_UNIFORM0) nparS = 0;                          ///> uniform has 0 parameters
+        if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE) nparS = 2 * slx_extra_in(h,k);  ///> spline has parameters for knots and values
+        if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE_FLOOR) nparS = 2 * slx_extra_in(h,k); ///> spline has parameters for knots and values
+        if (slx_type_in(ipnt,k) == SELEX_STACKED_LOGISTIC) nparS = 5;                  ///> stacked logistic has five parameters
+        if (slx_type_in(ipnt,k)< 0) nparS = 0;                                         ///> mirror has 0 parameters
+        nparS += ret_max_in(ipnt,k); 
+        slx_type_npar(ipnt,k) = nparS;
+        nparSs(it,(h-1)*nfleet+k) = nparS;
       } //-- h
     } //-- k
+  } //--it
  END_CALCS;
 
   // Storage by year
@@ -4659,7 +4658,7 @@ PARAMETER_SECTION
   !! ECHO(log_foff);
   !!ECHO(nYparams);
   !!ECHO(foffdevs_phz);
-  init_bounded_vector_vector log_fdov(1,nfleet,1,nYparams,-10,10,foffdevs_phz);    ///> log-scale Female F offset devs to Male F
+  init_bounded_vector_vector log_fdov(1,nfleet,1,nYparams,-10,10,foffdevs_phz);    ///> log-scale Female F offset devs to Male F + Female F offset
   !! for (int I=1;I<=nfleet;I++) { ECHO(log_fdov(I)); }
 
   // Recruitment deviation parameters
@@ -4735,7 +4734,7 @@ PARAMETER_SECTION
 
   matrix rec_pass(1,nsex,1,nclass);                        ///> passing into update routine 
   vector totrecruits(syr,nyrRetro);                        ///> vector of estimated recruits (total)
-  matrix recruits(1,nsex,syr,nyrRetro);                    ///> vector of estimated recruits
+  matrix recruits(1,nsex,syr,nyrRetro);                    ///> vector of estimated recruits, by sex
   vector res_recruit(syr,nyrRetro);                        ///> vector of estimated recruits
   vector xi(syr,nyrRetro);                                 ///> vector of residuals for SRR
 
@@ -6209,37 +6208,38 @@ FUNCTION calc_fishing_mortality
   // Initilaize F2 with 1.0e-10
   F.initialize();
   dvariable log_ftmp;
-   for ( int h = 1; h <= nsex; h++ )
-    for ( int i = syr; i <= nyrRetro; i++ )
-     for ( int j = 1; j <= nseason; j++ )
-      for ( int l = 1; l <= nclass; l++)
-       F2(h,i,j,l) = 1.0e-10;
+  for ( int h = 1; h <= nsex; h++){
+    for ( int i = syr; i <= nyrRetro; i++){
+      for ( int j = 1; j <= nseason; j++){
+        for ( int l = 1; l <= nclass; l++) F2(h,i,j,l) = 1.0e-10;
+      }
+    }
+  }
 
   // fishing mortality generally
   ft.initialize(); fout.initialize();
-  for ( int k = 1; k <= nfleet; k++ )
-   for ( int h = 1; h <= nsex; h++ )
-    {
-     ik = 1; yk = 1;
-     for ( int i = syr; i <= nyrRetro; i++ )
-      for ( int j = 1; j <= nseason; j++ )
-       {
-        if ( fhit(i,j,k)>0 )
-         {
-          log_ftmp = log_fbar(k) + log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
-          fout(k,i) = exp(log_ftmp);                                 ///> Report of male F
-          if (h==2) log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
-          if (h==2 && yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++);    ///> annual F dev
-          ft(k,h,i,j) = mfexp(log_ftmp);
-          xi  = dmr(i,k);                                            ///> Discard mortality rate
-          sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;               ///> Capture selectivity
-          ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);  ///> Retention
-          vul = elem_prod(sel, ret + (1.0 - ret) * xi);              ///> Vulnerability
-          F(h,i,j) += ft(k,h,i,j) * vul;                             ///> Fishing mortality
-          F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Contact mortality (WTS: capture [or contact] rate, not "mortality")
-         }
-       } // years and seasons
-    } // fleet and sex
+  for ( int k = 1; k <= nfleet; k++ ){
+    for ( int h = 1; h <= nsex; h++ ){
+      ik = 1; yk = 1;
+      for ( int i = syr; i <= nyrRetro; i++ ){
+        for ( int j = 1; j <= nseason; j++ ){
+          if ( fhit(i,j,k)>0 ){
+            log_ftmp = log_fbar(k) + log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
+            fout(k,i) = exp(log_ftmp);                                 ///> Report of male F
+            if (h==2) log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
+            if (h==2 && yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++);    ///> annual F dev
+            ft(k,h,i,j) = mfexp(log_ftmp);
+            xi  = dmr(i,k);                                            ///> Discard mortality rate
+            sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;               ///> Capture selectivity
+            ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);  ///> Retention
+            vul = elem_prod(sel, ret + (1.0 - ret) * xi);              ///> Vulnerability
+            F(h,i,j)  += ft(k,h,i,j) * vul;                            ///> Fishing mortality
+            F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Contact mortality (WTS: capture [or contact] rate, not "mortality")
+          }
+        } // seasons
+      } // years
+    } // fleet
+  } // fleet
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -6266,23 +6266,26 @@ FUNCTION calc_natural_mortality
 
 FUNCTION calc_total_mortality
   Z.initialize(); Z2.initialize();S.initialize();
- for( int m = 1; m <= nmature; m++)
-  for ( int h = 1; h <= nsex; h++ )
-   for ( int i = syr; i <= nyrRetro; i++ )
-    for ( int j = 1; j <= nseason; j++ )
-     {
-      Z(h,m,i,j) = m_prop(i,j) * M(h,m,i) + F(h,i,j);
-      Z2(h,m,i,j) = m_prop(i,j) * M(h,m,i) + F2(h,i,j);
-      if (season_type(j) == 0) for ( int l = 1; l <= nclass; l++ ) S(h,m,i,j)(l,l) = 1.0-Z(h,m,i,j,l)/Z2(h,m,i,j,l)*(1.0-mfexp(-Z2(h,m,i,j,l)));
-      if (season_type(j) == 1) for ( int l = 1; l <= nclass; l++ ) S(h,m,i,j)(l,l) = mfexp(-Z(h,m,i,j,l));
-     }
+  for( int m = 1; m <= nmature; m++){
+    for ( int h = 1; h <= nsex; h++ ){
+      for ( int i = syr; i <= nyrRetro; i++ ){
+        for ( int j = 1; j <= nseason; j++ ){
+          Z(h,m,i,j)  = m_prop(i,j) * M(h,m,i) + F(h,i,j);
+          Z2(h,m,i,j) = m_prop(i,j) * M(h,m,i) + F2(h,i,j);
+          if (season_type(j) == 0) for ( int l = 1; l <= nclass; l++ ) S(h,m,i,j)(l,l) = 1.0-Z(h,m,i,j,l)/Z2(h,m,i,j,l)*(1.0-mfexp(-Z2(h,m,i,j,l)));
+          if (season_type(j) == 1) for ( int l = 1; l <= nclass; l++ ) S(h,m,i,j)(l,l) = mfexp(-Z(h,m,i,j,l));
+        }//--j: season
+      }//--i: year
+    }//--h: sex
+  }//--m: maturity
 
 // =======================================================================================================================================
 // =======================================================================================================================================
 
   /**
    * @brief Calculate the probability of moulting by carapace width.
-   * @details Note that the parameters molt_mu and molt_cv can only be estimated in cases where there is new shell and old shell data. Note that the diagonal of the P matrix != 0, otherwise the matrix is singular in inv(P).
+   * @details Note that the parameters molt_mu and molt_cv can only be estimated in cases where there is new shell and old shell data. 
+   * Note that the diagonal of the P matrix != 0, otherwise the matrix is singular in inv(P).
    *
    * @param molt_mu is the mean of the distribution
    * @param molt_cv scales the variance of the distribution
@@ -6324,15 +6327,6 @@ FUNCTION calc_molting_probability
       }
     }//--h loop
   }//--i loop
-
-
-  /**
-   * @brief Calculate the probability of maturing by carapace width.
-   * @details Note that the parameters mature_mu and mature_cv can only be estimated in cases where there is new shell and old shell data. Note that the diagonal of the P matrix != 0, otherwise the matrix is singular in inv(P).
-   *
-   * @param mature_mu is the mean of the distribution
-   * @param mature_cv scales the variance of the distribution
-  **/
 
 // ----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -6585,31 +6579,27 @@ FUNCTION calc_growth_transition
   growth_transition.initialize();
 
   // loop over sex
-  for ( int h = 1; h <= nsex; h++ )
-   {
+  for ( int h = 1; h <= nsex; h++ ){
     //  Set the growth-transition matrix (does not include molt_probability)
-    if ( bUseCustomGrowthMatrix2(h) == GROWTH_FIXEDGROWTHTRANS || bUseCustomGrowthMatrix2(h) == GROWTH_FIXEDSIZETRANS)
-     for (int j=1;j<=nSizeIncVaries(h);j++) growth_transition(h,j) = CustomGrowthMatrix(h,j);
+    if ( bUseCustomGrowthMatrix2(h) == GROWTH_FIXEDGROWTHTRANS || bUseCustomGrowthMatrix2(h) == GROWTH_FIXEDSIZETRANS){
+      for (int j=1;j<=nSizeIncVaries(h);j++) growth_transition(h,j) = CustomGrowthMatrix(h,j);
+    }
 
     // Set the growth-transition matrix (size-increment is gamma)
-    if ( bUseCustomGrowthMatrix2(h) == GROWTH_INCGAMMA )
-     {
-      for (int k =1; k<=nSizeIncVaries(h);k++)
-       {
+    if ( bUseCustomGrowthMatrix2(h) == GROWTH_INCGAMMA ){
+      for (int k =1; k<=nSizeIncVaries(h);k++){
         gt.initialize();
-        for ( int l = 1; l <= nSizeSex(h)-1; l++ )
-         {
+        for ( int l = 1; l <= nSizeSex(h)-1; l++ ){
           mean_size_after_molt =  molt_increment(h,k,l) / gscale(h,k);
           Accum = 0;
-          for ( int ll = l; ll <= nSizeSex(h)-1; ll++ )
-           {
+          for ( int ll = l; ll <= nSizeSex(h)-1; ll++ ){
             Upper_Inc = (size_breaks(ll+1) - mid_points(l))/gscale(h,k);
             CumInc = cumd_gamma(Upper_Inc, mean_size_after_molt);
             gt(l,ll) = CumInc - Accum;
             Accum = CumInc;
-           }
+          }
           gt(l,nSizeSex(h)) = 1.0 - Accum;
-         }
+        }
         gt(nSizeSex(h),nSizeSex(h)) = 1.0;
         growth_transition(h,k) = gt;
         if ((verbose>3)&&(NfunCall<2)){
@@ -6618,25 +6608,22 @@ FUNCTION calc_growth_transition
             exit(-1);
           }
         }
-       }
-     }
+      }//--k loop
+    }//--GROWTH_INCGAMMA
 
-	 // Set the growth-transition matrix (size after increment is gamma)
-    if ( bUseCustomGrowthMatrix2(h) == GROWTH_SIZEGAMMA )
-     {
-      for (int k =1; k<=nSizeIncVaries(h);k++)
-       {
+    // Set the growth-transition matrix (size after increment is gamma)
+    if ( bUseCustomGrowthMatrix2(h) == GROWTH_SIZEGAMMA ){
+      for (int k =1; k<=nSizeIncVaries(h);k++){
         gt.initialize();
         sbi = size_breaks / gscale(h,k);
-        for ( int l = 1; l <= nSizeSex(h); l++ )
-         {
+        for ( int l = 1; l <= nSizeSex(h); l++ ){
           mean_size_after_molt = (mid_points(l) + molt_increment(h,k,l)) / gscale(h,k);
           psi.initialize();
           for (int ll = l; ll <= nclass+1; ll++ )
-           psi(ll) = cumd_gamma(sbi(ll), mean_size_after_molt);
+            psi(ll) = cumd_gamma(sbi(ll), mean_size_after_molt);
           gt(l)(l,nSizeSex(h)) = first_difference(psi(l,nclass+1));
-          gt(l)(l,nSizeSex(h)) = gt(l)(l,nSizeSex(h)) / sum(gt(l));
-         }
+          gt(l)(l,nSizeSex(h)) = gt(l)(l,nSizeSex(h)) / sum(gt(l)); // TCSAM02 does an accumulation, not a rescaling
+        }
         growth_transition(h,k) = gt;
         if ((verbose>3)&&(NfunCall<2)){
           if (std::isnan(value(sum(growth_transition(h,k))))){
@@ -6644,18 +6631,15 @@ FUNCTION calc_growth_transition
             exit(-1);
           }
         }
-      }
-     }
+      } // k loop
+    } // if GROWTH_SIZEGAMMA
 
     // Set the growth-transition matrix (size after increment is normal)
-    if ( bUseCustomGrowthMatrix2(h) == GROWTH_NORMAL )
-     {
-      for (int k =1; k<=nSizeIncVaries(h);k++)
-       {
+    if ( bUseCustomGrowthMatrix2(h) == GROWTH_NORMAL ){
+      for (int k =1; k<=nSizeIncVaries(h);k++){
         gt.initialize();
         sbi = size_breaks / gscale(h,k);
-        for ( int l = 1; l <= nSizeSex(h)-1; l++ )
-         {
+        for ( int l = 1; l <= nSizeSex(h)-1; l++ ){
           mean_size_after_molt = mid_points(l) + molt_increment(h,k,l);
           Temp = 0;
           for ( int ll = l; ll <= nclass-1; ll++ )
@@ -6666,7 +6650,7 @@ FUNCTION calc_growth_transition
             Temp = Cum;
            }
           gt(l,nclass) = 1.0-Temp;
-         }
+        }
         gt(nclass,nclass) = 1.0;
         growth_transition(h,k) = gt;
         if ((verbose>3)&&(NfunCall<2)){
@@ -6675,202 +6659,179 @@ FUNCTION calc_growth_transition
             exit(-1);
           }
         }
-       }
-     }
+      } // k loop
+    } // if GROWTH_NORMAL
 
     // set the growth matrix based inidvidual variation in kappa
-    if ( bUseCustomGrowthMatrix2(h) == GROWTH_VARYK )
-     {
-      for (int k =1; k<=nSizeIncVaries(h);k++)
-       {
+    if ( bUseCustomGrowthMatrix2(h) == GROWTH_VARYK ){
+      for (int k =1; k<=nSizeIncVaries(h);k++){
         mlk = log(Kappa(h,k));
         sigmaK2 = SigmaKappa(h,k)*SigmaKappa(h,k);
         tempk2 = sqrt(2.0*M_PI*sigmaK2);
         growth_transition(h,k,nSizeSex(h),nSizeSex(h)) = 1;               // No growth from the last class
 
         // the initial size class
-        for (int l = 1; l <= nSizeSex(h)-1; l++ )
-         {
+        for (int l = 1; l <= nSizeSex(h)-1; l++ ){
           Len1Low = size_breaks(l); Len1Hi = size_breaks(l+1);
           scale = 1.0/(Len1Hi-Len1Low);
           temp = Len1Low; total = 0;
-          if (Len1Low < Linf(h,k))
-           {
-            for(int l2c=l;l2c<=nSizeSex(h)+20;l2c++)
-             {
+          if (Len1Low < Linf(h,k)){
+            for(int l2c=l;l2c<=nSizeSex(h)+20;l2c++){
               if (l2c<=nSizeSex(h))
-               step = size_breaks(l2c+1)-size_breaks(l2c);
+                step = size_breaks(l2c+1)-size_breaks(l2c);
               else
-               step = size_breaks(nSizeSex(h)+1)-size_breaks(nSizeSex(h));
+                step = size_breaks(nSizeSex(h)+1)-size_breaks(nSizeSex(h));
               l1r = step/2.0;
               Len2Low = temp;  Len2Hi = temp + step; temp = Len2Hi;
               prob_val = 0;
-              for(int evl1=1;evl1<=32;evl1++)
-               {
+              for(int evl1=1;evl1<=32;evl1++){
                 l1 = ((xg(evl1) + 1.0)/2.0)*(Len1Hi-Len1Low) + Len1Low;
                 if (Linf(h,k) <= Len2Hi) Upp1 = Linf(h,k) - l1 - 0.001; else Upp1 = Len2Hi - l1;
                 rangU = -log(1 - Upp1/(Linf(h,k) - l1));
-                if(Linf(h,k) > Len2Low)
-                 {
+                if(Linf(h,k) > Len2Low){
                   rangL = -log(1 - (Len2Low - l1)/(Linf(h,k) - l1));
                   Kr = (rangU-rangL)/2.0;
-                  for( int evk=1; evk<=32;evk++)
-                   {
+                  for( int evk=1; evk<=32;evk++){
                     kval = ((xg(evk) + 1.0)/2.0)*(rangU-rangL) + rangL;
-                    if(kval > 0)
-                     {
+                    if(kval > 0){
                       temp6 = mfexp(-((log(kval) - mlk)*(log(kval) - mlk))/(2.0*sigmaK2))/(kval*tempk2);
                       prob_val += Kr*wg(evk)*temp6*wg(evl1)*scale;
-                     }
-                   } // evk
-                 } //if(Linf > Len2Low)
-               } // evl1
+                    }
+                  } // evk
+                } //if(Linf > Len2Low)
+              } // evl1
               prob_val *= l1r;
               total += prob_val;
               if(l2c < nSizeSex(h))
                growth_transition(h,k,l,l2c) = prob_val;
               else
                growth_transition(h,k,l,nSizeSex(h)) += prob_val;
-             } // l2c
-            for(int l2c=l;l2c<=nSizeSex(h);l2c++) growth_transition(h,k,l,l2c) /= total;
-           } // if (LenLow < Linf)
-          else
-           {
+            } // l2c
+            for(int l2c=l;l2c<=nSizeSex(h);l2c++) {growth_transition(h,k,l,l2c) /= total;}
+          } else {  // if (LenLow >= Linf)
             growth_transition(h,k,l,l) = 1;
             total = 1;
-           }
-         } // l
-       } // k
-     } // if
+          }
+        } // l
+      } // k
+    } // if GROWTH_VARYK
 
 
-     // Linf varies among individuals
-     if ( bUseCustomGrowthMatrix2(h) == GROWTH_VARYLINF )
-      {
-       for (int k =1; k<=nSizeIncVaries(h);k++)
-        {
-         mll = log(Linf(h,k));
-         sigmaL2 = SigmaLinf(h,k)*SigmaLinf(h,k);
-         tempL1 = sqrt(2.0*M_PI*sigmaL2);
-         growth_transition(h,k,nSizeSex(h),nSizeSex(h)) = 1;               // No growth from the last class
+    // Linf varies among individuals
+    if ( bUseCustomGrowthMatrix2(h) == GROWTH_VARYLINF ){
+      for (int k =1; k<=nSizeIncVaries(h);k++){
+        mll = log(Linf(h,k));
+        sigmaL2 = SigmaLinf(h,k)*SigmaLinf(h,k);
+        tempL1 = sqrt(2.0*M_PI*sigmaL2);
+        growth_transition(h,k,nSizeSex(h),nSizeSex(h)) = 1;               // No growth from the last class
 
-         // the initial size class
-         for ( int l = 1; l <= nSizeSex(h)-1; l++ )
-          {
-           Len1Low = size_breaks(l); Len1Hi = size_breaks(l+1);
-           scale = 1.0/(Len1Hi-Len1Low);
-           temp = Len1Low; total = 0;
-           for(int l2c=l;l2c<=nSizeSex(h)+10;l2c++)
-            {
-             if (l2c<=nSizeSex(h))
+        // the initial size class
+        for ( int l = 1; l <= nSizeSex(h)-1; l++ ){
+          Len1Low = size_breaks(l); Len1Hi = size_breaks(l+1);
+          scale = 1.0/(Len1Hi-Len1Low);
+          temp = Len1Low; total = 0;
+          for(int l2c=l;l2c<=nSizeSex(h)+10;l2c++){
+            if (l2c<=nSizeSex(h))
               step = size_breaks(l2c+1)-size_breaks(l2c);
-             else
+            else
               step = size_breaks(nSizeSex(h)+1)-size_breaks(nSizeSex(h));
-             l1r = step/2.0;
-             Len2Low = temp;  Len2Hi = temp + step; temp = Len2Hi;
-             prob_val = 0;
-             for(int evl1=1;evl1<=32;evl1++)
-              {
-               l1 = ((xg(evl1) + 1.0)/2.0)*(Len1Hi-Len1Low) + Len1Low;
-               LinfU = l1 + (Len2Hi - l1)/(1-mfexp(-Kappa(h,k)));
-               if(l2c == l) LinfL = l1; else LinfL = l1 + (Len2Low - l1)/(1-mfexp(-Kappa(h,k)));
-               temp2 = (log(l1) - mll)/SigmaLinf(h,k);
-               temp4 = 1.0 - cumd_norm(temp2);
-               Linfr = (LinfU - LinfL)/2.0;
-               for(int evL=1; evL<=32;evL++)
-                {
-                 Linfval = ((xg(evL) + 1.0)/2.0)*(LinfU - LinfL) + LinfL;
-                 temp5 = 1.0/(Linfval*tempL1)*mfexp(-((log(Linfval) - mll)*(log(Linfval) - mll))/(2*sigmaL2));
-                 prob_val += Linfr*wg(evL)*temp5*wg(evl1)*scale/temp4;
-                } // evl
-               } // evl1
-             prob_val *= l1r;
-             total += prob_val;
-             if(l2c < nSizeSex(h))
-               growth_transition(h,k,l,l2c) = prob_val;
-             else
-              growth_transition(h,k,l,nSizeSex(h)) += prob_val;
-            } // l2c
-           for(int l2c=l;l2c<=nSizeSex(h);l2c++) growth_transition(h,k,l,l2c) /= total;
-
-          } // l
-        } // k
-      }  // if
-
-     // Linf and K vary among individuals
-     if ( bUseCustomGrowthMatrix2(h) == GROWTH_VARYKLINF )
-      {
-       for (int k =1; k<=nSizeIncVaries(h);k++)
-        {
-         nvar = 15;
-         mll = log(Linf(h,k));
-         mlk = log(Kappa(h,k));
-         sigmaK2 = SigmaKappa(h,k)*SigmaKappa(h,k);
-         sigmaL2 = SigmaLinf(h,k)*SigmaLinf(h,k);
-         tempL1 = sqrt(2.0*M_PI*sigmaL2);
-         tempL2 = 2.0*sigmaL2;
-         tempk1 = sqrt(2.0*M_PI*sigmaK2);
-         tempk2 = 2.0*sigmaK2;
-         temp = sqrt(mfexp(2.0*mlk+sigmaK2)*(mfexp(sigmaK2)-1.0))*nvar;
-         rangU = Kappa(h,k) + temp;
-         rangL = Kappa(h,k) - temp;
-         if(rangL < 0) rangL = 0;
-         Kr = (rangU - rangL)/2.0;
-         growth_transition(h,k,nSizeSex(h),nSizeSex(h)) = 1;               // No growth from the last class
-
-         // the initial size class
-         for ( int l = 1; l <= nSizeSex(h)-1; l++ )
-          {
-           Len1Low = size_breaks(l); Len1Hi = size_breaks(l+1);
-           temp = Len1Low; total = 0;
-
-           scale = 1.0/(Len1Low-Len1Hi);
-           for(int l2c=l;l2c<=nSizeSex(h)+20;l2c++)
-            {
-             if (l2c<=nSizeSex(h))
-              step = size_breaks(l2c+1)-size_breaks(l2c);
-             else
-              step = size_breaks(nSizeSex(h)+1)-size_breaks(nSizeSex(h));
-             l1r = step/2.0;
-             templ11 = scale*Kr*l1r;
-             Len2Low = temp;  Len2Hi = temp + step; temp = Len2Hi; prob_val = 0;
-             for(int evl1=1;evl1<=32;evl1++)
-              {
-               l1 = l1_vec(h,l,evl1);
-               temp2 = (log(l1) - mll)/SigmaLinf(h,k);
-               temp4 = 1.0 - cumd_norm(temp2);
-               templ12 = wg(evl1)*templ11/temp4;
-               count68 = 1;
-               for( int evk=1;evk<=32;evk++)
-                {
-                 kval = ((xg(evk) + 1.0)/2.0)*(rangU-rangL) + rangL;
-                 LinfU = l1 + (Len2Hi - l1)/(1.0-mfexp(-kval));
-                 if(l2c == l) LinfL = l1; else LinfL = l1 + (Len2Low - l1)/(1-mfexp(-kval));
-                 Linfr = (LinfU - LinfL)/2.0;
-                 temp6 = mfexp(-((log(kval) - mlk)*(log(kval) - mlk))/tempk2)/(kval*tempk1);
-                 temp68 = wg(evk)*temp6*templ12;
-                 for(int evL=1;evL<=32;++evL)
-                  {
-                   Linfval = ((xg(evL) + 1.0)/2.0)*(LinfU - LinfL) + LinfL;
-                   temp5 = mfexp(-((log(Linfval) - mll)*(log(Linfval) - mll))/tempL2)/(Linfval*tempL1);
-                   prob_val_vec(count68) = Linfr*wg(evL)*temp5*temp68;
-                   count68 += 1;
-                  }
-                }
-               prob_val += sum(prob_val_vec);
-              }
-
-             total += prob_val;
-             if(l2c < nSizeSex(h))
+            l1r = step/2.0;
+            Len2Low = temp;  Len2Hi = temp + step; temp = Len2Hi;
+            prob_val = 0;
+            for(int evl1=1;evl1<=32;evl1++){
+              l1 = ((xg(evl1) + 1.0)/2.0)*(Len1Hi-Len1Low) + Len1Low;
+              LinfU = l1 + (Len2Hi - l1)/(1-mfexp(-Kappa(h,k)));
+              if(l2c == l) LinfL = l1; else LinfL = l1 + (Len2Low - l1)/(1-mfexp(-Kappa(h,k)));
+              temp2 = (log(l1) - mll)/SigmaLinf(h,k);
+              temp4 = 1.0 - cumd_norm(temp2);
+              Linfr = (LinfU - LinfL)/2.0;
+              for(int evL=1; evL<=32;evL++){
+                Linfval = ((xg(evL) + 1.0)/2.0)*(LinfU - LinfL) + LinfL;
+                temp5 = 1.0/(Linfval*tempL1)*mfexp(-((log(Linfval) - mll)*(log(Linfval) - mll))/(2*sigmaL2));
+                prob_val += Linfr*wg(evL)*temp5*wg(evl1)*scale/temp4;
+              } // evl
+            } // evl1
+            prob_val *= l1r;
+            total += prob_val;
+            if(l2c < nSizeSex(h))
               growth_transition(h,k,l,l2c) = prob_val;
-             else
+            else
               growth_transition(h,k,l,nSizeSex(h)) += prob_val;
-            } // l2c
-           for(int l2c=l;l2c<=nSizeSex(h);l2c++) growth_transition(h,k,l,l2c) /= total;
-          } // l
-        } // k
-      }  // if
-   } // h
+          } // l2c
+          for(int l2c=l;l2c<=nSizeSex(h);l2c++) {growth_transition(h,k,l,l2c) /= total;}
+
+        } // l
+      } // k
+    } // if GROWTH_VARYLINF
+
+    // Linf and K vary among individuals
+    if ( bUseCustomGrowthMatrix2(h) == GROWTH_VARYKLINF ){
+      for (int k =1; k<=nSizeIncVaries(h);k++){
+        nvar = 15;
+        mll = log(Linf(h,k));
+        mlk = log(Kappa(h,k));
+        sigmaK2 = SigmaKappa(h,k)*SigmaKappa(h,k);
+        sigmaL2 = SigmaLinf(h,k)*SigmaLinf(h,k);
+        tempL1 = sqrt(2.0*M_PI*sigmaL2);
+        tempL2 = 2.0*sigmaL2;
+        tempk1 = sqrt(2.0*M_PI*sigmaK2);
+        tempk2 = 2.0*sigmaK2;
+        temp = sqrt(mfexp(2.0*mlk+sigmaK2)*(mfexp(sigmaK2)-1.0))*nvar;
+        rangU = Kappa(h,k) + temp;
+        rangL = Kappa(h,k) - temp;
+        if(rangL < 0) rangL = 0;
+        Kr = (rangU - rangL)/2.0;
+        growth_transition(h,k,nSizeSex(h),nSizeSex(h)) = 1;               // No growth from the last class
+
+        // the initial size class
+        for ( int l = 1; l <= nSizeSex(h)-1; l++ ){
+          Len1Low = size_breaks(l); Len1Hi = size_breaks(l+1);
+          temp = Len1Low; total = 0;
+
+          scale = 1.0/(Len1Low-Len1Hi);
+          for(int l2c=l;l2c<=nSizeSex(h)+20;l2c++){
+            if (l2c<=nSizeSex(h))
+              step = size_breaks(l2c+1)-size_breaks(l2c);
+            else
+              step = size_breaks(nSizeSex(h)+1)-size_breaks(nSizeSex(h));
+            l1r = step/2.0;
+            templ11 = scale*Kr*l1r;
+            Len2Low = temp;  Len2Hi = temp + step; temp = Len2Hi; prob_val = 0;
+            for (int evl1=1;evl1<=32;evl1++){
+              l1 = l1_vec(h,l,evl1);
+              temp2 = (log(l1) - mll)/SigmaLinf(h,k);
+              temp4 = 1.0 - cumd_norm(temp2);
+              templ12 = wg(evl1)*templ11/temp4;
+              count68 = 1;
+              for( int evk=1;evk<=32;evk++){
+                kval = ((xg(evk) + 1.0)/2.0)*(rangU-rangL) + rangL;
+                LinfU = l1 + (Len2Hi - l1)/(1.0-mfexp(-kval));
+                if(l2c == l) LinfL = l1; else LinfL = l1 + (Len2Low - l1)/(1-mfexp(-kval));
+                Linfr = (LinfU - LinfL)/2.0;
+                temp6 = mfexp(-((log(kval) - mlk)*(log(kval) - mlk))/tempk2)/(kval*tempk1);
+                temp68 = wg(evk)*temp6*templ12;
+                for(int evL=1;evL<=32;++evL){
+                  Linfval = ((xg(evL) + 1.0)/2.0)*(LinfU - LinfL) + LinfL;
+                  temp5 = mfexp(-((log(Linfval) - mll)*(log(Linfval) - mll))/tempL2)/(Linfval*tempL1);
+                  prob_val_vec(count68) = Linfr*wg(evL)*temp5*temp68;
+                  count68 += 1;
+                }
+              }
+              prob_val += sum(prob_val_vec);
+            }
+
+            total += prob_val;
+            if(l2c < nSizeSex(h)){
+              growth_transition(h,k,l,l2c) = prob_val;
+            } else {
+              growth_transition(h,k,l,nSizeSex(h)) += prob_val;
+            }
+          } // l2c
+          for(int l2c=l;l2c<=nSizeSex(h);l2c++) {growth_transition(h,k,l,l2c) /= total;}
+        } // l
+      } // k
+    } // if GROWTH_VARYKLINF
+  } // h
 
 // =======================================================================================================================================
 // =======================================================================================================================================
@@ -7038,8 +6999,13 @@ FUNCTION calc_initial_numbers_at_length
       log_initial_recruits = -100.0;
       break;
   }
+  //--WTS 2025-06-04: if logR0, etc are redefined as applying to log(totrecruits), not log(recruits(h))
+  //--need to change the following:
   for ( int h = 1; h <= nsex; h++ ){ recruits(h)(syr) = mfexp(log_initial_recruits); }
   totrecruits(syr) = float(nsex)*mfexp(log_initial_recruits);
+  //to:
+  // totrecruit(syr) = mfexp(log_initial_recruits);
+  // for ( int h = 1; h <= nsex; h++ ) {recruits(h)(syr) = totrecruits(syr)/float(nsex);}
 
   // Analytical equilibrium soln
   int ig;
@@ -7091,7 +7057,7 @@ FUNCTION calc_initial_numbers_at_length
        for ( int o = 1; o <= nshell; o++ )
         {
          int ig = pntr_hmo(h,m,o);
-         d4_N(ig)(syr)(1) = mfexp(logN0(ig));
+         d4_N(ig)(syr)(1) = mfexp(logN0(ig)); //--very small numbers
         }
      break;
   }//--switch
@@ -7799,22 +7765,37 @@ FUNCTION update_population_numbers_at_length
   dvar_vector  z(1,nclass);
 
   // Specify recuitment by year
-  for (int i = syr; i <= nyrRetro; i++ ){
+  for (int i = syr; i <= nyrRetro; i++ ){  //--TODO: start at syr (already calculated in 'initial' with no dev) and overwrite?
     for (int h = 1; h <= nsex; h++ ){
       if (verbose>4) if ((verbose>3)&&(NfunCall<2)) cout<<"---looping for recruits: i(yr) h(sex): "<<i<<" "<<h<<endl;
+      //---------------------------------------------
+      //WTS: changed this section 2025-06-04
+      // if ( bInitializeUnfished == UNFISHEDEQN ){
+      //   recruits(h,i) = mfexp(logR0)*float(nsex);
+      // } else {
+      //   recruits(h,i) = mfexp(logRbar)*float(nsex);
+      // }
+      // // This splits recruitment out proportionately into males and females
+      // totrecruits(i) = recruits(h)(i)*mfexp(rec_dev(i))/float(nsex);
+      // if (nsex == 1) {
+      //   recruits(h)(i) *= mfexp(rec_dev(i));
+      // } else if (nsex == 2) {
+      //   if (h == MALES)   recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
+      //   if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
+      // }
       if ( bInitializeUnfished == UNFISHEDEQN ){
-        recruits(h,i) = mfexp(logR0)*float(nsex);
+        totrecruits(i) = float(nsex)*mfexp(logR0)*mfexp(rec_dev(i));
       } else {
-        recruits(h,i) = mfexp(logRbar)*float(nsex);
+        totrecruits(i) = float(nsex)*mfexp(logRbar)*mfexp(rec_dev(i));
       }
-      // This splits recruitment out proportionately into males and females
-      totrecruits(i) = recruits(h)(i)*mfexp(rec_dev(i))/float(nsex);
       if (nsex == 1) {
-        recruits(h)(i) *= mfexp(rec_dev(i));
+        recruits(h)(i) = totrecruits(i);
       } else if (nsex == 2) {
-        if (h == MALES)   recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
-        if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
+        // This splits recruitment out proportionately into males and females
+        if (h == MALES)   recruits(h)(i) = totrecruits(i) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
+        if (h == FEMALES) recruits(h)(i) = totrecruits(i) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
       }
+      //---------------------------------------------
       if ((verbose>4) && NfunCall<2){
         cout<<recruits(h)(i)<<endl;
         if (std::isnan(value(recruits(h)(i)))) {
@@ -12893,7 +12874,7 @@ FUNCTION CreateOutput
   for (int h=1; h <= nsex; h++)
    for (int i=1;i<=nSizeIncVaries(h);i++)
     {
-     OutFile1 << "#size_matrix for (sex, increment_no): " << sexes(h) << " " << i << endl;
+     OutFile1 << "#size_matrix for (sex, increment_no): " << sexes(h) << " " << i << "using molt_probability in year " << syr << endl;
      OutFile1 << "size_matrix_"<<sexes(h)<<"_"<<i << ": matrix" << endl;
      for (int k1=1;k1<=nclass;k1++)
       {
@@ -14715,7 +14696,9 @@ FINAL_SECTION
 //                    After dSurveyData is read in, an integer 'chk' is read from the input data file. If this is not equal to 999, then an error is printed and the program exits. 
 //                    Also, revised some information output to various files to clarify things a bit more. Finally, corrected an error reading parameter information
 //                    for time-blocked "extra" growth parameters (did not affect non-time-blocked growth parameters).
-
+// 2025-06-04 ** WTS. Cleaned up code in update_population_numbers_at_length related to recruitment, with note for further changes. 
+//                    Added note in calc_initial_numbers_at_length with reminder to change code if logR0, etc are redefined to apply to 
+//                    totrecruits rather than recruits(h).
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
