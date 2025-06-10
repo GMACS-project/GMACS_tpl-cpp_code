@@ -4744,6 +4744,8 @@ PARAMETER_SECTION
   matrix pre_catch_out(1,nCatchDF,syr,nyrRetro);           ///> Predicted catch for output
   matrix res_catch_out(1,nCatchDF,syr,nyrRetro);           ///> Residuals for output
   vector log_q_catch(1,nCatchDF);                          ///> Catchability
+  4darray pre_capbio(syr,nyrRetro,1,nfleet,1,nsex,1,nclass);///> predicted fishery capture biomass for output (summed over maturity state, shell condition)
+
 
   3darray molt_increment(1,nsex,1,maxSizeIncVaries,1,nclass);               ///> linear molt increment
   matrix molt_prob_pass(1,nsex,1,nclass);                                   ///> passing into update routine  
@@ -5110,7 +5112,7 @@ PROCEDURE_SECTION
   calc_objective_function();                               if ( verbose >= 3 ) cout << "Ok after calc_objective_function ..." << endl;
 
   // sd_report variables
-  if ( sd_phase() || StopAfterFnCall==1){
+  if ( sd_phase() || NfunCall==StopAfterFnCall){
     if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
     // Save the estimates parameters to ParsOut (used for variance estimation)
     ParsOut.initialize();
@@ -6216,7 +6218,7 @@ FUNCTION calc_fishing_mortality
     }
   }
 
-  // fishing mortality generally
+  // fishing mortality and capture rates generally
   ft.initialize(); fout.initialize();
   for ( int k = 1; k <= nfleet; k++ ){
     for ( int h = 1; h <= nsex; h++ ){
@@ -6228,18 +6230,18 @@ FUNCTION calc_fishing_mortality
             fout(k,i) = exp(log_ftmp);                                 ///> Report of male F
             if (h==2) log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
             if (h==2 && yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++);    ///> annual F dev
-            ft(k,h,i,j) = mfexp(log_ftmp);
-            xi  = dmr(i,k);                                            ///> Discard mortality rate
-            sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;               ///> Capture selectivity
-            ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);  ///> Retention
-            vul = elem_prod(sel, ret + (1.0 - ret) * xi);              ///> Vulnerability
-            F(h,i,j)  += ft(k,h,i,j) * vul;                            ///> Fishing mortality
-            F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Contact mortality (WTS: capture [or contact] rate, not "mortality")
+            ft(k,h,i,j) = mfexp(log_ftmp);  //--fully-selected fleet/sex/year-specific capture rate
+            xi  = dmr(i,k);                                            ///> Fleet/year-specific discard mortality rate
+            sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;               ///> Fleet/sex/year/size-specific capture selectivity
+            ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);  ///> Fleet/sex/year/size-specific retention
+            vul = elem_prod(sel, ret + (1.0 - ret) * xi);              ///> Fleet/sex/year/size-specific vulnerability (includes discard mortality "rate")
+            F(h,i,j)  += ft(k,h,i,j) * vul;                            ///> Sex/year/season/size-specific fishing mortality rate (summed over fleet)
+            F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Sex/year/season/size-specific capture rate (not "mortality") (summed over fleet)
           }
-        } // seasons
-      } // years
-    } // fleet
-  } // fleet
+        } // j loop: seasons
+      } // i loop: years
+    } // h loop: sex
+  } // k loop: fleets
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -6270,10 +6272,18 @@ FUNCTION calc_total_mortality
     for ( int h = 1; h <= nsex; h++ ){
       for ( int i = syr; i <= nyrRetro; i++ ){
         for ( int j = 1; j <= nseason; j++ ){
-          Z(h,m,i,j)  = m_prop(i,j) * M(h,m,i) + F(h,i,j);
-          Z2(h,m,i,j) = m_prop(i,j) * M(h,m,i) + F2(h,i,j);
-          if (season_type(j) == 0) for ( int l = 1; l <= nclass; l++ ) S(h,m,i,j)(l,l) = 1.0-Z(h,m,i,j,l)/Z2(h,m,i,j,l)*(1.0-mfexp(-Z2(h,m,i,j,l)));
-          if (season_type(j) == 1) for ( int l = 1; l <= nclass; l++ ) S(h,m,i,j)(l,l) = mfexp(-Z(h,m,i,j,l));
+          Z(h,m,i,j)  = m_prop(i,j) * M(h,m,i) + F(h,i,j); // F(h,i,j)  = SUM_k{ ft(k,h,i,j) * vul(k) } from 6236
+          Z2(h,m,i,j) = m_prop(i,j) * M(h,m,i) + F2(h,i,j);// F2(h,i,j) = SUM_k{ ft(k,h,i,j) * sel(k) } from 6237
+          if (season_type(j) == 0) { //--INSTANT_F
+            for ( int l = 1; l <= nclass; l++ ) {
+              S(h,m,i,j)(l,l) = 1.0-Z(h,m,i,j,l)/Z2(h,m,i,j,l)*(1.0-mfexp(-Z2(h,m,i,j,l)));
+            }
+          }
+          if (season_type(j) == 1) { //--CONTINUOUS_F
+            for ( int l = 1; l <= nclass; l++ ) {
+              S(h,m,i,j)(l,l) = mfexp(-Z(h,m,i,j,l));
+            }
+          }
         }//--j: season
       }//--i: year
     }//--h: sex
@@ -7829,8 +7839,8 @@ FUNCTION update_population_numbers_at_length
    * @details The function uses the Baranov catch equation to predict the retained and discarded catch.
    *
    * Assumptions:
-   *  1) retained (landed catch) is assume to be newshell male only.
-   *  2) discards are all females (new and old) and male only crab.
+   *  1) retained (landed catch) is assume to be newshell male only. (WTS 2025-06: is this still true??)
+   *  2) discards are all females (new and old) and male only crab.  (WTS 2025-06: "male old shell only"??)
    *  3) Natural and fishing mortality occur simultaneously.
    *  4) discard is the total number of crab caught and discarded.
   **/
@@ -7844,106 +7854,94 @@ FUNCTION calc_predicted_catch
   dvar_vector selret(1,nclass);                                      ///> product of selectivity and vulnerability
   dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
   dvar_vector tempZ1(1,nclass);                                      ///> total mortality
-  dvariable xi;                                                      ///> DIscard mortality
+  dvariable xi;                                                      ///> Discard mortality rate
 
   // First need to calculate a catchability (q) for each catch data frame if there is any catch and effort (must be both)
   log_q_catch.initialize();
-  for ( int kk = 1; kk <= nCatchDF; kk++ )
-   {
+  for ( int kk = 1; kk <= nCatchDF; kk++ ){
     nhit = 0;
-    for ( int jj = 1; jj <= nCatchRows(kk); jj++ )
-     if (dCatchData(kk,jj,1) <= nyrRetro && dCatchData(kk,jj,1) >= syr)
-      {
-       cobs =   obs_catch(kk,jj);                                     ///> catch data
-       effort = dCatchData(kk,jj,10);                                 ///> Effort data
+    for ( int jj = 1; jj <= nCatchRows(kk); jj++ ){
+      if (dCatchData(kk,jj,1) <= nyrRetro && dCatchData(kk,jj,1) >= syr){
+        cobs =   obs_catch(kk,jj);                                     ///> catch data
+        effort = dCatchData(kk,jj,10);                                 ///> Effort data
 
-       if (cobs > 0.0 && effort > 0.0)                                ///> There are catch and effort data
-        {
-         int i    =     dCatchData(kk,jj,1);                          ///> year index
-         int j    =     dCatchData(kk,jj,2);                          ///> season index
-         int k    =     dCatchData(kk,jj,3);                          ///> fleet/gear index
-         int h    =     dCatchData(kk,jj,4);                          ///> sex index
-         int type = int(dCatchData(kk,jj,7));                         ///> Type of catch (total= 0, retained = 1, discard = 2)
-         int unit = int(dCatchData(kk,jj,8));                         ///> Units of catch equation (1 = biomass, 2 = numbers)
-		 
-         if ( h != UNDET_SEX )                                          ///> sex specific
-          {
-           log_q_catch(kk) += log(ft(k,h,i,j) / effort);
-           nhit += 1;
+        if (cobs > 0.0 && effort > 0.0) {                               ///> There are catch and effort data
+          int i    =     dCatchData(kk,jj,1);                          ///> year index
+          int j    =     dCatchData(kk,jj,2);                          ///> season index
+          int k    =     dCatchData(kk,jj,3);                          ///> fleet/gear index
+          int h    =     dCatchData(kk,jj,4);                          ///> sex index
+          int type = int(dCatchData(kk,jj,7));                         ///> Type of catch (total= 0, retained = 1, discard = 2)
+          int unit = int(dCatchData(kk,jj,8));                         ///> Units of catch equation (1 = biomass, 2 = numbers)
+      
+          if ( h != UNDET_SEX ) {                                        ///> sex specific
+            log_q_catch(kk) += log(ft(k,h,i,j) / effort);
+            nhit += 1;
+          } else {
+            // sexes combinded
+            totalnalobs = 0; totalnalpre = 0;
+            for ( h = 1; h <= nsex; h++ ){
+              sel = log_slx_capture(k,h,i);                            ///> Capture seletiity
+              switch( type ) {
+                case RETAINED: // retained catch
+                 sel = mfexp(sel + log_slx_retaind(k,h,i));
+                 break;
+                case DISCARDED: // discarded catch
+                 sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+                 break;
+                case TOTALCATCH: // total catch
+                 sel = mfexp(sel);
+                 break;
+              }
+              nal.initialize();                                        ///> Compute numbers
+              for ( int m = 1; m <= nmature; m++ ){
+                for ( int o = 1; o <= nshell; o++ ){
+                  int ig = pntr_hmo(h,m,o); 
+                  nal = d4_N(ig,i,j);
+                  nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+                  tmp_ft = ft(k,h,i,j);
+
+                  if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);
+                  if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
+                    totalnalobs += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                    totalnalpre += nal * elem_div(elem_prod(effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                  }
+                  if (season_type(j)==EXPLOIT_F){
+                    totalnalobs += nal * tmp_ft * sel;
+                    totalnalpre += nal * effort * sel;
+                  }
+                }
+              }
+            }
           }
-         else // sexes combinded
-          {
-           totalnalobs = 0; totalnalpre = 0;
-           for ( h = 1; h <= nsex; h++ )
-            {
-             sel = log_slx_capture(k,h,i);                            ///> Capture seletiity
-             switch( type )
-              {
-               case RETAINED: // retained catch
-                sel = mfexp(sel + log_slx_retaind(k,h,i));
-                break;
-               case DISCARDED: // discarded catch
-                sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
-                break;
-               case TOTALCATCH: // total catch
-                sel = mfexp(sel);
-                break;
-               }
-             nal.initialize();                                        ///> Compute numbers
-             for ( int m = 1; m <= nmature; m++ )
-              for ( int o = 1; o <= nshell; o++ )
-               {
-		        int ig = pntr_hmo(h,m,o); 
-			    nal = d4_N(ig,i,j);
-				nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-                tmp_ft = ft(k,h,i,j);
-
-                if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);
-				if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)
-				{
-					totalnalobs += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-					totalnalpre += nal * elem_div(elem_prod(effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-				}
-				if (season_type(j)==EXPLOIT_F)
-				{
-					totalnalobs += nal * tmp_ft * sel;
-					totalnalpre += nal * effort * sel;
-				}
-			   }
-			}
-           log_q_catch(kk) += log(totalnalobs / totalnalpre);
-           nhit += 1;
-          } // h
-        } // cobs
-      } // jj
-    if ( nhit > 0 ) log_q_catch(kk) /= nhit;
-   }
+          log_q_catch(kk) += log(totalnalobs / totalnalpre);
+          nhit += 1;
+        } // h
+      } // cobs
+    } // jj
+    if ( nhit > 0 ) log_q_catch(kk) /= nhit; //--average ln-scale CPUE for dataframe kk
+  }//--kk
    
   // Now make predictions
   res_catch.initialize();
   pre_catch.initialize();
   obs_catch_effort.initialize();
-  for ( int kk = 1; kk <= nCatchDF; kk++ )
-   {
-    for ( int jj = 1; jj <= nCatchRows(kk); jj++ )
-     if (dCatchData(kk,jj,1) <= nyrRetro && dCatchData(kk,jj,1) >= syr)
-      {
-       int i    =     dCatchData(kk,jj,1);                            ///> year index
-       int j    =     dCatchData(kk,jj,2);                            ///> season index
-       int k    =     dCatchData(kk,jj,3);                            ///> fleet/gear index
-       int h    =     dCatchData(kk,jj,4);                            ///> sex index
-       int type = int(dCatchData(kk,jj,7));                           ///> Type of catch (total= 0, retained = 1, discard = 2)
-       int unit = int(dCatchData(kk,jj,8));                           ///> Units of catch equation (1 = biomass, 2 = numbers)
-       effort   =     dCatchData(kk,jj,10);                           ///> Effort data
-       cobs     =        obs_catch(kk,jj);                            ///> catch data
+  for ( int kk = 1; kk <= nCatchDF; kk++ ){
+    for ( int jj = 1; jj <= nCatchRows(kk); jj++ ) {
+      if (dCatchData(kk,jj,1) <= nyrRetro && dCatchData(kk,jj,1) >= syr){
+        int i    =     dCatchData(kk,jj,1);                            ///> year index
+        int j    =     dCatchData(kk,jj,2);                            ///> season index
+        int k    =     dCatchData(kk,jj,3);                            ///> fleet/gear index
+        int h    =     dCatchData(kk,jj,4);                            ///> sex index
+        int type = int(dCatchData(kk,jj,7));                           ///> Type of catch (total= 0, retained = 1, discard = 2)
+        int unit = int(dCatchData(kk,jj,8));                           ///> Units of catch equation (1 = biomass, 2 = numbers)
+        effort   =     dCatchData(kk,jj,10);                           ///> Effort data
+        cobs     =        obs_catch(kk,jj);                            ///> catch data
 
-       if ( h!=UNDET_SEX ) // sex specific
-        {
-         sel = log_slx_capture(k,h,i);                                  ///> Capture selectivity
-         //ret = log_slx_retaind(k,h,i);                                ///> Retention probability
-         //dis = log_slx_discard(k,h,i);                                ///> Discard fraction
-         switch ( type )
-          {
+        if ( h!=UNDET_SEX ) {// sex specific
+          sel = log_slx_capture(k,h,i);                                  ///> Capture selectivity
+          //ret = log_slx_retaind(k,h,i);                                ///> Retention probability
+          //dis = log_slx_discard(k,h,i);                                ///> Discard fraction
+          switch ( type ) {
            case RETAINED:                                             ///> retained catch
             sel = mfexp(sel + log_slx_retaind(k,h,i));
             break;
@@ -7954,127 +7952,117 @@ FUNCTION calc_predicted_catch
             sel = mfexp(sel);
             break;
           }
-         // sum of nals
-         nal.initialize();                                            ///> Computer numbers
-         for ( int m = 1; m <= nmature; m++ )
-          for ( int o = 1; o <= nshell; o++ )
-           { 
-	        int ig = pntr_hmo(h,m,o); 
-			nal = d4_N(ig,i,j);
-            nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-            if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);
- 
-			// predict catch
-			tmp_ft = ft(k,h,i,j);                                       /// > Extract F
-			if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)
-			{
-				pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-				if (cobs == 0 && effort > 0.0)
-					obs_catch_effort(kk,jj) += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-			}
-			if (season_type(j)==EXPLOIT_F)
-			{
-				pre_catch(kk,jj) += nal * tmp_ft * sel;
-				if (cobs == 0 && effort > 0.0)
-					obs_catch_effort(kk,jj) += nal * mfexp(log_q_catch(kk)) * effort * sel;
-			}
-		   }
-		}
-       else  // sexes combined
-        {
-         for ( h = 1; h <= nsex; h++ )
-          {
-           sel = log_slx_capture(k)(h)(i);
-           switch( type )
-            {
-             case RETAINED: // retained catch
-              sel = mfexp(sel + log_slx_retaind(k,h,i));
-              break;
-             case DISCARDED: // discarded catch
-              sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
-              break;
-             case TOTALCATCH: // total catch
-              sel = mfexp(sel);
-              break;
-             }
-           // sum of nals
-           nal.initialize();
-           for ( int m = 1; m <= nmature; m++ )
-            for ( int o = 1; o <= nshell; o++ )
-             { 
-		      int ig = pntr_hmo(h,m,o);
-			  nal = d4_N(ig,i,j);
+          // sum of nals
+          nal.initialize();                                            ///> Computer numbers
+          for ( int m = 1; m <= nmature; m++ ){
+            for ( int o = 1; o <= nshell; o++ ){ 
+              int ig = pntr_hmo(h,m,o); 
+              nal = d4_N(ig,i,j);
               nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-
-			 tmp_ft = ft(k,h,i,j);                                      /// > Extract F
-			 if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);
-			 if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)
-			 {
-				pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-				if (cobs == 0 && effort > 0.0)
-					obs_catch_effort(kk,jj) +=  nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-			 }
-			 if (season_type(j)==EXPLOIT_F)
-			 {
-				pre_catch(kk,jj) += nal * tmp_ft * sel;
-				if (cobs == 0 && effort > 0.0)
-					obs_catch_effort(kk,jj) +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
-			 }
-			}
-		  }
-		} // sex-specific
-		
-       // Catch residuals
-       // In first case (obs_catch > 0) then if there is only catch data, calculate the residual as per usual; if there is catch and effort data, then still use observed catch to calculate the residual, despite the predicted catch being calculated differently.
-       // In second case, when effort > 0 then the residual is the pred catch using Fs - pred catch using q
-       if ( obs_catch(kk,jj) > 0.0 )
-        {
-         res_catch(kk,jj) = log(obs_catch(kk,jj)) - log(pre_catch(kk,jj));
-        }
-       else
-        if (effort > 0.0)
-         {
+              if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);//--consistent
+              
+                // predict catch
+                tmp_ft = ft(k,h,i,j);                                       /// > Extract F
+              if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F) {
+                pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                if (cobs == 0 && effort > 0.0)
+                  obs_catch_effort(kk,jj) += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+              }
+              if (season_type(j)==EXPLOIT_F) {
+                pre_catch(kk,jj) += nal * tmp_ft * sel;
+                if (cobs == 0 && effort > 0.0)
+                  obs_catch_effort(kk,jj) += nal * mfexp(log_q_catch(kk)) * effort * sel;
+              }
+            }//--o loop
+          }//--m loop
+        } else {  
+          // sexes combined
+          for ( h = 1; h <= nsex; h++ ){
+            sel = log_slx_capture(k)(h)(i);
+            switch( type ){
+              case RETAINED: // retained catch
+                sel = mfexp(sel + log_slx_retaind(k,h,i));
+                break;
+              case DISCARDED: // discarded catch
+                sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+                break;
+              case TOTALCATCH: // total catch
+                sel = mfexp(sel);
+                break;
+            }
+            // sum of nals
+            nal.initialize();
+            for ( int m = 1; m <= nmature; m++ ){
+              for ( int o = 1; o <= nshell; o++ ){ 
+                int ig = pntr_hmo(h,m,o);
+                nal = d4_N(ig,i,j);
+                nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+                
+                tmp_ft = ft(k,h,i,j);                                      /// > Extract F
+                if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j); //consistent
+                if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
+                  pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                  if (cobs == 0 && effort > 0.0)
+                    obs_catch_effort(kk,jj) +=  nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                }
+                if (season_type(j)==EXPLOIT_F) {
+                  pre_catch(kk,jj) += nal * tmp_ft * sel;
+                  if (cobs == 0 && effort > 0.0)
+                    obs_catch_effort(kk,jj) +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
+                }
+              }//--o
+            }//--m
+          }//--h
+        } // sex-specific
+              
+        // Catch residuals
+        // In first case (obs_catch > 0) then if there is only catch data, calculate the residual as per usual; 
+        // if there is catch and effort data, then still use observed catch to calculate the residual, despite the predicted catch being calculated differently.
+        // In second case, when effort > 0 then the residual is the pred catch using Fs - pred catch using q
+        if ( obs_catch(kk,jj) > 0.0 ){
+          res_catch(kk,jj) = log(obs_catch(kk,jj)) - log(pre_catch(kk,jj));
+        } else if (effort > 0.0) {
           res_catch(kk,jj) = log(obs_catch_effort(kk,jj)) - log(pre_catch(kk,jj));
-         }
+        }
       } // lines of catch
-   } // data block
-
+    }//--jj
+  } //--kk
 
    
   // Now make predictions of catch mortality
-   histcat.initialize();
-   for (int i=syr;i<=nyrRetro;i++)
-   for ( int j = 1; j <= nseason; j++ )
-    {
-     for ( int m = 1; m <= nmature; m++ )
-      for ( int h = 1; h <= nsex; h++ )
-       {
-        nal.initialize();
-	 
-        for ( int o = 1; o <= nshell; o++ )
-         { int ig = pntr_hmo(h,m,o); nal += d4_N(ig,i,j); }
-        nal = elem_prod(nal, mean_wt(h,m,i));
-        for ( int k = 1; k <= nfleet; k++ )
-         {
-          sel.initialize(); ret.initialize(); vul.initialize();
-          sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;                          // Selectivity
-          ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);             // Retention
-          xi  = dmr(i,k);          
-          vul = elem_prod(sel, ret + (1.0 - ret) * xi);                         // Vulnerability
-          selret = elem_prod(sel,ret);
-          tmp_ft = ft(k,h,i,j);
-          if (season_type(j)==0) tempZ1 = Z(h,m,i,j); else tempZ1 = Z2(h,m,i,j);
-          if (tmp_ft > 0)
-	   {
-            histcat(1,i) += nal * elem_div(elem_prod(tmp_ft * selret, 1.0 - mfexp(-tempZ1)), tempZ1);
-            // Total dead
-            histcat(2,i) += nal * elem_div(elem_prod(tmp_ft * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
-            // fleet-specific dead crab
-            histcat(2+k,i) += nal * elem_div(elem_prod(tmp_ft * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
-	   } // -- tmp_ft
-	 } // --k
-       } // - m and h	 
-   } // -- i and j
+  histcat.initialize();
+  for (int i=syr;i<=nyrRetro;i++){
+    for ( int j = 1; j <= nseason; j++ ){
+      for ( int m = 1; m <= nmature; m++ ){
+        for ( int h = 1; h <= nsex; h++ ){
+          nal.initialize();
+          for ( int o = 1; o <= nshell; o++ ) { 
+            int ig = pntr_hmo(h,m,o); nal += d4_N(ig,i,j);  //--summing ovre shell condition
+          }
+          nal = elem_prod(nal, mean_wt(h,m,i));
+          for ( int k = 1; k <= nfleet; k++ ){
+            sel.initialize(); ret.initialize(); vul.initialize();
+            sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;                          // Selectivity
+            ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);             // Retention
+            xi  = dmr(i,k);          
+            vul = elem_prod(sel, ret + (1.0 - ret) * xi);                         // Vulnerability
+            selret = elem_prod(sel,ret);
+            tmp_ft = ft(k,h,i,j);
+            //if (season_type(j)==INSTANT_F) tempZ1 = Z(h,m,i,j); else tempZ1 = Z2(h,m,i,j);  //--is this consistent w/ previous usage?? was: if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);
+            if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);  //--consistent w/ previous usage (WTS 2025-06-10)
+            if (tmp_ft > 0){
+              // Retained catch mortality
+              histcat(1,i) += nal * elem_div(elem_prod(tmp_ft * selret, 1.0 - mfexp(-tempZ1)), tempZ1);
+              // Total dead (retained + discard catch mortality)
+              histcat(2,i) += nal * elem_div(elem_prod(tmp_ft * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
+              // fleet-specific dead crab
+              histcat(2+k,i) += nal * elem_div(elem_prod(tmp_ft * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
+            } // -- tmp_ft
+	        } // --k
+        } // - h
+      }//--m
+    } //--j
+  } // -- i
  
 // ----------------------------------------------------------------------------------------------
 
@@ -8093,42 +8081,80 @@ FUNCTION dvariable calc_predicted_catch_det(const int i, const int j, const int 
 
   nal.initialize();
   sel = log_slx_capture(k,h,i);
-  switch( type )
-    {
-     case RETAINED: // retained catch
-      sel = mfexp(sel + log_slx_retaind(k,h,i));
-      break;
-     case DISCARDED: // discarded catch
-      sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
-      break;
-     case TOTALCATCH: // total catch
-      sel = mfexp(sel);
-      break;
-    }
+  switch( type ){
+    case RETAINED: // retained catch
+    sel = mfexp(sel + log_slx_retaind(k,h,i));
+    break;
+    case DISCARDED: // discarded catch
+    sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+    break;
+    case TOTALCATCH: // total catch
+    sel = mfexp(sel);
+    break;
+  }
 
   nal.initialize();
   out.initialize();
-  for ( int m = 1; m <= nmature; m++ )
-   for ( int o = 1; o <= nshell; o++ )
-    { 
-	int ig = pntr_hmo(h,m,o);
-	nal = d4_N(ig,i,j);
-	nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+  for ( int m = 1; m <= nmature; m++ ) {
+    for ( int o = 1; o <= nshell; o++ ) { 
+      int ig = pntr_hmo(h,m,o);
+      nal = d4_N(ig,i,j);
+      nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
 
-	tmp_ft = ft(k,h,i,j);                                              /// > Extract F
-	if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);
-	if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)
-	{
-		out += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-	}
-	if (season_type(j)==EXPLOIT_F)
-	{
-//		out = nal * tmp_ft * sel; // from Andre's Version
-		out += nal * tmp_ft * sel;
-	}
-	} // end loop on nshell
+      tmp_ft = ft(k,h,i,j);                                              /// > Extract F
+      if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j); //--consistent
+      if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
+        out += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+      }
+      if (season_type(j)==EXPLOIT_F){
+      //		out = nal * tmp_ft * sel; // from Andre's Version
+        out += nal * tmp_ft * sel;
+      }
+    } // end loop on nshell
+  }
   RETURN_ARRAYS_DECREMENT();
   return(out);
+
+// ----------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Calculate predicted capture biomass by fishery, year, sex, maturity state, and shell condiion
+   * @author William Stockhausen
+   * @details The function uses the Baranov catch equation to predict the fishery captures for all model years 
+   *          (not just those years for which we have observations). This is used for plotting purposes only.
+  **/
+FUNCTION calc_predicted_capture_biomass
+  dvariable tmp_ft,out2;
+  dvar_vector sel(1,nclass);                                         ///> capture selectivity
+  dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
+  dvar_vector tempZ1(1,nclass);                                      ///> total mortality
+
+  pre_capbio.initialize();
+  for ( int i = syr; i <= nyrRetro; i++ ){
+    for (int k=1; k<=nfleet; k++){ //loop over fleets
+      for (int j=1; j<=nseason; j++){ //loop over seasons
+        for (int h=1; h<=nsex; h++)  { //loop over sexes
+          sel = log_slx_capture(k,h,i); //fishery capture selectivity
+          for (int m = 1; m <= nmature; m++ ){ // loop over maturity states
+            for (int o = 1; o <= nshell; o++ ){  // loop over shell conditions
+              int ig = pntr_hmo(h,m,o); 
+              nal = d4_N(ig,i,j); 
+              tmp_ft = ft(k,h,i,j);
+              nal.initialize();
+              nal = elem_prod(nal, mean_wt(h,m,i));//--convert to biomass
+              if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
+                tempZ1 = Z(h,m,i,j)+1.0e-10;
+                pre_capbio(i,k,h) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);//--size-specific vector 
+              }
+              if (season_type(j)==EXPLOIT_F){
+                pre_capbio(i,k,h) += nal * tmp_ft * sel;//--size-specific vector 
+              }
+            }//--o (shell condition) loop
+          }//--m (maturity state) loop
+        }//--h (sex) loop
+      }//--j (season) loop
+    }//--k (fleet) loop
+  }//--i (year) loop
 
 // ----------------------------------------------------------------------------------------------
 
@@ -8144,102 +8170,92 @@ FUNCTION calc_predicted_catch_out
   dvar_vector tempZ1(1,nclass);                                      ///> total mortality
 
   pre_catch_out.initialize();
-  for ( int i = syr; i <= nyrRetro; i++ )
-   {
-    for ( int kk = 1; kk <= nCatchDF; kk++ )
-     {
+  for ( int i = syr; i <= nyrRetro; i++ ){
+    for ( int kk = 1; kk <= nCatchDF; kk++ ){
       int j    =     dCatchData_out(kk,i,2);                         ///> season index
       int k    =     dCatchData_out(kk,i,3);                         ///> fleet/gear index
       int h    =     dCatchData_out(kk,i,4);                         ///> sex index
       int type = int(dCatchData_out(kk,i,7));                        ///> Type of catch (total= 0, retained = 1, discard = 2)
       int unit = int(dCatchData_out(kk,i,8));                        ///> Units of catch equation (1 = biomass, 2 = numbers)
 
-      if ( h != UNDET_SEX )                                            ///> sex specific
-       {
+      if ( h != UNDET_SEX ) {                                            ///> sex specific
         sel = log_slx_capture(k,h,i);
-        switch ( type )
-         {
+        switch ( type ){
           case RETAINED: // retained catch
            sel = mfexp(sel + log_slx_retaind(k,h,i));
            break;
           case DISCARDED: // discarded catch
-           sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+           sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));//--NOT discard mortality!
            break;
           case TOTALCATCH: // total catch
            sel = mfexp(sel);
            break;
-         }
+        }
 
         nal.initialize();
-        for ( int m = 1; m <= nmature; m++ )
-         for ( int o = 1; o <= nshell; o++ )
-          { 
-			int ig = pntr_hmo(h,m,o); 
-			nal = d4_N(ig,i,j); 
+        for ( int m = 1; m <= nmature; m++ ){
+          for ( int o = 1; o <= nshell; o++ ){ 
+            int ig = pntr_hmo(h,m,o); 
+            nal = d4_N(ig,i,j); 
 
-			tmp_ft = ft(k,h,i,j);
-			nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-			if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10;
-			if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)
-			{
-				pre_catch_out(kk,i) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-			}
-			if (season_type(j)==EXPLOIT_F)
-			{
-				pre_catch_out(kk,i) += nal * tmp_ft * sel;
-			}
-		}
-       }
-      else
-       {
+            tmp_ft = ft(k,h,i,j);
+            nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+            if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10; //consistent
+            if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
+              pre_catch_out(kk,i) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+            }
+            if (season_type(j)==EXPLOIT_F){
+              pre_catch_out(kk,i) += nal * tmp_ft * sel;
+            }
+          }
+        }
+      } else {
         // sexes combined
         out2 = 0;
-        for ( int h = 1; h <= nsex; h++ )
-         {
+        for ( int h = 1; h <= nsex; h++ ){
           sel = log_slx_capture(k)(h)(i);
-          switch( type )
-           {
+          switch( type ){
             case RETAINED: // retained catch
              sel = mfexp(sel + log_slx_retaind(k)(h)(i));
              break;
             case DISCARDED: // discarded catch
-             sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k)(h)(i)));
+             sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k)(h)(i)));//--NOT discard mortality!
              break;
             case TOTALCATCH: // total catch
              sel = mfexp(sel);
              break;
-           }
+          }
 
           nal.initialize();
-          for ( int m = 1; m <= nmature; m++ )
-           for ( int o = 1; o <= nshell; o++ )
-            {
-				int ig = pntr_hmo(h,m,o);
-				nal = d4_N(ig,i,j); 
-				nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+          for ( int m = 1; m <= nmature; m++ ){
+            for ( int o = 1; o <= nshell; o++ ){
+              int ig = pntr_hmo(h,m,o);
+              nal = d4_N(ig,i,j); 
+              nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
 
-				tmp_ft = ft(k,h,i,j);
-				if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10;
-				if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)
-				{
-					pre_catch_out(kk,i) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-				}
-				if (season_type(j)==EXPLOIT_F)
-				{
-					pre_catch_out(kk,i) += nal * tmp_ft * sel;
-				}
-			}
+              tmp_ft = ft(k,h,i,j);
+              if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10;//consistent
+              if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F) {
+                pre_catch_out(kk,i) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+              }
+              if (season_type(j)==EXPLOIT_F){
+                pre_catch_out(kk,i) += nal * tmp_ft * sel;
+              }
+            }//--o
+          }//--m
           //out2 += calc_predicted_catch_det(i, j, h, k, type, unit);
-         } // h
-       } // sex
-     } // kk
-    } // i
+        } // h
+      } // sex
+    } // kk
+  } // i
 
   res_catch_out.initialize();
-  for ( int kk = 1; kk <= nCatchDF; kk++ )
-   for ( int i = syr; i <= nyrRetro; i++ )
-    if ( obs_catch_out(kk,i) > 0.0 && pre_catch_out(kk,i) > 0.0 )
-     res_catch_out(kk,i) = log(obs_catch_out(kk,i)) - log(pre_catch_out(kk,i));          ///> Catch residuals
+  for ( int kk = 1; kk <= nCatchDF; kk++ ){
+    for ( int i = syr; i <= nyrRetro; i++ ){
+      if ( obs_catch_out(kk,i) > 0.0 && pre_catch_out(kk,i) > 0.0 )
+        res_catch_out(kk,i) = log(obs_catch_out(kk,i)) - log(pre_catch_out(kk,i));          ///> Catch residuals
+    }
+  }
 
 // // =================================================================================================================================================
 
@@ -8611,7 +8627,7 @@ FUNCTION calc_relative_abundance
               mat_sel(jj) = sel;
               mat_ret(jj) = ret;
               for ( int m = 1; m <= nmature; m++ ){        //this doesn't really need to be here (nmature=1)
-                for ( int o = 1; o <= nshell; o++ ){        //mature crab can be both old and new shell
+                for ( int o = 1; o <= nshell; o++ ){        //mature crab can be either old or new shell
                   int ig = pntr_hmo(h,m,o);
                   nal += ( unit == 1 ) ? elem_prod(maturity(h),elem_prod(d4_N(ig,i,j), mean_wt(h,m,i))) : elem_prod(d4_N(ig,i,j),maturity(h));
                 }//--o loop
@@ -9765,7 +9781,7 @@ FUNCTION calc_objective_function
     nlogPenalty(12) += Penalty_fdevs(k,4)*sum(square(log_fdov(k)));
   if (verbose >= 3) cout<<"Finished penalties on sex-specific devs"<<endl;
  
-  // 13) Penality on deviation parameters
+  // 13) Penalty on deviation parameters
   nlogPenalty(13) = 0;
   if (n_deviations > 0)
    for (int is=1;is<=100;is++)
@@ -10059,8 +10075,8 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
         Mprop /= float(YrRefSea2-YrRefSea1+1);
         ZZ1(h,m,j) = Mprop * Mbar + FF1(h,j);
         ZZ2(h,m,j) = Mprop * Mbar + FF2(h,j);
-        if (season_type(j) == 0) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-ZZ1(h,m,j,l)/ZZ2(h,m,j,l)*(1.0-mfexp(-ZZ2(h,m,j,l)));
-        if (season_type(j) == 1) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-ZZ1(h,m,j,l));
+        if (season_type(j) == INSTANT_F)    for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-ZZ1(h,m,j,l)/ZZ2(h,m,j,l)*(1.0-mfexp(-ZZ2(h,m,j,l)));
+        if (season_type(j) == CONTINUOUS_F) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-ZZ1(h,m,j,l));
       }//--j loop
     }//--h loop
   }//--m loop
@@ -10465,8 +10481,8 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
      if (full_prj_diag==1) mcoutDIAG << nyr+i << " " << h << " " << j << " " << "Mprop/Bar" << " " << Mprop << " " << Mbar << endl;
      _Z1(h,m,j) = Mprop * Mbar + _F1(h,j);
      _Z2(h,m,j) = Mprop * Mbar + _F2(h,j);
-     if (season_type(j) == 0) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-_Z1(h,m,j,l)/_Z2(h,m,j,l)*(1.0-mfexp(-_Z2(h,m,j,l)));
-     if (season_type(j) == 1) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-_Z1(h,m,j,l));
+     if (season_type(j) == INSTANT_F)    for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-_Z1(h,m,j,l)/_Z2(h,m,j,l)*(1.0-mfexp(-_Z2(h,m,j,l)));
+     if (season_type(j) == CONTINUOUS_F) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-_Z1(h,m,j,l));
     }
  	
   // Update the dynamics
@@ -10510,7 +10526,7 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
 
 // Label 503: calc_predicted_project
 FUNCTION dvar_vector calc_predicted_project(const int YrRef2, const int YrRefGrow, const int YrRefSel1, const int YrRefSel2,
-					    dvar3_array d4_Npass, dvar3_array _ft, dvar4_array _Z1, dvar4_array _Z2)
+                                            dvar3_array d4_Npass, dvar3_array _ft, dvar4_array _Z1, dvar4_array _Z2)
   RETURN_ARRAYS_INCREMENT();
   //int h,i,j,k,ig,type,unit;
   double xi;                                                               ///> Discard rate
@@ -10530,43 +10546,40 @@ FUNCTION dvar_vector calc_predicted_project(const int YrRef2, const int YrRefGro
   // out(2+k): dead animals
 
   out.initialize();
-  for ( int m = 1; m <= nmature; m++ )
-   for ( int h = 1; h <= nsex; h++ )
-    for ( int j = 1; j <= nseason; j++ )
-    {
-     nal.initialize();
-	 
-     for ( int o = 1; o <= nshell; o++ )
-      { int ig = pntr_hmo(h,m,o); nal += d4_Npass(ig)(j); }
-      nal = elem_prod(nal, mean_wt(h,m)(YrRefGrow));
-      for ( int k = 1; k <= nfleet; k++ )
-       {
-        sel.initialize(); ret.initialize(); vul.initialize();
-        for (int iy=YrRefSel1; iy<=YrRefSel2;iy++)
-         {
-          sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
-          ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
-          xi  = dmr(iy,k);          
-          sel += sel1;                                                            // Selectivity
-          ret += ret1;                                                            // Retention
-          vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi);                       // Vulnerability
-         }
-	sel /= float(YrRefSel2-YrRefSel1+1);
-        ret /= float(YrRefSel2-YrRefSel1+1);
-        vul /= float(YrRefSel2-YrRefSel1+1);
-        selret = elem_prod(sel,ret);
+  for ( int m = 1; m <= nmature; m++ ){
+    for ( int h = 1; h <= nsex; h++ ) {
+      for ( int j = 1; j <= nseason; j++ ){
+        nal.initialize();
+        
+        for ( int o = 1; o <= nshell; o++ ){ int ig = pntr_hmo(h,m,o); nal += d4_Npass(ig)(j); }
+        nal = elem_prod(nal, mean_wt(h,m)(YrRefGrow));
+        for ( int k = 1; k <= nfleet; k++ ){
+          sel.initialize(); ret.initialize(); vul.initialize();
+          for (int iy=YrRefSel1; iy<=YrRefSel2;iy++){
+            sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
+            ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
+            xi  = dmr(iy,k);          
+            sel += sel1;                                                            // Selectivity
+            ret += ret1;                                                            // Retention
+            vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi);                       // Vulnerability
+          }
+          sel /= float(YrRefSel2-YrRefSel1+1);
+          ret /= float(YrRefSel2-YrRefSel1+1);
+          vul /= float(YrRefSel2-YrRefSel1+1);
+          selret = elem_prod(sel,ret);
 
-        if (season_type(j)==0) tempZ1 = _Z1(h,m,j); else tempZ1 = _Z2(h,m,j);
-        if (_ft(k,h,j) > 0)
-	 {
-          out(1) += nal * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);
-          // Total dead
-          out(2) += nal * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
-          // fleet-specific dead crab
-          out(2+k) += nal * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
-	 }
-       }
-    }
+          if (season_type(j)==INSTANT_F) tempZ1 = _Z1(h,m,j); else tempZ1 = _Z2(h,m,j);//consistent with previous??
+          if (_ft(k,h,j) > 0){
+            out(1) += nal * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);
+            // Total dead
+            out(2) += nal * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
+            // fleet-specific dead crab
+            out(2+k) += nal * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
+          }
+        }//--k loop
+      }//--j loop
+    }//--h loop
+  }//--m loop
   RETURN_ARRAYS_DECREMENT();
   return(out);
 
@@ -10722,8 +10735,8 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
      Mprop /= float(YrRefSea2-YrRefSea1+1);
      _Z1(h,m,j) = Mprop * Mbar + _F1(h,j);
      _Z2(h,m,j) = Mprop * Mbar + _F2(h,j);
-     if (season_type(j) == 0) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-_Z1(h,m,j,l)/_Z2(h,m,j,l)*(1.0-mfexp(-_Z2(h,m,j,l)));
-     if (season_type(j) == 1) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-_Z1(h,m,j,l));
+     if (season_type(j) == INSTANT_F)    for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-_Z1(h,m,j,l)/_Z2(h,m,j,l)*(1.0-mfexp(-_Z2(h,m,j,l)));
+     if (season_type(j) == CONTINUOUS_F) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-_Z1(h,m,j,l));
     }
   
   // Projections for Case 3
@@ -11520,7 +11533,7 @@ FUNCTION CreateOutput
   RepFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
   // The header material
   OutFile5 << TheHeader << endl;
-  OutFile5 << "Par_No Est_No Paramter Estimate Standard Error" << endl;
+  OutFile5 << "Par_No Est_No Paramter Estimate Standard_Error" << endl;
   
   OutFile1 << "Stock being assessed: " << StockName << endl << endl;
   OutFile1 << "#--General information" << endl;
@@ -12496,11 +12509,11 @@ FUNCTION CreateOutput
   OutFile1 << ">EOD<" << endl;
   RepFile1 << ">EOD<" << endl << endl;
 
-  OutFile1 << endl << "# Fully-selected fishing mortality-by-season by sex and fishery" << endl;
+  OutFile1 << endl << "# Fully-selected fishing mortality-by-season by sex and fishery" << endl;//--misnomer: ft is capture rate, not fishing mortality rate
   OutFile1 << "Fully-selected_FM_by_season_sex_and_fishery: dataframe" << endl;
   OutFile1 << "Sex Fleet Year "; for (int i=1;i<=nseason;i++) OutFile1 << i << " "; OutFile1 << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "Fully-selected_FM_by_season_sex_and_fishery: dataframe" << endl;
+  RepFile1 << "Fully-selected_capture_rate_by_season_sex_and_fishery: dataframe" << endl;
   RepFile1 << "sex fleet year "; for (int i=1;i<=nseason;i++) RepFile1 << i << " "; RepFile1 << endl;
   for (int h=1;h<=nsex;h++)
    for (int k=1;k<=nfleet;k++)
@@ -12511,7 +12524,7 @@ FUNCTION CreateOutput
   OutFile1 << ">EOD<" << endl;
   RepFile1 << ">EOD<" << endl << endl;
 
-  OutFile1 << endl << "# Fully-selected_fishing mortality by fleet" << endl;
+  OutFile1 << endl << "# Fully-selected_fishing mortality by fleet" << endl;//--misnomer: ft is capture rate, not fishing mortality rate
   OutFile1 << "Fully-selected_FM_by_fleet: dataframe" << endl;
   OutFile1 << "Sex Year Season "; for (int i=1;i<=nfleet;i++) OutFile1 << fleetname(i) << " "; OutFile1 << endl;
   for (int h=1;h<=nsex;h++)
@@ -12524,11 +12537,22 @@ FUNCTION CreateOutput
      }
   OutFile1 << ">EOD<" << endl;
 
-  OutFile1 << endl << "# Fishing mortality-at-size by sex and season (Continuous)" << endl;
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Predicted_capture_biomass-at-size: dataframe" << endl;//--fishery captured biomass by year, fleet, sex, and size
+  RepFile1 << "year fleet sex " << strMidpoints << endl;
+  for (int i=syr;i<=nyrRetro;i++){
+    for (int f=1;f<=nfleet;f++) { 
+      for (int h=1;h<=nsex;h++)
+        RepFile1 << i << " " << fleetname(f) << " " << sexes(h) << " " <<  pre_capbio(i,f,h) << endl; 
+    }
+  } 
+  RepFile1 << ">EOD<" << endl << endl;
+
+  OutFile1 << endl << "# Fishing mortality-at-size by sex and season (Continuous)" << endl;//--correctly includes retention and discard mortality components
   OutFile1 << "FM-at-size_by_sex_and_season_(continuous): dataframe" << endl;
   OutFile1 << "Sex Year Season " << strMidpoints << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "FM-at-size_by_sex_and_season_(continuous): dataframe" << endl;
+  RepFile1 << "FM-at-size_by_sex_and_season_(continuous): dataframe" << endl;//--correctly includes retention and discard mortality components
   RepFile1 << "sex year season " << strMidpoints << endl;
   for (int h=1;h<=nsex;h++)
    for (int iyr=syr;iyr<=nyrRetro;iyr++)
@@ -14699,6 +14723,11 @@ FINAL_SECTION
 // 2025-06-04 ** WTS. Cleaned up code in update_population_numbers_at_length related to recruitment, with note for further changes. 
 //                    Added note in calc_initial_numbers_at_length with reminder to change code if logR0, etc are redefined to apply to 
 //                    totrecruits rather than recruits(h).
+// 2025-06-09 ** WTS. Renamed gmacs.rep1 output matrix from "Fully-selected_FM_by_season_sex_and_fishery" to "Fully-selected_capture_rate_by_season_sex_and_fishery" to
+//                    better describe the content (ft). Note that F(h,i,j)=ft(h,i,j)*vul is the size-specific rate of fishing mortality 
+//                    (vul incorporates both retention mortality and discard mortality) while F2(h,i,j) = ft(h,i,j)*sel is the size-specific fishery **capture** rate.
+// 2025-06-10 ** WTS. Added pre_capbio array and calc_predicted_capture_biomass function to facilitate export of predicted capture biomass by fishery in  
+//                    CreateOutput as Predicted_capture_biomass-at-size. Fixed inconsistency in how Z and Z2 were assigned as tempZ1 in calc_predicted_catch. Lots of reformatting.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
