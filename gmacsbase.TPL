@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.29; ** WTS **; Compiled 2025-05-29");
+ !! TheHeader = adstring("## GMACS Version 2.20.30; ** WTS **; Compiled 2025-06-10");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -4744,6 +4744,7 @@ PARAMETER_SECTION
   matrix pre_catch_out(1,nCatchDF,syr,nyrRetro);           ///> Predicted catch for output
   matrix res_catch_out(1,nCatchDF,syr,nyrRetro);           ///> Residuals for output
   vector log_q_catch(1,nCatchDF);                          ///> Catchability
+  4darray pre_capabd(syr,nyrRetro,1,nfleet,1,nsex,1,nclass);///> predicted fishery capture abundance for output (summed over maturity state, shell condition)
   4darray pre_capbio(syr,nyrRetro,1,nfleet,1,nsex,1,nclass);///> predicted fishery capture biomass for output (summed over maturity state, shell condition)
 
 
@@ -8118,36 +8119,41 @@ FUNCTION dvariable calc_predicted_catch_det(const int i, const int j, const int 
 // ----------------------------------------------------------------------------------------------
 
   /**
-   * @brief Calculate predicted capture biomass by fishery, year, sex, maturity state, and shell condiion
+   * @brief Calculate predicted capture abundance/biomass by year, fishery, sex, and size
    * @author William Stockhausen
    * @details The function uses the Baranov catch equation to predict the fishery captures for all model years 
    *          (not just those years for which we have observations). This is used for plotting purposes only.
   **/
-FUNCTION calc_predicted_capture_biomass
-  dvariable tmp_ft,out2;
+FUNCTION calc_predicted_capture_abdbio
+  dvariable tmp_ft;
   dvar_vector sel(1,nclass);                                         ///> capture selectivity
-  dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
+  dvar_vector nal(1,nclass);                                         ///> numbers at size.
+  dvar_vector bal(1,nclass);                                         ///> biomass at size.
   dvar_vector tempZ1(1,nclass);                                      ///> total mortality
 
+  pre_capabd.initialize();
   pre_capbio.initialize();
   for ( int i = syr; i <= nyrRetro; i++ ){
     for (int k=1; k<=nfleet; k++){ //loop over fleets
       for (int j=1; j<=nseason; j++){ //loop over seasons
         for (int h=1; h<=nsex; h++)  { //loop over sexes
-          sel = log_slx_capture(k,h,i); //fishery capture selectivity
+          sel = mfexp(log_slx_capture(k,h,i)); //fishery capture selectivity
           for (int m = 1; m <= nmature; m++ ){ // loop over maturity states
             for (int o = 1; o <= nshell; o++ ){  // loop over shell conditions
-              int ig = pntr_hmo(h,m,o); 
-              nal = d4_N(ig,i,j); 
-              tmp_ft = ft(k,h,i,j);
               nal.initialize();
-              nal = elem_prod(nal, mean_wt(h,m,i));//--convert to biomass
+              bal.initialize();
+              int ig = pntr_hmo(h,m,o); 
+              nal    = d4_N(ig,i,j);                  //--numbers at size
+              bal    = elem_prod(nal, mean_wt(h,m,i));//--convert to biomass
+              tmp_ft = ft(k,h,i,j);
               if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
                 tempZ1 = Z(h,m,i,j)+1.0e-10;
-                pre_capbio(i,k,h) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);//--size-specific vector 
+                pre_capabd(i,k,h) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);//--size-specific vector 
+                pre_capbio(i,k,h) += bal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);//--size-specific vector 
               }
               if (season_type(j)==EXPLOIT_F){
-                pre_capbio(i,k,h) += nal * tmp_ft * sel;//--size-specific vector 
+                pre_capabd(i,k,h) += nal * tmp_ft * sel;//--size-specific vector 
+                pre_capbio(i,k,h) += bal * tmp_ft * sel;//--size-specific vector 
               }
             }//--o (shell condition) loop
           }//--m (maturity state) loop
@@ -12538,6 +12544,18 @@ FUNCTION CreateOutput
   OutFile1 << ">EOD<" << endl;
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  calc_predicted_capture_abdbio();
+  RepFile1 << "Predicted_capture_abundance-at-size: dataframe" << endl;//--fishery captured abundance by year, fleet, sex, and size
+  RepFile1 << "year fleet sex " << strMidpoints << endl;
+  for (int i=syr;i<=nyrRetro;i++){
+    for (int f=1;f<=nfleet;f++) { 
+      for (int h=1;h<=nsex;h++)
+        RepFile1 << i << " " << fleetname(f) << " " << sexes(h) << " " <<  pre_capabd(i,f,h) << endl; 
+    }
+  } 
+  RepFile1 << ">EOD<" << endl << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Predicted_capture_biomass-at-size: dataframe" << endl;//--fishery captured biomass by year, fleet, sex, and size
   RepFile1 << "year fleet sex " << strMidpoints << endl;
   for (int i=syr;i<=nyrRetro;i++){
@@ -14727,7 +14745,9 @@ FINAL_SECTION
 //                    better describe the content (ft). Note that F(h,i,j)=ft(h,i,j)*vul is the size-specific rate of fishing mortality 
 //                    (vul incorporates both retention mortality and discard mortality) while F2(h,i,j) = ft(h,i,j)*sel is the size-specific fishery **capture** rate.
 // 2025-06-10 ** WTS. Added pre_capbio array and calc_predicted_capture_biomass function to facilitate export of predicted capture biomass by fishery in  
-//                    CreateOutput as Predicted_capture_biomass-at-size. Fixed inconsistency in how Z and Z2 were assigned as tempZ1 in calc_predicted_catch. Lots of reformatting.
+//                    CreateOutput as Predicted_capture_biomass-at-size. Fixed inconsistency in how Z and Z2 were assigned as tempZ1 in calc_predicted_catch. Lots of reformatting. 
+//                    Added output to gmacs.rep1 for predicted fishery capture abundance and biomass (pre_capabd, pre_capbio) by year, fleet, sex, and size from 
+//                    (new function) calc_predicted_capture_abdbio. Updated version to 2.20.30.
 
 // To-do list
 // 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
