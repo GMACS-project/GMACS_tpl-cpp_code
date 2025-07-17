@@ -98,6 +98,7 @@ runTests<-function(repoDir,
   
     ##--copy/rename required files from repoDir/tst----
     dfrFNs = dfrTsts2 |> dplyr::filter(path==tst);
+    if (verbose) message("dfrFNs = ",dfrFNs[1,1])
     res = TRUE;
     lstFNs = list();
     for (fn in c("gmacs_dat","dat_file","ctl_file","prj_file")){
@@ -131,10 +132,10 @@ runTests<-function(repoDir,
       if (usePin=="pin"){
         fn = file.path(repoDir,"all_models",tst,dfrFNs$pin_file[1]);
         if (file.exists(fn)){
-          res=file.path(from=fn,to=file.path(tst,"gmacs.pin"),overwrite=TRUE);
+          res=file.copy(from=fn,to=file.path(tst,"gmacs.pin"),overwrite=TRUE);
           if (!res) warning("Could not copy pin file to pin file.",immediate.=TRUE);
         } else {
-          warning("Connot run using original pin file--does not exist:\n\t",fn,immediate.=TRUE);
+          warning("Cannot run using original pin file--does not exist:\n\t",fn,immediate.=TRUE);
         }
       }
       if (usePin=="none") res = FALSE;
@@ -180,7 +181,7 @@ runTests<-function(repoDir,
                               allOutNew=NULL,
                               allOutOld=NULL);
       } else {
-        if (!compareWith=="none"){
+        if (!(compareWith=="none")){
           res = TRUE;
           if (compareWith=="par")
             comp_file = file.path(repoDir,"all_models",tst,dfrFNs$par_file[1]);
@@ -297,6 +298,32 @@ if (FALSE) {
                      verbose=0);
 }
 
+##--run SMBKC only (on Mac)----
+if (FALSE) {
+  #
+  #--NOTE: make sure all paths to directories/files are correct for your system
+  #
+  ##--the following assumes: 
+  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
+  ###-------e.g.: at "dirPrj/testing/current_test_runs"
+  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS-project/GMACS_Models"
+  ###--3. The gmacs executable is under the "dirPrj/_build" directory
+  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
+  #
+  require(wtsGMACS)
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = here::here();
+  exeDir = file.path(dirPrj,"_build");
+  #--run tests
+  results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
+                     repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
+                     exeDir=file.path(dirPrj,"_build"),
+                     stocks="SMBKC",
+                     testDir=".", #--current working directory
+                     scriptsDir=file.path(dirPrj,"testing/scripts"),
+                     verbose=0);
+}
+
 ##--run BBRKC only (on Mac)----
 if (FALSE) {
   #
@@ -311,6 +338,7 @@ if (FALSE) {
   #
   require(wtsGMACS)
   dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = here::here();
   exeDir = file.path(dirPrj,"_build");
   #--run tests
   results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
@@ -336,15 +364,17 @@ if (FALSE) {
   #
   require(wtsGMACS)
   dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = here::here();
   exeDir = file.path(dirPrj,"_build");
   #--run tests
-  results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
+  results = runTests(cleanup=FALSE,usePin="pin",compareWith="par",
                      repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
                      exeDir=file.path(dirPrj,"_build"),
                      stocks="TannerCrab",
                      testDir=".", #--current working directory
                      scriptsDir=file.path(dirPrj,"testing/scripts"),
-                     verbose=0);
+                     printPathInfo=TRUE,
+                     verbose=TRUE);
 }
 
 ##--run NSRKC only (on Mac)----

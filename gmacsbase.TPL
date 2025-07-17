@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.30; ** WTS **; Compiled 2025-06-10");
+ !! TheHeader = adstring("## GMACS Version 2.20.31; ** WTS **; Compiled 2025-06-16");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -804,40 +804,37 @@ DATA_SECTION
   yhit.initialize();
   dmr.initialize();
   echoinput<<"\n\nDetermining number of fishing rate parameters to be estimated."<<endl;
-  for ( int k = 1; k <= nCatchDF; k++ )
-   {
-      echoinput<<"catchDF (k) = "<<k<<endl;
-    for ( int i = 1; i <= nCatchRows(k); i++ )
-     if (dCatchData(k)(i,1) <= nyrRetro && dCatchData(k)(i,1) >= syr)
-      {
-       int y = dCatchData(k)(i,1);                          ///> year
-       int j = dCatchData(k)(i,2);                          ///> season
-       int g = dCatchData(k)(i,3);                          ///> fleet
-       int h = dCatchData(k)(i,4);                          ///> sex
-       echoinput<<"Processing i,y,j,g,h (row,year, season, fleet, sex): "<<i<<" "<<y<<" "<<j<<" "<<g<<" "<<h<<endl;
+  for ( int k = 1; k <= nCatchDF; k++ ){
+    echoinput<<"catchDF (k) = "<<k<<endl;
+    for ( int i = 1; i <= nCatchRows(k); i++ ){
+      int y = dCatchData(k)(i,1);                          ///> year
+      if (y <= nyrRetro && y >= syr){
+        int j = dCatchData(k)(i,2);                          ///> season
+        int g = dCatchData(k)(i,3);                          ///> fleet
+        int h = dCatchData(k)(i,4);                          ///> sex
+        echoinput<<"Processing i,y,j,g,h (row,year, season, fleet, sex): "<<i<<" "<<y<<" "<<j<<" "<<g<<" "<<h<<endl;
 
-       // Check whether the fleet is instantaneous but natural mortality in the relevant period is not zero!
-       if (season_type(j) == INSTANT_F && m_prop(y,j) > 0)
-        {
-         cout      << "The proportion of M should be zero for season " << j << " in year " << y << endl;
-         echoinput << "The proportion of M should be zero for season " << j << " in year " << y << endl;
-         exit(1);
+        // Check whether the fleet is instantaneous but natural mortality in the relevant period is not zero!
+        if (season_type(j) == INSTANT_F && m_prop(y,j) > 0){
+          cout      << "The proportion of M should be zero for season " << j << " in year " << y << endl;
+          echoinput << "The proportion of M should be zero for season " << j << " in year " << y << endl;
+          exit(1);
         }
 
-       if ( !fhit(y,j,g) )
-        {
-         fhit(y,j,g) ++;
-         nFparams(g) ++;
-         dmr(y,g) = catch_dm(k)(i);//TODO: presumably dmr could depend on season and sex, as well as year and gear/fleet
+        if ( !fhit(y,j,g) ){
+          fhit(y,j,g) ++;
+          nFparams(g) ++;
+          dmr(y,g) = catch_dm(k)(i);//TODO: presumably dmr could depend on season and sex, as well as year and gear/fleet
         }
-       if ( !yhit(y,j,g) && h == 2 )
-        {
-         yhit(y,j,g) ++;
-         nYparams(g) ++;
-         dmr(y,g) = catch_dm(k)(i);
+        if ( (!yhit(y,j,g)) && (h == 2) ){
+          yhit(y,j,g) ++;
+          nYparams(g) ++;
+          dmr(y,g) = catch_dm(k)(i);
         }
-      }
-   }
+      }//--in year range
+
+    }//--i loop
+  }//--k loop
   for (int g=1;g<=nfleet; g++) { 
     if (nFparams(g) == 0) nFparams(g) = 1; 
     if (nYparams(g) == 0) nYparams(g) = 1;  //--need to set to 1 for dimensioning log_fdov array, but need to set foffdevs_phz(g) = -1 below
@@ -846,51 +843,48 @@ DATA_SECTION
   echoinput << "fhit" << endl;
   echoinput << "iy(yr)  j(season)  hit_for_fleet " <<endl;
   fhitfut.initialize();
-  for (int iy=syr;iy<=nyrRetro;iy++)
-   for (int j=1;j<=nseason;j++)
-    {
-     echoinput << iy << " " << j << " ";
-     for (int g=1;g<=nfleet;g++) echoinput << fhit(iy,j,g) << " ";
-     for (int g=1;g<=nfleet;g++) if (fhit(iy,j,g)==1) fhitfut(j,g) = 1;
-     echoinput << endl;
+  for (int iy=syr;iy<=nyrRetro;iy++){
+    for (int j=1;j<=nseason;j++){
+      echoinput << iy << " " << j << " " << fhit(iy,j) << endl;
+      for (int g=1;g<=nfleet;g++) if (fhit(iy,j,g)==1) fhitfut(j,g) = 1;
     }
+  }
   echoinput << "fhitfut" << endl;
   echoinput << "j(season)  hit_for_fleet? " <<endl;
-  for (int j=1;j<=nseason;j++)
-   {
+  for (int j=1;j<=nseason;j++){
     echoinput << " " << j << " ";
     for (int g=1;g<=nfleet;g++) echoinput << fhitfut(j,g) << " ";
     echoinput << endl;
-   }
+  }
   echoinput << "yhit" << endl;
   echoinput << "iy(yr)  j(season)  hit_for_fleet? " <<endl;
-  for (int iy=syr;iy<=nyrRetro;iy++)
-   for (int j=1;j<=nseason;j++)
-    {
-     echoinput << iy << " " << j << " ";
-     for (int g=1;g<=nfleet;g++) echoinput << yhit(iy,j,g) << " ";
-     echoinput << endl;
+  for (int iy=syr;iy<=nyrRetro;iy++){
+    for (int j=1;j<=nseason;j++){
+      echoinput << iy << " " << j << " " << yhit(iy,j) << endl;
     }
+  }
   ECHO(dmr);
   echoinput<<"dmr:"<<endl;
-  echoinput<<"year   fleet   dmr"<<endl;
+  echoinput<<"year   fleet-specific_dmr"<<endl;
   for (int iy=syr;iy<=nyrRetro;iy++)
-    for (int g=1;g<=nfleet;g++) echoinput<<iy<<" "<<g<<" "<<dmr(iy,g)<<endl;
+    echoinput << iy << " " << dmr(iy) << endl;
 
   // Check for errors in discard rate assumptions
-  for ( int k = 1; k <= nCatchDF; k++ )
-   for ( int i = 1; i <= nCatchRows(k); i++ )
-    if (dCatchData(k)(i,1) <= nyrRetro && dCatchData(k)(i,1) >= syr)
-     {
-      int y = dCatchData(k)(i,1);                           ///> year
-      int g = dCatchData(k)(i,3);                           ///> fleet
-      if (catch_dm(k)(i) != dmr(y,g))
-       { cout       << "ERROR: discard rates do not match: year " << y << " and fleet " << g << " in CatchDF " << k<< endl; 
-         gmacs_data << "ERROR: discard rates do not match: year " << y << " and fleet " << g << " in CatchDF " << k<< endl; 
-         gmacs_data << "k = "<<k<<" i = "<<i<<" y = "<<y<<" g = "<<g<<endl;
-         gmacs_data << "catch_dm(k)(i) = " <<catch_dm(k)(i) << "  dmr(y,g) = " << dmr(y,g) << endl;
-         exit(1); }
-     }
+  for ( int k = 1; k <= nCatchDF; k++ ){
+    for ( int i = 1; i <= nCatchRows(k); i++ ){
+      if (dCatchData(k)(i,1) <= nyrRetro && dCatchData(k)(i,1) >= syr){
+        int y = dCatchData(k)(i,1);                           ///> year
+        int g = dCatchData(k)(i,3);                           ///> fleet
+        if (catch_dm(k)(i) != dmr(y,g)){ 
+          cout       << "ERROR: discard rates do not match: year " << y << " and fleet " << g << " in CatchDF " << k<< endl; 
+          gmacs_data << "ERROR: discard rates do not match: year " << y << " and fleet " << g << " in CatchDF " << k<< endl; 
+          gmacs_data << "k = "<<k<<" i = "<<i<<" y = "<<y<<" g = "<<g<<endl;
+          gmacs_data << "catch_dm(k)(i) = " <<catch_dm(k)(i) << "  dmr(y,g) = " << dmr(y,g) << endl;
+          exit(1); 
+        }
+      }
+    }//--i
+  }//--k
 
   // Create the dCatchData_out object for output and plotting in R, this object simply fills in the years that don't have data with zero catch
   dCatchData_out.initialize();
@@ -2989,8 +2983,8 @@ DATA_SECTION
               if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
               if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
               if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-              if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1";
-              if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2";
+              if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
+              if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
               if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
               if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
               if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
@@ -3066,8 +3060,8 @@ DATA_SECTION
                   if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
                   if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
                   if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-                  if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1";
-                  if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2";
+                  if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
+                  if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
                   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
                   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
                   if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
@@ -3112,8 +3106,8 @@ DATA_SECTION
                 if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
                 if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
                 if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-                if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1";
-                if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2";
+                if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
+                if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
                 if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
                 if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
                 if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
@@ -5057,12 +5051,12 @@ PROCEDURE_SECTION
   //cout << log_slx_pars << endl;
   //exit(1);
  
-  if ( verbose >= 3 ) {
-    cout << "Starting PROCEDURE_SECTION.\n\tOk after start of function ..." << endl;
-  }
-
   // Update function calls
   NfunCall += 1;
+  if ( verbose >= 3 ) {
+    cout<<endl<<endl<<"Starting PROCEDURE_SECTION. NfunCall = " << NfunCall <<endl;
+    cout << "\tOk after start of function ..." << endl;
+  }
 
   // Initialize model parameters
   initialize_model_parameters();                            if ( verbose >= 3 ) cout << "Ok after initialize_model_parameters ..." << endl;
@@ -6220,18 +6214,21 @@ FUNCTION calc_fishing_mortality
   }
 
   // fishing mortality and capture rates generally
+  //cout<<"setting ft"<<endl;
   ft.initialize(); fout.initialize();
   for ( int k = 1; k <= nfleet; k++ ){
     for ( int h = 1; h <= nsex; h++ ){
       ik = 1; yk = 1;
       for ( int i = syr; i <= nyrRetro; i++ ){
         for ( int j = 1; j <= nseason; j++ ){
-          if ( fhit(i,j,k)>0 ){
+          if ( fhit(i,j,k)>0 ){  //--does not depend on sex
+            //cout<< "k, h, i, j = " << k << " " << h << " " << i << " " << j << " fhit(i,j,k) = " << fhit(i,j,k) << " ";
             log_ftmp = log_fbar(k) + log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
             fout(k,i) = exp(log_ftmp);                                 ///> Report of male F
             if (h==2) log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
-            if (h==2 && yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++);    ///> annual F dev
+            if (h==2 && yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++);    ///> annual female F dev
             ft(k,h,i,j) = mfexp(log_ftmp);  //--fully-selected fleet/sex/year-specific capture rate
+            //cout << "ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
             xi  = dmr(i,k);                                            ///> Fleet/year-specific discard mortality rate
             sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;               ///> Fleet/sex/year/size-specific capture selectivity
             ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);  ///> Fleet/sex/year/size-specific retention
@@ -6241,6 +6238,12 @@ FUNCTION calc_fishing_mortality
           }
         } // j loop: seasons
       } // i loop: years
+      //cout << "k (fleet): " << k << " h (sex): " << h <<endl;
+      for ( int i = syr; i <= nyrRetro; i++ ) {
+        //cout << "i (year): " << i <<" ft(k,h,i) = " << ft(k,h,i) << " ";
+        //for (int j = 1; j <= nseason; j++) cout << " j = " << j << " fhit(i,j,k)  = " << fhit(i,j,k) << " ";
+        //cout << endl;
+      }
     } // h loop: sex
   } // k loop: fleets
 
@@ -6909,7 +6912,7 @@ FUNCTION calc_recruitment_size_distribution
       rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
     } else {
       //--TCSAM02 approach
-      cout<<"--------Using TCSAM02 approach to calculate rec size dist--------"<<endl<<endl;
+      if (verbose>3) cout<<"--------Using TCSAM02 approach to calculate rec size dist--------"<<endl<<endl;
       dvector dzs = mid_points+(mid_points[2]-mid_points[1])/2.0-mid_points[1];
       dvariable aR = ra(h) / rbeta(h);//--gamma distribution "shape" parameter
       dvariable bR = rbeta(h);        //--gamma distribution "scale" parameter
@@ -7862,12 +7865,12 @@ FUNCTION calc_predicted_catch
   for ( int kk = 1; kk <= nCatchDF; kk++ ){
     nhit = 0;
     for ( int jj = 1; jj <= nCatchRows(kk); jj++ ){
-      if (dCatchData(kk,jj,1) <= nyrRetro && dCatchData(kk,jj,1) >= syr){
+      int i    =     dCatchData(kk,jj,1);                          ///> year index
+      if (i <= nyrRetro && i >= syr){
         cobs =   obs_catch(kk,jj);                                     ///> catch data
         effort = dCatchData(kk,jj,10);                                 ///> Effort data
 
-        if (cobs > 0.0 && effort > 0.0) {                               ///> There are catch and effort data
-          int i    =     dCatchData(kk,jj,1);                          ///> year index
+        if ((cobs > 0.0) && (effort > 0.0)) {                          ///> There are catch and effort data
           int j    =     dCatchData(kk,jj,2);                          ///> season index
           int k    =     dCatchData(kk,jj,3);                          ///> fleet/gear index
           int h    =     dCatchData(kk,jj,4);                          ///> sex index
@@ -7875,13 +7878,18 @@ FUNCTION calc_predicted_catch
           int unit = int(dCatchData(kk,jj,8));                         ///> Units of catch equation (1 = biomass, 2 = numbers)
       
           if ( h != UNDET_SEX ) {                                        ///> sex specific
+            if ((ft(k,h,i,j)<1.0e-10)) {
+              cout << "Error in computing log_q_catch for CatchDF kk = "<<kk<<", row jj = "<< jj << ", sex h = "<< h << ", year = " << i;
+              cout  << ", season j = " << j << ", effort = " << effort <<", ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
+              exit(-1);
+            }
             log_q_catch(kk) += log(ft(k,h,i,j) / effort);
             nhit += 1;
           } else {
             // sexes combinded
-            totalnalobs = 0; totalnalpre = 0;
+            totalnalobs.initialize(); totalnalpre.initialize();
             for ( h = 1; h <= nsex; h++ ){
-              sel = log_slx_capture(k,h,i);                            ///> Capture seletiity
+              sel = log_slx_capture(k,h,i);                            ///> Capture selectivity
               switch( type ) {
                 case RETAINED: // retained catch
                  sel = mfexp(sel + log_slx_retaind(k,h,i));
@@ -7913,11 +7921,16 @@ FUNCTION calc_predicted_catch
                 }
               }
             }
-          }
-          log_q_catch(kk) += log(totalnalobs / totalnalpre);
-          nhit += 1;
-        } // h
-      } // cobs
+            if ((totalnalobs<1.0e-10)||(totalnalpre<1.0e-10)) {
+              cout << "Error in computing log_q_catch for CatchDF "<<kk<<", row "<< jj << ", year = " << i;
+              cout << ", totalnalobs = " << totalnalobs <<", totalnalpre = " << totalnalpre << endl;
+              exit(-1);
+            }
+            log_q_catch(kk) += log(totalnalobs / totalnalpre);
+            nhit += 1;
+          } //--if (h == UNDET_SEX)
+        } // if (cobs > 0.0 && effort > 0.0)
+      } // if i in years
     } // jj
     if ( nhit > 0 ) log_q_catch(kk) /= nhit; //--average ln-scale CPUE for dataframe kk
   }//--kk
@@ -7962,8 +7975,8 @@ FUNCTION calc_predicted_catch
               nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
               if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);//--consistent
               
-                // predict catch
-                tmp_ft = ft(k,h,i,j);                                       /// > Extract F
+              // predict catch
+              tmp_ft = ft(k,h,i,j);                                       /// > Extract F
               if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F) {
                 pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
                 if (cobs == 0 && effort > 0.0)
@@ -14760,9 +14773,12 @@ FINAL_SECTION
 //                    Added output to gmacs.rep1 for predicted fishery capture abundance and biomass (pre_capabd, pre_capbio) by year, fleet, sex, and size from 
 //                    (new function) calc_predicted_capture_abdbio. Updated version to 2.20.30.
 // 2025-06-10 ** WTS. Cosmetic changes (added some info).  
+// 2025-06-16 ** WTS. Revised calculation of `log_q_catch` in `calc_predicted_catch` slightly, added some error checks to help debug.
+//                    Incremented version to 2.20.31. 
 
 // To-do list
-// 2 - Review how female offsets are handled for fishing mortality (bounds for devs are hard-wired)?
+// 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
+//     to have it equal the number of aggregated size comps
 
 
 

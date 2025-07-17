@@ -73,7 +73,64 @@ The function will run the models specified (copying the input files from relevan
 
 ## Which tools are available for working with GMACS?
 
-Currently GMACS is linked to [`gmr`](gmacs-project.github.io/gmr/), an R package to work with GMACS in R, create plots of GMACS output, compare different models and prepare SAFE documents.
+Currently GMACS is linked to [`gmr`](gmacs-project.github.io/gmr/), an R package to work with GMACS in R, create plots of GMACS output, compare different models and prepare SAFE documents. Another R package which may be helpful is `wtsGMACS` (https://github.com/wStockhausen/wtsGMACS).
+
+## Updates
+### Through version 2.20.31 (2025-06-16)
+ - Added gamma distribution likelihood type (`GROWTHINC_DATA_GAMMA`=4) for non-tagging molt increment data so likelihood is consistent with size transition matrices. Previous normal likelihood based on data CVs (`GROWTHINC_DATA_NORMAL`=1) is still available. 
+ - Corrected logic error going back to 2.20.06 that prevented likelihood for non-tagging molt increment data from being calculated. 
+ - Added option (`PWRLAW_GROWTHMODELALT`=5) and function to replicate Tanner crab mean molt increment calculations.
+ - Added macro var `ZEROPOP` (=5) option to initialize numbers-at-size in start year at 0. The `logN0` array is set to -1.0e3.
+ - Fixed incorrectly listed sex in gmacs_in.ctl and gmacs_out.ctl files for probability of maturing when two sex are specified. 
+ - Fixed problem in `get_all_sdnr_MAR` when `d3_res_size_comps(k)` was missing (`nSizeComps(k=0)` because size comps were "extended").
+ - Distinguished between tagging-related (`nloglike(5)`) and non-tagging-related growth data likelihoods (now `nloglike(6)`) in code and Gmacsall.out file. Non-tagging growth likelihoods are now output by individual observation in Gamcsall.out as a dataframe ("growth_data").
+ - Added `grwthPosFun` to objective function to penalize negative growth (estimated `r`'s [shape factors] in growth-related gamma distribution).
+ - Input size comps in "new" format now respect sex-specific numbers of columns: all input columns are repeated to gmacs_data (file "gmacs_in.dat"), but only the sex-specific number of columns is kept in the internal arrays.
+ - Added `writeToRepFile1` flag to signal whether (=1) or not (otherwise) to write results in CheckBounds to RepFile1.
+ - Added lines to `OutInpFile` noting where EXTRA PARS would be defined if they were needed (not obvious starting from a ctl file w/out EXTRA PARS).
+ - Added commandline input option "-StopAfterFnCall xx" to override `StopAfterFnCall` setting in gmacs.dat file with value of "xx".
+ - Converted "Double normal" as output label to "Double_normal" to be consistent w/ other output labels and facilitate parsing.
+ - Added ascending normal selectivity function code to selex.hpp, `SELEX_ASCNORM`=14 to select it, and associated in/out ctl code .
+ - Added survey info to gmacs_in.ctl and OutInpFile1 file output for q specification.
+ - Found issue with RW parameters for selectivity when RW block group has multiple blocks. **Fixed for selectivity but may be an issue for other processes when RW parameters are specified.** 
+ - Tracked down what turned out to be an uninitialized array problem (`nSizeCompRows`) that sent Windows runs off into NeverNeverLand.
+ - Added logic to skip calculating length likelihoods for the size comps that are the "extended" part of other comps.
+ - Revisions to enable blocks to work with catchability (`q`) parameters--many bits of code were based on assumption that q's were not blocked or time-varying. Now referring to "Relative Abundance Indices" (RAI's) and id's for such rather than "surveys" because the latter was confused between survey indices and catchability parameters. Rows for RAI's in the data file need to be appended with a `RAI id` in order to match changes in the `q` id with RAIs (might not be strictly necessary as the `q` id is given and `qToSurv(iq)` gives the id of the associated **non-mirrored** RAI; however, it doesn't give RAI's for mirrored q's).
+ - Removed `CreateOutput_OldFormat`, because the revisions to enable blocks to work with catchability (`q`) parameters were inconsistent with the output.
+ - Added `foffdevs_phz` vector to set phases for female offset F devs (`log_fdovs` phases had been set by `foff_phz`, but needed to be turned "off" when no female F devs were defined.) 
+ - Changed `logN0` to -100 when `ZEROPOP` option is selected (had been -1000, but this proved problematic).
+ - Added input for `recZ_flag` to CTL file as `model_controls(18)`. Flag determines the parameterization for recruitment size distribution in `calc_recruitment_size_distribution` (0=standard approach; 1=Tanner approach).
+ - Reassigned `SELEX_UNIFORM0` and `SELX_UNIFORM1` values internally from (6,5) to (5,6) to agree with ctl file comments. 
+ - **Changed usage of RW parameter definition value FOR SELECTIVITY PARAMETERS ONLY.** Was 0: RW devs off; >0: RW devs on. Now, **for selectivity parameters only**,: 
+  * 0: RW devs off; 
+  * 1: RW devs on w/ $newpar = refpar*exp(dev)$ [as previously]; 
+  * 2: $newpar = refpar + dev$ [new option--this is the way to go for selectivity parameters that are log-transformed]. 
+Also changed description for selectivity sections of output ctl files. For other parameter types, the behavior is the same as previously (**TODO: check if this behavior should be changed, as well**).
+ - Added a check on the size of dataframe read in as `dSurveyData` when using original format to assure the RAI_id column has been added. After `dSurveyData` is read in, an integer `chk` is read from the input data file. **If this is not equal to 999, then an error is printed and the program exits.** 
+ - Corrected an error reading parameter information for time-blocked "extra" growth parameters (this did not affect non-time-blocked growth parameters).
+ - Cleaned up code in `update_population_numbers_at_length` related to recruitment, with a note for further changes. 
+ - **Added note in `calc_initial_numbers_at_length` with reminder to change code if `logR0`, etc are redefined to apply to `totrecruits` (total recruits) rather than `recruits(h)` (sex-specific recruits).**
+ - Renamed gmacs.rep1 output matrix from "Fully-selected_FM_by_season_sex_and_fishery" to "Fully-selected_capture_rate_by_season_sex_and_fishery" to better describe the content (which is the `ft` array). Note that $F(h,i,j)=ft(h,i,j) * vul$ is the size-specific **fishing mortality rate** (`vul` incorporates both retention mortality and discard mortality) while $F2(h,i,j) = ft(h,i,j) * sel$ is the size-specific **fishery capture rate**.
+ - Added `pre_capbio` array and `calc_predicted_capture_biomass` function to facilitate export of predicted capture biomass by fishery in `CreateOutput` as "Predicted_capture_biomass-at-size". 
+ - **Fixed inconsistency in how `Z` and `Z2` were assigned as `tempZ1` in `calc_predicted_catch`.**
+ - Added output to gmacs.rep1 for predicted fishery capture abundance and biomass (`pre_capabd`, `pre_capbio`) by year, fleet, sex, and size from (new function) `calc_predicted_capture_abdbio`. 
+ - Revised calculation of `log_q_catch` in `calc_predicted_catch` slightly, added some error checks to help debug.
+
+ 
+#### Required changes to input files
+ - gmacs.dat file: no changes
+ - data file changes:
+   * Relative Abundance Data: 
+     + **If using the "old format"**, add "RAI_id" (relative abundance index id)  as the last column of the input matrix, where `RAI_id` indicates the integer id for the associated survey (note that this is not necessarily the same as the `q` id if multiple time blocks or RW behavior are specified for `q`).
+     + **If using the "old format"**, append a row to the Relative Abundance Data matrix with the value 999 (the code will check for this, but doesn't otherwise use it).
+ - ctl file: 
+     * After the last row in "Other Controls" (the last year of bias-correction), add the recruitment size distribution option (0: standard way; 1: Tanner crab approach)
+     * **If you specify selectivity types 5 or 6**, make sure they are set such that 5 = `SELEX_UNIFORM0` (sel or ret curve = 0 at all sizes) and 6 = `SELEX_UNIFORM1` (sel or ret curve = 1 at all sizes). This is consistent with how these types are described in the ctl file, but not how they were previously implemented in the GMACS TPL code.
+ - prj file: no changes
+ - pin file:
+   * make sure `log_vn` (the vector of effective sample sizes) has the same length as the **max** index specified for the size composition aggregations specified in the ctl file
+     
+
 
 ## NOAA Disclaimer
 
