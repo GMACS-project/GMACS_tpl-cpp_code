@@ -350,6 +350,32 @@ if (FALSE) {
                      verbose=0);
 }
 
+##--run NSRKC only (on Mac)----
+if (FALSE) {
+  #
+  #--NOTE: make sure all paths to directories/files are correct for your system
+  #
+  ##--the following assumes: 
+  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
+  ###-------e.g.: at "dirPrj/testing/current_test_runs"
+  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS-project/GMACS_Models"
+  ###--3. The gmacs executable is under the "dirPrj/_build" directory
+  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
+  #
+  require(wtsGMACS)
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = here::here();
+  exeDir = file.path(dirPrj,"_build");
+  #--run tests
+  results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
+                     repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
+                     exeDir=file.path(dirPrj,"_build"),
+                     stocks="NSRKC",
+                     testDir=".", #--current working directory
+                     scriptsDir=file.path(dirPrj,"testing/scripts"),
+                     verbose=4);
+}
+
 ##--run Tanner crab only (on Mac)----
 if (FALSE) {
   #

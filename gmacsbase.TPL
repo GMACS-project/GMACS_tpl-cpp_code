@@ -9148,7 +9148,7 @@ FUNCTION calc_predicted_composition
    if (verbose) cout<<"--Normalizing comps" << endl;
     for ( int k = 1; k <= nSizeComps; k++ ){
       for ( int i = 1; i <= nSizeCompRows(k); i++ ){
-        if (verbose>=4) cout<< k << "  " << i << endl;
+        if (verbose>=4) cout<< k << "  nrows: " << nSizeCompRows(k) << " row: " << i << endl;
         if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) ){
           d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
           if (std::isnan(value(sum(d3_pre_size_comps_in(k,i))))){
