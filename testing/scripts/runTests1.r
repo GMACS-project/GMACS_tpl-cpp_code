@@ -298,7 +298,7 @@ if (FALSE) {
                      verbose=0);
 }
 
-##--run SMBKC only (on Mac)----
+##--run AIGKC_EAG only (on Mac)----
 if (FALSE) {
   #
   #--NOTE: make sure all paths to directories/files are correct for your system
@@ -311,14 +311,14 @@ if (FALSE) {
   ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
   #
   require(wtsGMACS)
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getSourceEditorContext()$path),"../.."));
   dirPrj = here::here();
   exeDir = file.path(dirPrj,"_build");
   #--run tests
-  results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
+  results = runTests(cleanup=FALSE,usePin="none",compareWith="none",
                      repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
                      exeDir=file.path(dirPrj,"_build"),
-                     stocks="SMBKC",
+                     stocks="AIGKC_EAG",
                      testDir=".", #--current working directory
                      scriptsDir=file.path(dirPrj,"testing/scripts"),
                      verbose=0);
@@ -337,7 +337,7 @@ if (FALSE) {
   ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
   #
   require(wtsGMACS)
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getSourceEditorContext()$path),"../.."));
   dirPrj = here::here();
   exeDir = file.path(dirPrj,"_build");
   #--run tests
@@ -363,7 +363,7 @@ if (FALSE) {
   ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
   #
   require(wtsGMACS)
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getSourceEditorContext()$path),"../.."));
   dirPrj = here::here();
   exeDir = file.path(dirPrj,"_build");
   #--run tests
@@ -373,7 +373,58 @@ if (FALSE) {
                      stocks="NSRKC",
                      testDir=".", #--current working directory
                      scriptsDir=file.path(dirPrj,"testing/scripts"),
-                     verbose=4);
+                     verbose=0);
+}
+
+##--run SMBKC only (on Mac)----
+if (FALSE) {
+  #
+  #--NOTE: make sure all paths to directories/files are correct for your system
+  #
+  ##--the following assumes: 
+  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
+  ###-------e.g.: at "dirPrj/testing/current_test_runs"
+  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS-project/GMACS_Models"
+  ###--3. The gmacs executable is under the "dirPrj/_build" directory
+  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
+  #
+  require(wtsGMACS)
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getSourceEditorContext()$path),"../.."));
+  dirPrj = here::here();
+  exeDir = file.path(dirPrj,"_build");
+  #--run tests
+  results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
+                     repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
+                     exeDir=file.path(dirPrj,"_build"),
+                     stocks="SMBKC",
+                     testDir=".", #--current working directory
+                     scriptsDir=file.path(dirPrj,"testing/scripts"),
+                     verbose=0);
+}
+
+##--run SnowCrab only (on Mac)----
+if (FALSE) {
+  #
+  #--NOTE: make sure all paths to directories/files are correct for your system
+  #
+  ##--the following assumes: 
+  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
+  ###-------e.g.: at "dirPrj/testing/current_test_runs"
+  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS-project/GMACS_Models"
+  ###--3. The gmacs executable is under the "dirPrj/_build" directory
+  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
+  #
+  require(wtsGMACS)
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getSourceEditorContext()$path),"../.."));
+  exeDir = file.path(dirPrj,"_build");
+  #--run tests
+  results = runTests(cleanup=FALSE,usePin="par",compareWith="par",
+                     repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
+                     exeDir=file.path(dirPrj,"_build"),
+                     stocks="SnowCrab",
+                     testDir=".", #--current working directory
+                     scriptsDir=file.path(dirPrj,"testing/scripts"),
+                     verbose=0);
 }
 
 ##--run Tanner crab only (on Mac)----
@@ -389,7 +440,7 @@ if (FALSE) {
   ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
   #
   require(wtsGMACS)
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getSourceEditorContext()$path),"../.."));
   dirPrj = here::here();
   exeDir = file.path(dirPrj,"_build");
   #--run tests
@@ -401,30 +452,6 @@ if (FALSE) {
                      scriptsDir=file.path(dirPrj,"testing/scripts"),
                      printPathInfo=TRUE,
                      verbose=TRUE);
-}
-
-##--run NSRKC only (on Mac)----
-if (FALSE) {
-  #
-  #--NOTE: make sure all paths to directories/files are correct for your system
-  #
-  ##--the following assumes: 
-  ###--1. the current testing folder is two levels below the GMACS_tpl-cpp-code folder
-  ###-------e.g.: at "dirPrj/testing/current_test_runs"
-  ###--2. the GMACS_Models repo is located at "~/Work/Programming/GMACS-project/GMACS_Models"
-  ###--3. The gmacs executable is under the "dirPrj/_build" directory
-  ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
-  #
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
-  exeDir = file.path(dirPrj,"_build");
-  #--run tests
-  results = runTests(cleanup=FALSE,usePin="none",compareWith="none",
-                     repoDir="~/Work/Programming/GMACS-project/GMACS_Models",
-                     exeDir=file.path(dirPrj,"_build"),
-                     stocks="NSRKC",
-                     testDir=".", #--current working directory
-                     scriptsDir=file.path(dirPrj,"testing/scripts"),
-                     verbose=0);
 }
 
 ##--run Tanner crab only (on Windows)----
@@ -439,7 +466,7 @@ if (FALSE) {
   ###--3. The gmacs executable is under the "dirPrj/_build" directory
   ###--4. The current directory (`getwd()`) is the top-level folder for the tests to run in (`testDir`)
   #
-  dirPrj = normalizePath(file.path(dirname(rstudioapi::getActiveDocumentContext()$path),"../.."));
+  dirPrj = normalizePath(file.path(dirname(rstudioapi::getSourceEditorContext()$path),"../.."));
   exeDir = file.path(dirPrj,"_build");
   #--run tests
   results = runTests(cleanup=FALSE,usePin="par",compareWith="par",

@@ -4521,7 +4521,9 @@ DATA_SECTION
  END_CALCS
 
   int NfunCall;
+  int nFcnCallsInPhs;
   !! NfunCall = 0;
+  !! nFcnCallsInPhs = 0;
 
 // ================================================================================================
 
@@ -4931,69 +4933,69 @@ PRELIMINARY_CALCS_SECTION
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      theta(ipar) = GenJitter(IsJittered,theta_ival(ipar),theta_lb(ipar),theta_ub(ipar),theta_phz(ipar),sdJitter,rands,randu);
+      theta(ipar) = GenJitter(IsJittered,theta(ipar),theta_lb(ipar),theta_ub(ipar),theta_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_Gpar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      G_pars_est(ipar) = GenJitter(IsJittered,G_ival(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu);
+      G_pars_est(ipar) = GenJitter(IsJittered,G_pars_est(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_Spar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      S_pars_est(ipar) = GenJitter(IsJittered,S_ival(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu);
+      S_pars_est(ipar) = GenJitter(IsJittered,S_pars_est(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nFparams(ipar); jpar++)
       {
        rands.fill_randn(rng2);
        randu.fill_randn(rng2);
-       log_fdev(ipar,jpar) = GenJitter(IsJittered,(fdev_ub(ipar)+fdev_lb(ipar))/2.0,fdev_lb(ipar),fdev_ub(ipar),f_phz(ipar),sdJitter,rands,randu);
+       log_fdev(ipar,jpar) = GenJitter(IsJittered,log_fdev(ipar,jpar),fdev_lb(ipar),fdev_ub(ipar),f_phz(ipar),sdJitter,rands,randu);
       }
     for (int ipar=1;ipar<=nfleet;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_foff(ipar) = GenJitter(IsJittered,(foff_ub(ipar)+foff_lb(ipar))/2.0,foff_lb(ipar),foff_ub(ipar),foff_phz(ipar),sdJitter,rands,randu);
+      log_foff(ipar) = GenJitter(IsJittered,log_foff(ipar),foff_lb(ipar),foff_ub(ipar),foff_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nYparams(ipar); jpar++)
       {
        rands.fill_randn(rng2);
        randu.fill_randn(rng2);
-       log_fdov(ipar,jpar) = GenJitter(IsJittered,0.0,-10.0,10.0,foffdevs_phz(ipar),sdJitter,rands,randu);
+       log_fdov(ipar,jpar) = GenJitter(IsJittered,log_fdov(ipar,jpar),-10.0,10.0,foffdevs_phz(ipar),sdJitter,rands,randu);
       }
     for (int ipar=rdv_syr;ipar<=rdv_eyr;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      rec_dev_est(ipar) = GenJitter(IsJittered,0.0,-8.0,8.0,rdv_phz,sdJitter,rands,randu);
+      rec_dev_est(ipar) = GenJitter(IsJittered,rec_dev_est(ipar),-8.0,8.0,rdv_phz,sdJitter,rands,randu);
      }
     for (int ipar=rdv_syr;ipar<=rdv_eyr;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      logit_rec_prop_est(ipar) = GenJitter(IsJittered,init_sex_ratio,-100.0,100.0,rec_prop_phz,sdJitter,rands,randu);
+      logit_rec_prop_est(ipar) = GenJitter(IsJittered,logit_rec_prop_est(ipar),-100.0,100.0,rec_prop_phz,sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nSizeComps;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_vn(ipar) = GenJitter(IsJittered,log_vn_ival(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu);
+      log_vn(ipar) = GenJitter(IsJittered,log_vn(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_qpar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      survey_q(ipar) = GenJitter(IsJittered,q_ival(ipar),q_lb(ipar),q_ub(ipar),q_phz(ipar),sdJitter,rands,randu);
+      survey_q(ipar) = GenJitter(IsJittered,survey_q(ipar),q_lb(ipar),q_ub(ipar),q_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_addcv_par;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_add_cv(ipar) = GenJitter(IsJittered,log_add_cv_ival(ipar),log_add_cv_lb(ipar),log_add_cv_ub(ipar),cv_phz(ipar),sdJitter,rands,randu);
+      log_add_cv(ipar) = GenJitter(IsJittered,log_add_cv(ipar),log_add_cv_lb(ipar),log_add_cv_ub(ipar),cv_phz(ipar),sdJitter,rands,randu);
      }
    }
 
@@ -5030,6 +5032,7 @@ PRELIMINARY_CALCS_SECTION
   init_selectivities();                     if ( verbose >= 3 ) cout << "Ok after init_selectivities in Prelim ..." << endl;
   calc_selectivities();                     if ( verbose >= 3 ) cout << "Ok after calc_selectivities in Prelim ..." << endl;
 
+  dontWriteParams = 0;//--turned off to writeParams
   cout<<"Finished PRELIMINARY_CALCS_SECTION"<<endl;
 // =============================================================================
 // =============================================================================
@@ -5038,6 +5041,22 @@ BETWEEN_PHASES_SECTION
     cout<<"#--BETWEEN_PHASES_SECTION---------------------"<<endl;
     adstring msg = "#----Starting phase "+str(current_phase())+" of "+str(initial_params::max_number_phases);
     cout<<msg<<endl;
+    cout<<"NfunCall = " << NfunCall << endl;
+    cout<<"nFcnCallsInPhs in prev.phase = " << nFcnCallsInPhs << endl;
+    int on = -1;
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-max_phase"))>-1) {
+        int mxphs = atoi(ad_comm::argv[on+1]);
+        if (current_phase()>mxphs){
+          cout<<"#--commandline max phase exceeded: exiting--"<<endl;
+          CreateOutput();
+          ofstream pf; 
+          pf.open("gmacs.end_of_phase.par");
+          writeParams(1,pf); //--write current params and sel function values + gradients
+          pf.close();
+          exit(1);
+        }
+    }
+    nFcnCallsInPhs = 0;
     cout<<"Finished BETWEEN_PHASES_SECTION"<<endl;
     cout<<"----------------------------------------------"<<endl;
 // ================================================================================================
@@ -5053,8 +5072,9 @@ PROCEDURE_SECTION
  
   // Update function calls
   NfunCall += 1;
+  nFcnCallsInPhs++;
   if ( verbose >= 3 ) {
-    cout<<endl<<endl<<"Starting PROCEDURE_SECTION. NfunCall = " << NfunCall <<endl;
+    cout<<endl<<endl<<"Starting PROCEDURE_SECTION. NfunCall = " << NfunCall << endl;
     cout << "\tOk after start of function ..." << endl;
   }
 
@@ -5066,6 +5086,13 @@ PROCEDURE_SECTION
    {calc_selectivities();                                   if ( verbose >= 3 ) cout << "Ok after calc_selectivities ..." << endl; }
   else
    if ( verbose >= 3 ) cout << "Ok after ignoring selex calculation..." << endl;
+  
+  if (verbose>=3 && !dontWriteParams) {
+    ofstream pf; 
+    pf.open("gmacs.intm-1.par");
+    writeParams(0,pf); //--write only current params and sel function values (no gradients)
+    pf.close();
+  }
 
   calc_fishing_mortality();                                if ( verbose >= 3 ) cout << "Ok after calc_fishing_mortality ..." << endl;
   //calc_natural_mortality();                                if ( verbose >= 3 ) cout << "Ok after calc_natural_mortality ..." << endl;
@@ -5106,6 +5133,9 @@ PROCEDURE_SECTION
   calc_prior_densities();                                  if ( verbose >= 3 ) cout << "Ok after calc_prior_densities ..." << endl;
   calc_objective_function();                               if ( verbose >= 3 ) cout << "Ok after calc_objective_function ..." << endl;
 
+  //--output gradient information
+  // if (!dont_save_gradient_info) save_gradient_info(NfunCall);
+
   // sd_report variables
   if ( sd_phase() || NfunCall==StopAfterFnCall){
     if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
@@ -5141,16 +5171,27 @@ PROCEDURE_SECTION
     if ( verbose >= 3 ) cout << "Ok after calc_sdreport ..." << endl;
   }
 
+  if (verbose>=3 && !dontWriteParams) {
+    ofstream pf; 
+    pf.open("gmacs.intm-2.par");
+    writeParams(0,pf); //--write (not gradients), current params and sel function values
+    pf.close();
+  }
+
   // General outputs
   if ( mceval_phase() ) write_eval();
   if ( NfunCall == StopAfterFnCall ) {
     cout<<"Stopping after "<<NfunCall<<" function calls--creating output"<<endl;
-      CreateOutput();
-      cout<<"--------------------------------------"<<endl;
-      cout<<"Stopping after "<<StopAfterFnCall<<" function calls"<<endl;
-      cout<<"--------------------------------------"<<endl;
-      exit(1);
-	}
+    CreateOutput();
+    ofstream pf; 
+    pf.open("gmacs.stopped.par");
+    writeParams(0,pf); //--write current params and sel function values but no gradients
+    pf.close();
+    cout<<"--------------------------------------"<<endl;
+    cout<<"Stopping after "<<StopAfterFnCall<<" function calls"<<endl;
+    cout<<"--------------------------------------"<<endl;
+    exit(1);
+  }
 
 
 // =======================================================================================================================================
@@ -6214,7 +6255,7 @@ FUNCTION calc_fishing_mortality
   }
 
   // fishing mortality and capture rates generally
-  //cout<<"setting ft"<<endl;
+  if (verbose>4) cout<<endl<<"setting ft"<<endl;
   ft.initialize(); fout.initialize();
   for ( int k = 1; k <= nfleet; k++ ){
     for ( int h = 1; h <= nsex; h++ ){
@@ -6238,11 +6279,13 @@ FUNCTION calc_fishing_mortality
           }
         } // j loop: seasons
       } // i loop: years
-      //cout << "k (fleet): " << k << " h (sex): " << h <<endl;
-      for ( int i = syr; i <= nyrRetro; i++ ) {
-        //cout << "i (year): " << i <<" ft(k,h,i) = " << ft(k,h,i) << " ";
-        //for (int j = 1; j <= nseason; j++) cout << " j = " << j << " fhit(i,j,k)  = " << fhit(i,j,k) << " ";
-        //cout << endl;
+      if (verbose>4){
+        cout << "k (fleet): " << k << " h (sex): " << h <<endl;
+        for ( int i = syr; i <= nyrRetro; i++ ) {
+          cout << "i (year): " << i <<" ft(fleet,sex,year,season) = " << ft(k,h,i) << endl;
+          //for (int j = 1; j <= nseason; j++) cout << " j = " << j << " fhit(i,j,k)  = " << fhit(i,j,k) << " ";
+          cout << endl;
+        }
       }
     } // h loop: sex
   } // k loop: fleets
@@ -7880,7 +7923,10 @@ FUNCTION calc_predicted_catch
           if ( h != UNDET_SEX ) {                                        ///> sex specific
             if ((ft(k,h,i,j)<1.0e-10)) {
               cout << "Error in computing log_q_catch for CatchDF kk = "<<kk<<", row jj = "<< jj << ", sex h = "<< h << ", year = " << i;
-              cout  << ", season j = " << j << ", effort = " << effort <<", ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
+              cout  << ", season j = " << j << ", obs_catch(kk,jj) = " << obs_catch(kk,jj) << ", effort = " << effort <<", ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
+              cout  << "ft(k,h) = " << endl; 
+              cout  << ft(k,h) << endl <<endl;
+              //writeParams(0,cout);//--write current params and sel functions (no gradients)
               exit(-1);
             }
             log_q_catch(kk) += log(ft(k,h,i,j) / effort);
@@ -9112,25 +9158,29 @@ FUNCTION calc_predicted_composition
     int oldk = 9999; int j; int i;
     for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
       int k = iCompAggregator(kk);
-      if (verbose) cout <<"----kk = "<< kk <<" k = "<< k << endl;
+      if (verbose>3) cout <<"----kk (SizeComps_in) = "<< kk <<" k (iCompAggregator(kk)) = "<< k << endl;
       if ( oldk != k ) j = 0;
       oldk = k;
+      if (verbose>3) cout <<"  loop of columns in size comp" <<endl;
       for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ ) {
         j += 1;
         if (verbose>3) cout << "jj, j = " << jj << ", " << j << endl;
         for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ) {
           int iyr = d3_SizeComps_in(kk,ii,-7) ;
-          if (verbose>3) cout << "ii, iyr = " << ii << ", " << iyr << endl;
+          if (verbose>3) cout << "ii (SizeCompRows_in(kk)), iyr = " << ii << ", " << iyr << endl;
           if ( (iyr <= nyrRetro) || ((iyr == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6) == 1)) ) { 
             i = ii; 
             qmult = 1;
             if (survey_for_q_in(kk) >0) {
-              if (verbose) cout<<"----survey_for_q_in(kk) = "<< survey_for_q_in(kk) << endl;
               qmult = SurveyQT(survey_for_q_in(kk),iyr);
-              if (verbose) cout<<"----qmult = "<< qmult << endl;
+              if (verbose>3) {
+                cout<<"----survey_for_q_in(kk) = "<< survey_for_q_in(kk) << ",  qmult = " << qmult << endl;
+              }
             }
-            if (verbose>3) cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
-            if (verbose>3) cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
+            if (verbose>3) {
+              cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
+              cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
+            }
             if (std::isnan(value(d3_pre_size_comps_in(kk,ii,jj)))){
               cout << "line 8551" << endl;
               cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
@@ -9729,66 +9779,65 @@ FUNCTION calc_objective_function
   nlogPenalty.initialize();
 
   // 1) Penalty on log_fdev (male+combined; female) to ensure they sum to zero
-  for ( int k = 1; k <= nfleet; k++ )
-   {
+  for ( int k = 1; k <= nfleet; k++ ){
     dvariable s     = mean(log_fdev(k));
     nlogPenalty(1) += Penalty_fdevs(k,1)*s*s;
-    if (nsex > 1)
-     {
+    if (nsex > 1){
       dvariable r     = mean(log_fdov(k));
       nlogPenalty(1) += Penalty_fdevs(k,2)*r*r;
-     }
-   }
-   if (verbose >= 3) cout<<"finished penalties on log_fdev"<<endl;
+    }
+  }
+  if (verbose >= 3) cout<<"finished penalties on log_fdev"<<endl;
 
   // 2) Penalty on mean F to regularize the solution.
   int irow = 1;
   if ( last_phase() ) irow = 2;
   dvariable fbar;
   dvariable ln_fbar;
-  for ( int k = 1; k <= nfleet; k++ )
-   for ( int j = 1; j <= nseason; j++ )
-    {
-     fbar = mean( trans(ft(k,1))(j) );
-     if ( init_fbar(k) > 0 && fbar != 0 )
-      {
-       ln_fbar = log(fbar);
-       nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
+  for ( int k = 1; k <= nfleet; k++ ){
+    for ( int j = 1; j <= nseason; j++ ){
+      fbar = mean( trans(ft(k,1))(j) );
+      if ( init_fbar(k) > 0 && fbar != 0 ){
+        ln_fbar = log(fbar);
+        nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
       }
-     if (nsex==2)
-      {
+     if (nsex==2){
        fbar = mean( trans(ft(k,2))(j) );
-       if ( fbar != 0 )
-        {
+       if ( fbar != 0 ){
          ln_fbar = log(fbar);
          nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
         }
-      } 
-    }
+      } //--nsex==2
+    }//  j loop
+  }// k loop  
    
-   if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
+  if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
 
   // 6) Smoothness penalty on recruitment devs.
   //if ( !last_phase() )
-   {
+  {
     if ( active(rec_dev_est) ) nlogPenalty(6) = dnorm(first_difference(rec_dev), 1.0);
-   }
-   if (verbose >= 3) cout<<"finished penalties on rec_devs"<<endl;
+  }
+  if (verbose >= 3) cout<<"finished penalties on rec_devs"<<endl;
 
   // 7) Penalty on sex ratio
   if (nsex > 1) {
     SumRecF = 0; SumRecM = 0;
-    for ( int i = syr; i <= nyrRetro; i++ )
-     { SumRecF += recruits(2)(i); SumRecM += recruits(1)(i); }
+    for ( int i = syr; i <= nyrRetro; i++ ){
+      SumRecF += recruits(2)(i); 
+      SumRecM += recruits(1)(i); 
+    }
     nlogPenalty(7) = square(log(SumRecF) - log(SumRecM));
   }
   if (verbose >= 3) cout<<"finished penalties on sex-specific recruitment"<<endl;
 
   // 8) Smoothness penalty on molting probability
-  for (int h=1;h<=nsex;h++)
-   if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)
-    for (int igrow=1;igrow<=nMoltVaries(h);igrow++)
-     nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
+  for (int h=1;h<=nsex;h++){
+    if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT){
+      for (int igrow=1;igrow<=nMoltVaries(h);igrow++)
+        nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
+    }
+  }
   if (verbose >= 3) cout<<"finished Smoothness penalty on molting probability"<<endl;
    
   // 9) Smoothness penalty on selectivity patterns with class-specific coefficients
@@ -9797,28 +9846,31 @@ FUNCTION calc_objective_function
 
   // 10) Smoothness penalty on initial numbers at length
   for ( int k = 1; k <= n_grp; k++ ) 
-   nlogPenalty(10) += dnorm(first_difference(logN0(k)), 1.0); 
+    nlogPenalty(10) += dnorm(first_difference(logN0(k)), 1.0); 
   if (verbose >= 3) cout<<"Finished smoothness penalty on initial Ns"<<endl;
 
   // 11) Penalty on annual F-devs for males by fleet
   for ( int k = 1; k <= nfleet; k++ )
-   nlogPenalty(11) += Penalty_fdevs(k,3)*sum(square(log_fdev(k)));
+    nlogPenalty(11) += Penalty_fdevs(k,3)*sum(square(log_fdev(k)));
   if (verbose >= 3) cout<<"Finished smoothness penalty on annual devs"<<endl;
 
   // 12) Penalty on annual F-devs for females by fleet
-  if (nsex > 1)
-   for ( int k = 1; k <= nfleet; k++ )
-    nlogPenalty(12) += Penalty_fdevs(k,4)*sum(square(log_fdov(k)));
+  if (nsex > 1){
+    for ( int k = 1; k <= nfleet; k++ )
+      nlogPenalty(12) += Penalty_fdevs(k,4)*sum(square(log_fdov(k)));
+  }
   if (verbose >= 3) cout<<"Finished penalties on sex-specific devs"<<endl;
  
   // 13) Penalty on deviation parameters
   nlogPenalty(13) = 0;
-  if (n_deviations > 0)
-   for (int is=1;is<=100;is++)
-    if (devpoints(is,1)>0)
-     {
-      for (int ii=devpoints(is,3);ii<=devpoints(is,4);ii++) nlogPenalty(13) += dnorm(par_devs(ii),0.0,rdevpoints(is,1));
-     }
+  if (n_deviations > 0){
+    for (int is=1;is<=100;is++){
+      if (devpoints(is,1)>0){
+        for (int ii=devpoints(is,3);ii<=devpoints(is,4);ii++) 
+          nlogPenalty(13) += dnorm(par_devs(ii),0.0,rdevpoints(is,1));
+      }
+    }
+  }
 
   w_nloglike = sum(elem_prod(nloglike(1),catch_emphasis)) + sum(elem_prod(nloglike(2),cpue_emphasis)) + sum(elem_prod(nloglike(3),lf_emphasis));
   w_nloglike += sum(nloglike(4));
@@ -9834,13 +9886,32 @@ FUNCTION calc_objective_function
     cout << "Penalties: " << nlogPenalty << endl;
     cout << "Penalties: " << elem_prod(nlogPenalty,Penalty_emphasis) << " " << TempSS << endl;
     cout << "posfun pen." << grwthPosFun << endl;
-    cout << "Likelihoods: " << endl;
-    cout << nloglike << endl;
+    cout << "raw likelihoods (nloglike): " << endl;
+    cout << "catch:            " << nloglike(1) << endl;
+    cout << "index:            " << nloglike(2) << endl;
+    cout << "length:           " << nloglike(3) << endl;
+    cout << "rec:              " << nloglike(4) << endl;
+    cout << "growth (tag):     " << nloglike(5) << endl;
+    cout << "gromwth (nontag): " << nloglike(6) << endl;
+    cout << "weighted likelihoods (w_nloglike): " << endl;
+    cout << "catch:            " << elem_prod(nloglike(1),catch_emphasis) << endl;
+    cout << "index:            " << elem_prod(nloglike(2),cpue_emphasis) << endl;
+    cout << "length:           " << elem_prod(nloglike(3),lf_emphasis) << endl;
+    cout << "rec:              " << nloglike(4) << endl;
+    cout << "growth (tag):     " << nloglike(5)*tag_emphasis << endl;
+    cout << "gromwth (nontag): " << nloglike(6) << endl;
+    cout << "other objective function comonents: "<< endl;
+    cout << "weighted penalites: "<< elem_prod(nlogPenalty,Penalty_emphasis) << endl;
+    cout << "TempSS:             "<< TempSS << endl;
+    cout << "grwthPosFun:        "<< grwthPosFun << endl;
   }
 
-  if ( verbose >= 1 && !sd_phase()) cout  << "fn Call: " << current_phase() << " " << NfunCall << " " 
-                                          << objfun << " " << w_nloglike << " " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << " " 
-                                          << sum(priorDensity)+TempSS << " " << grwthPosFun << endl;
+  if ( verbose >= 1 && !sd_phase()) {
+    cout  << "           phase     numFcnCall  objfun   w_nloglike  sum(penalties)   summ(priors)  TempSS   growthPosFun"  << endl;
+    cout  << "fn Call: " << current_phase() << " " << NfunCall << " " 
+          << objfun << " " << w_nloglike << " " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << " " 
+          << sum(priorDensity) << " " << TempSS << " " << grwthPosFun << endl;
+  }
 
 // ==================================================================================================================================================
 // === Main routines ended
@@ -11253,8 +11324,7 @@ FUNCTION write_eval
    } //--isim
  if (NfunCall == max_prj) exit(1);
 
-// ---------------------------------------------------------------------------------------------------------------------------------------
-
+//----------------------------------------------------
 FUNCTION calc_sdreport
   dvar4_array ftmp(1,nsex,syr,nyrRetro,1,nseason,1,nclass);           ///> Fishing mortality
   dvar4_array ftmp2(1,nsex,syr,nyrRetro,1,nseason,1,nclass);          ///> Fishing mortality
@@ -11482,6 +11552,182 @@ FUNCTION adstring to_str(const dvar_vector& v)
       adstring s = to_str(vp);
       return s;
 
+// FUNCTION void save_gradient_info(int n_iter)
+//   gradient_structure::set_YES_DERIVATIVES();
+//   adstring nstr = str(n_iter);
+//   if (n_iter<10)    {nstr = "0000"+nstr;} else 
+//   if (n_iter<100)   {nstr = "000" +nstr;} else 
+//   if (n_iter<1000)  {nstr = "00"  +nstr;} else 
+//   if (n_iter<10000) {nstr = "0"   +nstr;}
+//   adstring fn = "grad_info_"+nstr+".dat";
+//   ofstream os(fn);
+//   int nvar = initial_params::nvarcalc();
+//   independent_variables x0(1,nvar); //--vector for original independent variables on unbounded scale
+//   initial_params::xinit(x0);        //--get active parameter values
+//   dvar_vector vx0 = dvar_vector(x0);//--copy vector to reset values
+//   cout<<"before gradcalc " << endl;
+//   cout << "x0 : " <<  x0 <<endl;
+//   cout<<"vx0: " << vx0 <<endl;
+//   dvector gr(1,nvar);        //--vector for gradients
+//   gradcalc(nvar,gr);         //--calculate gradients
+//   cout<<"after gradcalc " << endl;
+//   cout<<"x0 : " <<  x0 <<endl;
+//   cout<<"vx0: " << vx0 <<endl;
+
+//   adstring_array pars = get_param_names(); //--names of active parameters
+//   os << setprecision(12) << objfun << "  #--objective function value"  << endl;
+//   os << "Value"<< "\t" <<"Gradient"<< "\t" << "ParName" << endl;
+//   for (int i=1;i<=nvar;i++){
+//     os << i << " \t" << setprecision(6) << vx0[i] << " \t" << gr[i] << " \t" << "#--"<<pars[i] << endl;
+//   }
+//   os.close();
+
+//   // Push the original unbounded values through the model
+//   initial_params::reset(vx0); //--need to reset parameter values and recalculate objective function??
+//   dont_save_gradient_info = 1;//don't call this function when calling userfunction();
+//   *objective_function_value::pobjfun=0.0;
+//   userfunction();
+//   dont_save_gradient_info = 0;//--false for next time through
+//   NfunCall--; //--decrement NfunCall to avoid double counting, as it were
+//   gradient_structure::set_NO_DERIVATIVES();
+ 
+FUNCTION void writeParams(int write_grads, ostream& pf1)
+  cout << "Starting writeParams" << endl;
+  pf1 << "#--NfunCall = " << NfunCall << endl;
+  pf1 << "#--nFcnCallsInPhs = " << nFcnCallsInPhs << endl;
+  pf1 << "#--phase = " << initial_params::current_phase << endl;
+  pf1 << "#--objfun = " << objfun <<endl;
+
+  int nvar=initial_params::nvarcalc();              // get the number of active parameters
+  adstring_array param_names = ::get_param_names(); // get names of active parameters
+  independent_variables x(1,nvar); //--active parameters on unbound scale
+  independent_variables b(1,nvar); //--active parameters on bounded scale
+  initial_params::xinit(x);
+  initial_params::copy_all_values(b,1);
+  dvar_vector vals = 1.0*dvar_vector(x);//make sure vals is an independent copy of x
+  pf1 << "#--x: " << vals << endl;
+  pf1 << "#--b: " << b << endl;
+  pf1 << endl << "#-----------------------------------------------" << endl;
+
+  report_function_minimizer_stats();
+  //write_grads = 0; #--turn off gradient calcs
+  if (write_grads){
+    pf1 << "#--gradients:" << endl;
+    cout << "#--calculating gradient information..." << endl;
+    gradient_structure::set_YES_DERIVATIVES();
+    dvector gr0(1,nvar);
+    gr0.initialize();
+    cout << "old obj fun = " << *objective_function_value::pobjfun << endl;
+    //--recalculate objective function (why??)
+    dontWriteParams = 1; //--turn on so this function is not called when calculating the objective function
+    dvariable vf = initial_params::reset(vals);
+    pf1 << vf << " #--vf" << endl;
+    reset_gradient_stack(); //<-don't know about calling this
+    *objective_function_value::pobjfun=0.0;
+    userfunction();//<-recalculate the objective function
+    cout << "new obj fun = " << *objective_function_value::pobjfun << endl;
+    gradcalc(nvar,gr0);
+    cout << "calculated gradients" <<endl;
+    for (int i=1;i<=nvar;i++)
+      pf1 << i << "\t" << gr0(i) << endl;
+
+    //--recalculate objective function (why??)
+    vf = initial_params::reset(vals);
+    *objective_function_value::pobjfun=0.0;
+    userfunction();//<-recalculate the objective function
+    pf1 << "new obj fun = " << *objective_function_value::pobjfun << endl;
+    dontWriteParams = 0; //--turn off so this function is called when calculating the objective function
+  }
+
+  pf1 << endl << "#-----------------------------------------------" << endl;
+  pf1 << "#--active parameters: " << nvar << endl;
+  pf1 << "#bounded   unbounded   index   param_name " << endl;
+  for (int i=1;i<=nvar;i++)
+    pf1 << setprecision(10) << b[i] << "\t" << vals[i] << "\t#--" << i << "\t" << param_names[i] << endl;
+
+  pf1 << endl << "#-----------------------------------------------" << endl;
+  pf1 << "#--all parameters" << endl;
+  pf1 << "#--theta" << endl;
+  int Npar = 1;
+  for (int i=1;i<=ntheta;i++) pf1 << theta(i)      << " #--" << i << " "<< parname1(Npar++) << endl;
+  pf1 <<"#--G_pars"<<endl;
+  for (int i=1;i<=n_Gpar;i++) pf1 << G_pars_est(i) << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--M_pars"<<endl;
+  for (int i=1;i<=n_Mpar;i++) pf1 << M_pars_est(i) << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--S_pars"<<endl;
+  for (int i=1;i<=n_Spar;i++) pf1 << S_pars_est(i) << " #--" << i << " " << parname1(Npar++) << endl;
+
+  pf1 << "#--log_fbar: "  << endl;
+  for (int i=1;i<=nfleet;i++) pf1 << log_fbar(i)  << " #--" << i << endl;
+  for (int i=1;i<=nfleet;i++){
+    pf1 << "#--log_fdev:  " << i << endl;
+    for (int j=1;j<=nFparams(i);j++) pf1 << log_fdev(i,j) << " #--" << i << ", " << j << endl;
+  }
+  pf1 << "#--log_foff: "  << endl;
+  for (int i=1;i<=nfleet;i++) pf1 << log_foff(i) << " #--" << i << endl;
+  for (int i=1;i<=nfleet;i++){
+    pf1 << "#--log_fdov: "  << i << endl;
+    for (int j=1;j<=nYparams(i);j++) pf1 << log_fdov(i,j) << " #--" << i << ", " << j << endl;
+  }
+  pf1 <<"#--rec_dev_est"<<endl;
+  for (int i=rdv_syr;i<=rdv_eyr;i++)    pf1 << rec_dev_est(i)        << " #--" << i << endl;
+  pf1 <<"#--logit_rec_prop_est"<<endl;
+  for (int i=rdv_syr;i<=rdv_eyr;i++)    pf1 << logit_rec_prop_est(i) << " #--" << i << endl;
+  pf1 <<"#--log_vn"<<endl;
+  for (int i=1;i<=nSizeComps;i++)       pf1 << log_vn(i)             << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--survey_q"<<endl;
+  for (int i=1;i<=n_qpar;i++)           pf1 << survey_q(i)           << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--log_add_cv"<<endl;
+  for (int i=1;i<=n_addcv_par;i++)      pf1 << log_add_cv(i)         << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--par_devs"<<endl;
+  for (int i=1;i<=n_deviations_est;i++) pf1 << par_devs(i) << " #--" << i << " " << endl;
+  
+  pf1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  pf1 << "Params at/near bounds" << endl;
+  ::check_for_params_on_bounds(pf1);
+
+  pf1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  adstring strMidpoints = to_str(mid_points);    ///> string with space-separated size bin midpoints
+  pf1 << "capture selfcns: dataframe" << endl;
+  for ( int j = 1; j <= nfleet; j++ ) {
+    pf1 << "# " << fleetname(j) << endl;
+    for ( int h = 1; h <= nsex; h++ ) {
+      pf1 << "## " << sexes(h) << endl;
+      pf1 << "year " << strMidpoints << endl;
+      for ( int i = syr; i <= nyrRetro; i++ ) {
+        pf1 << "capture  " << i << " " << mfexp(log_slx_capture(j,h,i)) << endl;
+      }
+    }
+  }
+  pf1 << ">EOD<" << endl;
+  pf1 << "retained selfcns: dataframe" << endl;
+  pf1 << "year sex fleet " << strMidpoints << endl;
+  for ( int j = 1; j <= nfleet; j++ ) {
+    pf1 << "# " << fleetname(j) << endl;
+    for ( int h = 1; h <= nsex; h++ ) {
+      pf1 << "## " << sexes(h) << endl;
+      pf1 << "year " << strMidpoints << endl;
+      for ( int i = syr; i <= nyrRetro; i++ ) {
+        pf1 << "retained " << i << " " << mfexp(log_slx_retaind(j,h,i)) << endl;
+      }
+    }
+  }
+  pf1 << ">EOD<" << endl;
+  pf1 << "discard selfcns: dataframe" << endl;
+  pf1 << "year sex fleet " << strMidpoints << endl;
+  for ( int j = 1; j <= nfleet; j++ ) {
+    pf1 << "# " << fleetname(j) << endl;
+    for ( int h = 1; h <= nsex; h++ ) {
+      pf1 << "## " << sexes(h) << endl;
+      pf1 << "year " << strMidpoints << endl;
+      for ( int i = syr; i <= nyrRetro; i++ ) {
+        pf1 << "discard  " << i << " " << mfexp(log_slx_discard(j,h,i)) << endl;
+      }
+    }
+  }
+  pf1 << ">EOD<" << endl;
+
+
 // =====================================================================================================================================
 
 // Label 600: CreateOutput
@@ -11557,6 +11803,8 @@ FUNCTION CreateOutput
   OutFile1 << "#--Runtime: ";
   OutFile1 << hour << " hours, " << minute << " minutes, " << second << " seconds" << endl;
   OutFile1 << "#--Number of function evaluations: " << NfunCall << endl;
+  OutFile1 << "#--end phase: " << current_phase() << " number of evaluations in phase: " << nFcnCallsInPhs <<endl;
+  RepFile1 << "#--end phase: " << current_phase() << " number of evaluations in phase: " << nFcnCallsInPhs <<endl;
   OutFile1 << "#*******************************************" << endl;
  
   OutFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
@@ -12141,7 +12389,7 @@ FUNCTION CreateOutput
    for (int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++){
      OutFile1 << sexes(h) << " " << m << " " << i << " " << mean_wt(h,m,i) << endl;
-     RepFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << 1000000*mean_wt(h,m,i) << endl;
+     RepFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << mean_wt(h,m,i) << endl;
     }
   OutFile1 << ">EOD<" << endl;
   RepFile1 << ">EOD<" << endl;
@@ -13295,6 +13543,7 @@ FUNCTION WriteFiles
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(18)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
   OutInpFile1 << endl;
 
   OutInpFile1 << "# Expecting " << ntheta << " theta parameters" << endl;
@@ -13328,10 +13577,13 @@ FUNCTION WriteFiles
   OutInpFile1 << "## 2 = vector by sex" << endl;
   OutInpFile1 << "## 3 = matrix by sex" << endl;
   OutInpFile1 << 3 << "  #--method" << endl;
-  for ( int h = 1; h <= nsex; h++ )
-   for ( int m = 1; m <= nmature; m++)
-    for ( int i = syr; i <= nyrRetro+1; i++ )
-      OutInpFile1 << setw(14) << setprecision(8) <<  setfixed() << mean_wt(h,m,i) << endl;
+  for ( int h = 1; h <= nsex; h++ ){
+    for ( int m = 1; m <= nmature; m++){
+      OutInpFile1 << "#--sex: "<< h <<" maturity: " << m << endl;
+      for ( int i = syr; i <= nyrRetro+1; i++ )
+        OutInpFile1 << setw(14) << setprecision(8) <<  setfixed() << mean_wt(h,m,i) << endl;
+    }
+  }
   OutInpFile1 << "# Proportion mature by sex and size" << endl;
   OutInpFile1 << maturity << endl;
   OutInpFile1 << "# Proportion legal by sex and size" << endl;
@@ -13958,6 +14210,12 @@ GLOBALS_SECTION
   #include "include\libgmacs.h"
   #endif
 
+  int dontWriteParams = 0;//--flag to write params and gradient info to file (0->write;1->dont write)
+
+  void gradcalc(int nvar, const dvector& gr);
+  adstring_array get_param_names(void);
+  void check_for_params_on_bounds(ostream& os);
+
   time_t start,finish;
   long hour,minute,second;
   double elapsed_time;
@@ -14380,59 +14638,54 @@ GLOBALS_SECTION
   class gsm::Selex<dvar_vector>** ppSLX = 0;//initialized to NULL
 // --------------------------------------------------------------------------------------------------
 
- double GenJitter(int JitterType, double Initial, double lower, double upper, int Phase, double sdJitter, dvector& rands, dvector& randu)
-  {
-   double ParValue,eps;
+  double GenJitter(int JitterType, dvariable Initial, double lower, double upper, int Phase, double sdJitter, dvector& rands, dvector& randu){
+    double ParValue,vInitial,eps;
 
-   ParValue = Initial;
+    ParValue = value(Initial);
+    vInitial = ParValue;
 
-   if (Phase > 0)
-    {
-	// Andre's version
-     if (JitterType==1)
-      {
-       int ifound = 0;
-       ParValue = Initial;
-       int ii = 1;
-       if (Phase > 0)
-        while (ifound ==0)
-         {
-          eps = rands(ii);
-          ii += 1;
-          if (eps > 0)
-           ParValue = Initial + eps*(upper-Initial)*sdJitter/4.0;
-          else
-           ParValue = Initial + eps*(Initial-lower)*sdJitter/4.0;
-          if (ParValue > lower && ParValue < upper) ifound = 1;
-         }
+    if (Phase > 0){
+      // Andre's version
+      if (JitterType==1){
+        int ifound = 0;
+        ParValue = vInitial;
+        int ii = 1;
+        if (Phase > 0){
+          while (ifound ==0){
+            eps = rands(ii);
+            ii += 1;
+            if (eps > 0)
+              ParValue = vInitial + eps*(upper-vInitial)*sdJitter/4.0;
+            else
+              ParValue = vInitial + eps*(vInitial-lower)*sdJitter/4.0;
+            if (ParValue > lower && ParValue < upper) ifound = 1;
+          }
+        }
       }
 
-     // Buck's version
-     if (JitterType==2)
-      {
-       double d = upper - lower;
-       lower = lower+0.001*d;                        //shrink lower bound
-       upper = upper-0.001*d;                        //shrink upper bound
-       d = upper - lower;                            //shrink interval
-       double lp = Initial - 0.5*d*sdJitter;
-       double up = Initial + 0.5*d*sdJitter;
-       double rp = Initial + (randu(1)-0.5)*d*sdJitter;
-       if (rp > upper)
-        {rp = lp - (rp-upper);}
-       else
-         if (rp < lower) {rp = up + (lower-rp);}
-       ParValue = rp;
+      // Buck's version
+      if (JitterType==2){
+        double d = upper - lower;
+        lower = lower+0.001*d;                        //shrink lower bound
+        upper = upper-0.001*d;                        //shrink upper bound
+        d = upper - lower;                            //shrink interval
+        double lp = vInitial - 0.5*d*sdJitter;
+        double up = vInitial + 0.5*d*sdJitter;
+        double rp = vInitial + (randu(1)-0.5)*d*sdJitter;
+        if (rp > upper)
+          {rp = lp - (rp-upper);}
+        else
+          if (rp < lower) {rp = up + (lower-rp);}
+        ParValue = rp;
       }
 
-     // Jie's version
-     if (JitterType==3)
-      {
-       double tem1 = 0.5*rands(1)*sdJitter*log( (upper-lower+0.0000003)/(Initial-lower+0.0000001)-1.0);
-       ParValue = lower+(upper-lower)/(1.0+exp(-2.0*tem1));
+      // Jie's version
+      if (JitterType==3){
+        double tem1 = 0.5*rands(1)*sdJitter*log( (upper-lower+0.0000003)/(vInitial-lower+0.0000001)-1.0);
+        ParValue = lower+(upper-lower)/(1.0+exp(-2.0*tem1));
       }
     }
-	
-   return (ParValue);
+    return (ParValue);
   }
 // --------------------------------------------------------------------------------------------------
 
@@ -14505,17 +14758,23 @@ FINAL_SECTION
   cout<<"Starting FINAL_SECTION"<<endl;
   CreateOutput();
   cout<<"Finished CreateOutput"<<endl;
+  ofstream pf; 
+  pf.open("gmacs.final.par");
+  writeParams(1,pf); //--write current params and sel function values + gradients
+  pf.close();
 
   if (ppSLX) {
       //clean up pointer array--probably unnecessary
-      cout<<"nsel_patterns = "<<nsel_patterns<<endl;
-      cout<<"nsel_use      = "<<nsel_use<<endl;
-      cout<<"deleting ppSLX array w/ "<<nsel_use<<" sel patterns"<<endl;
+      if (verbose){
+        cout<<"nsel_patterns = "<<nsel_patterns<<endl;
+        cout<<"nsel_use      = "<<nsel_use<<endl;
+        cout<<"deleting ppSLX array w/ "<<nsel_use<<" sel patterns"<<endl;
+      }
       for (int k=0;k<nsel_use;k++) {
-        cout<<"deleting ppSLX["<<k<<"]"<<endl;
+        if (verbose)cout<<"deleting ppSLX["<<k<<"]"<<endl;
         if (ppSLX[k]) {
           delete ppSLX[k];
-          cout<<"deleted ppSLX["<<k<<"]"<<endl;
+          if (verbose) cout<<"deleted ppSLX["<<k<<"]"<<endl;
         } else {
           cout<<endl<<"#------------------------------"<<endl;
           cout<<"WARNING: ppSLX["<<k<<"] was not defined!"<<endl;
@@ -14524,7 +14783,7 @@ FINAL_SECTION
         }
       }
       delete ppSLX;
-      cout<<"Finished deleting ppSLX"<<endl;
+      if (verbose) cout<<"Finished deleting ppSLX"<<endl;
   }
 
   //  Print run time statistics to the screen.
@@ -14775,6 +15034,7 @@ FINAL_SECTION
 // 2025-06-10 ** WTS. Cosmetic changes (added some info).  
 // 2025-06-16 ** WTS. Revised calculation of `log_q_catch` in `calc_predicted_catch` slightly, added some error checks to help debug.
 //                    Incremented version to 2.20.31. 
+// 2025-09-05 ** WTS. Revised GenJitter to respect initial parameter values set through a pin file. 
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
