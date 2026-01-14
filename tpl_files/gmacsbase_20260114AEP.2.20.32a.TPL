@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.32b; ** TJ **; Compiled 2026-01-14");
+ !! TheHeader = adstring("## GMACS Version 2.20.32a; ** AEP **; Compiled 2026-01-14");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -9799,7 +9799,7 @@ FUNCTION calc_stock_recruitment_relationship
       dvar_vector x(1,nclass);
       dvar_vector y(1,nclass);
 
-      spr_lambda < 0 ? lam = 1.0: h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
+      h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
 
       // Single shell condition
       if ( nshell == 1 && nmature == 1 )
@@ -15419,7 +15419,6 @@ FINAL_SECTION
 // 2026-12-30 ** AEP. Allowed for more general environmental drivers for mean recruitment. Incremented version to 2.20.32.
 // 2026-01-05 ** AEP. Found a print out bug
 // 2026-01-14 ** AEP. Incremented version to 2.20.32a.
-// 2026-01-14 ** TJ.  Allowed for spr_lambda to be equal to 1 for full contribution of both sexes when ctl input is negative. Incremented version to 2.20.32b.
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
