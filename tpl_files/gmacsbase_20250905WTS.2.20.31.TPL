@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.32; ** AEP **; Compiled 2025-12-31");
+ !! TheHeader = adstring("## GMACS Version 2.20.31; ** WTS **; Compiled 2025-06-16");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1508,72 +1508,6 @@ DATA_SECTION
   !! ECHO(maxblocks);
   !! ECHO(blocklimits);
 
-
-  // |---------------------------------------------------------|
-  // | ENVIRONMENTAL SET UP                                    |
-  // |---------------------------------------------------------|
-
-  !! echoinput << "# Treatment of environmental variable use" << endl;
-  !! gmacs_ctl << "# Number of environmental treatments" << endl;
-  init_int n_env_treat;
-  !! echoinput << n_env_treat << endl;
-  !! gmacs_ctl << n_env_treat << endl;
-  ivector Env_link_nums(1,n_env_treat+1);
-  !! if (n_env_treat>0)
-  !! {
-  !!  echoinput << "# Number of links for each treatment" << endl;
-  !!  gmacs_ctl << "# Number of links for each treatment" << endl;
-  !!  for (int ii=1;ii<=n_env_treat;ii++)
-  !!   {
-  !!    *(ad_comm::global_datafile) >> Env_link_nums(ii);
-  !!    echoinput << Env_link_nums(ii) << endl;
-  !!    gmacs_ctl << Env_link_nums(ii) << endl;
-  !!   }
-  !! }
-  int max_env_vars;
-  int Num_env_vars;
-  !! max_env_vars = max(Env_link_nums);
-  !! Num_env_vars = sum(Env_link_nums);
-  3darray Env_specs(1,n_env_treat+1,1,max_env_vars+1,1,5);
-  matrix Env_vars_used(syr,nyr,1,Num_env_vars+1);
-  int Env_point;
-  number ave_env_scale;
-  number sd_env_scale;
-  number num_env_scale;
-  ivector N_env_par(1,n_env_treat)
-  
-  int Env_index;
-  !! Env_point = 1;
-  !! N_env_par.initialize();
-  !! if (n_env_treat > 0)
-  !! for (int ii=1;ii<=n_env_treat;ii++)
-  !!  {
-  !!   echoinput << "# Treatment #" << ii << endl;
-  !!   gmacs_ctl << "# Treatment #" << ii << endl;
-  !!   echoinput << "# Var power Zscore" << endl;
-  !!   gmacs_ctl << "# Var power Zscore" << endl;
-  !!   for (int jj=1;jj<=Env_link_nums(ii);jj++)
-  !!    {
-  !!     *(ad_comm::global_datafile) >> Env_specs(ii,jj,1)>> Env_specs(ii,jj,2)>> Env_specs(ii,jj,3)>> Env_specs(ii,jj,4);
-  !!     Env_specs(ii,jj,5) = Env_point;
-  !!     cout << Env_specs(ii,jj) << endl;
-  !!     echoinput << Env_specs(ii,jj) << endl;
-  !!     gmacs_ctl << Env_specs(ii,jj) << endl;
-  !!     Env_index = Env_specs(ii,jj,1);
-  !!     if (Env_specs(ii,jj,1) <=0 || Env_specs(ii,jj,1) > NenvIndics) { cout << "env variable out of bounds" << endl; exit(1); }
-  !!     N_env_par(ii) += int(Env_specs(ii,jj,2));
-  !!     ave_env_scale = 0; num_env_scale = 0; sd_env_scale = 0; 
-  !!     for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
-  !!      { ave_env_scale += EnvData(iy,Env_index); num_env_scale += 1; }
-  !!     ave_env_scale /= num_env_scale;
-  !!     for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
-  !!      { sd_env_scale += square(EnvData(iy,Env_index)-ave_env_scale); }
-  !!     sd_env_scale = sqrt(sd_env_scale/num_env_scale);
-  !!     for (int iy=syr;iy<=nyr;iy++) Env_vars_used(iy,Env_point) = (EnvData(iy,Env_index) - ave_env_scale)/sd_env_scale; 
-  !!     Env_point += 1;
-  !!    }
-  !!  }
- 
   // |---------------------------------------------------------|
   // | GENERAL CTL DECLARATION                                 |
   // |---------------------------------------------------------|
@@ -1817,316 +1751,87 @@ DATA_SECTION
     
   }
  END_CALCS
- 
-  // Storage by year
-  imatrix ThetaPnt(1,ntheta*Nyears2,1,2*nclass+7+1);
 
-  // Storage by year
-  matrix Tpar_control(1,1000,1,15);
-  imatrix TtoIG(1,1000,1,4);
 
-  int n_Tpar;
-  ivector nparTs(1,ntheta)
-  ivector Tpar_block(1,ntheta);
-  vector Tpar_RW_sigma(1,ntheta);
-  
-  ivector T_block(1,ntheta);
-  ivector T_block_fn(1,ntheta);
-  ivector T_env_link(1,ntheta);
-  ivector T_env_var(1,ntheta);
-  ivector T_RW(1,ntheta);
-  ivector T_RW_blk(1,ntheta);
-  vector T_RW_sigma(1,ntheta);
- 
- LOC_CALCS 
-  {
-    n_Tpar = 0;
-    int n_Tpar2; int h; int iblock;
-    ThetaPnt.initialize();
-    int ExtraStuff;
-    ExtraStuff = 0;
-    gmacs_ctl << endl;
-    echoinput << endl;
-    gmacs_ctl << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
-    for (int ig = 1;ig<=ntheta;ig++)
-     {
-      int ipnt3 = Nyears2*(ig-1);
-      for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
-       //--ipnt3 is index into ig
-       ThetaPnt(ipnt3+iyr-syr+1,nclass+2) = ig; //--ig
-       ThetaPnt(ipnt3+iyr-syr+1,nclass+3) = 0;  //--sex
-       ThetaPnt(ipnt3+iyr-syr+1,nclass+4) = 0;  //--fleet
-       ThetaPnt(ipnt3+iyr-syr+1,nclass+5) = iyr;//--year
-      }
-  
-      n_Tpar += 1;
-      TtoIG(n_Tpar,1) = ig; //--index identifying sel/ret, sex, and fleet
-      TtoIG(n_Tpar,2) = ig; //--parameter index
-      TtoIG(n_Tpar,3) = 1;  //--prior type
-      iblock = 1;
-      for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Tpar_control(n_Tpar,ii);
-      anystring = parname1(ig);
-         
-      gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
-      gmacs_ctl << setw(10) << setfixed() << int(Tpar_control(n_Tpar,4)) << " ";
-      for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
-      for (int ii=7;ii<=13;ii++) gmacs_ctl << setw(6) << setfixed() << int(Tpar_control(n_Tpar,ii)) << " ";
-      gmacs_ctl << setw(8) << setprecision(4) << setfixed() << Tpar_control(n_Tpar,14) << " # " << anystring; gmacs_ctl << endl;
-      for (int ii=1;ii<=14;ii++) echoinput << Tpar_control(n_Tpar,ii) << " "; echoinput << "# " << anystring << endl;
-      if (int(Tpar_control(n_Tpar,8)) > 0 || int(Tpar_control(n_Tpar,10)) > 0 || int(Tpar_control(n_Tpar,12)) > 0) ExtraStuff = 1;
-      
-      T_block(ig) =int(Tpar_control(n_Tpar,8));
-      T_block_fn(ig) = int(Tpar_control(n_Tpar,9));
-      T_env_link(ig) = int(Tpar_control(n_Tpar,10));
-      T_env_var(ig) = int(Tpar_control(n_Tpar,11));
-      T_RW(ig) = int(Tpar_control(n_Tpar,12));
-      T_RW_blk(ig) = int(Tpar_control(n_Tpar,13));
-      T_RW_sigma(ig) = Tpar_control(n_Tpar,14);
-     }//--ig loop
-    
-    if (ExtraStuff==1) {
-      gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
-    } else {
-      gmacs_ctl << "# NO EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
-    }
-    //for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
-    //  for (int ipar=1; ipar<=ntheta;ipar++)  { ThetaPnt(ipnt3+iyr-syr+1,ipar) = n_Tpar2+ipar; ThetaPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Tpar2+ipar; }
-    // }
-   for (int ig = 1;ig<=ntheta;ig++) {
-     // Are there blocks
-     int ipnt3 = Nyears2*(ig-1);
-     ECHO(ig)
-     int jpar = n_Tpar2+ig;
-     int IgBlock = int(Tpar_control(jpar,8));
-     int IgBlockFn = int(Tpar_control(jpar,9));
-     int IgEnvLink = int(Tpar_control(jpar,10));
-     int IgEnvLinkVar = int(Tpar_control(jpar,11));
-     int IgRW = int(Tpar_control(jpar,12));
-     int IgRWBlock = int(Tpar_control(jpar,13));
-     float SigmaRW = Tpar_control(jpar,14);
-     
-     if (IgBlock !=0){
-       // Environmental link
-       if ((IgEnvLink!=0) || (IgRW!=0))      
-        { cout << "Error: you can't have an environmental linkage with blocks and RWs at the same time - parameter " << ig << endl; exit(1); } 
-       if ((IgBlock<0) && (IgBlock>nblocks)) 
-        { cout << "Error: block out of range - parameter" << ig << endl; exit(1); }        
-       if ((IgBlockFn<0) && (IgBlockFn>1))   
-        { cout << "Error: block_fn out of range - parameter " << ig << endl; exit(1); }    
-       for (int kpar=1;kpar<=blocks(IgBlock);kpar++){
-        iblock = kpar + 1;
-        n_Tpar += 1;
-        TtoIG(n_Tpar,1) = ig;
-        TtoIG(n_Tpar,2) = ig;
-        TtoIG(n_Tpar,3) = 0;
-        for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Tpar_control(n_Tpar,ii); *(ad_comm::global_datafile) >> Tpar_control(n_Tpar,15);
-        for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
-         { ThetaPnt(iyr-syr+1,ig) = n_Tpar; ThetaPnt(iyr-syr+1,nclass+7+ig) = n_Tpar; }
-        anystring = parname1(ig);
-        anystring += "_block_group_"+str(IgBlock)+"_block_"+str(kpar); 
-  
-        gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) {gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";}
-        gmacs_ctl << setw(10) << setfixed() << int(Tpar_control(n_Tpar,4)) << " ";
-        for (int ii=5;ii<=6;ii++) {gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";}
-        for (int ii=7;ii<=8;ii++) {gmacs_ctl << setw(6) << setfixed() << int(Tpar_control(n_Tpar,ii)) << " ";}
-        gmacs_ctl << "# " << anystring; gmacs_ctl << endl;
-        for (int ii=1;ii<=7;ii++) {echoinput << Tpar_control(n_Tpar,ii) << " ";} echoinput << Tpar_control(n_Tpar,15) << " # " << anystring << endl;
-        parname1(PPnt+1) += anystring;
-        PPnt += 1;
-       } //-- kpar  loop
-      } //-- IgBlock!=0
-
-     if (IgEnvLink !=0) 
-      {
-       if (IgEnvLink != 1 && IgEnvLink != 2 && IgEnvLink != 3) { cout << "Error: Environmental links can only be 1, 2 or 3 - parameter " << ig << endl; exit(1); } 
-       if (IgEnvLinkVar <= 0 || IgEnvLinkVar > NenvIndics) { cout << "Error: Environmental variable outside range - parameter " << ig << endl; exit(1); } 
-       if (IgRWBlock <=0) { cout << "Error: There needs to a block for environment variables - parameter " << ig << endl; exit(1); }
-       anystring = "Env_link_"+parname1(ig);
-
-       echoinput << "Environmental link specifications" << endl;
-       for (int ienv_par=1;ienv_par<=N_env_par(IgEnvLinkVar);ienv_par++)
-        {
-         parname1(PPnt+1) = anystring+"_par_"+str(ienv_par);
-         PPnt += 1;
-         TtoIG(n_Tpar+ienv_par,1) = ig;
-         TtoIG(n_Tpar+ienv_par,2) = ig;
-         TtoIG(n_Tpar+ienv_par,3) = 0;
-         for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Tpar_control(n_Tpar+ienv_par,ii); *(ad_comm::global_datafile) >> Tpar_control(n_Tpar+ienv_par,15);
-         for (int ii=1;ii<=7;ii++) gmacs_ctl << Tpar_control(n_Tpar+ienv_par,ii) << " "; gmacs_ctl << Tpar_control(n_Tpar+ienv_par,15) << " # " << parname1(PPnt) << endl;
-         for (int ii=1;ii<=7;ii++) echoinput << Tpar_control(n_Tpar+ienv_par,ii) << " "; echoinput << Tpar_control(n_Tpar+ienv_par,15) << " # " << parname1(PPnt) << endl;
-        } //-- ienv_par
-       for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++)
-       for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++) 
-        {
-         ThetaPnt(ipnt3+iyr-syr+1,ig) = iyr*1000000.0+n_Tpar*10000+0+IgEnvLink*100+IgEnvLinkVar;
-         ThetaPnt(ipnt3+iyr-syr+1,nclass+7+ig) = n_Tpar+ig; 
-        }
-       n_Tpar += N_env_par(IgEnvLinkVar); 
-
-      } //--IgEnvLink !=0
-  
-     // Random walk
-     if (IgRW !=0) {
-      ECHOSTR2("Starting RW block for a theta parameter ",ig)
-      if (IgRW != 1 && IgRW != 2 && IgRW != 3 && IgRW != 11 && IgRW != 12 && IgRW != 13) { cout << "Error: RW block values can only be 1-3 or 11-13 - parameter " << ig << endl; exit(1); } 
-      n_devvars += 1;
-      ECHO(n_devvars)
-      devpoints(n_devvars,1) = 6; devpoints(n_devvars,2) = ig; devpoints(n_devvars,3) = n_deviations+1;
-      if (IgRWBlock <=0) { cout << "Error: There needs to a block for random walk - parameter " << ig <<   endl;  exit(1); }
-      if (IgRWBlock > nblocks) { cout << "Error: The block for selectivity parameter random walk is out of range - parameter " << ig <<  endl;  exit(1); }
-      ECHOSTR("setting ThetasPnt for RW for par ")
-      int iblkcntr = 0;
-      for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++){
-       echoinput << "kpar: " << kpar << " blocks(IgRWBlock): " << blocks(IgRWBlock) << " IgRW: " << IgRW << endl;
-       for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++){
-        ThetaPnt(ipnt3+iyr-syr+1,ig) = -10000*IgRWBlock-(n_deviations+iblkcntr+1);
-        ThetaPnt(ipnt3+iyr-syr+1,nclass+7+ig) = n_Tpar+ig;
-        ThetaPnt(ipnt3+iyr-syr+1,nclass+7) = IgRW;
-        iblkcntr++;
-        echoinput << ThetaPnt(ipnt3+iyr-syr+1,ig) << " " << ig << " " << ipnt3+iyr-syr+1 << " "  << IgRWBlock << " "
-                              << n_deviations << " " << iyr << " " << blocklimits(IgRWBlock,kpar,1) << endl;
-        }
-       }
-      for (int iblk=1;iblk<=blocks(IgRWBlock);iblk++)
-       n_deviations += (blocklimits(IgRWBlock,iblk,2)-blocklimits(IgRWBlock,iblk,1)+1);
-      devpoints(n_devvars,4) = n_deviations; 
-      devpoints(n_devvars,5) = IgRWBlock;
-      devpoints(n_devvars,6) = ig;
-      devpoints(n_devvars,7) = ig;
-      devpoints(n_devvars,8) = ig;
-      devpoints(n_devvars,9) = ig;
-      rdevpoints(n_devvars,1) =  SigmaRW;
-      ECHOSTR("##type(?) ipnt2  start(ndeviations)  end(ndeviations) IgRWBlock  ipar  sel/ret  sex  fleet")
-      ECHO(devpoints(n_devvars))                                                                                                    
-      } //--IgRW !=0
-        
-     } //-- ig
-    ECHOSTR("after that env_links, RWs")
-    //ECHO(n_deviations)
+  init_matrix theta_control(1,ntheta,1,7);                 ///> The specifications for the controls
+ LOC_CALCS
+  cout << " * Key parameter controls" << endl;
+  ECHOSTR(" * Key parameter controls");
+  gmacs_ctl << "# Core parameters" << endl;
+  gmacs_ctl << "## Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
+  gmacs_ctl << "## Lower & Upper: Range for the parameter" << endl;
+  gmacs_ctl << "## Phase: Set equal to a negative number not to estimate" << endl;
+  gmacs_ctl << "## Prior type:"  << endl;
+  gmacs_ctl << "## 0: Uniform   - parameters are the range of the uniform prior"  << endl;
+  gmacs_ctl << "## 1: Normal    - parameters are the mean and sd" << endl;
+  gmacs_ctl << "## 2: Lognormal - parameters are the mean and sd of the log" << endl;
+  gmacs_ctl << "## 3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
+  gmacs_ctl << "## 4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
+  gmacs_ctl << "# Initial_value    Lower_bound    Upper_bound Phase Prior_type        Prior_1        Prior_2" << endl;
+  for (int i=1;i<=ntheta;i++) {
+     gmacs_ctl << setw(15) << setprecision(8) <<  setfixed() << theta_control(i,1) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,2) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,3) << " ";
+     gmacs_ctl << setw(5) << setfixed() << (int) theta_control(i,4) << " ";
+     gmacs_ctl << setw(10) << setfixed() << (int) theta_control(i,5) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,6) << " ";
+     gmacs_ctl << setw(14) << setprecision(8) << setfixed() << theta_control(i,7) << " # " << parname1(i) << endl;
   }
  END_CALCS
-
-  imatrix iYrsThetaChanges(1,ntheta,syr,nyrRetro+1);
-  int ntheta_use;
-  ivector Theta_patterns(1,1000);
-  ivector Theta_patterns2(1,1000);
-  ivector nThetaVaries(1,ntheta);
-  int maxThetaVaries;
-  int nTheta_patterns;
-
- LOC_CALCS
-  {
-    int inew;
-    nTheta_patterns = 0;
-    nThetaVaries.initialize();
-    for (int ig=1;ig<=ntheta;ig++){
-     inew = 1;
-     int ipnt3 = (ig-1)*Nyears2;
-     ThetaPnt(ipnt3+1,nclass+6) = 1;
-     iYrsThetaChanges(ig,syr) = 1;
-     nTheta_patterns += 1; Theta_patterns(nTheta_patterns) = ipnt3+1;
-     for (int iyr=syr+1;iyr<=nyrRetro+1;iyr++){
-      int OK = 1; int Match=-1;
-      for (int iyr2=syr;iyr2<iyr;iyr2++){
-       int OK2 = 0;
-       for (int ipar=1;ipar<=nclass;ipar++)
-        if (ThetaPnt(ipnt3+iyr-syr+1,ipar)!=ThetaPnt(ipnt3+iyr2-syr+1,ipar)) OK2 = 1;
-       if (OK2 == 0 && Match < 0) Match = iyr2;
-       if (OK2==0) OK = 0; 
-       }//--iyr2
-      if (OK==1) { inew += 1; ThetaPnt(ipnt3+iyr-syr+1,nclass+6) = inew; nTheta_patterns += 1; Theta_patterns(nTheta_patterns) = ipnt3+iyr-syr+1; }
-      if (OK==0) { ThetaPnt(ipnt3+iyr-syr+1,nclass+6) = ThetaPnt(ipnt3+Match-syr+1,nclass+6); }
-      iYrsThetaChanges(ig,iyr) = ThetaPnt(ipnt3+iyr-syr+1,nclass+6);
-      }//--iyr
-     nThetaVaries(ig) = inew;
-    }//--ig
-    maxThetaVaries = max(nThetaVaries); 
-    echoinput << "nThetaVaries " << nThetaVaries << endl;
-    echoinput << "maxThetaVaries " << maxThetaVaries << endl;
-    echoinput << "iYrsThetaChanges " << endl;
-    echoinput << iYrsThetaChanges << endl;
-    echoinput << "ThetaPnt " << endl;
-    echoinput << ThetaPnt << endl;
-    echoinput << "Theta_patterns" << endl;
-    echoinput << Theta_patterns << endl;
+  vector theta_ival(1,ntheta);
+  vector theta_lb(1,ntheta);
+  vector theta_ub(1,ntheta);
+  ivector theta_phz(1,ntheta);
+  ivector prior_theta_type(1,ntheta);
+  vector prior_theta_p1(1,ntheta);
+  vector prior_theta_p2(1,ntheta);
   
-    // Get initial parameters
-    ntheta_use = 0;
-    for (int ig=1;ig<=ntheta;ig++) ntheta_use +=  nThetaVaries(ig);
-  }
- END_CALCS
-
-  // Set up the specifications for the selectivity parameters
-  vector T_ival(1,n_Tpar);
-  vector T_lb(1,n_Tpar);
-  vector T_ub(1,n_Tpar);
-  ivector T_phz(1,n_Tpar);
-  ivector prior_Ttype(1,n_Tpar);
-  vector prior_T_p1(1,n_Tpar);
-  vector prior_T_p2(1,n_Tpar);
-  ivector T_relative(1,n_Tpar);
-
  LOC_CALCS
-  for (int ipar=1;ipar<=n_Tpar;ipar++)
-   {
-    prior_Ttype(ipar)   = int(Tpar_control(ipar,4));
-    if (TtoIG(ipar,3)==0)
-     {
-      T_ival(ipar)        = log(Tpar_control(ipar,1));
-      T_lb(ipar)          = log(Tpar_control(ipar,2));
-      T_ub(ipar)          = log(Tpar_control(ipar,3));
-      prior_T_p1(ipar)    = log(Tpar_control(ipar,5));
-      prior_T_p2(ipar)    = log(Tpar_control(ipar,6));
-     }
-    else
-     {
-      T_ival(ipar)        = Tpar_control(ipar,1);
-      T_lb(ipar)          = Tpar_control(ipar,2);
-      T_ub(ipar)          = Tpar_control(ipar,3);
-      prior_T_p1(ipar)    = Tpar_control(ipar,5);
-      prior_T_p2(ipar)    = Tpar_control(ipar,6);
-     }
-    T_phz(ipar)         = int(Tpar_control(ipar,7));
-    T_relative(ipar)    = int(Tpar_control(ipar,15));
-    // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
-    if ( prior_Ttype(ipar) == UNIFORM_PRIOR )
-     {
-      prior_T_p1(ipar) = T_lb(ipar);
-      prior_T_p2(ipar) = T_ub(ipar);
-     }
-     
-   } //--ipar
-  ECHO(T_ival) 
-  ECHO(prior_Ttype); ECHO(prior_T_p1); ECHO(prior_T_p2); ECHO(T_phz);ECHO(T_relative);
- END_CALCS
+  theta_ival = column(theta_control,1);
+  theta_lb   = column(theta_control,2);
+  theta_ub   = column(theta_control,3);
+  theta_phz  = ivector(column(theta_control,4));
+  prior_theta_type = ivector(column(theta_control,5));
+  prior_theta_p1   = column(theta_control,6);
+  prior_theta_p2   = column(theta_control,7);
 
- LOC_CALCS
+  // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
+  for (int ipar=1;ipar<=ntheta;ipar++)
+   if ( prior_theta_type(ipar) == UNIFORM_PRIOR )
+   { prior_theta_p1(ipar) = theta_lb(ipar);  prior_theta_p2(ipar) = theta_ub(ipar);  }
+
+
   // Some combinations of options don't work
-  if ( bInitializeUnfished == UNFISHEDEQN && T_phz(2) > 0 )
+  if ( bInitializeUnfished == UNFISHEDEQN && theta_phz(2) > 0 )
    { cout << "Error: cannot estimate LogRini when unfished steady state is selected" << endl;  exit(1); }
-  if ( bInitializeUnfished == FISHEDEQN && T_phz(1) > 0 )
+  if ( bInitializeUnfished == FISHEDEQN && theta_phz(1) > 0 )
    { cout << "Error: cannot estimate LogR0 when fished steady state is selected" << endl;  exit(1); }
-  if ( bInitializeUnfished == FREEPARS && T_phz(1) > 0 ){
+  if ( bInitializeUnfished == FREEPARS && theta_phz(1) > 0 ){
     cout << "Error: cannot estimate LogR0 when individual parameters are estimated" << endl;
     exit(1);
   }
-  if ( bInitializeUnfished == FREEPARS && T_phz(2) > 0 ){
+  if ( bInitializeUnfished == FREEPARS && theta_phz(2) > 0 ){
     cout << "Error: cannot estimate LogRini when individual parameters are estimated" << endl;
     exit(1);
   }
-  if ( bInitializeUnfished == FREEPARSSCALED && T_phz(1) > 0 ){
+  if ( bInitializeUnfished == FREEPARSSCALED && theta_phz(1) > 0 ){
     cout << "Error: cannot estimate LogR0 when individual parameters are estimated" << endl;
     exit(1);
   }
-  if ( bInitializeUnfished == ZEROPOP && T_phz(1) > 0 ){
+  // if ( bInitializeUnfished == FREEPARSSCALED && theta_phz(2) > 0 ){
+  //   cout << "Error: cannot estimate LogRini when individual parameters are estimated" << endl;
+  //   exit(1);
+  // }
+  if ( bInitializeUnfished == ZEROPOP && theta_phz(1) > 0 ){
     cout << "Error: cannot estimate LogR0 when initial population is 0" << endl;
     exit(1);
   }
-  if ( bInitializeUnfished == ZEROPOP && T_phz(2) > 0 ){
+  if ( bInitializeUnfished == ZEROPOP && theta_phz(2) > 0 ){
     cout << "Error: cannot estimate LogRini when initial population is 0" << endl;
     exit(1);
   }
  END_CALCS
+
 
   // |-------------------|
   // | CUSTOM INPUT DATA |
@@ -2409,7 +2114,7 @@ DATA_SECTION
  END_CALCS
  
   // Storage by year
-  imatrix GrowPnt(1,3*nsex*Nyears,1,2*nclass+5+1);
+  imatrix GrowPnt(1,3*nsex*Nyears,1,nclass+5);
 
   matrix Gpar_control(1,1000,1,15);
   imatrix GtoIG(1,1000,1,4);
@@ -2508,12 +2213,14 @@ DATA_SECTION
           if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==1) anystring = "Molt_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
           if (bUseCustomMoltProbability2(h)==LOGISTIC_PROB_MOLT && ipar==2) anystring = "Molt_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
           if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)                anystring = "Molt_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+          cout<<"    "<<anystring<<endl;
         }
   
         if (ig>2*nsex && ig <= 3*nsex){
           if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==1) anystring = "Mature_probability_mu_base_"+sexes(h)+"_period_"+str(iblock);
           if (bUseCustomMatureProbability2(h)==LOGISTIC_PROB_MATURE && ipar==2) anystring = "Mature_probability_CV_base_"+sexes(h)+"_period_"+str(iblock);
           if (bUseCustomMatureProbability2(h)==FREE_PROB_MATURE)                anystring = "Mature_probability_base_"+sexes(h)+"_period_"+str(iblock)+"_class_"+str(ipar);
+          cout<<"    "<<anystring<<endl;
         }
         cout<<"printing Gpar_control"<<endl;
         gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Gpar_control(n_Gpar,ii) << " ";
@@ -2528,12 +2235,11 @@ DATA_SECTION
 
       gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase     Reltve " << endl;
       for (int iyr=syr;iyr<=nyrRetro;iyr++){
-        for (int ipar=1; ipar<=nparGs(ig);ipar++)  { GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar2+ipar; GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
+        for (int ipar=1; ipar<=nparGs(ig);ipar++)  GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar2+ipar;
       }
       for (int ipar=1; ipar<=nparGs(ig);ipar++){
         // Are there blocks
         int jpar = n_Gpar2+ipar;
-        cout << "IPAR" << jpar << " " << Gpar_control(jpar) << endl;
         int IgBlock = int(Gpar_control(jpar,8));
         int IgBlockFn = int(Gpar_control(jpar,9));
         int IgEnvLink = int(Gpar_control(jpar,10));
@@ -2548,6 +2254,7 @@ DATA_SECTION
             cout << "Gpar_control("<<jpar<<"): " << endl;
             cout << "Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
             cout << Gpar_control(jpar) << endl;
+            exit(1); 
           } 
           if ((IgBlock<0 )&& (IgBlock>nblocks)) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
           if ((IgBlockFn<0) && (IgBlockFn>1))   { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
@@ -2557,9 +2264,11 @@ DATA_SECTION
             GtoIG(n_Gpar,1) = ig;
             GtoIG(n_Gpar,2) = ipar;
             GtoIG(n_Gpar,3) = 0;
-            for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii); *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,15);
-            for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
-              { GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;  GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+5+ipar) = n_Gpar; }
+            for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);
+            *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,15);
+            for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++){
+              GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;
+            }
   
             if (ig <= nsex){
               if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
@@ -2619,31 +2328,25 @@ DATA_SECTION
             PPnt += 1;
           } //-- kpar
         } //-- blocks 
-        
-         if (IgEnvLink !=0) {
+        if (IgEnvLink !=0) {
           if (IgEnvLink != 1 && IgEnvLink != 2 && IgEnvLink != 3) { cout << "Error: Environmental links can only be 1, 2 or 3 - growth line " << ig << " par " << ipar <<endl; exit(1); } 
           if (IgEnvLinkVar <= 0 || IgEnvLinkVar > NenvIndics) { cout << "Error: Environmental variable outside range - growth line " << ig << " par " << ipar << endl; exit(1); } 
           if (IgRWBlock <=0) { cout << "Error: There needs to a block for environment variables - growth line " << ig << " par " << ipar <<  endl; exit(1); }
-          echoinput << "Environmental link specifications " << endl;
-          for (int ienv_par=1;ienv_par<=N_env_par(IgEnvLinkVar);ienv_par++)
-           {
-            PPnt += 1;
-	    parname1(PPnt) = "G_Env_link_"+sexes(h)+"_env_link"+"_par_"+str(ienv_par);
-            GtoIG(n_Gpar+ienv_par,1) = ig;
-            GtoIG(n_Gpar+ienv_par,2) = ipar;
-            GtoIG(n_Gpar+ienv_par,3) = 0;
-            for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar+ienv_par,ii); *(ad_comm::global_datafile) >> Gpar_control(n_Gpar+ienv_par,15);
-            for (int ii=1;ii<=7;ii++) gmacs_ctl << Gpar_control(n_Gpar+ienv_par,ii) << " ";  gmacs_ctl << Gpar_control(n_Gpar+ienv_par,15) << " # " << parname1(PPnt) << endl;
-            for (int ii=1;ii<=7;ii++) echoinput << Gpar_control(n_Gpar+ienv_par,ii) << " ";  echoinput << Gpar_control(n_Gpar+ienv_par,15) << " # " << parname1(PPnt) << endl;
-           } //-- kpar
+          n_Gpar += 1;
+          parname1(PPnt+1) = "Env_link_"+sexes(h);
+          PPnt += 1;
+          GtoIG(n_Gpar,1) = ig;
+          GtoIG(n_Gpar,2) = ipar;
+          GtoIG(n_Gpar,3) = 0;
+          for (int ii=1;ii<=7;ii++) {*(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii);}
+          *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,15);
+          for (int ii=1;ii<=7;ii++) {gmacs_ctl << Gpar_control(n_Gpar,ii) << " ";  gmacs_ctl << Gpar_control(n_Gpar,15) << endl;}
+          for (int ii=1;ii<=7;ii++) {echoinput << Gpar_control(n_Gpar,ii) << " "; echoinput << Gpar_control(n_Gpar,15) << endl;}
           for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++){
-           for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
-            { GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = iyr*1000000.0+(n_Gpar+1)*10000+IgEnvLink*100+IgEnvLinkVar;
-              GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
-  	   }
-          n_Gpar += N_env_par(IgEnvLinkVar); 
-         } //--Env link
-        
+            for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
+              GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = iyr*1000000.0+n_Gpar*10000+0+IgEnvLink*100+IgEnvLinkVar;
+          } //-- kpar
+        } //--Env link
         // Random walk
         if (IgRW !=0){
           n_devvars += 1;
@@ -2652,9 +2355,7 @@ DATA_SECTION
           if (IgRWBlock > nblocks) { cout << "Error: The block for random walk survey in out of range - growth line " << ig << " par " << ipar <<  endl;  exit(1); }
           for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++){
             for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
-             {
               GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
-              GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
           }
           for (int iblk=1;iblk<=blocks(IgRWBlock);iblk++){
             n_deviations += (blocklimits(IgRWBlock,iblk,2)-blocklimits(IgRWBlock,iblk,1)+1);
@@ -2674,9 +2375,7 @@ DATA_SECTION
   }  
   echoinput <<  "GrowPnt" << endl;
   echoinput <<  GrowPnt << endl;
-  echoinput <<  "GtoIGt" << endl;
-  echoinput <<  GtoIG << endl;
-    
+
  END_CALCS
 
   imatrix iYrsIncChanges(1,nsex,syr,nyrRetro);
@@ -2980,12 +2679,9 @@ DATA_SECTION
           if (M_env_link(ig) != 1 && M_env_link(ig) != 2 && M_env_link(ig) != 3) { cout << "Error: Environmental links can only be 1, 2 or 3 -sex*maturity state " << h << " & " << m << endl; exit(1); } 
           if (M_env_var(ig) <= 0 || M_env_var(ig) > NenvIndics) { cout << "Error: Environmental variable outside range - sex*maturity state " << h << " & " << m << endl; exit(1); } 
           if (M_RW_blk(ig) <=0) { cout << "Error: There needs to a block for environment variables - sex*maturity state " << h << " & " << m << endl; exit(1); }
-          n_Mpar += N_env_par(M_env_var(ig)); 
-          for (int ienv_par=1;ienv_par<=N_env_par(M_env_var(ig));ienv_par++)
-           {
-            PPnt += 1;
-	    parname1(PPnt) = "M"+anystring+"_env_link"+"_par_"+str(ienv_par);
-	   }
+          n_Mpar += 1; 
+          PPnt += 1;
+	  parname1(PPnt) = "M"+anystring+"_env_link";
          }
         // Type-specific (knots)
         if (M_type(ig)==1) n_Mpar += 2*M_extra(ig);
@@ -3217,7 +2913,7 @@ DATA_SECTION
  END_CALCS;
 
   // Storage by year
-  imatrix SelPnt(1,2*nsex*nfleet*Nyears2,1,2*nclass+7+1);
+  imatrix SelPnt(1,2*nsex*nfleet*Nyears2,1,nclass+7);
 
   matrix Spar_control(1,1000,1,15);
   imatrix StoIG(1,1000,1,4);
@@ -3252,10 +2948,10 @@ DATA_SECTION
       for (int h=1;h<=nsex;h++){
         for (int k=1;k<=nfleet;k++){
           if ( nparSs(it,(h-1)*nfleet+k) > 0){
-            int ipnt1 = (h-1)*nfleet+k;                                               //--index into sex,fleet
-            int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;                            //--index into sel/ret,sex,fleet
+            int ipnt1 = (h-1)*nfleet+k;  //--index into sex,fleet
+            int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;//--index into sel/ret,sex,fleet
             int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;//--index into sel/ret,sex,fleet w/ step by Nyears2
-            int ipnt4 = (it-1)*nsex+h;                                                //--index into sel/ret, sex
+            int ipnt4 = (it-1)*nsex+h;//--index into sel/ret, sex
             if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# Inputs for type*sex*fleet: " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl;
             if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
             n_Spar2 = n_Spar;
@@ -3322,7 +3018,7 @@ DATA_SECTION
               gmacs_ctl << "# NO EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
             }
             for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
-              for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)  { SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar2+ipar; SelPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Spar2+ipar; }
+              for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)  SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar2+ipar;
             }
             for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++){
               // Are there blocks
@@ -3351,7 +3047,7 @@ DATA_SECTION
                   StoIG(n_Spar,3) = 0;
                   for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii); *(ad_comm::global_datafile) >> Spar_control(n_Spar,15);
                   for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
-                    { SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar; SelPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Spar; }
+                    SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar;
                   if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_";
                   if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_";
                   if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
@@ -3394,11 +3090,11 @@ DATA_SECTION
                   PPnt += 1;
                 } //-- kpar  loop
               } //-- ig IgBlock!=0
-
               if (IgEnvLink !=0) {
                 if (IgEnvLink != 1 && IgEnvLink != 2 && IgEnvLink != 3) { cout << "Error: Environmental links can only be 1, 2 or 3 - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); } 
                 if (IgEnvLinkVar <= 0 || IgEnvLinkVar > NenvIndics) { cout << "Error: Environmental variable outside range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); } 
                 if (IgRWBlock <=0) { cout << "Error: There needs to a block for environment variables - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); }
+                n_Spar += 1;
                 anystring = "Env_link_"+fleetname(k)+"_"+sexes(h)+"_";
                 if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
                 if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
@@ -3428,29 +3124,20 @@ DATA_SECTION
                 if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
                 if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
                 if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
-
-                echoinput << "Environmental link specifications 0 sele" << endl;
-                for (int ienv_par=1;ienv_par<=N_env_par(IgEnvLinkVar);ienv_par++)
-                 {
-	          parname1(PPnt+1) = anystring+"_par_"+str(ienv_par);
-                  PPnt += 1;
-                  StoIG(n_Spar+ienv_par,1) = ipnt2;
-                  StoIG(n_Spar+ienv_par,2) = ipar;
-                  StoIG(n_Spar+ienv_par,3) = 1;
-                  for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar+ienv_par,ii); *(ad_comm::global_datafile) >> Spar_control(n_Spar+ienv_par,15);
-                  for (int ii=1;ii<=7;ii++) gmacs_ctl << Spar_control(n_Spar+ienv_par,ii) << " "; gmacs_ctl << Spar_control(n_Spar+ienv_par,15) << " # " << parname1(PPnt+1) << endl;
-                  for (int ii=1;ii<=7;ii++) echoinput << Spar_control(n_Spar+ienv_par,ii) << " "; echoinput << Spar_control(n_Spar+ienv_par,15) << " # " << parname1(PPnt+1) << endl;
-                 } //-- ienv_par
+              
+                parname1(PPnt+1) = anystring;
+                PPnt += 1;
+                StoIG(n_Spar,1) = ipnt2;
+                StoIG(n_Spar,2) = ipar;
+                StoIG(n_Spar,3) = 1;
+                for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii); *(ad_comm::global_datafile) >> Spar_control(n_Spar,15);
+                for (int ii=1;ii<=7;ii++) gmacs_ctl << Spar_control(n_Spar,ii) << " "; gmacs_ctl << Spar_control(n_Spar,15) << " # " << anystring << endl;
+                for (int ii=1;ii<=7;ii++) echoinput << Spar_control(n_Spar,ii) << " "; echoinput << Spar_control(n_Spar,15) << " # " << anystring << endl;
                 for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++){
-                  for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++) {
+                  for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
                     SelPnt(ipnt3+iyr-syr+1,ipar) = iyr*1000000.0+n_Spar*10000+0+IgEnvLink*100+IgEnvLinkVar;
-                    SelPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Spar+ipar; }
-                    }
-                  n_Spar += N_env_par(IgEnvLinkVar); 
-
+                } //-- kpar
               } //--IgEnvLink !=0
-               
-               
               // Random walk
               if (IgRW !=0) {
                 ECHOSTR2("Starting RW block for a selectivity function parameter ",ipar)
@@ -3467,7 +3154,6 @@ DATA_SECTION
                   for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++){
                     //SelPnt(ipnt3+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
                     SelPnt(ipnt3+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iblkcntr+1);
-                    SelPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Spar+ipar;
                     SelPnt(ipnt3+iyr-syr+1,nclass+7) = IgRW;
                     iblkcntr++;
                     echoinput << SelPnt(ipnt3+iyr-syr+1,ipar) << " " << ipar << " " << ipnt3+iyr-syr+1 << " "  << IgRWBlock << " "
@@ -3659,10 +3345,7 @@ DATA_SECTION
   vector cpue_emphasis(1,nSurveys);   //--column 3
   ivector q_mirror(1,nSurveys);       //--column 4
   ivector q_block(1,nSurveys);        //--column 5
-  ivector q_block_fn(1,nSurveys); 
-  !! q_block_fn.initialize(); // Not implemented
-  ivector q_relative(1,nSurveys); 
-  !! q_relative.initialize(); // Not implemented
+  // ivector q_block_fn(1,nSurveys);        //--column 5      (NOT IMPLEMENTED!!)
   ivector q_env_var(1,nSurveys);      //--column 6
   ivector q_env_link(1,nSurveys);     //--column 7
   ivector q_RW(1,nSurveys);           //--column 8
@@ -3709,19 +3392,13 @@ DATA_SECTION
       if (q_block(ii)>0) n_qpar += blocks(q_block(ii)); 
   }//--ii loop
   ////--increment parameter count for environmental links
-  cout << q_env_link << endl;
-  cout << q_env_var << endl;
   for (int ii=1;ii<=nSurveys;ii++){
     if (q_mirror(ii)==0){
       if (q_env_link(ii)!=0){
-        if (q_env_link(ii) != 1 && q_env_link(ii) != 2 && q_env_link(ii) != 3) { cout << "Error: Environmental links can only be 1, 2 or 3 - survey: " << ii << endl; exit(1); } 
+        if (q_env_link(ii) != 1 && q_env_link(ii) != 2) { cout << "Error: Environmental links can only be 1 or 2 - survey: " << ii << endl; exit(1); } 
         if (q_env_var(ii) <= 0 || q_env_var(ii) > NenvIndics) { cout << "Error: Environmental variable outside range - survey: " << ii << endl; exit(1); } 
-        n_qpar += N_env_par(q_env_var(ii)); 
-        for (int ienv_par=1;ienv_par<=N_env_par(q_env_var(ii));ienv_par++)
-         {
-          PPnt += 1;
-	  parname1(PPnt) = "q"+anystring+"_env_link"+"_par_"+str(ienv_par);
-	 }
+        if (q_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii << endl; exit(1); }
+        n_qpar += 1; 
       }
     }
   }//--ii loop
@@ -3746,7 +3423,7 @@ DATA_SECTION
   ECHOSTR("after survey Q env_links, RW")
   ECHO(n_deviations)
  END_CALCS
-  imatrix qToSurv(1,n_qpar,1,4);//--map from q index to non-mirrored survey index
+  ivector qToSurv(1,n_qpar);//--map from q index to non-mirrored survey index
   ivector qType(1,n_qpar);  //--"0" is block, "1" if environmental link
   ivector qPoint(1,n_qpar); //--TODO: this is used nowhere
  LOC_CALCS
@@ -3754,11 +3431,11 @@ DATA_SECTION
   int iq; iq = 0;
   for (int ii=1;ii<=nSurveys;ii++) {
     if (q_mirror(ii)==0){
-      iq +=1; qToSurv(iq,1) = ii; qType(iq) = 0; qPoint(iq) = iq; //--was qPoint(ii) = iq; TODO: qPoint is not used anywhere!!
+      iq +=1; qToSurv(iq) = ii; qType(iq) = 0; qPoint(iq) = iq; //--was qPoint(ii) = iq; TODO: qPoint is not used anywhere!!
       if (q_block(ii)>0) 
-        for (int j=1;j<=blocks(q_block(ii));j++) { iq += 1; qToSurv(iq,1) = ii; qType(iq) = 0; }
+        for (int j=1;j<=blocks(q_block(ii));j++) { iq += 1; qToSurv(iq) = ii; qType(iq) = 0; }
       if (q_env_link(ii)!=0)
-        { iq += 1; qToSurv(iq,1) = ii; qType(iq) = 1; }
+        { iq += 1; qToSurv(iq) = ii; qType(iq) = 1; }
     }
   }//--ii loop
   ECHO(qToSurv);
@@ -3772,8 +3449,8 @@ DATA_SECTION
     for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
     gmacs_ctl << setw(11) << setfixed() << int(q_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
-    gmacs_ctl << setw(6) << setfixed() << int(q_pars(b,7)) << " # Survey_q_parameter_"+str(b) << "_for_Survey_"<< qToSurv(b,1);
-    if (blocks(q_block(qToSurv(b,1)))>0) gmacs_ctl <<"_in_block_group_"<<q_block(qToSurv(b,1));
+    gmacs_ctl << setw(6) << setfixed() << int(q_pars(b,7)) << " # Survey_q_parameter_"+str(b) << "_for_Survey_"<< qToSurv(b);
+    if (blocks(q_block(qToSurv(b)))>0) gmacs_ctl <<"_in_block_group_"<<q_block(qToSurv(b));
     gmacs_ctl << endl;
   }//--b loop
   echoinput << "# Catchability (parameters)" << endl;
@@ -3801,7 +3478,7 @@ DATA_SECTION
     // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
     if ( prior_qtype(iq) == UNIFORM_PRIOR )
       { prior_q_p1(iq) = q_lb(iq); prior_q_p2(iq) = q_ub(iq); }
-    if ( q_anal(qToSurv(iq,1)) == YES ){
+    if ( q_anal(qToSurv(iq)) == YES ){
       if (qType(iq)==0 && (prior_qtype(iq) != UNIFORM_PRIOR || prior_qtype(iq) != LOGNORMAL_PRIOR) ){
         cout << "Error: you're only allowed to use a uniform or lognormal prior if the analytic q option is being used," << endl;
         cout << "       you can either specify a uniform or lognormal prior for q or switch analytic q off." << endl;
@@ -3846,10 +3523,6 @@ DATA_SECTION
 
   ivector add_cv_mirror(1,nSurveys);
   ivector add_cv_block(1,nSurveys);
-  ivector add_cv_block_fn(1,nSurveys); 
-  !! add_cv_block_fn.initialize(); // Not implemented
-  ivector add_cv_relative(1,nSurveys); 
-  !! add_cv_relative.initialize(); // Not implemented
   ivector add_cv_env_link(1,nSurveys);
   ivector add_cv_env_var(1,nSurveys);
   ivector add_cv_RW(1,nSurveys);
@@ -3880,14 +3553,8 @@ DATA_SECTION
       if (add_cv_env_link(ii) != 1 && add_cv_env_link(ii) != 2) { cout << "Error: Environmental links can only be 1 or 2 - survey: " << ii << endl; exit(1); } 
       if (add_cv_env_var(ii) <= 0 || add_cv_env_var(ii) > NenvIndics) { cout << "Error: Environmental variable outside range - survey: " << ii <<  endl; exit(1);} 
       if (add_cv_RW_blk(ii) <=0) { cout << "Error: There needs to a block for environment variables - survey: " << ii <<endl;  exit(1); }
-      n_addcv_par += N_env_par(add_cv_env_var(ii)); 
-      for (int ienv_par=1;ienv_par<=N_env_par(add_cv_env_var(ii));ienv_par++)
-       {
-        PPnt += 1;
-//	parname1(PPnt) = "q_add" + anystring + "_env_link" + "_par_" + str(ienv_par);
-       }
+      n_addcv_par += 1; 
       }
-      
   for (int ii=1;ii<=nSurveys;ii++)
    if (add_cv_mirror(ii)==0)
     if (add_cv_RW(ii)!=0) 
@@ -3907,18 +3574,18 @@ DATA_SECTION
   ECHO(rdevpoints);
   ECHO(n_deviations);
  END_CALCS
-  imatrix AddcvToSurv(1,n_addcv_par,1,4);
+  ivector AddcvToSurv(1,n_addcv_par);
   ivector AddcvType(1,n_addcv_par);
  LOC_CALCS
   int iaddcv; iaddcv = 0;
   for (int ii=1;ii<=nSurveys;ii++)
    if (add_cv_mirror(ii)==0)
     {
-      iaddcv +=1; AddcvToSurv(iaddcv,1) = ii; AddcvType(iaddcv) = 0;
+      iaddcv +=1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 0;
       if (add_cv_block(ii)>0) 
-      for (int j=1;j<=blocks(add_cv_block(ii));j++) { iaddcv += 1; AddcvToSurv(iaddcv,1) = ii; AddcvType(iaddcv) = 0; }
+      for (int j=1;j<=blocks(add_cv_block(ii));j++) { iaddcv += 1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 0; }
       if (add_cv_env_link(ii)!=0)
-      { iaddcv += 1; AddcvToSurv(iaddcv,1) = ii; AddcvType(iaddcv) = 1; }
+      { iaddcv += 1; AddcvToSurv(iaddcv) = ii; AddcvType(iaddcv) = 1; }
     }
   echoinput << "iaddcv (final) = " << iaddcv << endl;
  END_CALCS
@@ -3968,9 +3635,9 @@ DATA_SECTION
   !!   for (int ipar=1;ipar<=n_addcv_par;ipar++)
   !!    {
   !!     echoinput << "ipar = "<<ipar<< " n_addcv_par = " << n_addcv_par << endl;
-  !!     if (AddcvToSurv(k,1)==ks && AddcvType(k)==0) 
+  !!     if (AddcvToSurv(k)==ks && AddcvType(k)==0) 
   !!      { echoinput << 2 << endl; log_add_cv_ival(ipar) = log(add_cv_ival(ipar)); log_add_cv_lb(ipar) = log(add_cv_lb(ipar)); log_add_cv_ub(ipar) = log(add_cv_ub(ipar)); }
-  !!     if (AddcvToSurv(k,1)==ks && AddcvType(k)==1) 
+  !!     if (AddcvToSurv(k)==ks && AddcvType(k)==1) 
   !!      { echoinput << 3 << endl; log_add_cv_ival(ipar) = add_cv_ival(ipar); log_add_cv_lb(ipar) = add_cv_lb(ipar); log_add_cv_ub(ipar) = add_cv_ub(ipar); }
   !!     // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
   !!     if ( prior_add_cv_type(k) == UNIFORM_PRIOR )
@@ -4503,7 +4170,6 @@ DATA_SECTION
   !!         }
   !!        if (devpoints(n_devvars,1)==4) devnames1(ndev_cnt) = "q_survey_"     +str(devpoints(is,2))+"_par_1"+"_dev_for_year_"+str(iyr);
   !!        if (devpoints(n_devvars,1)==5) devnames1(ndev_cnt) = "add_cv_survey_"+str(devpoints(is,2))+"_par_1"+"_dev_for_year_"+str(iyr);
-  !!        if (devpoints(n_devvars,1)==6) devnames1(ndev_cnt) = "theta_"+str(devpoints(is,2))+"_par"+"_dev_for_year_"+str(iyr);
   !!       }
   !!     }
   !!   }
@@ -4801,7 +4467,7 @@ DATA_SECTION
  LOC_CALCS
   NVarPar = 0;
   int Ipar;
-  for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > TurnOffPhase) T_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=ntheta; Ipar++) if (theta_phz(Ipar) > TurnOffPhase) theta_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > TurnOffPhase) G_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > TurnOffPhase) M_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > TurnOffPhase) S_phz(Ipar) = -1;
@@ -4814,7 +4480,7 @@ DATA_SECTION
   for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > TurnOffPhase) q_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase) cv_phz(Ipar) = -1;
 
-  for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=ntheta; Ipar++) if (theta_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > 0) NVarPar += 1;
@@ -4855,16 +4521,18 @@ DATA_SECTION
  END_CALCS
 
   int NfunCall;
+  int nFcnCallsInPhs;
   !! NfunCall = 0;
+  !! nFcnCallsInPhs = 0;
 
 // ================================================================================================
 
 // Label 200: INITIALIZATION_SECTION
 INITIALIZATION_SECTION
+   theta               theta_ival;
    G_pars_est          G_ival;
    M_pars_est          M_ival;
    S_pars_est          S_ival;
-   T_pars_est          T_ival;
    log_fbar            log_init_fbar;
    log_foff            log_init_fbar_foff; //added 20240413 by WTS (otherwise log_foff implicitly initialized to 0)
    log_vn              log_vn_ival;
@@ -4963,9 +4631,8 @@ PARAMETER_SECTION
   // steepness = theta(9)
   // rho       = theta(10)
   // logN0     = theta(11,...)
-  init_bounded_number_vector T_pars_est(1,n_Tpar,T_lb,T_ub,T_phz);
-  !!ECHO(T_pars_est);
-  // growth parameters
+  init_bounded_number_vector theta(1,ntheta,theta_lb,theta_ub,theta_phz);
+  !! ECHO(theta);
   init_bounded_number_vector G_pars_est(1,n_Gpar,G_lb,G_ub,G_phz);
   !!ECHO(G_pars_est);
   // M parameters 
@@ -5036,7 +4703,7 @@ PARAMETER_SECTION
   objective_function_value objfun;
 
   number logR0;                                            ///> logarithm of unfished recruits
-  vector logRbar(syr,nyrRetro+1);                          ///> logarithm of average recruits(syr+1,nyr)
+  number logRbar;                                          ///> logarithm of average recruits(syr+1,nyr)
   number logRini;                                          ///> logarithm of initial recruitment(syr)
   vector ra(1,nsex);                                       ///> Expected value of recruitment distribution
   vector rbeta(1,nsex);                                    ///> rate parameter for recruitment distribution
@@ -5061,7 +4728,6 @@ PARAMETER_SECTION
   matrix mature_mu(1,nsex,1,nMoltVaries);                  ///> 50% probability of maturing at length each year
   matrix mature_cv(1,nsex,1,nMoltVaries);                  ///> CV in maturing probabilility
 
-  matrix T_pars(1,1000);                                   ///> Extracted initial parameters
   matrix rec_pass(1,nsex,1,nclass);                        ///> passing into update routine 
   vector totrecruits(syr,nyrRetro);                        ///> vector of estimated recruits (total)
   matrix recruits(1,nsex,syr,nyrRetro);                    ///> vector of estimated recruits, by sex
@@ -5263,73 +4929,73 @@ PRELIMINARY_CALCS_SECTION
       JitFile << rseed << endl;
       JitFile.close();
     }
-    for (int ipar=1;ipar<=n_Tpar;ipar++)
+    for (int ipar=1;ipar<=ntheta;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      T_pars_est(ipar) = GenJitter(IsJittered,T_ival(ipar),T_lb(ipar),T_ub(ipar),T_phz(ipar),sdJitter,rands,randu);
+      theta(ipar) = GenJitter(IsJittered,theta(ipar),theta_lb(ipar),theta_ub(ipar),theta_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_Gpar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      G_pars_est(ipar) = GenJitter(IsJittered,G_ival(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu);
+      G_pars_est(ipar) = GenJitter(IsJittered,G_pars_est(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_Spar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      S_pars_est(ipar) = GenJitter(IsJittered,S_ival(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu);
+      S_pars_est(ipar) = GenJitter(IsJittered,S_pars_est(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nFparams(ipar); jpar++)
       {
        rands.fill_randn(rng2);
        randu.fill_randn(rng2);
-       log_fdev(ipar,jpar) = GenJitter(IsJittered,(fdev_ub(ipar)+fdev_lb(ipar))/2.0,fdev_lb(ipar),fdev_ub(ipar),f_phz(ipar),sdJitter,rands,randu);
+       log_fdev(ipar,jpar) = GenJitter(IsJittered,log_fdev(ipar,jpar),fdev_lb(ipar),fdev_ub(ipar),f_phz(ipar),sdJitter,rands,randu);
       }
     for (int ipar=1;ipar<=nfleet;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_foff(ipar) = GenJitter(IsJittered,(foff_ub(ipar)+foff_lb(ipar))/2.0,foff_lb(ipar),foff_ub(ipar),foff_phz(ipar),sdJitter,rands,randu);
+      log_foff(ipar) = GenJitter(IsJittered,log_foff(ipar),foff_lb(ipar),foff_ub(ipar),foff_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nYparams(ipar); jpar++)
       {
        rands.fill_randn(rng2);
        randu.fill_randn(rng2);
-       log_fdov(ipar,jpar) = GenJitter(IsJittered,0.0,-10.0,10.0,foffdevs_phz(ipar),sdJitter,rands,randu);
+       log_fdov(ipar,jpar) = GenJitter(IsJittered,log_fdov(ipar,jpar),-10.0,10.0,foffdevs_phz(ipar),sdJitter,rands,randu);
       }
     for (int ipar=rdv_syr;ipar<=rdv_eyr;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      rec_dev_est(ipar) = GenJitter(IsJittered,0.0,-8.0,8.0,rdv_phz,sdJitter,rands,randu);
+      rec_dev_est(ipar) = GenJitter(IsJittered,rec_dev_est(ipar),-8.0,8.0,rdv_phz,sdJitter,rands,randu);
      }
     for (int ipar=rdv_syr;ipar<=rdv_eyr;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      logit_rec_prop_est(ipar) = GenJitter(IsJittered,init_sex_ratio,-100.0,100.0,rec_prop_phz,sdJitter,rands,randu);
+      logit_rec_prop_est(ipar) = GenJitter(IsJittered,logit_rec_prop_est(ipar),-100.0,100.0,rec_prop_phz,sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nSizeComps;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_vn(ipar) = GenJitter(IsJittered,log_vn_ival(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu);
+      log_vn(ipar) = GenJitter(IsJittered,log_vn(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_qpar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      survey_q(ipar) = GenJitter(IsJittered,q_ival(ipar),q_lb(ipar),q_ub(ipar),q_phz(ipar),sdJitter,rands,randu);
+      survey_q(ipar) = GenJitter(IsJittered,survey_q(ipar),q_lb(ipar),q_ub(ipar),q_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_addcv_par;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_add_cv(ipar) = GenJitter(IsJittered,log_add_cv_ival(ipar),log_add_cv_lb(ipar),log_add_cv_ub(ipar),cv_phz(ipar),sdJitter,rands,randu);
+      log_add_cv(ipar) = GenJitter(IsJittered,log_add_cv(ipar),log_add_cv_lb(ipar),log_add_cv_ub(ipar),cv_phz(ipar),sdJitter,rands,randu);
      }
    }
 
@@ -5337,9 +5003,7 @@ PRELIMINARY_CALCS_SECTION
   cout << "| Initial Procedure Section    |" << endl;
   cout << "+------------------------------+" << endl;
 
-  cout << "initialize model AEP" << endl;
   initialize_model_parameters();            if ( verbose >= 3 ) cout << "Ok after initialize_model_parameters in Prelim ..." << endl;
-  cout << "initialize model AEP" << endl;
   calc_growth_increments();                 if ( verbose >= 3 ) cout << "Ok after calc_growth_increments in Prelim ..." << endl;
   calc_molting_probability();               if ( verbose >= 3 ) cout << "Ok after calc_molting_probability in Prelim ..." << endl;
   calc_mature_probability();                if ( verbose >= 3 ) cout << "Ok after calc_mature_probability in Prelim ..." << endl;
@@ -5368,6 +5032,7 @@ PRELIMINARY_CALCS_SECTION
   init_selectivities();                     if ( verbose >= 3 ) cout << "Ok after init_selectivities in Prelim ..." << endl;
   calc_selectivities();                     if ( verbose >= 3 ) cout << "Ok after calc_selectivities in Prelim ..." << endl;
 
+  dontWriteParams = 0;//--turned off to writeParams
   cout<<"Finished PRELIMINARY_CALCS_SECTION"<<endl;
 // =============================================================================
 // =============================================================================
@@ -5376,6 +5041,22 @@ BETWEEN_PHASES_SECTION
     cout<<"#--BETWEEN_PHASES_SECTION---------------------"<<endl;
     adstring msg = "#----Starting phase "+str(current_phase())+" of "+str(initial_params::max_number_phases);
     cout<<msg<<endl;
+    cout<<"NfunCall = " << NfunCall << endl;
+    cout<<"nFcnCallsInPhs in prev.phase = " << nFcnCallsInPhs << endl;
+    int on = -1;
+    if ((on=option_match(ad_comm::argc,ad_comm::argv,"-max_phase"))>-1) {
+        int mxphs = atoi(ad_comm::argv[on+1]);
+        if (current_phase()>mxphs){
+          cout<<"#--commandline max phase exceeded: exiting--"<<endl;
+          CreateOutput();
+          ofstream pf; 
+          pf.open("gmacs.end_of_phase.par");
+          writeParams(1,pf); //--write current params and sel function values + gradients
+          pf.close();
+          exit(1);
+        }
+    }
+    nFcnCallsInPhs = 0;
     cout<<"Finished BETWEEN_PHASES_SECTION"<<endl;
     cout<<"----------------------------------------------"<<endl;
 // ================================================================================================
@@ -5384,10 +5065,16 @@ BETWEEN_PHASES_SECTION
 PROCEDURE_SECTION
   int Ipnt,ii,jj;
 
+  //cout << theta << endl;
+  //cout << Grwth << endl;
+  //cout << log_slx_pars << endl;
+  //exit(1);
+ 
   // Update function calls
   NfunCall += 1;
+  nFcnCallsInPhs++;
   if ( verbose >= 3 ) {
-    cout<<endl<<endl<<"Starting PROCEDURE_SECTION. NfunCall = " << NfunCall <<endl;
+    cout<<endl<<endl<<"Starting PROCEDURE_SECTION. NfunCall = " << NfunCall << endl;
     cout << "\tOk after start of function ..." << endl;
   }
 
@@ -5399,6 +5086,13 @@ PROCEDURE_SECTION
    {calc_selectivities();                                   if ( verbose >= 3 ) cout << "Ok after calc_selectivities ..." << endl; }
   else
    if ( verbose >= 3 ) cout << "Ok after ignoring selex calculation..." << endl;
+  
+  if (verbose>=3 && !dontWriteParams) {
+    ofstream pf; 
+    pf.open("gmacs.intm-1.par");
+    writeParams(0,pf); //--write only current params and sel function values (no gradients)
+    pf.close();
+  }
 
   calc_fishing_mortality();                                if ( verbose >= 3 ) cout << "Ok after calc_fishing_mortality ..." << endl;
   //calc_natural_mortality();                                if ( verbose >= 3 ) cout << "Ok after calc_natural_mortality ..." << endl;
@@ -5439,13 +5133,16 @@ PROCEDURE_SECTION
   calc_prior_densities();                                  if ( verbose >= 3 ) cout << "Ok after calc_prior_densities ..." << endl;
   calc_objective_function();                               if ( verbose >= 3 ) cout << "Ok after calc_objective_function ..." << endl;
 
+  //--output gradient information
+  // if (!dont_save_gradient_info) save_gradient_info(NfunCall);
+
   // sd_report variables
   if ( sd_phase() || NfunCall==StopAfterFnCall){
     if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
     // Save the estimates parameters to ParsOut (used for variance estimation)
     ParsOut.initialize();
     Ipnt = 0;
-    for (ii=1;ii<=n_Tpar;ii++)  if (T_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = T_pars_est(ii); }
+    for (ii=1;ii<=ntheta;ii++)  if (theta_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = theta(ii); }
     for (ii=1;ii<=n_Gpar; ii++) if (G_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = G_pars_est(ii); }
     for (ii=1;ii<=n_Mpar; ii++) if (M_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = M_pars_est(ii); }
     for (ii=1;ii<=n_Spar; ii++) if (S_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = S_pars_est(ii); }
@@ -5474,16 +5171,27 @@ PROCEDURE_SECTION
     if ( verbose >= 3 ) cout << "Ok after calc_sdreport ..." << endl;
   }
 
+  if (verbose>=3 && !dontWriteParams) {
+    ofstream pf; 
+    pf.open("gmacs.intm-2.par");
+    writeParams(0,pf); //--write (not gradients), current params and sel function values
+    pf.close();
+  }
+
   // General outputs
   if ( mceval_phase() ) write_eval();
   if ( NfunCall == StopAfterFnCall ) {
     cout<<"Stopping after "<<NfunCall<<" function calls--creating output"<<endl;
-      CreateOutput();
-      cout<<"--------------------------------------"<<endl;
-      cout<<"Stopping after "<<StopAfterFnCall<<" function calls"<<endl;
-      cout<<"--------------------------------------"<<endl;
-      exit(1);
-	}
+    CreateOutput();
+    ofstream pf; 
+    pf.open("gmacs.stopped.par");
+    writeParams(0,pf); //--write current params and sel function values but no gradients
+    pf.close();
+    cout<<"--------------------------------------"<<endl;
+    cout<<"Stopping after "<<StopAfterFnCall<<" function calls"<<endl;
+    cout<<"--------------------------------------"<<endl;
+    exit(1);
+  }
 
 
 // =======================================================================================================================================
@@ -5499,114 +5207,24 @@ FUNCTION initialize_model_parameters
 
   if (verbose >= 3) cout<<"starting initialize_model_parameters";
 
- 
- // Get initial parameters
- dvariable envpar;
- ntheta_use = 0;
- T_pars.initialize();
- if (verbose >=4 ) {
-    cout<< endl << "#--Expanded initial parameters" << endl;
-    cout << "t " << "ig" << " "<< "itheta" << " "<<  "irow" << " " << "iyr" << " " << "ipar" << " "<< "ThetaPnt" << " "<< "ParNo";
-    cout << " "<< "T_pars_est(RefParNo)"<< " " << "T_pars_est(ParNo)" << " "<< "EnvData(iyr,EnvLinkVar)" << " " << "T_pars(ntheta_use,ipar)" << endl;
-  }
- 
- for (int ig=1;ig<=ntheta;ig++){
-  for ( int itheta = 1; itheta<=nThetaVaries(ig); itheta++){
-   ntheta_use += 1;
-   int ipar = 1;
-   int OK; int irow; int irefrow; int iyr;
-   OK = 0; irow = 0;
-   int ipnt3 = (ig-1)*Nyears2;
-  
-   for (int ivec=1;ivec<=nyrRetro+1-syr+1;ivec++)
-    if (ThetaPnt(ipnt3+ivec,nclass+6)==itheta && OK==0) { OK=1; irow=ipnt3+ivec; }
-   iyr = ThetaPnt(irow,nclass+5);
-   if (itheta==1) irefrow = irow;
-   Theta_patterns2(ntheta_use) = irow;
-
-   // Extract parameters 
-   int ParNo; int RefParNo;int jpnt; int ienv_par2;
-   if (ThetaPnt(irow,ipar) != 0) {
-    RefParNo = ThetaPnt(irefrow,nclass+7+1);
-    if (ThetaPnt(irow,ipar) >0 && ThetaPnt(irow,1) < 10000) 
-     {
-      ParNo = ThetaPnt(irow,ig);
-      if (itheta==1) T_pars(ntheta_use,ipar) = T_pars_est(ParNo);
-      if (itheta>0 && T_relative(ParNo)==0) T_pars(ntheta_use,ipar) = T_pars_est(ParNo);
-      if (itheta>0 && T_relative(ParNo)==1) T_pars(ntheta_use,ipar) = T_pars_est(RefParNo) * exp(T_pars_est(ParNo));
-      if (verbose >=4 ) {
-        cout << "1 " << ig << " "<< itheta << " " << irow << " " << iyr << " " << ipar << " "<< ThetaPnt(irow,ipar) << " "<< ParNo;
-        cout << " "<< T_pars_est(RefParNo)<< " " << T_pars_est(ParNo) << " "<< "--NA--" << " " << T_pars(ntheta_use,ipar) << endl;
-       } //if (verbose >=4 )
-     } // if (ThetaPnt(irow,ipar) >0 && ThetaPnt(irow,1) < 10000) 
-    else 
-     {
-      if (ThetaPnt(irow,ipar) > 0)
-       {
-        RefParNo = ThetaPnt(irefrow,nclass+7+ipar);
-        int EnvLinkVar =     ThetaPnt(irow,ipar)        - int(ThetaPnt(irow,ipar)/100.0)*100;
-        int EnvLink    = int(ThetaPnt(irow,ipar)/100)   - int(ThetaPnt(irow,ipar)/10000)*100;
-        int ParNo      = int(ThetaPnt(irow,ipar)/10000) - int(ThetaPnt(irow,ipar)/1000000)*100;
-        // Now compute the adjustment
-        envpar = 0;
- 	jpnt = ParNo+1;
-        for (int ienv_par=1;ienv_par<=Env_link_nums(EnvLinkVar);ienv_par++)
-         for (int jenv_par=1; jenv_par<=int(Env_specs(EnvLinkVar,ienv_par,2));jenv_par++)
- 	  {
-           ienv_par2 = int(Env_specs(EnvLinkVar,ienv_par,5));
-           envpar += T_pars_est(jpnt)*pow(Env_vars_used(iyr,ienv_par2),float(jenv_par));
-           jpnt += 1;
-          }
-        if (EnvLink==1) T_pars(ntheta_use,ipar) = T_pars_est(RefParNo) + envpar;
-        if (EnvLink==2) T_pars(ntheta_use,ipar) = T_pars_est(RefParNo) * envpar;
-        if (EnvLink==3) T_pars(ntheta_use,ipar) = T_pars_est(RefParNo) * exp(envpar);
-        if (verbose >=4 ) {
-          cout << "2 " << ig << " "<< itheta << " " << irow << " " << iyr << " " << ipar << " "<< ThetaPnt(irow,ipar) << " "<< ParNo;
-          cout << " "<< T_pars_est(RefParNo)<< " " << T_pars_est(ParNo) << " "<< EnvData(iyr,EnvLinkVar) << " " << T_pars(ntheta_use,ipar) << endl;
-          }
-        } // if (ThetaPnt(irow,ipar) > 0)
-      else 
-        {
-         int ThetaPnt2 = -1*ThetaPnt(irow,nclass+7+ipar);
-         int Devpar = ThetaPnt2  - int(ThetaPnt2/100.0)*100;
-         if (ThetaPnt(irow,nclass+7)==1) T_pars(ntheta_use,ipar) = T_pars_est(RefParNo)*exp(par_devs(Devpar)); 
-         if (ThetaPnt(irow,nclass+7)==2) T_pars(ntheta_use,ipar) = T_pars_est(RefParNo) + par_devs(Devpar); 
-         if (verbose >=4 ) {
-          cout << "3 " << ig << " "<< itheta << " " << irow << " " << iyr << " " << ipar << " "<< ThetaPnt2 << " "<< Devpar;
-          cout << " "<< T_pars_est(RefParNo)<< " " << par_devs(Devpar) << " "<< "--NA--" << " " << T_pars(ntheta_use,ipar) << endl;
-          }
-        } // else
-     
-     } // else
-
-    } //if (ThetaPnt(irow,ipar) != 0) 
-    
-   } //- theta loop  
-   } // - ig loop  
-  if (verbose >= 3) cout<<"--finished initial pars"<<endl;
-
   // Get parameters from theta control matrix:
   Jpnt = 1; 
-  dvar_vector par_vec(syr,nyrRetro+1);
-  logR0     = T_pars_est(Jpnt);
-  logRini   = T_pars_est(Jpnt+1);
-  logRbar   = T_pars_est(Jpnt+2);
-  Ipnt = Jpnt+2;
-  logRbar = timevarparV2(6,Ipnt, nyrRetro+1,  T_relative(Ipnt),T_block(Ipnt), T_block_fn(Ipnt),T_env_link(Ipnt), T_env_var(Ipnt), 
-                                 T_RW(Ipnt), T_RW_blk(Ipnt), ntheta_use, TtoIG, T_pars_est); 
-  ra(1)     = T_pars_est(Jpnt+3);
-  rbeta(1)  =  T_pars_est(Jpnt+4);
+  logR0     = theta(Jpnt);
+  logRini   = theta(Jpnt+1);
+  logRbar   = theta(Jpnt+2);
+  ra(1)     = theta(Jpnt+3);
+  rbeta(1)  =  theta(Jpnt+4);
   Jpnt = Jpnt + 5;
   if (nsex>1)
    {
-    ra(2)     = ra(1)*exp(T_pars_est(Jpnt));
-    rbeta(2)  = rbeta(1)*exp(T_pars_est(Jpnt+1));
+    ra(2)     = ra(1)*exp(theta(Jpnt));
+    rbeta(2)  = rbeta(1)*exp(theta(Jpnt+1));
     Jpnt += 2;
    }
 
-  logSigmaR = T_pars_est(Jpnt);
-  steepness = T_pars_est(Jpnt+1);
-  rho       = T_pars_est(Jpnt+2);
+  logSigmaR = theta(Jpnt);
+  steepness = theta(Jpnt+1);
+  rho       = theta(Jpnt+2);
   Jpnt = Jpnt + 2;
 
   // Set rec_deviations
@@ -5632,7 +5250,7 @@ FUNCTION initialize_model_parameters
         for ( int l = 1; l <= nclass; l++ )
          {
           Ipnt += 1;
-          logN0(Ihmo,l) = T_pars_est(Jpnt+Ipnt);
+          logN0(Ihmo,l) = theta(Jpnt+Ipnt);
          }
        }
     }//--FREEPARS
@@ -5654,8 +5272,8 @@ FUNCTION initialize_model_parameters
           else
            { 
             Ipnt += 1;    
-            logN0(Ihmo,l) = T_pars_est(Jpnt+Ipnt);
-            if (active(T_pars_est(Jpnt+Ipnt)))  TempSS += T_pars_est(Jpnt+Ipnt)*T_pars_est(Jpnt+Ipnt); 
+            logN0(Ihmo,l) = theta(Jpnt+Ipnt);
+            if (active(theta(Jpnt+Ipnt)))  TempSS += theta(Jpnt+Ipnt)*theta(Jpnt+Ipnt); 
            }
           Kpnt += 1;    
          } //--l
@@ -5693,7 +5311,7 @@ FUNCTION initialize_model_parameters
      if (igrow==1) irefrow = irow;
      
      // Extract parameters 
-     int ParNo; int RefParNo;int jpnt; int ienv_par2;
+     int ParNo; int RefParNo;
      G_pars.initialize();
      for (int ipar=1;ipar<=nclass+1;ipar++)
       if (GrowPnt(irow,ipar) != 0)
@@ -5701,7 +5319,7 @@ FUNCTION initialize_model_parameters
         if (GrowPnt(irow,ipar) >0 && GrowPnt(irow,ipar) < 10000)
          {
           ParNo = GrowPnt(irow,ipar);
-          RefParNo = GrowPnt(irefrow,nclass+5+ipar);
+          RefParNo = GrowPnt(irefrow,ipar);
           if (igrow==1) G_pars(ipar) = G_pars_est(ParNo);
           if (igrow>0 && G_relative(ParNo)==0) G_pars(ipar) = G_pars_est(ParNo);
           if (igrow>0 && G_relative(ParNo)==1) G_pars(ipar) = G_pars_est(RefParNo)*exp(G_pars_est(ParNo));
@@ -5710,27 +5328,16 @@ FUNCTION initialize_model_parameters
          {
           if (GrowPnt(irow,ipar) > 0)
            {
-            RefParNo = GrowPnt(irefrow,nclass+5+ipar);
             int EnvLinkVar = GrowPnt(irow,ipar) - int(GrowPnt(irow,ipar)/100.0)*100;
             int EnvLink = int(GrowPnt(irow,ipar)/100) - int(GrowPnt(irow,ipar)/10000)*100;
             int ParNo = int(GrowPnt(irow,ipar)/10000) - int(GrowPnt(irow,ipar)/1000000)*100;
-             // Now compute the adjustment
-            envpar = 0;
-            jpnt = ParNo;
-	    for (int ienv_par=1;ienv_par<=Env_link_nums(EnvLinkVar);ienv_par++)
-	     for (int jenv_par=1; jenv_par<=int(Env_specs(EnvLinkVar,ienv_par,2));jenv_par++)
-	      {
-	       ienv_par2 = int(Env_specs(EnvLinkVar,ienv_par,5));
-	       envpar += G_pars_est(jpnt)*pow(Env_vars_used(iyr,ienv_par2),float(jenv_par));
-	       jpnt += 1;
-	      }
-	    if (EnvLink==1) G_pars(ipar) = G_pars_est(RefParNo) + envpar;
-	    if (EnvLink==2) G_pars(ipar) = G_pars_est(RefParNo) * envpar;
-	    if (EnvLink==3) G_pars(ipar) = G_pars_est(RefParNo) * exp(envpar);
-           }
+            if (EnvLink==1) G_pars(ipar) = G_pars_est(RefParNo) + G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+            if (EnvLink==2) G_pars(ipar) = G_pars_est(RefParNo) * G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+            if (EnvLink==3) G_pars(ipar) = G_pars_est(RefParNo)*exp(G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar)); 
+          }
           else
            {
-            int GrowPnt2 = -1*GrowPnt(irow,nclass+5+ipar);
+            int GrowPnt2 = -1*GrowPnt(irow,ipar);
             int Devpar = GrowPnt2  - int(GrowPnt2/100.0)*100;
             G_pars(ipar) = G_pars_est(RefParNo)*exp(par_devs(Devpar)); 
            }
@@ -5801,7 +5408,7 @@ FUNCTION initialize_model_parameters
       if (igrow==1) irefrow = irow;
      
       // Extract parameters 
-      int ParNo; int RefParNo;int jpnt; int ienv_par2;
+      int ParNo; int RefParNo;
       G_pars.initialize();
       for (int ipar=1;ipar<=nclass+1;ipar++)
        if (GrowPnt(irow,ipar) != 0)
@@ -5809,7 +5416,7 @@ FUNCTION initialize_model_parameters
          if (GrowPnt(irow,ipar) >0 && GrowPnt(irow,ipar) < 10000)
           {
            ParNo = GrowPnt(irow,ipar);
-           RefParNo = GrowPnt(irefrow,nclass+5+ipar);
+           RefParNo = GrowPnt(irefrow,ipar);
            if (igrow==1) G_pars(ipar) = G_pars_est(ParNo);
            if (igrow>0 && G_relative(ParNo)==0) G_pars(ipar) = G_pars_est(ParNo);
            if (igrow>0 && G_relative(ParNo)==1) G_pars(ipar) = G_pars_est(RefParNo)*exp(G_pars_est(ParNo));
@@ -5817,30 +5424,19 @@ FUNCTION initialize_model_parameters
          else
           {
            if (GrowPnt(irow,ipar) > 0)
-            {
-             RefParNo = GrowPnt(irefrow,nclass+5+ipar);
+             {
              int EnvLinkVar = GrowPnt(irow,ipar) - int(GrowPnt(irow,ipar)/100.0)*100;
              int EnvLink = int(GrowPnt(irow,ipar)/100) - int(GrowPnt(irow,ipar)/10000)*100;
              int ParNo = int(GrowPnt(irow,ipar)/10000) - int(GrowPnt(irow,ipar)/1000000)*100;
-             // Now compute the adjustment
-             envpar = 0;
-             jpnt = ParNo;
-	     for (int ienv_par=1;ienv_par<=Env_link_nums(EnvLinkVar);ienv_par++)
-	      for (int jenv_par=1; jenv_par<=int(Env_specs(EnvLinkVar,ienv_par,2));jenv_par++)
-	       {
-	        ienv_par2 = int(Env_specs(EnvLinkVar,ienv_par,5));
-	        envpar += G_pars_est(jpnt)*pow(Env_vars_used(iyr,ienv_par2),float(jenv_par));
-	        jpnt += 1;
-	       }
-	    if (EnvLink==1) G_pars(ipar) = G_pars_est(RefParNo) + envpar;
-	    if (EnvLink==2) G_pars(ipar) = G_pars_est(RefParNo) * envpar;
-	    if (EnvLink==3) G_pars(ipar) = G_pars_est(RefParNo) * exp(envpar);
+             if (EnvLink==1) G_pars(ipar) = G_pars_est(RefParNo) + G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+              if (EnvLink==2) G_pars(ipar) = G_pars_est(RefParNo) * G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+             if (EnvLink==3) G_pars(ipar) = G_pars_est(RefParNo)*exp(G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar)); 
            }
-            else
+           else
             {
-             int GrowPnt2 = -1*GrowPnt(irow,nclass+5+ipar);
+             int GrowPnt2 = -1*GrowPnt(irow,ipar);
              int Devpar = GrowPnt2  - int(GrowPnt2/100.0)*100;
-             G_pars(ipar) = G_pars_est(RefParNo)*exp(par_devs(Devpar)); 
+              G_pars(ipar) = G_pars_est(RefParNo)*exp(par_devs(Devpar)); 
             }
           }
         
@@ -5872,7 +5468,7 @@ FUNCTION initialize_model_parameters
        if (igrow==1) irefrow = irow;
      
        // Extract parameters 
-       int ParNo; int RefParNo;int jpnt; int ienv_par2;
+       int ParNo; int RefParNo;
        G_pars.initialize();
        for (int ipar=1;ipar<=nclass+1;ipar++)
         if (GrowPnt(irow,ipar) != 0)
@@ -5889,27 +5485,16 @@ FUNCTION initialize_model_parameters
            {
             if (GrowPnt(irow,ipar) > 0)
              {
-              RefParNo = GrowPnt(irefrow,nclass+5+ipar);
               int EnvLinkVar = GrowPnt(irow,ipar) - int(GrowPnt(irow,ipar)/100.0)*100;
               int EnvLink = int(GrowPnt(irow,ipar)/100) - int(GrowPnt(irow,ipar)/10000)*100;
               int ParNo = int(GrowPnt(irow,ipar)/10000) - int(GrowPnt(irow,ipar)/1000000)*100;
-              // Now compute the adjustment
-              envpar = 0;
-              jpnt = ParNo;
-	      for (int ienv_par=1;ienv_par<=Env_link_nums(EnvLinkVar);ienv_par++)
-	       for (int jenv_par=1; jenv_par<=int(Env_specs(EnvLinkVar,ienv_par,2));jenv_par++)
-	        {
-	         ienv_par2 = int(Env_specs(EnvLinkVar,ienv_par,5));
-	         envpar += G_pars_est(jpnt)*pow(Env_vars_used(iyr,ienv_par2),float(jenv_par));
-	         jpnt += 1;
-	       }
-	      if (EnvLink==1) G_pars(ipar) = G_pars_est(RefParNo) + envpar;
-	      if (EnvLink==2) G_pars(ipar) = G_pars_est(RefParNo) * envpar;
-	      if (EnvLink==3) G_pars(ipar) = G_pars_est(RefParNo) * exp(envpar);
+              if (EnvLink==1) G_pars(ipar) = G_pars_est(RefParNo) + G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+              if (EnvLink==2) G_pars(ipar) = G_pars_est(RefParNo) * G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+              if (EnvLink==3) G_pars(ipar) = G_pars_est(RefParNo)*exp(G_pars_est(ParNo)*EnvData(iyr,EnvLinkVar)); 
              }
             else
              {
-              int GrowPnt2 = -1*GrowPnt(irow,nclass+5+ipar);
+              int GrowPnt2 = -1*GrowPnt(irow,ipar);
               int Devpar = GrowPnt2  - int(GrowPnt2/100.0)*100;
               G_pars(ipar) = G_pars_est(RefParNo)*exp(par_devs(Devpar)); 
              }
@@ -5955,10 +5540,10 @@ FUNCTION initialize_model_parameters
             sel_patterns2(nsel_use) = irow;
 
             // Extract parameters 
-            int ParNo; int RefParNo;int jpnt; int ienv_par2;
+            int ParNo; int RefParNo;
             for (int ipar=1;ipar<=nclass+1;ipar++){
               if (SelPnt(irow,ipar) != 0) {
-                RefParNo = SelPnt(irefrow,nclass+7+ipar);
+                RefParNo = SelPnt(irefrow,ipar);
                 if (SelPnt(irow,ipar) >0 && SelPnt(irow,ipar) < 10000) {
                   ParNo = SelPnt(irow,ipar);
                   if (isel==1) S_pars(nsel_use,ipar) = S_pars_est(ParNo);
@@ -5970,29 +5555,18 @@ FUNCTION initialize_model_parameters
                   }
                 } else {
                   if (SelPnt(irow,ipar) > 0){
-                    RefParNo = SelPnt(irefrow,nclass+7+ipar);
                     int EnvLinkVar =     SelPnt(irow,ipar)        - int(SelPnt(irow,ipar)/100.0)*100;
                     int EnvLink    = int(SelPnt(irow,ipar)/100)   - int(SelPnt(irow,ipar)/10000)*100;
                     int ParNo      = int(SelPnt(irow,ipar)/10000) - int(SelPnt(irow,ipar)/1000000)*100;
-                    // Now compute the adjustment
-		    envpar = 0;
-		    jpnt = ParNo+1;
-		    for (int ienv_par=1;ienv_par<=Env_link_nums(EnvLinkVar);ienv_par++)
-		     for (int jenv_par=1; jenv_par<=int(Env_specs(EnvLinkVar,ienv_par,2));jenv_par++)
-		      {
-		       ienv_par2 = int(Env_specs(EnvLinkVar,ienv_par,5));
-		       envpar += S_pars_est(jpnt)*pow(Env_vars_used(iyr,ienv_par2),float(jenv_par));
-		       jpnt += 1;
-		       }
-		    if (EnvLink==1) S_pars(nsel_use,ipar)= S_pars_est(RefParNo) + envpar;
-		    if (EnvLink==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * envpar;
-		    if (EnvLink==3) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * exp(envpar);
+                    if (EnvLink==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) +     S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+                    if (EnvLink==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) *     S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar); 
+                    if (EnvLink==3) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) * exp(S_pars_est(ParNo)*EnvData(iyr,EnvLinkVar)); 
                     if (verbose >=4 ) {
                       cout << "2 " << it << " "<< h << " "<< k << " "<< isel << " " << irow << " " << iyr << " " << ipar << " "<< SelPnt(irow,ipar) << " "<< ParNo;
                       cout << " "<< S_pars_est(RefParNo)<< " " << S_pars_est(ParNo) << " "<< EnvData(iyr,EnvLinkVar) << " " << S_pars(nsel_use,ipar) << endl;
                     }
-                 } else {
-                    int SelPnt2 = -1*SelPnt(irow,nclass+7+ipar);
+                  } else {
+                    int SelPnt2 = -1*SelPnt(irow,ipar);
                     int Devpar = SelPnt2  - int(SelPnt2/100.0)*100;
                     if (SelPnt(irow,nclass+7)==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(par_devs(Devpar)); 
                     if (SelPnt(irow,nclass+7)==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) + par_devs(Devpar); 
@@ -6010,7 +5584,7 @@ FUNCTION initialize_model_parameters
     } // - h loop
   } // - it loop  
   if (verbose >= 3) cout<<"--finished setting selectivity"<<endl;
- 
+
   // Natural mortality
   dvar_matrix M_out(syr,nyrRetro,1,nclass);
   for (int h=1;h<=nsex;h++){
@@ -6036,7 +5610,7 @@ FUNCTION initialize_model_parameters
   // SurveyQ
   for (int is=1;is<=nSurveys;is++){
     if (q_mirror(is)==0){
-      SurveyQT(is) = timevarparV2(1,is, nyrRetro+1, q_relative(is), q_block(is), q_block_fn(is),q_env_link(is), q_env_var(is), 
+      SurveyQT(is) = timevarparV(1,is, nyrRetro+1, q_block(is), q_env_link(is), q_env_var(is), 
                                  q_RW(is), q_RW_blk(is), n_qpar, qToSurv,survey_q); 
     } else {
       SurveyQT(is) = SurveyQT(q_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
@@ -6055,13 +5629,14 @@ FUNCTION initialize_model_parameters
   // Additional variance
   for (int is=1;is<=nSurveys;is++){
     if (add_cv_mirror(is)==0){
-      AddVarQT(is) = timevarparV2(2,is, nyrRetro+1, add_cv_relative(is), add_cv_block(is), add_cv_block_fn(is), add_cv_env_link(is), add_cv_env_var(is), 
+      AddVarQT(is) = timevarparV(2,is, nyrRetro+1, add_cv_block(is), add_cv_env_link(is), add_cv_env_var(is), 
                                  add_cv_RW(is), add_cv_RW_blk(is), n_addcv_par, AddcvToSurv, log_add_cv); 
     } else {
       AddVarQT(is) = AddVarQT(add_cv_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
     }
   }
   if (verbose >= 3) cout<<"--finished AddV"<<endl;
+  //exit(1);
 
 // =======================================================================================================================================
 // =======================================================================================================================================
@@ -6091,35 +5666,19 @@ FUNCTION dvar_vector timevarparV(const int itype, const int ipar, const int lyea
      for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt)==ipar) { jpnt = kpnt; OK = 1; }
      for (int i=blocklimits(blk,iblk,1);i<=blocklimits(blk,iblk,2);i++) tpar(i) = pars(jpnt);
     }
-   
    // Handle environmental link parameters 
    if (env_link != 0)
     {
      OK = 0;
      for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt)==ipar) { jpnt = kpnt; OK = 1; }
-     int jjpnt = jpnt;
-     int ienv_par2;
-     for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
-       {
-        envpar = 0;
-        for (int ienv_par=1;ienv_par<=Env_link_nums(env_var);ienv_par++)
-         for (int jenv_par=1; jenv_par<=int(Env_specs(env_var,ienv_par,2));jenv_par++)
-          {
-           ienv_par2 = int(Env_specs(env_var,ienv_par,5));
-           envpar += pars(jpnt)*pow(Env_vars_used(i,ienv_par2),float(jenv_par));
-           jpnt += 1;
-          }
-         if (env_link==1) tpar(i) += envpar;
-         if (env_link==2) tpar(i) *= envpar;
-         if (env_link==3) tpar(i) *= exp(envpar);
-         jpnt = jjpnt;
-       } // i
-           
-      } // iblk
-         
-    }//--if (env_link != 0)
-   
+     envpar = pars(jpnt);   
+     for (int iblk=1;iblk<=blocks(RW_blk);iblk++)
+      {
+       if (env_link==1) for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++) tpar(i) +=envpar*EnvData(i,env_var);
+       if (env_link==2) for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++) tpar(i) *=envpar*EnvData(i,env_var);
+       if (env_link==3) for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++) tpar(i) *=exp(envpar*EnvData(i,env_var));
+      }
+    }
    // Handle random walk parameters
    if (RW != 0) 
     {
@@ -6152,94 +5711,6 @@ FUNCTION dvar_vector timevarparV(const int itype, const int ipar, const int lyea
   RETURN_ARRAYS_DECREMENT();
   return(tpar);
 
-// =======================================================================================================================================
-// =======================================================================================================================================
-
-FUNCTION dvar_vector timevarparV2(const int itype, const int ipar, const int lyear,  const int isrel, const int blk, const int block_fn, 
-                                const int env_link, const int env_var,
-                                const int RW, const int RW_blk, 
-                                const int npars, imatrix parpoints, dvar_vector pars)
-  RETURN_ARRAYS_INCREMENT();
-  dvar_vector tpar(syr,lyear);
-  dvariable envpar, dev;
-  int OK, jpnt, devpnt;
- 
-  // Initialize
-  tpar.initialize();
-  
-  // Extract the baseline parameter
-  jpnt = 1; OK = 0;
-  for (int kpnt=jpnt;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
-  for (int i=syr;i<=lyear;i++) tpar(i) = pars(jpnt);
-  
-  // Handle block parameters
-  if (blk>0)
-   for (int iblk=1;iblk<=blocks(blk);iblk++)
-    {
-     OK = 0;
-     for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
-     for (int i=blocklimits(blk,iblk,1);i<=blocklimits(blk,iblk,2);i++) {
-       if (block_fn==0) tpar(i) = pars(jpnt);
-       if (block_fn==1) tpar(i) *= exp(pars(jpnt));
-      }//--i loop 
-    }
-   
-   // Handle environmental link parameters 
-   if (env_link != 0)
-    {
-     OK = 0;
-     for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
-      int jjpnt = jpnt;
-     int ienv_par2;
-     for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
-       {
-        envpar = 0;
-        for (int ienv_par=1;ienv_par<=Env_link_nums(env_var);ienv_par++)
-         for (int jenv_par=1; jenv_par<=int(Env_specs(env_var,ienv_par,2));jenv_par++)
-          {
-           ienv_par2 = int(Env_specs(env_var,ienv_par,5));
-           envpar += pars(jpnt)*pow(Env_vars_used(i,ienv_par2),float(jenv_par));
-           jpnt += 1;
-          }
-         if (env_link==1) tpar(i) += envpar;
-         if (env_link==2) tpar(i) *= envpar;
-         if (env_link==3) tpar(i) *= exp(envpar);
-         jpnt = jjpnt;
-       } // i
-           
-      } // iblk
-         
-    }//--if (env_link != 0)
-   
-   // Handle random walk parameters
-   if (RW != 0) 
-    {
-     OK = 0;
-     for (int kpnt=1;kpnt<=100 && OK==0;kpnt++) if (devpoints(kpnt,1)==itype && devpoints(kpnt,2)==ipar) { jpnt = kpnt; OK = 1; }
-     
-     // Find the deviations and implement
-     devpnt = devpoints(jpnt,3);
-     for (int iblk=1;iblk<=blocks(RW_blk);iblk++)
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
-       {
-        // annual or random walk
-        if (i==blocklimits(RW_blk,iblk,1)) {
-          dev = par_devs(devpnt); 
-        } else {
-          if (RW < 10) dev = par_devs(devpnt); 
-          if (RW > 10) dev += par_devs(devpnt); 
-         }
-        // Additive or multiplicative 
-        if (RW==1 || RW==11) tpar(i) += dev;
-        if (RW==2 || RW==12) tpar(i) *= dev;
-        if (RW==3 || RW==13) tpar(i) *= exp(dev);
-        devpnt += 1;
-       }
-    }
-  
-  RETURN_ARRAYS_DECREMENT();
-  return(tpar);
 
 // =======================================================================================================================================
 // =======================================================================================================================================
@@ -6313,29 +5784,13 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
   if (env_link != 0){
     OK = 0;
     for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt)==ipar) { jpnt = kpnt; OK = 1; }
-    int jjpnt = jpnt;
-    int ienv_par2;
     for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
-       {
-        envpar = 0;
-        for (int ienv_par=1;ienv_par<=Env_link_nums(env_var);ienv_par++)
-         for (int jenv_par=1; jenv_par<=int(Env_specs(env_var,ienv_par,2));jenv_par++)
-          {
-           ienv_par2 = int(Env_specs(env_var,ienv_par,5));
-           envpar += pars(jpnt)*pow(Env_vars_used(i,ienv_par2),float(jenv_par));
-           jpnt += 1;
-          }
-          if (env_link==1) tpar(i) += envpar;
-         if (env_link==2) tpar(i) *= envpar;
-         if (env_link==3) tpar(i) *= exp(envpar);
-         jpnt = jjpnt;
-       } // i
-      
-    } // iblk
-    
+       if (env_link==1) for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++) tpar(i) +=envpar*EnvData(i,env_var);
+       if (env_link==2) for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++) tpar(i) *=envpar*EnvData(i,env_var);
+       if (env_link==3) for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++) tpar(i) *=exp(envpar*EnvData(i,env_var));
+    }
   }//--if (env_link != 0)
- 
+
   // Handle random walk parameters
   if (RW != 0) {
     OK = 0;
@@ -6350,7 +5805,7 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
           dev = par_devs(devpnt); 
         } else {
           if (RW < 10) dev = par_devs(devpnt); 
-          if (RW > 10) dev += par_devs(devpnt); 
+          if (RW < 10) dev += par_devs(devpnt); 
         }
         // Additive or multiplicative 
         if (RW==1 || RW==11) tpar(i) += dev;
@@ -6800,7 +6255,7 @@ FUNCTION calc_fishing_mortality
   }
 
   // fishing mortality and capture rates generally
-  //cout<<"setting ft"<<endl;
+  if (verbose>4) cout<<endl<<"setting ft"<<endl;
   ft.initialize(); fout.initialize();
   for ( int k = 1; k <= nfleet; k++ ){
     for ( int h = 1; h <= nsex; h++ ){
@@ -6824,11 +6279,13 @@ FUNCTION calc_fishing_mortality
           }
         } // j loop: seasons
       } // i loop: years
-      //cout << "k (fleet): " << k << " h (sex): " << h <<endl;
-      for ( int i = syr; i <= nyrRetro; i++ ) {
-        //cout << "i (year): " << i <<" ft(k,h,i) = " << ft(k,h,i) << " ";
-        //for (int j = 1; j <= nseason; j++) cout << " j = " << j << " fhit(i,j,k)  = " << fhit(i,j,k) << " ";
-        //cout << endl;
+      if (verbose>4){
+        cout << "k (fleet): " << k << " h (sex): " << h <<endl;
+        for ( int i = syr; i <= nyrRetro; i++ ) {
+          cout << "i (year): " << i <<" ft(fleet,sex,year,season) = " << ft(k,h,i) << endl;
+          //for (int j = 1; j <= nseason; j++) cout << " j = " << j << " fhit(i,j,k)  = " << fhit(i,j,k) << " ";
+          cout << endl;
+        }
       }
     } // h loop: sex
   } // k loop: fleets
@@ -8364,51 +7821,47 @@ FUNCTION update_population_numbers_at_length
   dvar_vector  y(1,nclass);
   dvar_vector  z(1,nclass);
 
-// AEP:BUG
-//  // Specify recuitment by year
-//  for (int i = syr; i <= nyrRetro; i++ ){  //--TODO: start at syr (already calculated in 'initial' with no dev) and overwrite?
-//    for (int h = 1; h <= nsex; h++ ){
-//      if (verbose>4) if ((verbose>3)&&(NfunCall<2)) cout<<"---looping for recruits: i(yr) h(sex): "<<i<<" "<<h<<endl;
-//      if ( bInitializeUnfished == UNFISHEDEQN ){
-//        totrecruits(i) = float(nsex)*mfexp(logR0)*mfexp(rec_dev(i));
-//      } else {
-//        totrecruits(i) = float(nsex)*mfexp(logRbar(i))*mfexp(rec_dev(i));
-//      }
-//      if (nsex == 1) {
-//        recruits(h)(i) = totrecruits(i);
-//      } else if (nsex == 2) {
-//        // This splits recruitment out proportionately into males and females
-//        if (h == MALES)   recruits(h)(i) = totrecruits(i) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
-//        if (h == FEMALES) recruits(h)(i) = totrecruits(i) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
-//      }
-//      //---------------------------------------------
-//      if ((verbose>4) && NfunCall<2){
-//        cout<<recruits(h)(i)<<endl;
-//        if (std::isnan(value(recruits(h)(i)))) {
-//          cout << "In update_population_numbers_at_length: recruits has NaNs for year, sex " << i << " " << h << endl;
-//          exit(-1);
-//        }
-//      }
-//    }//--h
-//  }//--i
-
-
   // Specify recuitment by year
-  for (int i = syr; i <= nyrRetro; i++ ){
-   for (int h = 1; h <= nsex; h++ )
-    {
-     if ( bInitializeUnfished == UNFISHEDEQN )
-      recruits(h,i) = mfexp(logR0)*float(nsex);
-     else
-      recruits(h,i) = mfexp(logRbar(i))*float(nsex);
-     // This splits recruitment out proportionately into males and females
-     totrecruits(i) = recruits(h)(i)*mfexp(rec_dev(i))/float(nsex);
-     if (nsex == 1) recruits(h)(i) *= mfexp(rec_dev(i));
-     if (nsex == 2 && h == MALES) recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
-     if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
-     }//--h
-    }//--i
-
+  for (int i = syr; i <= nyrRetro; i++ ){  //--TODO: start at syr (already calculated in 'initial' with no dev) and overwrite?
+    for (int h = 1; h <= nsex; h++ ){
+      if (verbose>4) if ((verbose>3)&&(NfunCall<2)) cout<<"---looping for recruits: i(yr) h(sex): "<<i<<" "<<h<<endl;
+      //---------------------------------------------
+      //WTS: changed this section 2025-06-04
+      // if ( bInitializeUnfished == UNFISHEDEQN ){
+      //   recruits(h,i) = mfexp(logR0)*float(nsex);
+      // } else {
+      //   recruits(h,i) = mfexp(logRbar)*float(nsex);
+      // }
+      // // This splits recruitment out proportionately into males and females
+      // totrecruits(i) = recruits(h)(i)*mfexp(rec_dev(i))/float(nsex);
+      // if (nsex == 1) {
+      //   recruits(h)(i) *= mfexp(rec_dev(i));
+      // } else if (nsex == 2) {
+      //   if (h == MALES)   recruits(h)(i) *= mfexp(rec_dev(i)) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
+      //   if (h == FEMALES) recruits(h)(i) *= mfexp(rec_dev(i)) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
+      // }
+      if ( bInitializeUnfished == UNFISHEDEQN ){
+        totrecruits(i) = float(nsex)*mfexp(logR0)*mfexp(rec_dev(i));
+      } else {
+        totrecruits(i) = float(nsex)*mfexp(logRbar)*mfexp(rec_dev(i));
+      }
+      if (nsex == 1) {
+        recruits(h)(i) = totrecruits(i);
+      } else if (nsex == 2) {
+        // This splits recruitment out proportionately into males and females
+        if (h == MALES)   recruits(h)(i) = totrecruits(i) * 1.0 / (1.0 + mfexp(-logit_rec_prop(i)));
+        if (h == FEMALES) recruits(h)(i) = totrecruits(i) * (1.0 - 1.0 / (1.0 + mfexp(-logit_rec_prop(i))));
+      }
+      //---------------------------------------------
+      if ((verbose>4) && NfunCall<2){
+        cout<<recruits(h)(i)<<endl;
+        if (std::isnan(value(recruits(h)(i)))) {
+          cout << "In update_population_numbers_at_length: recruits has NaNs for year, sex " << i << " " << h << endl;
+          exit(-1);
+        }
+      }
+    }//--h
+  }//--i
 
   // Now loop over year and season 
   for (int i = syr; i <= nyrRetro; i++){
@@ -8470,7 +7923,10 @@ FUNCTION calc_predicted_catch
           if ( h != UNDET_SEX ) {                                        ///> sex specific
             if ((ft(k,h,i,j)<1.0e-10)) {
               cout << "Error in computing log_q_catch for CatchDF kk = "<<kk<<", row jj = "<< jj << ", sex h = "<< h << ", year = " << i;
-              cout  << ", season j = " << j << ", effort = " << effort <<", ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
+              cout  << ", season j = " << j << ", obs_catch(kk,jj) = " << obs_catch(kk,jj) << ", effort = " << effort <<", ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
+              cout  << "ft(k,h) = " << endl; 
+              cout  << ft(k,h) << endl <<endl;
+              //writeParams(0,cout);//--write current params and sel functions (no gradients)
               exit(-1);
             }
             log_q_catch(kk) += log(ft(k,h,i,j) / effort);
@@ -9702,25 +9158,29 @@ FUNCTION calc_predicted_composition
     int oldk = 9999; int j; int i;
     for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
       int k = iCompAggregator(kk);
-      if (verbose) cout <<"----kk = "<< kk <<" k = "<< k << endl;
+      if (verbose>3) cout <<"----kk (SizeComps_in) = "<< kk <<" k (iCompAggregator(kk)) = "<< k << endl;
       if ( oldk != k ) j = 0;
       oldk = k;
+      if (verbose>3) cout <<"  loop of columns in size comp" <<endl;
       for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ ) {
         j += 1;
         if (verbose>3) cout << "jj, j = " << jj << ", " << j << endl;
         for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ) {
           int iyr = d3_SizeComps_in(kk,ii,-7) ;
-          if (verbose>3) cout << "ii, iyr = " << ii << ", " << iyr << endl;
+          if (verbose>3) cout << "ii (SizeCompRows_in(kk)), iyr = " << ii << ", " << iyr << endl;
           if ( (iyr <= nyrRetro) || ((iyr == nyrRetro+1) && (d3_SizeComps_in(kk,ii,-6) == 1)) ) { 
             i = ii; 
             qmult = 1;
             if (survey_for_q_in(kk) >0) {
-              if (verbose) cout<<"----survey_for_q_in(kk) = "<< survey_for_q_in(kk) << endl;
               qmult = SurveyQT(survey_for_q_in(kk),iyr);
-              if (verbose) cout<<"----qmult = "<< qmult << endl;
+              if (verbose>3) {
+                cout<<"----survey_for_q_in(kk) = "<< survey_for_q_in(kk) << ",  qmult = " << qmult << endl;
+              }
             }
-            if (verbose>3) cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
-            if (verbose>3) cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
+            if (verbose>3) {
+              cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
+              cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
+            }
             if (std::isnan(value(d3_pre_size_comps_in(kk,ii,jj)))){
               cout << "line 8551" << endl;
               cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
@@ -9738,15 +9198,13 @@ FUNCTION calc_predicted_composition
    if (verbose) cout<<"--Normalizing comps" << endl;
     for ( int k = 1; k <= nSizeComps; k++ ){
       for ( int i = 1; i <= nSizeCompRows(k); i++ ){
-        if (verbose>=4) cout<< k << "  " << i << endl;
-        if (verbose>=4) cout << size_comp_year(k,i) << endl;
+        if (verbose>=4) cout<< k << "  nrows: " << nSizeCompRows(k) << " row: " << i << endl;
         if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) ){
           d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
-          // AEP: BUG
-          if (std::isnan(value(sum(d3_pre_size_comps(k,i))))){
+          if (std::isnan(value(sum(d3_pre_size_comps_in(k,i))))){
             cout << "line 8736" << endl;
             cout << " k,i    = "<< k <<", "<< i << endl;
-            cout << "d3_pre_size_comps(k,i) is NaN: " << d3_pre_size_comps(k,i) << endl;
+            cout << "d3_pre_size_comps_in(k,i) is NaN: " << d3_pre_size_comps_in(k,i) << endl;
             exit(-1);
           }
         }
@@ -9840,8 +9298,8 @@ FUNCTION calc_stock_recruitment_relationship
 	}
 	if ( bInitializeUnfished != UNFISHEDEQN )
 	{
-		res_recruit(syr) = log(totrecruits(syr)) - 1.0 * logRbar(syr) + sig2R*Rec_bias(syr);
-		res_recruit(byr,nyrRetro) = log(totrecruits(byr,nyrRetro)) - (1.0-rho) * logRbar(byr,nyrRetro) - rho * log(++totrecruits(byr-1,nyrRetro-1)) + sig2R*Rec_bias(byr);
+		res_recruit(syr) = log(totrecruits(syr)) - 1.0 * logRbar + sig2R*Rec_bias(syr);
+		res_recruit(byr,nyrRetro) = log(totrecruits(byr,nyrRetro)) - (1.0-rho) * logRbar - rho * log(++totrecruits(byr-1,nyrRetro-1)) + sig2R*Rec_bias(byr);
 	}
      break;
     case 1: // SRR model
@@ -9913,17 +9371,17 @@ FUNCTION calc_prior_densities
 
   // Key parameter priors
   iprior = 1;
-  for ( int i = 1; i <= n_Tpar; i++ )
+  for ( int i = 1; i <= ntheta; i++ )
    {
     if (verbose>10) echoinput << "looping over thetas. i = "<<i<<endl;
-    if ( T_phz(i) > 0 && T_phz(i) <= current_phase() )
+    if ( theta_phz(i) > 0 && theta_phz(i) <= current_phase() )
      {
-      itype = int(prior_Ttype(i));;
-      p1 = prior_T_p1(i);
-      p2 = prior_T_p2(i);
-      dvariable x = T_pars_est(i);
+      itype = prior_theta_type(i);
+      p1 = prior_theta_p1(i);
+      p2 = prior_theta_p2(i);
+      dvariable x = theta(i);
       if ( itype == 3 )
-       { lb = T_lb(i); ub = T_ub(i); x = (x - lb) / (ub - lb); }
+       { lb = theta_lb(i); ub = theta_ub(i); x = (x - lb) / (ub - lb); }
       priorDensity(iprior) = get_prior_pdf(itype, x, p1, p2);
       iprior += 1;
      }
@@ -10028,7 +9486,7 @@ FUNCTION calc_prior_densities
 
   // Additional CV parameter priors
   for ( int i = 1; i <= n_addcv_par; i++ ){ //need to respect mirroring
-   if (verbose>10) echoinput << "looping over CVs. i = "<<i<<endl;
+   if (verbose>10) echoinput << "looping over thetas. i = "<<i<<endl;
    {
     if ( cv_phz(i) > 0 && cv_phz(i) <= current_phase() )
      {
@@ -10321,66 +9779,65 @@ FUNCTION calc_objective_function
   nlogPenalty.initialize();
 
   // 1) Penalty on log_fdev (male+combined; female) to ensure they sum to zero
-  for ( int k = 1; k <= nfleet; k++ )
-   {
+  for ( int k = 1; k <= nfleet; k++ ){
     dvariable s     = mean(log_fdev(k));
     nlogPenalty(1) += Penalty_fdevs(k,1)*s*s;
-    if (nsex > 1)
-     {
+    if (nsex > 1){
       dvariable r     = mean(log_fdov(k));
       nlogPenalty(1) += Penalty_fdevs(k,2)*r*r;
-     }
-   }
-   if (verbose >= 3) cout<<"finished penalties on log_fdev"<<endl;
+    }
+  }
+  if (verbose >= 3) cout<<"finished penalties on log_fdev"<<endl;
 
   // 2) Penalty on mean F to regularize the solution.
   int irow = 1;
   if ( last_phase() ) irow = 2;
   dvariable fbar;
   dvariable ln_fbar;
-  for ( int k = 1; k <= nfleet; k++ )
-   for ( int j = 1; j <= nseason; j++ )
-    {
-     fbar = mean( trans(ft(k,1))(j) );
-     if ( init_fbar(k) > 0 && fbar != 0 )
-      {
-       ln_fbar = log(fbar);
-       nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
+  for ( int k = 1; k <= nfleet; k++ ){
+    for ( int j = 1; j <= nseason; j++ ){
+      fbar = mean( trans(ft(k,1))(j) );
+      if ( init_fbar(k) > 0 && fbar != 0 ){
+        ln_fbar = log(fbar);
+        nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
       }
-     if (nsex==2)
-      {
+     if (nsex==2){
        fbar = mean( trans(ft(k,2))(j) );
-       if ( fbar != 0 )
-        {
+       if ( fbar != 0 ){
          ln_fbar = log(fbar);
          nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
         }
-      } 
-    }
+      } //--nsex==2
+    }//  j loop
+  }// k loop  
    
-   if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
+  if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
 
   // 6) Smoothness penalty on recruitment devs.
   //if ( !last_phase() )
-   {
+  {
     if ( active(rec_dev_est) ) nlogPenalty(6) = dnorm(first_difference(rec_dev), 1.0);
-   }
-   if (verbose >= 3) cout<<"finished penalties on rec_devs"<<endl;
+  }
+  if (verbose >= 3) cout<<"finished penalties on rec_devs"<<endl;
 
   // 7) Penalty on sex ratio
   if (nsex > 1) {
     SumRecF = 0; SumRecM = 0;
-    for ( int i = syr; i <= nyrRetro; i++ )
-     { SumRecF += recruits(2)(i); SumRecM += recruits(1)(i); }
+    for ( int i = syr; i <= nyrRetro; i++ ){
+      SumRecF += recruits(2)(i); 
+      SumRecM += recruits(1)(i); 
+    }
     nlogPenalty(7) = square(log(SumRecF) - log(SumRecM));
   }
   if (verbose >= 3) cout<<"finished penalties on sex-specific recruitment"<<endl;
 
   // 8) Smoothness penalty on molting probability
-  for (int h=1;h<=nsex;h++)
-   if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)
-    for (int igrow=1;igrow<=nMoltVaries(h);igrow++)
-     nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
+  for (int h=1;h<=nsex;h++){
+    if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT){
+      for (int igrow=1;igrow<=nMoltVaries(h);igrow++)
+        nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
+    }
+  }
   if (verbose >= 3) cout<<"finished Smoothness penalty on molting probability"<<endl;
    
   // 9) Smoothness penalty on selectivity patterns with class-specific coefficients
@@ -10389,28 +9846,31 @@ FUNCTION calc_objective_function
 
   // 10) Smoothness penalty on initial numbers at length
   for ( int k = 1; k <= n_grp; k++ ) 
-   nlogPenalty(10) += dnorm(first_difference(logN0(k)), 1.0); 
+    nlogPenalty(10) += dnorm(first_difference(logN0(k)), 1.0); 
   if (verbose >= 3) cout<<"Finished smoothness penalty on initial Ns"<<endl;
 
   // 11) Penalty on annual F-devs for males by fleet
   for ( int k = 1; k <= nfleet; k++ )
-   nlogPenalty(11) += Penalty_fdevs(k,3)*sum(square(log_fdev(k)));
+    nlogPenalty(11) += Penalty_fdevs(k,3)*sum(square(log_fdev(k)));
   if (verbose >= 3) cout<<"Finished smoothness penalty on annual devs"<<endl;
 
   // 12) Penalty on annual F-devs for females by fleet
-  if (nsex > 1)
-   for ( int k = 1; k <= nfleet; k++ )
-    nlogPenalty(12) += Penalty_fdevs(k,4)*sum(square(log_fdov(k)));
+  if (nsex > 1){
+    for ( int k = 1; k <= nfleet; k++ )
+      nlogPenalty(12) += Penalty_fdevs(k,4)*sum(square(log_fdov(k)));
+  }
   if (verbose >= 3) cout<<"Finished penalties on sex-specific devs"<<endl;
  
   // 13) Penalty on deviation parameters
   nlogPenalty(13) = 0;
-  if (n_deviations > 0)
-   for (int is=1;is<=100;is++)
-    if (devpoints(is,1)>0)
-     {
-      for (int ii=devpoints(is,3);ii<=devpoints(is,4);ii++) nlogPenalty(13) += dnorm(par_devs(ii),0.0,rdevpoints(is,1));
-     }
+  if (n_deviations > 0){
+    for (int is=1;is<=100;is++){
+      if (devpoints(is,1)>0){
+        for (int ii=devpoints(is,3);ii<=devpoints(is,4);ii++) 
+          nlogPenalty(13) += dnorm(par_devs(ii),0.0,rdevpoints(is,1));
+      }
+    }
+  }
 
   w_nloglike = sum(elem_prod(nloglike(1),catch_emphasis)) + sum(elem_prod(nloglike(2),cpue_emphasis)) + sum(elem_prod(nloglike(3),lf_emphasis));
   w_nloglike += sum(nloglike(4));
@@ -10426,13 +9886,32 @@ FUNCTION calc_objective_function
     cout << "Penalties: " << nlogPenalty << endl;
     cout << "Penalties: " << elem_prod(nlogPenalty,Penalty_emphasis) << " " << TempSS << endl;
     cout << "posfun pen." << grwthPosFun << endl;
-    cout << "Likelihoods: " << endl;
-    cout << nloglike << endl;
+    cout << "raw likelihoods (nloglike): " << endl;
+    cout << "catch:            " << nloglike(1) << endl;
+    cout << "index:            " << nloglike(2) << endl;
+    cout << "length:           " << nloglike(3) << endl;
+    cout << "rec:              " << nloglike(4) << endl;
+    cout << "growth (tag):     " << nloglike(5) << endl;
+    cout << "gromwth (nontag): " << nloglike(6) << endl;
+    cout << "weighted likelihoods (w_nloglike): " << endl;
+    cout << "catch:            " << elem_prod(nloglike(1),catch_emphasis) << endl;
+    cout << "index:            " << elem_prod(nloglike(2),cpue_emphasis) << endl;
+    cout << "length:           " << elem_prod(nloglike(3),lf_emphasis) << endl;
+    cout << "rec:              " << nloglike(4) << endl;
+    cout << "growth (tag):     " << nloglike(5)*tag_emphasis << endl;
+    cout << "gromwth (nontag): " << nloglike(6) << endl;
+    cout << "other objective function comonents: "<< endl;
+    cout << "weighted penalites: "<< elem_prod(nlogPenalty,Penalty_emphasis) << endl;
+    cout << "TempSS:             "<< TempSS << endl;
+    cout << "grwthPosFun:        "<< grwthPosFun << endl;
   }
 
-  if ( verbose >= 1 && !sd_phase()) cout  << "fn Call: " << current_phase() << " " << NfunCall << " " 
-                                          << objfun << " " << w_nloglike << " " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << " " 
-                                          << sum(priorDensity)+TempSS << " " << grwthPosFun << endl;
+  if ( verbose >= 1 && !sd_phase()) {
+    cout  << "           phase     numFcnCall  objfun   w_nloglike  sum(penalties)   summ(priors)  TempSS   growthPosFun"  << endl;
+    cout  << "fn Call: " << current_phase() << " " << NfunCall << " " 
+          << objfun << " " << w_nloglike << " " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << " " 
+          << sum(priorDensity) << " " << TempSS << " " << grwthPosFun << endl;
+  }
 
 // ==================================================================================================================================================
 // === Main routines ended
@@ -10724,20 +10203,20 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
        rtt(2) = mfexp(logRini) * (1 - SexRatio) * rec_sdd(2);
        break;
       case FREEPARS: // Free parameters
-       rtt(1) = mfexp(logRbar(YrRef)) * SexRatio * rec_sdd(1);
-       rtt(2) = mfexp(logRbar(YrRef)) * (1 - SexRatio) * rec_sdd(2);
+       rtt(1) = mfexp(logRbar) * SexRatio * rec_sdd(1);
+       rtt(2) = mfexp(logRbar) * (1 - SexRatio) * rec_sdd(2);
        break;
       case FREEPARSSCALED: // Free parameters (revised)
-       rtt(1) = mfexp(logRbar(YrRef)) * SexRatio * rec_sdd(1);
-       rtt(2) = mfexp(logRbar(YrRef)) * (1 - SexRatio) * rec_sdd(2);
+       rtt(1) = mfexp(logRbar) * SexRatio * rec_sdd(1);
+       rtt(2) = mfexp(logRbar) * (1 - SexRatio) * rec_sdd(2);
        break;
       case REFPOINTS: // Reference points
        rtt(1) = spr_rbar(1) * rec_sdd(1);
        rtt(2) = spr_rbar(2) * rec_sdd(2);
        break;
       case ZEROPOP: // "free" parameters fixed at zero
-       rtt(1) = mfexp(logRbar(YrRef)) * SexRatio * rec_sdd(1);
-       rtt(2) = mfexp(logRbar(YrRef)) * (1 - SexRatio) * rec_sdd(2);
+       rtt(1) = mfexp(logRbar) * SexRatio * rec_sdd(1);
+       rtt(2) = mfexp(logRbar) * (1 - SexRatio) * rec_sdd(2);
        ECHOSTR2("ZEROPOP: rtt(1,2) = ",rtt(1,2))
        break;
      }
@@ -10751,16 +10230,16 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
        rtt(1) = mfexp(logRini) * rec_sdd(1);
        break;
       case FREEPARS: // Free parameters
-       rtt(1) = mfexp(logRbar(YrRef)) * rec_sdd(1);
+       rtt(1) = mfexp(logRbar) * rec_sdd(1);
        break;
       case FREEPARSSCALED: // Free parameters (revised)
-       rtt(1) = mfexp(logRbar(YrRef)) * rec_sdd(1);
+       rtt(1) = mfexp(logRbar) * rec_sdd(1);
        break;
       case REFPOINTS: // Reference points
        rtt(1) = spr_rbar(1) * rec_sdd(1);
        break;
       case ZEROPOP: // "free" parameters fixed at zero: zero population start
-       rtt(1) = mfexp(logRbar(YrRef)) * rec_sdd(1);
+       rtt(1) = mfexp(logRbar) * rec_sdd(1);
        ECHOSTR2("ZEROPOP: rtt(1) = ",rtt(1))
        break;
     }
@@ -11753,7 +11232,7 @@ FUNCTION write_eval
    }
 
 // Darcy MCMC output
-  MCout(T_pars_est);
+  MCout(theta);
 
   /**
    * @brief calculate sd_report variables in final phase
@@ -11845,8 +11324,7 @@ FUNCTION write_eval
    } //--isim
  if (NfunCall == max_prj) exit(1);
 
-// ---------------------------------------------------------------------------------------------------------------------------------------
-
+//----------------------------------------------------
 FUNCTION calc_sdreport
   dvar4_array ftmp(1,nsex,syr,nyrRetro,1,nseason,1,nclass);           ///> Fishing mortality
   dvar4_array ftmp2(1,nsex,syr,nyrRetro,1,nseason,1,nclass);          ///> Fishing mortality
@@ -12074,6 +11552,182 @@ FUNCTION adstring to_str(const dvar_vector& v)
       adstring s = to_str(vp);
       return s;
 
+// FUNCTION void save_gradient_info(int n_iter)
+//   gradient_structure::set_YES_DERIVATIVES();
+//   adstring nstr = str(n_iter);
+//   if (n_iter<10)    {nstr = "0000"+nstr;} else 
+//   if (n_iter<100)   {nstr = "000" +nstr;} else 
+//   if (n_iter<1000)  {nstr = "00"  +nstr;} else 
+//   if (n_iter<10000) {nstr = "0"   +nstr;}
+//   adstring fn = "grad_info_"+nstr+".dat";
+//   ofstream os(fn);
+//   int nvar = initial_params::nvarcalc();
+//   independent_variables x0(1,nvar); //--vector for original independent variables on unbounded scale
+//   initial_params::xinit(x0);        //--get active parameter values
+//   dvar_vector vx0 = dvar_vector(x0);//--copy vector to reset values
+//   cout<<"before gradcalc " << endl;
+//   cout << "x0 : " <<  x0 <<endl;
+//   cout<<"vx0: " << vx0 <<endl;
+//   dvector gr(1,nvar);        //--vector for gradients
+//   gradcalc(nvar,gr);         //--calculate gradients
+//   cout<<"after gradcalc " << endl;
+//   cout<<"x0 : " <<  x0 <<endl;
+//   cout<<"vx0: " << vx0 <<endl;
+
+//   adstring_array pars = get_param_names(); //--names of active parameters
+//   os << setprecision(12) << objfun << "  #--objective function value"  << endl;
+//   os << "Value"<< "\t" <<"Gradient"<< "\t" << "ParName" << endl;
+//   for (int i=1;i<=nvar;i++){
+//     os << i << " \t" << setprecision(6) << vx0[i] << " \t" << gr[i] << " \t" << "#--"<<pars[i] << endl;
+//   }
+//   os.close();
+
+//   // Push the original unbounded values through the model
+//   initial_params::reset(vx0); //--need to reset parameter values and recalculate objective function??
+//   dont_save_gradient_info = 1;//don't call this function when calling userfunction();
+//   *objective_function_value::pobjfun=0.0;
+//   userfunction();
+//   dont_save_gradient_info = 0;//--false for next time through
+//   NfunCall--; //--decrement NfunCall to avoid double counting, as it were
+//   gradient_structure::set_NO_DERIVATIVES();
+ 
+FUNCTION void writeParams(int write_grads, ostream& pf1)
+  cout << "Starting writeParams" << endl;
+  pf1 << "#--NfunCall = " << NfunCall << endl;
+  pf1 << "#--nFcnCallsInPhs = " << nFcnCallsInPhs << endl;
+  pf1 << "#--phase = " << initial_params::current_phase << endl;
+  pf1 << "#--objfun = " << objfun <<endl;
+
+  int nvar=initial_params::nvarcalc();              // get the number of active parameters
+  adstring_array param_names = ::get_param_names(); // get names of active parameters
+  independent_variables x(1,nvar); //--active parameters on unbound scale
+  independent_variables b(1,nvar); //--active parameters on bounded scale
+  initial_params::xinit(x);
+  initial_params::copy_all_values(b,1);
+  dvar_vector vals = 1.0*dvar_vector(x);//make sure vals is an independent copy of x
+  pf1 << "#--x: " << vals << endl;
+  pf1 << "#--b: " << b << endl;
+  pf1 << endl << "#-----------------------------------------------" << endl;
+
+  report_function_minimizer_stats();
+  //write_grads = 0; #--turn off gradient calcs
+  if (write_grads){
+    pf1 << "#--gradients:" << endl;
+    cout << "#--calculating gradient information..." << endl;
+    gradient_structure::set_YES_DERIVATIVES();
+    dvector gr0(1,nvar);
+    gr0.initialize();
+    cout << "old obj fun = " << *objective_function_value::pobjfun << endl;
+    //--recalculate objective function (why??)
+    dontWriteParams = 1; //--turn on so this function is not called when calculating the objective function
+    dvariable vf = initial_params::reset(vals);
+    pf1 << vf << " #--vf" << endl;
+    reset_gradient_stack(); //<-don't know about calling this
+    *objective_function_value::pobjfun=0.0;
+    userfunction();//<-recalculate the objective function
+    cout << "new obj fun = " << *objective_function_value::pobjfun << endl;
+    gradcalc(nvar,gr0);
+    cout << "calculated gradients" <<endl;
+    for (int i=1;i<=nvar;i++)
+      pf1 << i << "\t" << gr0(i) << endl;
+
+    //--recalculate objective function (why??)
+    vf = initial_params::reset(vals);
+    *objective_function_value::pobjfun=0.0;
+    userfunction();//<-recalculate the objective function
+    pf1 << "new obj fun = " << *objective_function_value::pobjfun << endl;
+    dontWriteParams = 0; //--turn off so this function is called when calculating the objective function
+  }
+
+  pf1 << endl << "#-----------------------------------------------" << endl;
+  pf1 << "#--active parameters: " << nvar << endl;
+  pf1 << "#bounded   unbounded   index   param_name " << endl;
+  for (int i=1;i<=nvar;i++)
+    pf1 << setprecision(10) << b[i] << "\t" << vals[i] << "\t#--" << i << "\t" << param_names[i] << endl;
+
+  pf1 << endl << "#-----------------------------------------------" << endl;
+  pf1 << "#--all parameters" << endl;
+  pf1 << "#--theta" << endl;
+  int Npar = 1;
+  for (int i=1;i<=ntheta;i++) pf1 << theta(i)      << " #--" << i << " "<< parname1(Npar++) << endl;
+  pf1 <<"#--G_pars"<<endl;
+  for (int i=1;i<=n_Gpar;i++) pf1 << G_pars_est(i) << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--M_pars"<<endl;
+  for (int i=1;i<=n_Mpar;i++) pf1 << M_pars_est(i) << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--S_pars"<<endl;
+  for (int i=1;i<=n_Spar;i++) pf1 << S_pars_est(i) << " #--" << i << " " << parname1(Npar++) << endl;
+
+  pf1 << "#--log_fbar: "  << endl;
+  for (int i=1;i<=nfleet;i++) pf1 << log_fbar(i)  << " #--" << i << endl;
+  for (int i=1;i<=nfleet;i++){
+    pf1 << "#--log_fdev:  " << i << endl;
+    for (int j=1;j<=nFparams(i);j++) pf1 << log_fdev(i,j) << " #--" << i << ", " << j << endl;
+  }
+  pf1 << "#--log_foff: "  << endl;
+  for (int i=1;i<=nfleet;i++) pf1 << log_foff(i) << " #--" << i << endl;
+  for (int i=1;i<=nfleet;i++){
+    pf1 << "#--log_fdov: "  << i << endl;
+    for (int j=1;j<=nYparams(i);j++) pf1 << log_fdov(i,j) << " #--" << i << ", " << j << endl;
+  }
+  pf1 <<"#--rec_dev_est"<<endl;
+  for (int i=rdv_syr;i<=rdv_eyr;i++)    pf1 << rec_dev_est(i)        << " #--" << i << endl;
+  pf1 <<"#--logit_rec_prop_est"<<endl;
+  for (int i=rdv_syr;i<=rdv_eyr;i++)    pf1 << logit_rec_prop_est(i) << " #--" << i << endl;
+  pf1 <<"#--log_vn"<<endl;
+  for (int i=1;i<=nSizeComps;i++)       pf1 << log_vn(i)             << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--survey_q"<<endl;
+  for (int i=1;i<=n_qpar;i++)           pf1 << survey_q(i)           << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--log_add_cv"<<endl;
+  for (int i=1;i<=n_addcv_par;i++)      pf1 << log_add_cv(i)         << " #--" << i << " " << parname1(Npar++) << endl;
+  pf1 <<"#--par_devs"<<endl;
+  for (int i=1;i<=n_deviations_est;i++) pf1 << par_devs(i) << " #--" << i << " " << endl;
+  
+  pf1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  pf1 << "Params at/near bounds" << endl;
+  ::check_for_params_on_bounds(pf1);
+
+  pf1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  adstring strMidpoints = to_str(mid_points);    ///> string with space-separated size bin midpoints
+  pf1 << "capture selfcns: dataframe" << endl;
+  for ( int j = 1; j <= nfleet; j++ ) {
+    pf1 << "# " << fleetname(j) << endl;
+    for ( int h = 1; h <= nsex; h++ ) {
+      pf1 << "## " << sexes(h) << endl;
+      pf1 << "year " << strMidpoints << endl;
+      for ( int i = syr; i <= nyrRetro; i++ ) {
+        pf1 << "capture  " << i << " " << mfexp(log_slx_capture(j,h,i)) << endl;
+      }
+    }
+  }
+  pf1 << ">EOD<" << endl;
+  pf1 << "retained selfcns: dataframe" << endl;
+  pf1 << "year sex fleet " << strMidpoints << endl;
+  for ( int j = 1; j <= nfleet; j++ ) {
+    pf1 << "# " << fleetname(j) << endl;
+    for ( int h = 1; h <= nsex; h++ ) {
+      pf1 << "## " << sexes(h) << endl;
+      pf1 << "year " << strMidpoints << endl;
+      for ( int i = syr; i <= nyrRetro; i++ ) {
+        pf1 << "retained " << i << " " << mfexp(log_slx_retaind(j,h,i)) << endl;
+      }
+    }
+  }
+  pf1 << ">EOD<" << endl;
+  pf1 << "discard selfcns: dataframe" << endl;
+  pf1 << "year sex fleet " << strMidpoints << endl;
+  for ( int j = 1; j <= nfleet; j++ ) {
+    pf1 << "# " << fleetname(j) << endl;
+    for ( int h = 1; h <= nsex; h++ ) {
+      pf1 << "## " << sexes(h) << endl;
+      pf1 << "year " << strMidpoints << endl;
+      for ( int i = syr; i <= nyrRetro; i++ ) {
+        pf1 << "discard  " << i << " " << mfexp(log_slx_discard(j,h,i)) << endl;
+      }
+    }
+  }
+  pf1 << ">EOD<" << endl;
+
+
 // =====================================================================================================================================
 
 // Label 600: CreateOutput
@@ -12149,6 +11803,8 @@ FUNCTION CreateOutput
   OutFile1 << "#--Runtime: ";
   OutFile1 << hour << " hours, " << minute << " minutes, " << second << " seconds" << endl;
   OutFile1 << "#--Number of function evaluations: " << NfunCall << endl;
+  OutFile1 << "#--end phase: " << current_phase() << " number of evaluations in phase: " << nFcnCallsInPhs <<endl;
+  RepFile1 << "#--end phase: " << current_phase() << " number of evaluations in phase: " << nFcnCallsInPhs <<endl;
   OutFile1 << "#*******************************************" << endl;
  
   OutFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
@@ -12266,20 +11922,20 @@ FUNCTION CreateOutput
   RepFile1 << "par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
 
   Npar = 0; NparEst = 0;
-  for (Ipar=1;Ipar<=n_Tpar;Ipar++)
+  for (Ipar=1;Ipar<=ntheta;Ipar++)
    {
     Npar +=1;
-    OutFile1 << Npar << " " << parname1(Npar) << ": " << T_pars_est(Ipar) << " " << T_phz(Ipar) << " ";
-    RepFile1 << Npar << " " << parname1(Npar) << "  " << T_pars_est(Ipar) << " " << T_phz(Ipar) << " ";
-    if ((T_phz(Ipar) < 0) || (T_phz(Ipar) > current_phase())) {
+    OutFile1 << Npar << " " << parname1(Npar) << ": " << theta(Ipar) << " " << theta_phz(Ipar) << " ";
+    RepFile1 << Npar << " " << parname1(Npar) << "  " << theta(Ipar) << " " << theta_phz(Ipar) << " ";
+    if ((theta_phz(Ipar) < 0) || (theta_phz(Ipar) > current_phase())) {
       RepFile1 << "NA NA NA NA NA NA NA " << endl;
     }
-    if ((T_phz(Ipar) > 0) && (T_phz(Ipar) <= current_phase())) 
+    if ((theta_phz(Ipar) > 0) && (theta_phz(Ipar) <= current_phase())) 
      { 
-      NparEst +=1; CheckBounds(T_pars_est(Ipar),T_lb(Ipar),T_ub(Ipar));  
+      NparEst +=1; CheckBounds(theta(Ipar),theta_lb(Ipar),theta_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << T_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << theta(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -12733,7 +12389,7 @@ FUNCTION CreateOutput
    for (int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++){
      OutFile1 << sexes(h) << " " << m << " " << i << " " << mean_wt(h,m,i) << endl;
-     RepFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << 1000000*mean_wt(h,m,i) << endl;
+     RepFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << mean_wt(h,m,i) << endl;
     }
   OutFile1 << ">EOD<" << endl;
   RepFile1 << ">EOD<" << endl;
@@ -13089,6 +12745,16 @@ FUNCTION CreateOutput
     
   
   // Outout the selex controls 
+  //AEP
+  //OutFile1 << "# Select_control" << endl;
+  //OutFile1 << "# Selex_no first_par_no Phase Start_block End_block Env_Link Env_Link_Var Rand_Walk Start_year_RW End_year_RW Sigma_RW" << endl;  
+  //for (int i=1;i<=nslx;i++)
+  // {
+  //  OutFile1 <<  slx_control(i,1) << " " << slx_control(i,2);
+  //  for (int j=11;j<=nslx_cols_in;j++) OutFile1 << " " << slx_control(i,j); 
+  //  OutFile1 << endl;
+  // }
+    
   OutFile2 << endl << "Selectivity" << endl; 
   for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
    OutFile2 << syr << " " << h << " " << j << " " << mfexp(log_slx_capture(j,h,syr)) << endl; 
@@ -13877,87 +13543,31 @@ FUNCTION WriteFiles
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(18)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
   OutInpFile1 << endl;
+
+  OutInpFile1 << "# Expecting " << ntheta << " theta parameters" << endl;
+  OutInpFile1 << "# Core parameters" << endl;
+  OutInpFile1 << "## Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
+  OutInpFile1 << "## Lower & Upper: Range for the parameter" << endl;
+  OutInpFile1 << "## Phase: Set equal to a negative number not to estimate" << endl;
+  OutInpFile1 << "## Prior type:"  << endl;
+  OutInpFile1 << "## 0: Uniform   - parameters are the range of the uniform prior"  << endl;
+  OutInpFile1 << "## 1: Normal    - parameters are the mean and sd" << endl;
+  OutInpFile1 << "## 2: Lognormal - parameters are the mean and sd of the log" << endl;
+  OutInpFile1 << "## 3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
+  OutInpFile1 << "## 4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
+  OutInpFile1 << "# Initial_value    Lower_bound    Upper_bound Phase Prior_type        Prior_1        Prior_2" << endl;
+  for (int i=1;i<=ntheta;i++) {
+   OutInpFile1 << setw(15) << setprecision(8) <<  setfixed() << theta(i) << " ";
+   OutInpFile1 << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,2) << " ";
+   OutInpFile1 << setw(14) << setprecision(8) <<  setfixed() << theta_control(i,3) << " ";
+   OutInpFile1 << setw(5) << setfixed() << (int) theta_control(i,4) << " ";
+   OutInpFile1 << setw(10) << setfixed() << (int) theta_control(i,5) << " ";
+   OutInpFile1 << setw(14) << setprecision(8) << setfixed() << theta_control(i,6) << " ";
+   OutInpFile1 << setw(14) << setprecision(8) << setfixed() << theta_control(i,7) <<  " # " << parname1(i) << endl;
+  }
  
-  //AEP
-  // UPDATE output
-  OutInpFile1 << endl;
-  OutInpFile1 << "## General parameter specificiations " << endl;
-  OutInpFile1 << "##  Initial: Initial value for the parameter (must lie between lower and upper)" << endl;
-  OutInpFile1 << "##  Lower & Upper: Range for the parameter" << endl;
-  OutInpFile1 << "##  Prior type:"  << endl;
-  OutInpFile1 << "##   0: Uniform   - parameters are the range of the uniform prior"  << endl;
-  OutInpFile1 << "##   1: Normal    - parameters are the mean and sd" << endl;
-  OutInpFile1 << "##   2: Lognormal - parameters are the mean and sd of the log" << endl;
-  OutInpFile1 << "##   3: Beta      - parameters are the two beta parameters [see dbeta]" << endl;
-  OutInpFile1 << "##   4: Gamma     - parameters are the two gamma parameters [see dgamma]" << endl;
-  OutInpFile1 << "##  Phase: Set equal to a negative number not to estimate" << endl;
-  OutInpFile1 << "##  Block: Block number for time-varying selectivity   " << endl;
-  OutInpFile1 << "##  Block_fn: 0:absolute values; 1:exponential" << endl;
-  OutInpFile1 << "##  Env_L: Environmental link - options are 0:none; 1:additive; 2:multiplicative; 3:exponential" << endl;
-  OutInpFile1 << "##  EnvL_var: Environmental variable" << endl;
-  OutInpFile1 << "##  RW: 0 for no random walk changes; 1 otherwise" << endl;
-  OutInpFile1 << "##  RW_blk: Block number for random walks" << endl;
-  OutInpFile1 << "##  Sigma_RW: Sigma used for the random walk" << endl;
-  OutInpFile1 << endl;
-  
-  int n_Tpar; 
-  n_Tpar = 0;
-  OutInpFile1 << endl;
-  OutInpFile1 << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
-  for (int ig = 1;ig<=ntheta;ig++)
-   {
-    n_Tpar += 1;
-    anystring = parname1(ig);
-         
-    OutInpFile1 << "         "; OutInpFile1<<  setw(12) << setprecision(6) << setfixed() <<T_pars_est(n_Tpar)<< " "; for (int ii=2;ii<=3;ii++) OutInpFile1<< setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
-    OutInpFile1 << setw(10) << setfixed() << int(Tpar_control(n_Tpar,4)) << " ";
-    for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
-    for (int ii=7;ii<=13;ii++) OutInpFile1 << setw(6) << setfixed() << int(Tpar_control(n_Tpar,ii)) << " ";
-    OutInpFile1 << setw(8) << setprecision(4) << setfixed() << Tpar_control(n_Tpar,14) << " # " << anystring; OutInpFile1 << endl;
-   }//--ig loop
-    
-  if (ntheta_use > ntheta) OutInpFile1 << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
-  n_Tpar = ntheta;
-  for (int ig = 1;ig<=ntheta;ig++) {
-   // Are there blocks
-    int jpar = ig;
-    int IgBlock = int(Tpar_control(jpar,8));
-    int IgBlockFn = int(Tpar_control(jpar,9));
-    int IgEnvLink = int(Tpar_control(jpar,10));
-    int IgEnvLinkVar = int(Tpar_control(jpar,11));
-    int IgRW = int(Tpar_control(jpar,12));
-    int IgRWBlock = int(Tpar_control(jpar,13));
-    float SigmaRW = Tpar_control(jpar,14);
-     
-    if (IgBlock !=0){
-     for (int kpar=1;kpar<=blocks(IgBlock);kpar++){
-       n_Tpar += 1;
-       anystring = parname1(ig);
-       anystring += "_block_group_"+str(IgBlock)+"_block_"+str(kpar); 
-  
-       OutInpFile1 << "         "; OutInpFile1<<  setw(12) << setprecision(6) << setfixed() <<T_pars_est(n_Tpar)<< " "; for (int ii=2;ii<=3;ii++) OutInpFile1<< setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
-       OutInpFile1 << setw(10) << setfixed() << int(Tpar_control(n_Tpar,4)) << " ";
-       for (int ii=5;ii<=6;ii++) {OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";}
-       for (int ii=7;ii<=8;ii++) {OutInpFile1 << setw(6) << setfixed() << int(Tpar_control(n_Tpar,ii)) << " ";}
-       OutInpFile1 << "# " << anystring; OutInpFile1 << endl;
-       } //-- kpar  loop
-      } //-- IgBlock!=0
-
-    if (IgEnvLink !=0) 
-     {
-      anystring = "Env_link_"+parname1(ig);
-      for (int ienv_par=1;ienv_par<=N_env_par(IgEnvLinkVar);ienv_par++)
-       {
-        n_Tpar += 1;
-        OutInpFile1 << T_pars_est(n_Tpar) << " "; for (int ii=2;ii<=7;ii++) OutInpFile1 << Tpar_control(n_Tpar,ii) << " ";  OutInpFile1 << Tpar_control(n_Tpar,15) << endl;
-       } //-- ienv_par
-      n_Tpar += N_env_par(IgEnvLinkVar); 
-     } //--IgEnvLink !=0
-        
-     } //-- ig
-
-
   OutInpFile1 << endl;
   OutInpFile1 << "##  ------------------------------------------------------------------------------------ ##" << endl;
   OutInpFile1 << "##  Allometry" << endl;
@@ -13967,10 +13577,13 @@ FUNCTION WriteFiles
   OutInpFile1 << "## 2 = vector by sex" << endl;
   OutInpFile1 << "## 3 = matrix by sex" << endl;
   OutInpFile1 << 3 << "  #--method" << endl;
-  for ( int h = 1; h <= nsex; h++ )
-   for ( int m = 1; m <= nmature; m++)
-    for ( int i = syr; i <= nyrRetro+1; i++ )
-      OutInpFile1 << setw(14) << setprecision(8) <<  setfixed() << mean_wt(h,m,i) << endl;
+  for ( int h = 1; h <= nsex; h++ ){
+    for ( int m = 1; m <= nmature; m++){
+      OutInpFile1 << "#--sex: "<< h <<" maturity: " << m << endl;
+      for ( int i = syr; i <= nyrRetro+1; i++ )
+        OutInpFile1 << setw(14) << setprecision(8) <<  setfixed() << mean_wt(h,m,i) << endl;
+    }
+  }
   OutInpFile1 << "# Proportion mature by sex and size" << endl;
   OutInpFile1 << maturity << endl;
   OutInpFile1 << "# Proportion legal by sex and size" << endl;
@@ -14376,8 +13989,8 @@ FUNCTION WriteFiles
     for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
     OutInpFile1 << setw(11) << setfixed() << int(q_pars(b,4)) << " ";
     for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << q_pars(b,ii) << " ";
-    OutInpFile1 << setw(6) << setfixed() << int(q_pars(b,7)) << " # Survey_q_parameter_"+str(b) << "_for_Survey_" <<  qToSurv(b,1);
-    if (blocks(q_block(qToSurv(b,1)))>0) OutInpFile1 <<"_in_block_group_"<<q_block(qToSurv(b,1));
+    OutInpFile1 << setw(6) << setfixed() << int(q_pars(b,7)) << " # Survey_q_parameter_"+str(b) << "_for_Survey_" <<  qToSurv(b);
+    if (blocks(q_block(qToSurv(b)))>0) OutInpFile1 <<"_in_block_group_"<<q_block(qToSurv(b));
     OutInpFile1 << endl;
   }//-b loop
 
@@ -14596,6 +14209,12 @@ GLOBALS_SECTION
   #if defined _WIN32 || defined _WIN64
   #include "include\libgmacs.h"
   #endif
+
+  int dontWriteParams = 0;//--flag to write params and gradient info to file (0->write;1->dont write)
+
+  void gradcalc(int nvar, const dvector& gr);
+  adstring_array get_param_names(void);
+  void check_for_params_on_bounds(ostream& os);
 
   time_t start,finish;
   long hour,minute,second;
@@ -15019,59 +14638,54 @@ GLOBALS_SECTION
   class gsm::Selex<dvar_vector>** ppSLX = 0;//initialized to NULL
 // --------------------------------------------------------------------------------------------------
 
- double GenJitter(int JitterType, double Initial, double lower, double upper, int Phase, double sdJitter, dvector& rands, dvector& randu)
-  {
-   double ParValue,eps;
+  double GenJitter(int JitterType, dvariable Initial, double lower, double upper, int Phase, double sdJitter, dvector& rands, dvector& randu){
+    double ParValue,vInitial,eps;
 
-   ParValue = Initial;
+    ParValue = value(Initial);
+    vInitial = ParValue;
 
-   if (Phase > 0)
-    {
-	// Andre's version
-     if (JitterType==1)
-      {
-       int ifound = 0;
-       ParValue = Initial;
-       int ii = 1;
-       if (Phase > 0)
-        while (ifound ==0)
-         {
-          eps = rands(ii);
-          ii += 1;
-          if (eps > 0)
-           ParValue = Initial + eps*(upper-Initial)*sdJitter/4.0;
-          else
-           ParValue = Initial + eps*(Initial-lower)*sdJitter/4.0;
-          if (ParValue > lower && ParValue < upper) ifound = 1;
-         }
+    if (Phase > 0){
+      // Andre's version
+      if (JitterType==1){
+        int ifound = 0;
+        ParValue = vInitial;
+        int ii = 1;
+        if (Phase > 0){
+          while (ifound ==0){
+            eps = rands(ii);
+            ii += 1;
+            if (eps > 0)
+              ParValue = vInitial + eps*(upper-vInitial)*sdJitter/4.0;
+            else
+              ParValue = vInitial + eps*(vInitial-lower)*sdJitter/4.0;
+            if (ParValue > lower && ParValue < upper) ifound = 1;
+          }
+        }
       }
 
-     // Buck's version
-     if (JitterType==2)
-      {
-       double d = upper - lower;
-       lower = lower+0.001*d;                        //shrink lower bound
-       upper = upper-0.001*d;                        //shrink upper bound
-       d = upper - lower;                            //shrink interval
-       double lp = Initial - 0.5*d*sdJitter;
-       double up = Initial + 0.5*d*sdJitter;
-       double rp = Initial + (randu(1)-0.5)*d*sdJitter;
-       if (rp > upper)
-        {rp = lp - (rp-upper);}
-       else
-         if (rp < lower) {rp = up + (lower-rp);}
-       ParValue = rp;
+      // Buck's version
+      if (JitterType==2){
+        double d = upper - lower;
+        lower = lower+0.001*d;                        //shrink lower bound
+        upper = upper-0.001*d;                        //shrink upper bound
+        d = upper - lower;                            //shrink interval
+        double lp = vInitial - 0.5*d*sdJitter;
+        double up = vInitial + 0.5*d*sdJitter;
+        double rp = vInitial + (randu(1)-0.5)*d*sdJitter;
+        if (rp > upper)
+          {rp = lp - (rp-upper);}
+        else
+          if (rp < lower) {rp = up + (lower-rp);}
+        ParValue = rp;
       }
 
-     // Jie's version
-     if (JitterType==3)
-      {
-       double tem1 = 0.5*rands(1)*sdJitter*log( (upper-lower+0.0000003)/(Initial-lower+0.0000001)-1.0);
-       ParValue = lower+(upper-lower)/(1.0+exp(-2.0*tem1));
+      // Jie's version
+      if (JitterType==3){
+        double tem1 = 0.5*rands(1)*sdJitter*log( (upper-lower+0.0000003)/(vInitial-lower+0.0000001)-1.0);
+        ParValue = lower+(upper-lower)/(1.0+exp(-2.0*tem1));
       }
     }
-	
-   return (ParValue);
+    return (ParValue);
   }
 // --------------------------------------------------------------------------------------------------
 
@@ -15144,17 +14758,23 @@ FINAL_SECTION
   cout<<"Starting FINAL_SECTION"<<endl;
   CreateOutput();
   cout<<"Finished CreateOutput"<<endl;
+  ofstream pf; 
+  pf.open("gmacs.final.par");
+  writeParams(1,pf); //--write current params and sel function values + gradients
+  pf.close();
 
   if (ppSLX) {
       //clean up pointer array--probably unnecessary
-      cout<<"nsel_patterns = "<<nsel_patterns<<endl;
-      cout<<"nsel_use      = "<<nsel_use<<endl;
-      cout<<"deleting ppSLX array w/ "<<nsel_use<<" sel patterns"<<endl;
+      if (verbose){
+        cout<<"nsel_patterns = "<<nsel_patterns<<endl;
+        cout<<"nsel_use      = "<<nsel_use<<endl;
+        cout<<"deleting ppSLX array w/ "<<nsel_use<<" sel patterns"<<endl;
+      }
       for (int k=0;k<nsel_use;k++) {
-        cout<<"deleting ppSLX["<<k<<"]"<<endl;
+        if (verbose)cout<<"deleting ppSLX["<<k<<"]"<<endl;
         if (ppSLX[k]) {
           delete ppSLX[k];
-          cout<<"deleted ppSLX["<<k<<"]"<<endl;
+          if (verbose) cout<<"deleted ppSLX["<<k<<"]"<<endl;
         } else {
           cout<<endl<<"#------------------------------"<<endl;
           cout<<"WARNING: ppSLX["<<k<<"] was not defined!"<<endl;
@@ -15163,7 +14783,7 @@ FINAL_SECTION
         }
       }
       delete ppSLX;
-      cout<<"Finished deleting ppSLX"<<endl;
+      if (verbose) cout<<"Finished deleting ppSLX"<<endl;
   }
 
   //  Print run time statistics to the screen.
@@ -15414,9 +15034,7 @@ FINAL_SECTION
 // 2025-06-10 ** WTS. Cosmetic changes (added some info).  
 // 2025-06-16 ** WTS. Revised calculation of `log_q_catch` in `calc_predicted_catch` slightly, added some error checks to help debug.
 //                    Incremented version to 2.20.31. 
-// 2025-07-31 ** AEP. Allowed for more general environmental drivers for M
-// 2026-12-30 ** AEP. Allowed for more general environmental drivers for mean recruitment. Incremented version to 2.20.32.
-// 2026-01-05 ** AEP. Found a print out bug
+// 2025-09-05 ** WTS. Revised GenJitter to respect initial parameter values set through a pin file. 
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
