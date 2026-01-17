@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.34a; ** WTS **; Compiled 2026-01-15");
+ !! TheHeader = adstring("## GMACS Version 2.20.33; ** AEP **; Compiled 2026-01-15");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -319,11 +319,9 @@ DATA_SECTION
   !!WriteFileName(numbersunit);
   !!WriteFileName(StockName);
   init_int IsJittered;
-  init_int IsPin;
   init_number sdJitter;
   !! if (jitflag) IsJittered = 1;
   !! if (IsJittered==1) cout << "Jittering with sd: " << sdJitter << endl;
-  !! WriteFileName(IsPin);
   !! WriteFileName(IsJittered);
   !! WriteFileName(sdJitter);
   init_int OutRefPars;
@@ -1702,7 +1700,6 @@ DATA_SECTION
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(18)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(19)) << " # Set to 1 to copy growth from males to females)" << endl;
     gmacs_ctl << endl;
     echoinput << endl << "# Extra controls" << endl;
     echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
@@ -1723,7 +1720,6 @@ DATA_SECTION
     echoinput << model_controls(16) << " # Last full bias-correction" << endl;
     echoinput << model_controls(17) << " # Last year of bias-correction" << endl;
     echoinput << model_controls(18) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
-    echoinput << model_controls(19) << " # Set to 1 to copy growth from males to females)" << endl;
     echoinput << endl;
 
     // Default number of parameters
@@ -1848,9 +1844,10 @@ DATA_SECTION
  LOC_CALCS 
   {
     n_Tpar = 0;
-    int n_Tpar2 = 0; int h = 0; int iblock = 0;
+    int n_Tpar2; int h; int iblock;
     ThetaPnt.initialize();
-    int ExtraStuff = 0;
+    int ExtraStuff;
+    ExtraStuff = 0;
     gmacs_ctl << endl;
     echoinput << endl;
     gmacs_ctl << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
@@ -5273,69 +5270,69 @@ PRELIMINARY_CALCS_SECTION
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      T_pars_est(ipar) = GenJitter(IsJittered,IsPin,T_ival(ipar),T_lb(ipar),T_ub(ipar),T_phz(ipar),sdJitter,rands,randu,T_pars_est(ipar));
+      T_pars_est(ipar) = GenJitter(IsJittered,T_ival(ipar),T_lb(ipar),T_ub(ipar),T_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_Gpar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      G_pars_est(ipar) = GenJitter(IsJittered,IsPin,G_ival(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu,G_pars_est(ipar));
+      G_pars_est(ipar) = GenJitter(IsJittered,G_ival(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_Spar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      S_pars_est(ipar) = GenJitter(IsJittered,IsPin,S_ival(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu,S_pars_est(ipar));
+      S_pars_est(ipar) = GenJitter(IsJittered,S_ival(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nFparams(ipar); jpar++)
       {
        rands.fill_randn(rng2);
        randu.fill_randn(rng2);
-       log_fdev(ipar,jpar) = GenJitter(IsJittered,IsPin,(fdev_ub(ipar)+fdev_lb(ipar))/2.0,fdev_lb(ipar),fdev_ub(ipar),f_phz(ipar),sdJitter,rands,randu,log_fdev(ipar,jpar));
+       log_fdev(ipar,jpar) = GenJitter(IsJittered,(fdev_ub(ipar)+fdev_lb(ipar))/2.0,fdev_lb(ipar),fdev_ub(ipar),f_phz(ipar),sdJitter,rands,randu);
       }
     for (int ipar=1;ipar<=nfleet;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_foff(ipar) = GenJitter(IsJittered,IsPin,(foff_ub(ipar)+foff_lb(ipar))/2.0,foff_lb(ipar),foff_ub(ipar),foff_phz(ipar),sdJitter,rands,randu,log_foff(ipar));
+      log_foff(ipar) = GenJitter(IsJittered,(foff_ub(ipar)+foff_lb(ipar))/2.0,foff_lb(ipar),foff_ub(ipar),foff_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nYparams(ipar); jpar++)
       {
        rands.fill_randn(rng2);
        randu.fill_randn(rng2);
-       log_fdov(ipar,jpar) = GenJitter(IsJittered,IsPin,0.0,-10.0,10.0,foffdevs_phz(ipar),sdJitter,rands,randu,log_fdov(ipar,jpar));
+       log_fdov(ipar,jpar) = GenJitter(IsJittered,0.0,-10.0,10.0,foffdevs_phz(ipar),sdJitter,rands,randu);
       }
     for (int ipar=rdv_syr;ipar<=rdv_eyr;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      rec_dev_est(ipar) = GenJitter(IsJittered,IsPin,0.0,-8.0,8.0,rdv_phz,sdJitter,rands,randu,rec_dev_est(ipar));
+      rec_dev_est(ipar) = GenJitter(IsJittered,0.0,-8.0,8.0,rdv_phz,sdJitter,rands,randu);
      }
     for (int ipar=rdv_syr;ipar<=rdv_eyr;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      logit_rec_prop_est(ipar) = GenJitter(IsJittered,IsPin,init_sex_ratio,-100.0,100.0,rec_prop_phz,sdJitter,rands,randu,logit_rec_prop_est(ipar));
+      logit_rec_prop_est(ipar) = GenJitter(IsJittered,init_sex_ratio,-100.0,100.0,rec_prop_phz,sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=nSizeComps;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_vn(ipar) = GenJitter(IsJittered,IsPin,log_vn_ival(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu,log_vn(ipar));
+      log_vn(ipar) = GenJitter(IsJittered,log_vn_ival(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_qpar;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      survey_q(ipar) = GenJitter(IsJittered,IsPin,q_ival(ipar),q_lb(ipar),q_ub(ipar),q_phz(ipar),sdJitter,rands,randu,survey_q(ipar));
+      survey_q(ipar) = GenJitter(IsJittered,q_ival(ipar),q_lb(ipar),q_ub(ipar),q_phz(ipar),sdJitter,rands,randu);
      }
     for (int ipar=1;ipar<=n_addcv_par;ipar++)
      {
       rands.fill_randn(rng2);
       randu.fill_randn(rng2);
-      log_add_cv(ipar) = GenJitter(IsJittered,IsPin,log_add_cv_ival(ipar),log_add_cv_lb(ipar),log_add_cv_ub(ipar),cv_phz(ipar),sdJitter,rands,randu,log_add_cv(ipar));
+      log_add_cv(ipar) = GenJitter(IsJittered,log_add_cv_ival(ipar),log_add_cv_lb(ipar),log_add_cv_ub(ipar),cv_phz(ipar),sdJitter,rands,randu);
      }
    }
 
@@ -5943,7 +5940,7 @@ FUNCTION initialize_model_parameters
     cout << "t " << "it" << " "<< "h" << " "<< "k" << " "<< "isel" << " "<<  "irow" << " " << "iyr" << " " << "ipar" << " "<< "SelPnt" << " "<< "ParNo";
     cout << " "<< "S_pars_est(RefParNo)"<< " " << "S_pars_est(ParNo)" << " "<< "EnvData(iyr,EnvLinkVar)" << " " << "S_pars(nsel_use,ipar)" << endl;
   }
- for (int it=1;it<=2;it++){
+  for (int it=1;it<=2;it++){
     for (int h=1;h<=nsex;h++){
       for (int k=1;k<=nfleet;k++){
         if ( nparSs(it,(h-1)*nfleet+k) > 0){
@@ -5999,7 +5996,6 @@ FUNCTION initialize_model_parameters
                     }
                  } else {
                     int SelPnt2 = -1*SelPnt(irow,nclass+7+ipar);
-                    SelPnt2 = -1*SelPnt(irow,ipar);
                     int Devpar = SelPnt2  - int(SelPnt2/100.0)*100;
                     if (SelPnt(irow,nclass+7)==1) S_pars(nsel_use,ipar) = S_pars_est(RefParNo)*exp(par_devs(Devpar)); 
                     if (SelPnt(irow,nclass+7)==2) S_pars(nsel_use,ipar) = S_pars_est(RefParNo) + par_devs(Devpar); 
@@ -13894,8 +13890,6 @@ FUNCTION WriteFiles
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(18)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(19)) << " # Set to 1 to copy growth from males to females)" << endl;
   OutInpFile1 << endl;
  
   //AEP
@@ -15038,13 +15032,9 @@ GLOBALS_SECTION
   class gsm::Selex<dvar_vector>** ppSLX = 0;//initialized to NULL
 // --------------------------------------------------------------------------------------------------
 
- double GenJitter(int JitterType, int IsPin, double Initial1, double lower, double upper, int Phase, double sdJitter, dvector& rands, dvector& randu, dvariable Initial2)
+ double GenJitter(int JitterType, double Initial, double lower, double upper, int Phase, double sdJitter, dvector& rands, dvector& randu)
   {
    double ParValue,eps;
-   double Initial;
-   
-   if (IsPin==0) Initial = Initial1;
-   if (IsPin==1) Initial = value(Initial2);
 
    ParValue = Initial;
 
@@ -15439,20 +15429,11 @@ FINAL_SECTION
 //                    Incremented version to 2.20.31. 
 // 2025-07-31 ** AEP. Allowed for more general environmental drivers for M
 // 2026-12-30 ** AEP. Allowed for more general environmental drivers for mean recruitment. Incremented version to 2.20.32.
-//                    NOTE: THIS CHANGES the specification for the "MAIN PARS"/recruitment section of the ctl file: "phase" is specified in the column 
-//                    after Prior_2 and additional columns Block, Block_fn Env_L, Env_vr, RW, RW_Blk, and RW_Sigma are now required.
-//                    NOTE: you will also need to add a line to the ctl file after the Block_Groups specification to specify the number of environmental treatments.
 // 2026-01-05 ** AEP. Found a print out bug
 // 2026-01-14 ** AEP. Incremented version to 2.20.32a.
 // 2026-01-14 ** TJ.  Allowed for spr_lambda to be equal to 1 for full contribution of both sexes when ctl input is negative. Incremented version to 2.20.32b.
-// 2026-01-14 ** AEP. Added the IsTyler flag as model_controls(19) which forces female growth to match that for males
+// 2026-01-14 ** AEP. Added the IsTyler which forces female growth to match that for males
 // 2026-01-15 ** WTS. Updated version to 2.20.33.
-// 2026-01-15 ** WTS. Added output for isTyler/model_controls(19) to gmacs_stl, echoinput, and OutInpFile1. 
-//                    Incremented version to 2.20.33a.
-// 2026-01-15 ** AEP. Correct selectivity deviance parameter pointer. Revised the jitter function so that the jittered value is centered from a value from a PIN file.
-//                    Incremented version to 2.20.34.
-// 2026-01-15 ** WTS. Several int variables were not initialized prior to use. This caused a crash when compiled using the MacOSX SDK but not the Windows compiler. 
-//                    These are now initialized to 0 prior to use. Version incremented to 2.20.34a.
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
