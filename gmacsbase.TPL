@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.34a; ** WTS **; Compiled 2026-01-15");
+ !! TheHeader = adstring("## GMACS Version 2.20.34b; ** WTS **; Compiled 2026-03-05");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -227,7 +227,7 @@ DATA_SECTION
   catchtypes(1) = "retained";
   catchtypes(2) = "discarded";
 
-  unitstypes += "biommass";
+  unitstypes += "biomass";
   unitstypes += "numbers";
 
   seltypes += "selectivity";
@@ -986,8 +986,8 @@ DATA_SECTION
         (*pGD) >> matType;    idMat(idf) = substStuff.matID(matType);
         (*pGD) >> shlType;    idShl(idf) = substStuff.shellID(shlType);
         (*pGD) >> nrows(idf);
-        gmacs_data << indexType << "  #--abundance index type ('sel' or 'sel+ret')" << endl;
         gmacs_data << unitsType << "  #--units type ('abundance' or 'biomass')" << endl;
+        gmacs_data << indexType << "  #--abundance index type ('sel' or 'sel+ret')" << endl;
         gmacs_data << fleet     << "  #--fleet name" << endl;
         gmacs_data << sexType   << "  #--sex             (male(s), female(s), undetermined)" << endl;
         gmacs_data << matType   << "  #--maturity        (immature, mature, undetermined)" << endl;
@@ -1739,8 +1739,8 @@ DATA_SECTION
     parname1(Jpnt+4) = "Recruitment_rb-males";
     Jpnt = Jpnt + 5;
     if (nsex>1) {
-      parname1(Jpnt)  = "Recruitment_ra-females (ln-scale offset to males!)";
-      parname1(Jpnt+1) = "Recruitment_rb-females (ln-scale offset to males!)";
+      parname1(Jpnt)  = "Recruitment_ra-females_(ln-scale_offset_to_males!)";
+      parname1(Jpnt+1) = "Recruitment_rb-females_(ln-scale_offset_to_males!)";
       Jpnt += 2;
     }
     parname1(Jpnt)   = "log(SigmaR)";
@@ -1854,15 +1854,14 @@ DATA_SECTION
     gmacs_ctl << endl;
     echoinput << endl;
     gmacs_ctl << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
-    for (int ig = 1;ig<=ntheta;ig++)
-     {
+    for (int ig = 1;ig<=ntheta;ig++){
       int ipnt3 = Nyears2*(ig-1);
       for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
-       //--ipnt3 is index into ig
-       ThetaPnt(ipnt3+iyr-syr+1,nclass+2) = ig; //--ig
-       ThetaPnt(ipnt3+iyr-syr+1,nclass+3) = 0;  //--sex
-       ThetaPnt(ipnt3+iyr-syr+1,nclass+4) = 0;  //--fleet
-       ThetaPnt(ipnt3+iyr-syr+1,nclass+5) = iyr;//--year
+        //--ipnt3 is index into ig
+        ThetaPnt(ipnt3+iyr-syr+1,nclass+2) = ig; //--ig
+        ThetaPnt(ipnt3+iyr-syr+1,nclass+3) = 0;  //--sex
+        ThetaPnt(ipnt3+iyr-syr+1,nclass+4) = 0;  //--fleet
+        ThetaPnt(ipnt3+iyr-syr+1,nclass+5) = iyr;//--year
       }
   
       n_Tpar += 1;
@@ -1873,7 +1872,8 @@ DATA_SECTION
       for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Tpar_control(n_Tpar,ii);
       anystring = parname1(ig);
          
-      gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
+      gmacs_ctl << "         "; 
+      for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
       gmacs_ctl << setw(10) << setfixed() << int(Tpar_control(n_Tpar,4)) << " ";
       for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
       for (int ii=7;ii<=13;ii++) gmacs_ctl << setw(6) << setfixed() << int(Tpar_control(n_Tpar,ii)) << " ";
@@ -1881,14 +1881,14 @@ DATA_SECTION
       for (int ii=1;ii<=14;ii++) echoinput << Tpar_control(n_Tpar,ii) << " "; echoinput << "# " << anystring << endl;
       if (int(Tpar_control(n_Tpar,8)) > 0 || int(Tpar_control(n_Tpar,10)) > 0 || int(Tpar_control(n_Tpar,12)) > 0) ExtraStuff = 1;
       
-      T_block(ig) =int(Tpar_control(n_Tpar,8));
-      T_block_fn(ig) = int(Tpar_control(n_Tpar,9));
+      T_block(ig)    = int(Tpar_control(n_Tpar, 8));
+      T_block_fn(ig) = int(Tpar_control(n_Tpar, 9));
       T_env_link(ig) = int(Tpar_control(n_Tpar,10));
-      T_env_var(ig) = int(Tpar_control(n_Tpar,11));
-      T_RW(ig) = int(Tpar_control(n_Tpar,12));
-      T_RW_blk(ig) = int(Tpar_control(n_Tpar,13));
-      T_RW_sigma(ig) = Tpar_control(n_Tpar,14);
-     }//--ig loop
+      T_env_var(ig)  = int(Tpar_control(n_Tpar,11));
+      T_RW(ig)       = int(Tpar_control(n_Tpar,12));
+      T_RW_blk(ig)   = int(Tpar_control(n_Tpar,13));
+      T_RW_sigma(ig) =     Tpar_control(n_Tpar,14);
+    }//--ig loop
     
     if (ExtraStuff==1) {
       gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
@@ -1898,18 +1898,18 @@ DATA_SECTION
     //for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
     //  for (int ipar=1; ipar<=ntheta;ipar++)  { ThetaPnt(ipnt3+iyr-syr+1,ipar) = n_Tpar2+ipar; ThetaPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Tpar2+ipar; }
     // }
-   for (int ig = 1;ig<=ntheta;ig++) {
+    for (int ig = 1;ig<=ntheta;ig++) {
      // Are there blocks
      int ipnt3 = Nyears2*(ig-1);
      ECHO(ig)
-     int jpar = n_Tpar2+ig;
-     int IgBlock = int(Tpar_control(jpar,8));
-     int IgBlockFn = int(Tpar_control(jpar,9));
-     int IgEnvLink = int(Tpar_control(jpar,10));
+     int jpar = n_Tpar2+ig;  //NOTE: n_Tpar2 is always 0 (2026-03-09)
+     int IgBlock      = int(Tpar_control(jpar, 8));
+     int IgBlockFn    = int(Tpar_control(jpar, 9));
+     int IgEnvLink    = int(Tpar_control(jpar,10));
      int IgEnvLinkVar = int(Tpar_control(jpar,11));
-     int IgRW = int(Tpar_control(jpar,12));
-     int IgRWBlock = int(Tpar_control(jpar,13));
-     float SigmaRW = Tpar_control(jpar,14);
+     int IgRW         = int(Tpar_control(jpar,12));
+     int IgRWBlock    = int(Tpar_control(jpar,13));
+     float SigmaRW    =     Tpar_control(jpar,14);
      
      if (IgBlock !=0){
        // Environmental link
@@ -1924,14 +1924,15 @@ DATA_SECTION
         n_Tpar += 1;
         TtoIG(n_Tpar,1) = ig;
         TtoIG(n_Tpar,2) = ig;
-        TtoIG(n_Tpar,3) = 0;
+        TtoIG(n_Tpar,3) = 1;   //--WTS (2026-03-09): was "TtoIG(n_Tpar,3) = 0;" but that indicates need to take ln-transformTtoIG
         for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Tpar_control(n_Tpar,ii); *(ad_comm::global_datafile) >> Tpar_control(n_Tpar,15);
         for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
-         { ThetaPnt(iyr-syr+1,ig) = n_Tpar; ThetaPnt(iyr-syr+1,nclass+7+ig) = n_Tpar; }
+          { ThetaPnt(iyr-syr+1,ig) = n_Tpar; ThetaPnt(iyr-syr+1,nclass+7+ig) = n_Tpar; }
         anystring = parname1(ig);
         anystring += "_block_group_"+str(IgBlock)+"_block_"+str(kpar); 
   
-        gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) {gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";}
+        gmacs_ctl << "         "; 
+        for (int ii=1;ii<=3;ii++) {gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";}
         gmacs_ctl << setw(10) << setfixed() << int(Tpar_control(n_Tpar,4)) << " ";
         for (int ii=5;ii<=6;ii++) {gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";}
         for (int ii=7;ii<=8;ii++) {gmacs_ctl << setw(6) << setfixed() << int(Tpar_control(n_Tpar,ii)) << " ";}
@@ -2878,7 +2879,8 @@ DATA_SECTION
   // |--------------------------------|
   // | NATURAL MORTALITY CONTROLS |
   // |--------------------------------|
-  !! cout << " * Natural mortality parameter controls" << endl;
+  !! cout << "\n * Natural mortality parameter controls" << endl;
+  !! ECHOSTR(" ")
   !! ECHOSTR(" * Natural mortality parameter controls");
   init_matrix M_controls(1,nmature*nsex,1,13);
   !! ECHO(M_controls);
@@ -3014,12 +3016,16 @@ DATA_SECTION
     } //--
     ECHOSTR("after M env_links")
     ECHOSTR(n_deviations)
-   
+    ECHOSTR(" ")
  END_CALCS
 
   imatrix Mbreaks(1,nsex*nmature,1,MaxMbreaks);
-  !! if (MaxMbreaks > 0) gmacs_ctl <<"# MaxMbreaks" << endl;
  LOC_CALCS
+   if (MaxMbreaks > 0) {
+    gmacs_ctl <<"# MaxMbreaks" << endl;
+   } else {
+    gmacs_ctl <<"# No MaxMbreaks" << endl;
+   }
    for (int h=1;h<=nsex;h++)
     for (int m=1;m<=nmature;m++)
      {
@@ -3054,6 +3060,7 @@ DATA_SECTION
        } 
       }
     ECHO(MToIg);
+    ECHO(MType);
   }
  END_CALCS
   
@@ -5483,12 +5490,14 @@ PROCEDURE_SECTION
   // General outputs
   if ( mceval_phase() ) write_eval();
   if ( NfunCall == StopAfterFnCall ) {
+    cout<<"Stopping after "<<NfunCall<<" function calls--creating par file"<<endl;
+    save_params();
     cout<<"Stopping after "<<NfunCall<<" function calls--creating output"<<endl;
-      CreateOutput();
-      cout<<"--------------------------------------"<<endl;
-      cout<<"Stopping after "<<StopAfterFnCall<<" function calls"<<endl;
-      cout<<"--------------------------------------"<<endl;
-      exit(1);
+    CreateOutput();
+    cout<<"--------------------------------------"<<endl;
+    cout<<"Stopping after "<<StopAfterFnCall<<" function calls"<<endl;
+    cout<<"--------------------------------------"<<endl;
+    exit(1);
 	}
 
 
@@ -5555,10 +5564,10 @@ FUNCTION initialize_model_parameters
         int ParNo      = int(ThetaPnt(irow,ipar)/10000) - int(ThetaPnt(irow,ipar)/1000000)*100;
         // Now compute the adjustment
         envpar = 0;
- 	jpnt = ParNo+1;
+        jpnt = ParNo+1;
         for (int ienv_par=1;ienv_par<=Env_link_nums(EnvLinkVar);ienv_par++)
          for (int jenv_par=1; jenv_par<=int(Env_specs(EnvLinkVar,ienv_par,2));jenv_par++)
- 	  {
+          {
            ienv_par2 = int(Env_specs(EnvLinkVar,ienv_par,5));
            envpar += T_pars_est(jpnt)*pow(Env_vars_used(iyr,ienv_par2),float(jenv_par));
            jpnt += 1;
@@ -5600,6 +5609,15 @@ FUNCTION initialize_model_parameters
   Ipnt = Jpnt+2;
   logRbar = timevarparV2(6,Ipnt, nyrRetro+1,  T_relative(Ipnt),T_block(Ipnt), T_block_fn(Ipnt),T_env_link(Ipnt), T_env_var(Ipnt), 
                                  T_RW(Ipnt), T_RW_blk(Ipnt), ntheta_use, TtoIG, T_pars_est); 
+  if (verbose>3){
+    cout<<"--setting logRbar"<<endl;
+    cout<<"Ipnt: "<<Ipnt<<endl;
+    cout<<"T_relative: "<<T_relative(Ipnt)<<"  T_block: "<<T_block(Ipnt)<<"  T_block_fn: "<<T_block_fn(Ipnt)<<endl;
+    cout<<"T_env_link: "<<T_env_link(Ipnt)<<"  T_env_var: "<<T_env_var(Ipnt)<<"  T_RW: "<<T_RW(Ipnt)<<"  T_RW_blk: "<<T_RW_blk(Ipnt)<<endl;
+    cout<<"ntheta_use: "<<ntheta_use<<endl;
+    cout<<" TtoIG: "<< endl << TtoIG<<endl;
+    cout<<" T_pars_est: "<< T_pars_est<<endl;
+  }
   ra(1)     = T_pars_est(Jpnt+3);
   rbeta(1)  =  T_pars_est(Jpnt+4);
   Jpnt = Jpnt + 5;
@@ -7501,8 +7519,10 @@ FUNCTION calc_mature_probability
    * @return rec_sdd the recruitment size distribution vector
   **/
 FUNCTION calc_recruitment_size_distribution
+  if (verbose>3) cout<<endl<<"--------starting calc_recruitment_size_distribution--------"<<endl;
   dvariable ralpha;
   dvar_vector x(1,nclass+1);
+  x.initialize();
 
   rec_sdd.initialize();
   for ( int h=1; h <=nsex; h++){
@@ -7515,7 +7535,7 @@ FUNCTION calc_recruitment_size_distribution
       rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
     } else {
       //--TCSAM02 approach
-      if (verbose>3) cout<<"--------Using TCSAM02 approach to calculate rec size dist--------"<<endl<<endl;
+      if (verbose>3) cout<<"--------Using TCSAM02 approach to calculate rec size dist--------"<<endl;
       dvector dzs = mid_points+(mid_points[2]-mid_points[1])/2.0-mid_points[1];
       dvariable aR = ra(h) / rbeta(h);//--gamma distribution "shape" parameter
       dvariable bR = rbeta(h);        //--gamma distribution "scale" parameter
@@ -7524,12 +7544,12 @@ FUNCTION calc_recruitment_size_distribution
         rec_sdd(h,nSizeClassRec(h)) += rec_sdd(h,l); //--compress tail
         rec_sdd(h,l) = 0;
       }
-      rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each row sums to 1.0
+      rec_sdd(h) /= sum(rec_sdd(h)); // Standardize so each sex sums to 1.0
     }
     if ((verbose>3)&&(NfunCall<2)){
       cout<<"In calc_recruitment_size_distribution for sex "<<h<<endl;
       cout<<"ra, rbeta = "<<ra(h)<<" "<<rbeta(h)<<endl;
-      cout<<"x = "<<x<<endl;
+      if (recZ_flag==0) cout<<"x = "<<x<<endl;
       cout<<"rec_sdd = "<<rec_sdd(h)<<endl;
       if (std::isnan(value(sum(rec_sdd(h))))) exit(-1);
     }
@@ -12276,294 +12296,364 @@ FUNCTION CreateOutput
   
   // Estimated parameters
   // ====================
+  ParFile1.open("gmacs_rep.par");
   OutFile1 << "--Estimated parameters: dataframe" << endl;
   OutFile1 << "Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Status Penalty Gradient Standard_error Estimated_parameter_count" << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Estimated parameters: dataframe" << endl;
   RepFile1 << "par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  ParFile1 << "#est    par_count  par_type     est_par_count" << endl;
 
   Npar = 0; NparEst = 0;
-  for (Ipar=1;Ipar<=n_Tpar;Ipar++)
-   {
+  for (Ipar=1;Ipar<=n_Tpar;Ipar++){
     Npar +=1;
     OutFile1 << Npar << " " << parname1(Npar) << ": " << T_pars_est(Ipar) << " " << T_phz(Ipar) << " ";
     RepFile1 << Npar << " " << parname1(Npar) << "  " << T_pars_est(Ipar) << " " << T_phz(Ipar) << " ";
+    ParFile1 << T_pars_est(Ipar) << " \t# " << Npar << "\t" << parname1(Npar) << "\t";
     if ((T_phz(Ipar) < 0) || (T_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if ((T_phz(Ipar) > 0) && (T_phz(Ipar) <= current_phase())) 
-     { 
+    if ((T_phz(Ipar) > 0) && (T_phz(Ipar) <= current_phase())) { 
       NparEst +=1; CheckBounds(T_pars_est(Ipar),T_lb(Ipar),T_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << T_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+    }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=1;Ipar<=n_Gpar;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=n_Gpar;Ipar++){
     Npar +=1;
     OutFile1 << Npar << " " << parname1(Npar)<< ": " << G_pars_est(Ipar) << " " << G_phz(Ipar) << " ";
     RepFile1 << Npar << " " << parname1(Npar)<< "  " << G_pars_est(Ipar) << " " << G_phz(Ipar) << " ";
+    ParFile1 << G_pars_est(Ipar) << " \t# " << Npar << "\t" << parname1(Npar) << "\t";
     if ((G_phz(Ipar) < 0) || (G_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if ((G_phz(Ipar) > 0) && (G_phz(Ipar) <= current_phase())) 
-     { 
+    if ((G_phz(Ipar) > 0) && (G_phz(Ipar) <= current_phase())) { 
       NparEst +=1; CheckBounds(G_pars_est(Ipar),G_lb(Ipar),G_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << G_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+   }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-   for (Ipar=1;Ipar<=n_Mpar;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+   for (Ipar=1;Ipar<=n_Mpar;Ipar++){
     Npar +=1;
     OutFile1 << Npar << " " << parname1(Npar)<< ": " << M_pars_est(Ipar) << " " << M_phz(Ipar) << " ";
     RepFile1 << Npar << " " << parname1(Npar)<< "  " << M_pars_est(Ipar) << " " << M_phz(Ipar) << " ";
+    ParFile1 << M_pars_est(Ipar) << " \t# " << Npar << "\t" << parname1(Npar) << "\t";
     if ((M_phz(Ipar) < 0) || (M_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (M_phz(Ipar) > 0 && M_phz(Ipar) <= current_phase()) 
-     { 
+    if (M_phz(Ipar) > 0 && M_phz(Ipar) <= current_phase()) { 
       NparEst +=1; CheckBounds(M_pars_est(Ipar),M_lb(Ipar),M_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << M_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+    }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=1;Ipar<=n_Spar;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=n_Spar;Ipar++){
     Npar +=1;
     OutFile1 << Npar << " " << parname1(Npar)<< ": " << S_pars_est(Ipar) << " " << S_phz(Ipar) << " ";
     RepFile1 << Npar << " " << parname1(Npar)<< "  " << S_pars_est(Ipar) << " " << S_phz(Ipar) << " ";
+    ParFile1 << S_pars_est(Ipar) << " \t# " << Npar << "\t" << parname1(Npar) << "\t";
     if ((S_phz(Ipar) < 0) || (S_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (S_phz(Ipar) > 0 && S_phz(Ipar) <= current_phase()) 
-     { 
+    if (S_phz(Ipar) > 0 && S_phz(Ipar) <= current_phase()) { 
       NparEst +=1; CheckBounds(S_pars_est(Ipar),S_lb(Ipar),S_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << S_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+    }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=1;Ipar<=nfleet;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=nfleet;Ipar++){
     Npar +=1;
     anystring = "Log_fbar_"+fleetname(Ipar);
     OutFile1 << Npar << " " << anystring << ": " << log_fbar(Ipar) << " " << f_phz(Ipar) << " ";
     RepFile1 << Npar << " " << anystring << "  " << log_fbar(Ipar) << " " << f_phz(Ipar) << " ";
+    ParFile1 << log_fbar(Ipar) << " \t# " << Npar << "\t" << anystring << "\t";
     if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) 
-     { 
+    if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) { 
       NparEst +=1; CheckBounds(log_fbar(Ipar),-1000.0,1000.0);  
       OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fbar(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+    }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=1;Ipar<=nfleet;Ipar++){
-    Jpar = 0;
-    for (int iy=syr;iy<=nyrRetro;iy++){
-      for (int j=1;j<=nseason;j++){
-        if (fhit(iy,j,Ipar) >0){
-          Jpar +=1;
-          Npar +=1;
-          anystring = "Log_fdev_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
-          OutFile1 << Npar << " " << anystring << ": " << log_fdev(Ipar,Jpar) << " " << f_phz(Ipar) << " ";
-          RepFile1 << Npar << " " << anystring << "  " << log_fdev(Ipar,Jpar) << " " << f_phz(Ipar) << " ";
-          if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
-            RepFile1 << "NA NA NA NA NA NA NA " << endl;
-          }
-          if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) { 
-            NparEst +=1; CheckBounds(log_fdev(Ipar,Jpar),-1000.0,1000.0);  
-            OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
-            RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
-            OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
-          }
-          OutFile1 << endl;
-          RepFile1 << endl;
-        }//--if (fhit(iy,j,Ipar) >0)
-      }//--j loop
-    }//--iy loop
-  }//--Ipar loop
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  { int Kpar = 0;
+    for (Ipar=1;Ipar<=nfleet;Ipar++){
+      Jpar = 0;
+      for (int iy=syr;iy<=nyrRetro;iy++){
+        for (int j=1;j<=nseason;j++){
+          if (fhit(iy,j,Ipar) >0){
+            Jpar +=1;
+            Npar +=1;
+            anystring = "Log_fdev_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
+            OutFile1 << Npar << " " << anystring << ": " << log_fdev(Ipar,Jpar) << " " << f_phz(Ipar) << " ";
+            RepFile1 << Npar << " " << anystring << "  " << log_fdev(Ipar,Jpar) << " " << f_phz(Ipar) << " ";
+            ParFile1 << log_fdev(Ipar,Jpar) << " \t# " << Npar << "\t" << anystring << "\t";
+            if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
+              RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+              ParFile1 << "(not_estd)" << endl;
+            }
+            if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) { 
+              NparEst +=1; CheckBounds(log_fdev(Ipar,Jpar),-1000.0,1000.0);  
+              OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+              RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+              ParFile1 << NparEst << endl;
+              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
+            }
+            OutFile1 << endl;
+            RepFile1 << endl;
+          }//--if (fhit(iy,j,Ipar) >0)
+        }//--j loop
+      }//--iy loop
+      if (Jpar==0){//WTS 2026-03-09
+        // log_fdev defined (=0) but not applied for surveys. TODO: this may only work if log_fdev is not estimated for ANY fleets
+        Npar++;
+        anystring = "Log_fdev_"+fleetname(Ipar);
+        OutFile1 << Npar+Kpar << " " << anystring << ": " << log_fdev(Ipar,1) << " " << foffdevs_phz(Ipar) << " " << endl;
+        RepFile1 << Npar+Kpar << " " << anystring << "  " << log_fdev(Ipar,1) << " " << foffdevs_phz(Ipar) << " " << "NA NA NA NA NA NA NA " << endl;
+        ParFile1 << log_fdev(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
+      }
+    }//--Ipar loop
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
   for (Ipar=1;Ipar<=nfleet;Ipar++){
     Npar +=1;
     anystring = "Log_foff_"+fleetname(Ipar);
     OutFile1 << Npar << " " << anystring << ": " << log_foff(Ipar) << " " << foff_phz(Ipar) << " ";
     RepFile1 << Npar << " " << anystring << "  " << log_foff(Ipar) << " " << foff_phz(Ipar) << " ";
+    ParFile1 << log_foff(Ipar) << " \t# " << Npar << "\t" << anystring << "\t";
     if ((foff_phz(Ipar) < 0) || (foff_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
     if ((foff_phz(Ipar) > 0) && (foff_phz(Ipar) <= current_phase())) { 
       NparEst +=1; CheckBounds(log_foff(Ipar),-1000.0,1000.0);  
       OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_foff(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
-     OutFile1 << endl;
+    }
+    OutFile1 << endl;
     RepFile1 << endl;
   }
-  for (Ipar=1;Ipar<=nfleet;Ipar++){
-    Jpar = 0;
-    for (int iy=syr;iy<=nyrRetro;iy++){
-      for (int j=1;j<=nseason;j++){
-        if (yhit(iy,j,Ipar) >0){
-          Jpar +=1;
-          Npar +=1;
-          anystring = "Log_fdov_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
-          OutFile1 << Npar << " " << anystring << ": " << log_fdov(Ipar,Jpar) << " " << foffdevs_phz(Ipar) << " ";
-          RepFile1 << Npar << " " << anystring << "  " << log_fdov(Ipar,Jpar) << " " << foffdevs_phz(Ipar) << " ";
-          if ((foffdevs_phz(Ipar) < 0) || (foffdevs_phz(Ipar) > current_phase())) {
-            RepFile1 << "NA NA NA NA NA NA NA " << endl;
-          }
-          if (foffdevs_phz(Ipar) > 0 && foffdevs_phz(Ipar) <= current_phase()) { 
-            NparEst +=1; CheckBounds(log_fdov(Ipar,Jpar),-1000.0,1000.0);  
-            OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
-            RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
-            OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
-          }
-          OutFile1 << endl;
-          RepFile1 << endl;
-        }//--if (yhit(iy,j,Ipar) >0)
-      }//--j loop
-    }//--iy loop
-  }//--iPar loop
 
-  if (Jpar!=sum(nYparams)) {
-    ECHOSTR("Jpar != sum(nYparams)")
-    ECHO(Jpar); ECHO(sum(nYparams)); ECHO(Npar);
-    for (int i=1;i<=sum(nYparams)-Jpar;i++) {Npar = Npar + 1;}
-    ECHOSTR2("Adjusted Npr = ",Npar);
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  { int Kpar =  0;
+    for (Ipar=1;Ipar<=nfleet;Ipar++){
+      Jpar = 0;
+      for (int iy=syr;iy<=nyrRetro;iy++){
+        for (int j=1;j<=nseason;j++){
+          if (yhit(iy,j,Ipar) >0){
+            Jpar +=1;
+            Npar +=1;
+            anystring = "Log_fdov_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
+            OutFile1 << Npar << " " << anystring << ": " << log_fdov(Ipar,Jpar) << " " << foffdevs_phz(Ipar) << " ";
+            RepFile1 << Npar << " " << anystring << "  " << log_fdov(Ipar,Jpar) << " " << foffdevs_phz(Ipar) << " ";
+            ParFile1 << log_fdov(Ipar,Jpar) << " \t# " << Npar << "\t" << anystring << "\t";
+            if ((foffdevs_phz(Ipar) < 0) || (foffdevs_phz(Ipar) > current_phase())) {
+              RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+              ParFile1 << "(not_estd)" << endl;
+            }
+            if (foffdevs_phz(Ipar) > 0 && foffdevs_phz(Ipar) <= current_phase()) { 
+              NparEst +=1; CheckBounds(log_fdov(Ipar,Jpar),-1000.0,1000.0);  
+              OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+              RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+              ParFile1 << NparEst << endl;
+              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
+            }
+            OutFile1 << endl;
+            RepFile1 << endl;
+          }//--if (yhit(iy,j,Ipar) >0)
+        }//--j loop
+      }//--iy loop
+      if (Jpar==0){//WTS 2026-03-09
+        // log_fdov defined (=0) but not applied. TODO: think this only works if log_fdov is not estimated for ANY fleets
+        Npar++;
+        anystring = "Log_fdov_"+fleetname(Ipar);
+        OutFile1 << Npar+Kpar << " " << anystring << ": " << log_fdov(Ipar,1) << " " << foffdevs_phz(Ipar) << " " << endl;
+        RepFile1 << Npar+Kpar << " " << anystring << "  " << log_fdov(Ipar,1) << " " << foffdevs_phz(Ipar) << " " << "NA NA NA NA NA NA NA " << endl;
+        ParFile1 << log_fdov(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
+      }
+    }//--iPar loop
   }
-  for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++)
-   {
+  // if (Jpar!=sum(nYparams)) {
+  //   ECHOSTR("Jpar != sum(nYparams)")
+  //   ECHO(Jpar); ECHO(sum(nYparams)); ECHO(Npar);
+  //   ParFile1 << "# JPar, sum(nYparams), Npar " << Jpar << " " << sum(nYparams) << " " << Npar << endl;
+  //   for (int i=1;i<=sum(nYparams)-Jpar;i++) {Npar = Npar + 1;}
+  //   ECHOSTR2("Adjusted Npr = ",Npar);
+  //   ParFile1 <<"# Adjusted Npr = " << Npar << endl;
+  // }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++){
     Npar +=1;
     OutFile1 << Npar << " Rec_dev_est_" << Ipar << ": " << rec_dev_est(Ipar) << " " << rdv_phz << " ";
     RepFile1 << Npar << " Rec_dev_est_" << Ipar << "  " << rec_dev_est(Ipar) << " " << rdv_phz << " ";
+    ParFile1 << rec_dev_est(Ipar) << " \t# " << Npar << "\t" << " Rec_dev_est_" << Ipar << "\t";
     if ((rdv_phz < 0) || (rdv_phz > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (rdv_phz > 0 && rdv_phz <= current_phase()) 
-     { 
+    if (rdv_phz > 0 && rdv_phz <= current_phase()) { 
       NparEst +=1; CheckBounds(rec_dev_est(Ipar),-8.0,8.0);  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << "Rec_dev_est_"+str(Ipar) << " " << rec_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++){
     Npar +=1;
     OutFile1 << Npar << " Logit_rec_prop_est_" << Ipar << ": " << logit_rec_prop_est(Ipar) << " " << rec_prop_phz << " ";
     RepFile1 << Npar << " Logit_rec_prop_est_" << Ipar << "  " << logit_rec_prop_est(Ipar) << " " << rec_prop_phz << " ";
+    ParFile1 << logit_rec_prop_est(Ipar) << " \t# " << Npar << "\t" << " Logit_rec_prop_est_" << Ipar << "\t";
     if ((rec_prop_phz < 0) || (rec_prop_phz > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (rec_prop_phz > 0 && rec_prop_phz <= current_phase()) 
-     { 
+    if (rec_prop_phz > 0 && rec_prop_phz <= current_phase()) { 
       NparEst +=1; CheckBounds(logit_rec_prop_est(Ipar),-100.0,100.0);  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << "Logit_rec_prop_est_"+str(Ipar) << " " << logit_rec_prop_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=1;Ipar<=nSizeComps;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=nSizeComps;Ipar++){
     Npar +=1;
     anystring = "Log_vn_size_comp_"+str(Ipar);
     OutFile1 << Npar << " " << anystring << " :  " << log_vn(Ipar) << " " << log_vn_phz(Ipar) << " ";
     RepFile1 << Npar << " " << anystring << "    " << log_vn(Ipar) << " " << log_vn_phz(Ipar) << " ";
+    ParFile1 << log_vn(Ipar)<< " \t# " << Npar << "\t" << anystring << "\t";
     if ((log_vn_phz(Ipar) < 0) || (log_vn_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (log_vn_phz(Ipar) > 0 && log_vn_phz(Ipar) <= current_phase()) 
-     { 
+    if (log_vn_phz(Ipar) > 0 && log_vn_phz(Ipar) <= current_phase()) { 
       NparEst +=1; CheckBounds(log_vn(Ipar),log_vn_lb(Ipar),log_vn_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_vn(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+    }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=1;Ipar<=n_qpar;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=n_qpar;Ipar++){
     Npar +=1;
     anystring = "Survey_q_survey_"+str(Ipar);
     OutFile1 << Npar << " " << anystring << ": " << survey_q(Ipar) << " " << q_phz(Ipar) << " ";
     RepFile1 << Npar << " " << anystring << "  " << survey_q(Ipar) << " " << q_phz(Ipar) << " ";
+    ParFile1 << survey_q(Ipar)<< " \t# " << Npar << "\t" << anystring << "\t";
     if ((q_phz(Ipar) < 0) || (q_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (q_phz(Ipar) > 0 && q_phz(Ipar) <= current_phase()) 
-     { 
+    if (q_phz(Ipar) > 0 && q_phz(Ipar) <= current_phase()) { 
       NparEst +=1; CheckBounds(survey_q(Ipar),q_lb(Ipar),q_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << survey_q(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+    }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=1;Ipar<=n_addcv_par;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=n_addcv_par;Ipar++){
     Npar +=1;
     anystring = "Log_add_cvt_survey_"+str(Ipar);
     OutFile1 << Npar << " " << anystring << ": " << log_add_cv(Ipar) << " " << cv_phz(Ipar) << " ";
     RepFile1 << Npar << " " << anystring << "  " << log_add_cv(Ipar) << " " << cv_phz(Ipar) << " ";
+    ParFile1 << log_add_cv(Ipar)<< " \t# " << Npar << "\t" << anystring << "\t";
     if ((cv_phz(Ipar) < 0) || (cv_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (cv_phz(Ipar) > 0 && cv_phz(Ipar) <= current_phase()) 
-     { 
+    if (cv_phz(Ipar) > 0 && cv_phz(Ipar) <= current_phase()) { 
       NparEst +=1; CheckBounds(log_add_cv(Ipar),log_add_cv_lb(Ipar),log_add_cv_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_add_cv(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+    }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
-  for (Ipar=1;Ipar<=n_deviations_est;Ipar++)
-   {
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=n_deviations_est;Ipar++){
     Npar +=1;
     OutFile1 << Npar << " " << devnames1(Ipar) << ": " << par_devs(Ipar) << " " << deviations_phz(Ipar) << " ";
     RepFile1 << Npar << " " << devnames1(Ipar) << "  " << par_devs(Ipar) << " " << deviations_phz(Ipar) << " ";
+    ParFile1 << par_devs(Ipar)<< " \t# " << Npar << "\t" << devnames1(Ipar) << "\t";
     if ((deviations_phz(Ipar) < 0) || (deviations_phz(Ipar) > current_phase())) {
-      RepFile1 << "NA NA NA NA NA NA NA " << endl;
+      RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+      ParFile1 << "(not_estd)" << endl;
     }
-    if (deviations_phz(Ipar) > 0 && deviations_phz(Ipar) <= current_phase()) 
-     { 
+    if (deviations_phz(Ipar) > 0 && deviations_phz(Ipar) <= current_phase()) { 
       NparEst +=1; CheckBounds(par_devs(Ipar),-12.0,12.0);  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+      ParFile1 << NparEst << endl;
       OutFile5 << Npar << " " << NparEst << " " << devnames1(Ipar) << " " << par_devs(Ipar) << " " << ParsOut.sd(NparEst) << endl;
-     }
+    }
     OutFile1 << endl;
     RepFile1 << endl;
-   }
+  }
   OutFile1 << endl;
   OutFile1 << ">EOD<" <<endl;
   RepFile1 << endl;
   RepFile1 << ">EOD<" <<endl;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
+  ParFile1.close();
 
   // Derived quantities
   // ====================
@@ -12750,7 +12840,7 @@ FUNCTION CreateOutput
    for (int m=1;m<=nmature;m++)
     for (int i=syr;i<=nyrRetro;i++){
      OutFile1 << sexes(h) << " " << m << " " << i << " " << mean_wt(h,m,i) << endl;
-     RepFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << 1000000*mean_wt(h,m,i) << endl;
+     RepFile1 << sexes(h) << " " << maturestate(m) << " " << i << " " << mean_wt(h,m,i) << endl;
     }
   OutFile1 << ">EOD<" << endl;
   RepFile1 << ">EOD<" << endl;
@@ -14626,6 +14716,7 @@ GLOBALS_SECTION
   ofstream OutFile4;
   ofstream OutFile5;
   ofstream RepFile1;
+  ofstream ParFile1;
   ofstream OutInpFile1; 
 
   int writeToRepFile1 = 1;//--flag to write to RepFile1 (gmacs.rep1): used in CheckBounds
@@ -15150,6 +15241,15 @@ GLOBALS_SECTION
    return 0.5*log(2.0*M_PI)+log(std)+0.5*square(x)/(std*std);
    }
 
+//-------------------------------------------------------------------------------------
+FUNCTION save_params
+    adstring fn = "gmacs."+str(current_phase())+"."+str(NfunCall)+".par";
+    ofstream os1(fn, ios::trunc);
+    os1.precision(12);
+    initial_params::save(os1, 12);
+    os1.close();
+
+
 // ===============================================================================================
 
 TOP_OF_MAIN_SECTION
@@ -15453,7 +15553,17 @@ FINAL_SECTION
 //                    Incremented version to 2.20.34.
 // 2026-01-15 ** WTS. Several int variables were not initialized prior to use. This caused a crash when compiled using the MacOSX SDK but not the Windows compiler. 
 //                    These are now initialized to 0 prior to use. Version incremented to 2.20.34a.
-
+// 2026-03-09 ** WTS. Corrected order in which unitsType, indexType are written to gmacs_data when reading in new-format RAI data. 
+//                    Corrected scale for weight at size in gmacs.rep1 output file. Output weights are NOW in kg. Only affected this output. 
+//                    Corrected unitstypes entry from "biommass" to "biomass" (only affected labeling).
+//                    Added "save_params" function to save parameter values to a par file programmatically (but no labelling). Gmacsall.out, gmacs.rep1 have better format, but didn't 
+//                    output ALL parameters (now corrected, hopefully).
+//                    Added parameter estimates in par file format as "gmacs_rep.par" using ofstream variable ParFile1. Estimates are labelled as in Gmacsall.out and 
+//                    include a couple of parameters that Gmacsall.out misses (F devs associated with surveys: 0's, but need to be accounted for when constructing 
+//                    a pin file programmatically).
+//                    Changed labels for female "ra", "rb" parameters in Gmacsall.out so they have no spaces (and can thus be captured as a single string).
+//                    Removed log-scale conversion of ival, lb, ub for "Extra" theta parameters specified for a block w/out environmental or RW links.
+//                    Incremented version to 2.20.34b.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
