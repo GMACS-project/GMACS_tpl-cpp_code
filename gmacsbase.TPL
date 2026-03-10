@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.34b; ** WTS **; Compiled 2026-03-05");
+ !! TheHeader = adstring("## GMACS Version 2.20.34c; ** WTS **; Compiled 2026-03-10");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -2912,6 +2912,8 @@ DATA_SECTION
   !!   gmacs_ctl << setw(7) << setfixed() << int(M_controls(b,13)) << endl;
   !!  }
   
+  ivector isexM(1,nmature*nsex);
+  ivector imatM(1,nmature*nsex);
   ivector M_relative(1,nmature*nsex);
   ivector M_type(1,nmature*nsex);
   ivector M_extra(1,nmature*nsex);
@@ -2948,6 +2950,8 @@ DATA_SECTION
     for (m=1;m<=nmature;m++)
      {
       int ig = (h-1)*nmature+m;
+      isexM(ig) = h;
+      imatM(ig) = m;
       anystring = "";
       if (M_mirror(ig) == 0)
        {
@@ -6037,7 +6041,6 @@ FUNCTION initialize_model_parameters
   if (verbose >= 3) cout<<"--finished setting selectivity"<<endl;
  
   // Natural mortality
-  dvar_matrix M_out(syr,nyrRetro,1,nclass);
   for (int h=1;h<=nsex;h++){
     for (int m=1;m<=nmature;m++){
       int ig = (h-1)*nmature + m;
@@ -6052,11 +6055,26 @@ FUNCTION initialize_model_parameters
           for (int iyr=syr;iyr<=nyr;iyr++) M(h,m,iyr) = elem_prod(M(h2,m2,iyr),Mmult);
         }
       } else {
-        M(h,m) = M( isex(M_mirror(ig)),imature(M_mirror(ig)) ); 
+        M(h,m) = M( isexM(M_mirror(ig)),imatM(M_mirror(ig)) ); 
       }
     }
   }
-  if (verbose >= 3) cout<<"--finished setting M"<<endl;
+  if (verbose >= 3) {
+    cout<<endl<<"#--M_pars_est: " << endl;
+    cout<<M_pars_est<<endl; 
+    cout<<endl<<"#--M: " << endl;
+    for (int h=1;h<=nsex;h++){
+      for (int m=1;m<=nmature;m++){
+        int ig = (h-1)*nmature + m;
+        cout<< h <<" "<< m <<": ";
+        if (M_mirror(ig)!=0) {
+          cout<<"mirror = " << isexM(M_mirror(ig)) <<" "<<imatM(M_mirror(ig)) << endl;
+        } else cout<<endl;
+        cout<< M(h,m) << endl;
+      }
+    }
+    cout<<"#--finished setting M"<<endl;
+  }
  
   // SurveyQ
   for (int is=1;is<=nSurveys;is++){
@@ -15564,6 +15582,9 @@ FINAL_SECTION
 //                    Changed labels for female "ra", "rb" parameters in Gmacsall.out so they have no spaces (and can thus be captured as a single string).
 //                    Removed log-scale conversion of ival, lb, ub for "Extra" theta parameters specified for a block w/out environmental or RW links.
 //                    Incremented version to 2.20.34b.
+// 2026-03-10 ** WTS. Removed M_out(syr,nyrRetro,1,nclass), which was never used anywhere. Added isexM and imatM vectors to correct mirroring/indexing problem when the 
+//                    model includes multiple shell conditions and M values are mirrored.
+//                    Incremented version to 2.20.34c.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
