@@ -1,9 +1,16 @@
+#--to "make" the model:
+## 1. run 'cmake -S . -B _build -G "Unix Makefiles"' from the command line in the folder with this file (no single quotes)
+## 2. run 'cmake --build _build' to create the executable in the _build folder
+## After editing the tpl or ther files, re-run step 2 to compile a new executable.
+## Note: After an SDK change, you may need to delete the _build folder and re-run steps 1 and 2.
+
+#--set minimum required cmake version
 cmake_minimum_required(VERSION 3.24)
 
 project(
     gmacs
     LANGUAGES CXX
-    VERSION 2.01.08
+    VERSION 2.20.34
     DESCRIPTION "CMake script to build GMACS"
 )
 
@@ -66,6 +73,9 @@ set_property(
     PROPERTY IMPORTED_LOCATION 
         "${ADMB_HOME}/lib/libadmb-contrib.a"
 )
+
+#--add "global" include folders
+#----relative paths are interpreted as relative to the current source folder
 include_directories(
     "${PROJECT_BINARY_DIR}"         #--for gmacs.htp
     "${ADMB_HOME}/include"
@@ -84,6 +94,7 @@ add_custom_command(
 )
 
 #--add target to create .ccp and .htp files from tpl (TODO?: add logic for tpl2rem)
+#----run tpl2cpp in _build folder to create ${TPL}.cpp and ${TPL}.htp files there
 add_custom_command(
     OUTPUT ${TPL}.cpp ${TPL}.htp
     COMMAND tpl2cpp "${TPL}"
@@ -91,8 +102,9 @@ add_custom_command(
     COMMENT "Creating ${TPL}.cpp and ${TPL}.htp from ${TPL}.tpl using tpl2cpp."
 )
 
+#--add command to compile and create executable
 add_executable(${TPL} ${TPL}.cpp ${TPL}.htp)
-#--add preprocessor flags (no -D)
+#--add preprocessor flags (no -D) for target
 target_compile_definitions(${TPL} 
     PUBLIC USE_ADMB_CONTRIBS
     PUBLIC _USE_MATH_DEFINES
