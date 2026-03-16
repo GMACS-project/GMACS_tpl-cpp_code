@@ -10,6 +10,7 @@ include/.DS_Store
 gmacsbase_20240304.TPL
 gmacsbaseOLD.TPL
 README.html
+/exes_old/
 /testing/runs/*
 testing/input_files/gmacs1.par
 testing/input_files/gmacs2.par

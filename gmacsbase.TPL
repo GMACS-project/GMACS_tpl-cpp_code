@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.34c; ** WTS **; Compiled 2026-03-10");
+ !! TheHeader = adstring("## GMACS Version 2.20.35; ** WTS **; Compiled 2026-03-13");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -960,6 +960,7 @@ DATA_SECTION
       gmacs_data << "## RAI_id: integer id for the associated survey" << endl;
       gmacs_data << "# Q_index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAI_id" << endl;
       gmacs_data << dSurveyData <<endl;
+      chk = 0;
       (*pGD) >> chk;
       gmacs_data << chk << " # chk" <<endl;
       if (chk!=999){
@@ -1152,7 +1153,7 @@ DATA_SECTION
           //cout<< "*" << d3_SizeComps_in(iZC,rw)(-5,-1) << "*" << endl;//fleet,sex,catch type,shell,maturity
           (*pGD) >> d3_SizeComps_in(iZC,rw)(0,nColsP); //--the remainder
           gmacs_data << d3_SizeComps_in(iZC,rw)(0,nColsP);
-          { double skip;
+          { double skip = 0;
             for (int i=1;i<=(nSizeCompCols_in(iZC)-nColsP);i++) {(*pGD) >> skip; gmacs_data<< " " << skip;}
             gmacs_data << endl;
           }
@@ -1580,7 +1581,7 @@ DATA_SECTION
   // | GENERAL CTL DECLARATION                                 |
   // |---------------------------------------------------------|
   int PPnt;
-  !! PPnt;
+  !! PPnt = 0;
 
   int n_deviations;
   int n_devvars;
@@ -1644,7 +1645,7 @@ DATA_SECTION
       exit(1);
     }
     Term_molt           = int(model_controls(3));	
-    if (Term_molt==1 && nmature==1)
+    if (Term_molt>0 && nmature==1)
     {
       cout << "Error: terminal molt requires two maturity partitions" << endl;
       exit(1);
@@ -1686,7 +1687,7 @@ DATA_SECTION
     gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
     gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
     gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
@@ -1707,7 +1708,7 @@ DATA_SECTION
     echoinput << endl << "# Extra controls" << endl;
     echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
     echoinput << model_controls(2) << " # Last year of recruitment estimation" << endl;
-    echoinput << model_controls(3) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+    echoinput << model_controls(3) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
     echoinput << model_controls(4) << " # Phase for recruitment estimation" << endl;
     echoinput << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
     echoinput << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
@@ -1915,9 +1916,9 @@ DATA_SECTION
        // Environmental link
        if ((IgEnvLink!=0) || (IgRW!=0))      
         { cout << "Error: you can't have an environmental linkage with blocks and RWs at the same time - parameter " << ig << endl; exit(1); } 
-       if ((IgBlock<0) && (IgBlock>nblocks)) 
+       if ((IgBlock<0) || (IgBlock>nblocks)) 
         { cout << "Error: block out of range - parameter" << ig << endl; exit(1); }        
-       if ((IgBlockFn<0) && (IgBlockFn>1))   
+       if ((IgBlockFn<0) || (IgBlockFn>1))   
         { cout << "Error: block_fn out of range - parameter " << ig << endl; exit(1); }    
        for (int kpar=1;kpar<=blocks(IgBlock);kpar++){
         iblock = kpar + 1;
@@ -2556,8 +2557,8 @@ DATA_SECTION
             cout << "Initial  Lower_bound  Upper_bound Prior_type       Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
             cout << Gpar_control(jpar) << endl;
           } 
-          if ((IgBlock<0 )&& (IgBlock>nblocks)) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
-          if ((IgBlockFn<0) && (IgBlockFn>1))   { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
+          if ((IgBlock<0 ) || (IgBlock>nblocks)) { cout << "Error: block out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
+          if ((IgBlockFn<0) || (IgBlockFn>1))   { cout << "Error: block_fn out of range - growth line " << ig << " par " << ipar << endl; exit(1); }        
           for (int kpar=1;kpar<=blocks(IgBlock);kpar++) {
             iblock = kpar + 1;
             n_Gpar += 1;
@@ -3356,9 +3357,9 @@ DATA_SECTION
                 // Environmental link
                 if ((IgEnvLink!=0) || (IgRW!=0))      
                   { cout << "Error: you can't have anenvironmental linkage with blocks and RWs at the same time - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); } 
-                if ((IgBlock<0) && (IgBlock>nblocks)) 
+                if ((IgBlock<0) || (IgBlock>nblocks)) 
                   { cout << "Error: block out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
-                if ((IgBlockFn<0) && (IgBlockFn>1))   
+                if ((IgBlockFn<0) || (IgBlockFn>1))   
                   { cout << "Error: block_fn out of range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl; exit(1); }        
                 for (int kpar=1;kpar<=blocks(IgBlock);kpar++){
                   iblock = kpar + 1;
@@ -5129,6 +5130,8 @@ PARAMETER_SECTION
   3darray d3_newShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> New shell crabs-at-length.
   3darray d3_oldShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> Old shell crabs-at-length.
 
+  4darray d4_N_coh(1,n_grp,1,20,1,nseason,1,nclass);               ///> Cohort-type umbers-at-sex/mature/shell/year/season/length.
+
   number TempSS;                                                    ///> Use to compute the selextivity penalty
 
   matrix SurveyQT(1,nSurveys,syr,nyrRetro+1);                       ///> SurveyQ
@@ -5435,15 +5438,12 @@ PROCEDURE_SECTION
   calc_recruitment_size_distribution();                    if ( verbose >= 3 ) cout << "Ok after calc_recruitment_size_distribution ..." << endl;
   calc_initial_numbers_at_length();                        if ( verbose >= 3 ) cout << "Ok after calc_initial_numbers_at_length ..." << endl;
   update_population_numbers_at_length();                   if ( verbose >= 3 ) cout << "Ok after update_population_numbers_at_length ..." << endl;
-  if (Term_molt == 0)
-   {
+  if (Term_molt == 0){
     calc_stock_recruitment_relationship();                 if ( verbose >= 3 ) cout << "Ok after calc_stock_recruitment_relationship ..." << endl;
-   } 
-  else 
-   {												   
+  } else {
     if ( verbose >= 3 ) cout << "Terminal molting option has been selected - calc_stock_recruitment_relationship isn't called in the procedure ..." << endl;
     calc_stock_recruitment_relationship();                 if ( verbose >= 3 ) cout << "Ok after calc_stock_recruitment_relationship ..." << endl;
-   }
+  }
 
   // observation models ...
   calc_predicted_catch();                                  if ( verbose >= 3 ) cout << "Ok after calc_predicted_catch ..." << endl;
@@ -6710,8 +6710,8 @@ FUNCTION calc_selectivities
         }
       }
        
-      if (slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE & slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE_FLOOR) {selx = pSLX->logSelectivity(dvar_mid_points);}  
-      if (slx_type_in(ipnt2,k)==SELEX_PARAMETRIC || slx_type_in(ipnt2,k)==SELEX_COEFFICIENTS)        {selex_smooth_pen += dnorm(first_difference(selx), 1.0);}
+      if (slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE && slx_type_in(ipnt2,k)!=SELEX_CUBIC_SPLINE_FLOOR) {selx = pSLX->logSelectivity(dvar_mid_points);}  
+      if (slx_type_in(ipnt2,k)==SELEX_PARAMETRIC || slx_type_in(ipnt2,k)==SELEX_COEFFICIENTS)         {selex_smooth_pen += dnorm(first_difference(selx), 1.0);}
       if (slx_type_in(ipnt2,k)==SELEX_CUBIC_SPLINE)       {selex_smooth_pen += dnorm(first_difference(selx), 1.0);}
       if (slx_type_in(ipnt2,k)==SELEX_CUBIC_SPLINE_FLOOR) {selex_smooth_pen += dnorm(first_difference(selx), 1.0);}
       if (ret_max_in(ipnt2,k)>0)       {selx += S_pars(is,3);}
@@ -6719,7 +6719,7 @@ FUNCTION calc_selectivities
       if (slx_max_at_1_in(ipnt2,k)==0 && slx_1_at_size(ipnt2,k)!=0) {selx -= selx(slx_1_at_size(ipnt2,k));}
 
       sel_store(is) = selx;
-      if (it==1) log_slx_capture(k,h,iyr) = selx;
+      if (it==1)   log_slx_capture(k,h,iyr) = selx;
       if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
     } //-- else   
   }//--is
@@ -7744,27 +7744,35 @@ FUNCTION dvar_vector getNumbersAtLengthByCase(const int ig, const int i, const i
   int h = isex(ig);
   int m = imature(ig);
   int o = ishell(ig);
-  if (verbose>4) cout<<"In getNumbersAtLengthByCase(ig,i,j,Case): "<<ig<<" "<<i<<" "<<j<<" "<<Case<<" h,m,o = "<<h<<" "<<m<<" "<<o<<endl;
+  dvar_vector n_out(1,nclass); n_out.initialize();
+  if (verbose>4) cout<<"#--Starting getNumbersAtLengthByCase(ig,i,j,Case): "<<ig<<" "<<i<<" "<<j<<" "<<Case<<" h,m,o = "<<h<<" "<<m<<" "<<o<<endl;
   if (Case==1) {
-    if (verbose>4) cout<<"--in:\n"      <<d4_N(ig)(i)(j)<<endl;
-    //if (verbose>4) cout<<"--mortality\n"<<S(h,m)(i)(j)<<endl;
-    if (verbose>4) cout<<"--after mortality\n" <<d4_N(ig)(i)(j)*S(h,m)(i)(j)<<endl;
-    return (d4_N(ig)(i)(j)*S(h,m)(i)(j));
-  }
+    if (verbose>4) cout<<"##--in:              "<<d4_N(ig)(i)(j)<<endl;
+    n_out = (d4_N(ig)(i)(j)*S(h,m)(i)(j));
+  } else 
   if (Case==2) {
-    if (verbose>4) cout<<d4_N_init(ig)(i)(j)<<endl;
-    //if (verbose>4) cout<<SS_pass(h,m,j)<<endl;
-    return d4_N_init(ig,i,j)*SS_pass(h,m,j);
-  }
+    if (verbose>4) cout<<"##--in:              "<<d4_N_init(ig)(i)(j)<<endl;
+    n_out = d4_N_init(ig,i,j)*SS_pass(h,m,j);
+  } else 
   if (Case==3) {
-    if (verbose>4) cout<<numbers_proj_gytl(ig,i,j)<<endl;
-    //if (verbose>4) cout<<SS_pass(h,m,j)<<endl;
-    return numbers_proj_gytl(ig,i,j)*SS_pass(h,m,j);
+    if (verbose>4) cout<<"##--in:              "<<numbers_proj_gytl(ig,i,j)<<endl;
+    n_out = numbers_proj_gytl(ig,i,j)*SS_pass(h,m,j);
+  } else 
+  if (Case==4){
+    if (verbose>4) cout<<"##--in:              "<<numbers_proj_gytl(ig,i,j)<<endl;
+    n_out = numbers_proj_gytl(ig,i,j)*SS_pass(h,m,j);
+  } else 
+  if ((Case==5)||(Case==6)){
+    if (verbose>4) cout<<"##--in:              "<<d4_N_coh(ig)(i)(j)<<endl;
+    n_out = d4_N_coh(ig)(i)(j)*SS_pass(h,m,j);
+  } else   
+  {
+    cout<<"ERROR in getNumbersAtLengthByCase. Case = "<< Case <<" not valid."<<endl;
   }
-  if (verbose>4) cout<<numbers_proj_gytl(ig,i,j)<<endl;
-  //if (verbose>4) cout<<SS_pass(h,m,j)<<endl;
+  if (verbose>4) cout<<"##--after mortality: "<<n_out<<endl;
+  if (verbose>4) cout<<"#--Finished getNumbersAtLengthByCase(ig,i,j,Case)"<<endl;
   RETURN_ARRAYS_DECREMENT();
-  return numbers_proj_gytl(ig,i,j)*SS_pass(h,m,j);//--Case == 4
+  return n_out;
 
 
 // --------------------------------------------------------------------------------------------------------------------------------------
@@ -7777,7 +7785,7 @@ FUNCTION dvar_vector getNumbersAtLengthByCase(const int ig, const int i, const i
    */
 FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, const int j, const int Case)
   //if (verbose>3){
-    cout<<"Starting updateNumbersAtLengthByCase i, j, Case "<<i<<" "<<j<<" "<<Case<<endl;
+    cout<<"#--Starting updateNumbersAtLengthByCase(next,i,j,Case ): "<<i<<" "<<j<<" "<<Case<<endl;
     cout<<"--next is\n"<<next<<endl;
   //}
   for (int ig=1;ig<=n_grp;ig++){
@@ -7787,12 +7795,16 @@ FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, 
       if (Case==2) d4_N_init(ig,i+1,1) = next(ig);
       if (Case==3) numbers_proj_gytl(ig,i+1,1) = next(ig);
       if (Case==4) numbers_proj_gytl(ig,i+1,1) = next(ig);
+      if (Case==5) d4_N_coh(ig,i+1,1) = next(ig);
+      if (Case==6) d4_N_coh(ig,i+1,1) = next(ig);
     } else {
       //--next is year i, season j+1
       if (Case==1) d4_N(ig,i,j+1) = next(ig);
       if (Case==2) d4_N_init(ig,i,j+1) = next(ig);
       if (Case==3) numbers_proj_gytl(ig,i,j+1) = next(ig);
       if (Case==4) numbers_proj_gytl(ig,i,j+1) = next(ig);
+      if (Case==5) d4_N_coh(ig,i,j+1) = next(ig);
+      if (Case==6) d4_N_coh(ig,i,j+1) = next(ig);
     }
   }
 
@@ -7804,6 +7816,8 @@ FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, 
       if (Case==2) cout<<d4_N_init(ig,i+1,1)<<endl;
       if (Case==3) cout<<numbers_proj_gytl(ig,i+1,1)<<endl;
       if (Case==4) cout<<numbers_proj_gytl(ig,i+1,1)<<endl;
+      if (Case==5) cout<<d4_N_coh(ig,i+1,1)<<endl;
+      if (Case==6) cout<<d4_N_coh(ig,i+1,1)<<endl;
     } 
   } else {
     cout<<"new values for year "<<i<<" season "<<j+1<<endl;
@@ -7812,8 +7826,11 @@ FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, 
       if (Case==2) cout<<d4_N_init(ig,i,j+1)<<endl;
       if (Case==3) cout<<numbers_proj_gytl(ig,i,j+1)<<endl;
       if (Case==4) cout<<numbers_proj_gytl(ig,i,j+1)<<endl;
+      if (Case==5) cout<<d4_N_coh(ig,i,j+1)<<endl;
+      if (Case==6) cout<<d4_N_coh(ig,i,j+1)<<endl;
     }
   }
+  cout<<"#--Finished updateNumbersAtLengthByCase(next,i,j,Case): "<<i<<" "<<j<<" "<<Case<<endl;
 
 // --------------------------------------------------------------------------------------------------------------------------------------
   /**
@@ -7833,6 +7850,7 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
   
   dvar_matrix next(1,n_grp,1,nclass); next.initialize();
   for (int h=1;h<=nsex;h++){
+    if ((verbose>3)&&(NfunCall<2)) cout<<"#--SEX = "<<h<<"--"<<endl;
     int isizeTrans = isizeTrans_pass(h);
     //-----------NMATURE = 1; NSHELL = 1
     if ((nmature==1)&&(nshell==1)){
@@ -7877,8 +7895,8 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
       if (verbose==4 && i==syr) {cout << "Case B: 1 shell condition and 2 maturity states. sex = "<< h << endl;}
       int ig_mat = pntr_hmo(h,1,1);
       int ig_imm = pntr_hmo(h,2,1);
-      dvar_vector n_imm = getNumbersAtLengthByCase(ig_imm,i,j,Case);//includes mortality
-      dvar_vector n_mat = getNumbersAtLengthByCase(ig_mat,i,j,Case);//includes mortality
+      dvar_vector n_imm = getNumbersAtLengthByCase(ig_imm,i,j,Case);//number immature, includes mortality
+      dvar_vector n_mat = getNumbersAtLengthByCase(ig_mat,i,j,Case);//number mature, includes mortality
       dvar_vector ns_imm(1,nclass); ns_imm.initialize();
       dvar_vector os_imm(1,nclass); os_imm.initialize();
       dvar_vector ns_mat(1,nclass); ns_mat.initialize();
@@ -7886,20 +7904,43 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
       dvar_vector nn_imm(1,nclass); nn_imm.initialize();
       dvar_vector nn_mat(1,nclass); nn_mat.initialize();
       if (j == season_growth) {
-        os_imm = elem_prod(n_imm, 1.0 - molt_prob_pass(h));                             // did not molt, stays immature
-        ns_imm = elem_prod(n_imm, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // molted and grew (might or might not mature)
-        if (Term_molt==0){
-          os_mat = elem_prod(n_mat, 1.0 - molt_prob_pass(h));                             // previously mature, did not molt
-          ns_mat = elem_prod(n_mat, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // previously mature, molted and grew
-        } else {//Terminal_molt==1
+        if (Term_molt!=2){
+          //--transition from immature to mature based on post-molt size (standard GMACS)
+          ns_imm = elem_prod(n_imm,       molt_prob_pass(h)) * growth_transition(h,isizeTrans); // molted and grew (might or might not mature)
+          os_imm = elem_prod(n_imm, 1.0 - molt_prob_pass(h));                                   // did not molt, stays immature
+          if (Term_molt==0){
+            //--mature crab can molt
+            ns_mat = elem_prod(n_mat,       molt_prob_pass(h)) * growth_transition(h,isizeTrans); // previously mature, molted and grew
+            os_mat = elem_prod(n_mat, 1.0 - molt_prob_pass(h));                                   // previously mature, did not molt
+          } else {//Terminal_molt==1
+            //--mature crab can't molt
+            ns_mat = 0.0;    // previously mature, molted and grew  <-could not happen with terminal molt
+            os_mat = n_mat;  // previously mature, did not molt (couldn't)
+          }
+          //--determine transition to maturity based on post-molt size
+          nn_imm = os_imm +          elem_prod(ns_imm,1.0-mature_prob_pass(h));  // combine imms
+          nn_mat = os_mat + ns_mat + elem_prod(ns_imm,    mature_prob_pass(h));  // combine mats w/ formerly imm that molted to maturity
+        } else {// Term_molt==2
+          //--transition from immature to mature based on pre-molt size (standard GMACS)
+          //--molt-to-maturity is a terminal molt
           os_mat = n_mat;  // previously mature, did not molt (couldn't)
-          ns_mat = 0.0;    // previously mature, molted and grew  <-could not happen with terminal molt
+
+          //--immature crab may undergo terminal molt to maturity
+          //--transition from immature to mature based on pre-molt size (standard TCSAM02)
+          ///--evaluate probability of molting
+          os_imm = elem_prod(n_imm, 1.0 - molt_prob_pass(h)); // immature crab did not molt, stays immature
+          ns_imm = elem_prod(n_imm, molt_prob_pass(h));       // immature crab that will molt 
+          ///--for crab that molted (ns_imm), evaluate whether molt was terminal and growth
+          ns_mat = elem_prod(ns_imm,    mature_prob_pass(h)) * growth_transition(h,isizeTrans); // immature crab that grew and underwent terminal molt to maturity
+          ns_imm = elem_prod(ns_imm,1.0-mature_prob_pass(h)) * growth_transition(h,isizeTrans); // immature crab that grew but remained immature 
+
+          //--combine immature categories; combine mature categories
+          nn_imm = os_imm + ns_imm;  // combine imms
+          nn_mat = os_mat + ns_mat;  // combine mats
         }
-        nn_imm = os_imm + elem_prod(ns_imm,1.0-mature_prob_pass(h));       // combine imms
-        nn_mat = os_mat + ns_mat + elem_prod(ns_imm,mature_prob_pass(h));  // combine mats w/ formerly imm that molted to maturity
       } else {
-        nn_imm = n_imm; 
-        nn_mat = n_mat;
+        nn_imm = n_imm; //--no molting
+        nn_mat = n_mat; //--mo molting
       }
       // Recruitment
       if (j == season_recruitment) {
@@ -7929,37 +7970,68 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
 
     //-----------NMATURE = 2; NSHELL = 2
     if ((nmature==2)&&(nshell==2)){
-      if (verbose==4 && i==syr) {cout << "Case D: 2 shell conditions and 2 maturity states. sex = "<< h << endl;}
+      if (verbose>3) {cout << "Case D: 2 shell conditions and 2 maturity states. sex = "<< h << endl;}
       int ig_imm_ns = pntr_hmo(h,IMMATURE,NEW_SHELL);
       int ig_imm_os = pntr_hmo(h,IMMATURE,OLD_SHELL);
       int ig_mat_ns = pntr_hmo(h,  MATURE,NEW_SHELL);
       int ig_mat_os = pntr_hmo(h,  MATURE,OLD_SHELL);
-      dvar_vector n_imm_ns = getNumbersAtLengthByCase(ig_imm_ns,i,j,Case);//includes mortality
-      dvar_vector n_imm_os = getNumbersAtLengthByCase(ig_imm_os,i,j,Case);//includes mortality
-      dvar_vector n_mat_ns = getNumbersAtLengthByCase(ig_mat_ns,i,j,Case);//includes mortality
-      dvar_vector n_mat_os = getNumbersAtLengthByCase(ig_mat_os,i,j,Case);//includes mortality
+      //--"orignal" numbers
+      dvar_vector n_imm_ns = getNumbersAtLengthByCase(ig_imm_ns,i,j,Case);// immature, new shell crab; includes mortality
+      dvar_vector n_imm_os = getNumbersAtLengthByCase(ig_imm_os,i,j,Case);// immature, old shell crab; includes mortality
+      dvar_vector n_mat_ns = getNumbersAtLengthByCase(ig_mat_ns,i,j,Case);//   mature, new shell crab; includes mortality
+      dvar_vector n_mat_os = getNumbersAtLengthByCase(ig_mat_os,i,j,Case);//   mature, old shell crab; includes mortality
+      //--"updated" numbers
       dvar_vector ns_imm(1,nclass); ns_imm.initialize();
       dvar_vector os_imm(1,nclass); os_imm.initialize();
       dvar_vector ns_mat(1,nclass); ns_mat.initialize();
       dvar_vector os_mat(1,nclass); os_mat.initialize();
+      //--"final" numbers for time step
       dvar_vector nn_imm_ns(1,nclass); nn_imm_ns.initialize();
       dvar_vector nn_imm_os(1,nclass); nn_imm_os.initialize();
       dvar_vector nn_mat_ns(1,nclass); nn_mat_ns.initialize();
       dvar_vector nn_mat_os(1,nclass); nn_mat_os.initialize();
       if (j == season_growth) {
-        os_imm = elem_prod(n_imm_ns, 1.0 - molt_prob_pass(h));                                         // did not molt (stayed immature)
-        ns_imm = (elem_prod(n_imm_ns, molt_prob_pass(h)) + n_imm_os)* growth_transition(h,isizeTrans); // molted and grew (might or might not mature); previous imm_os molts
-        if (Term_molt==0){
-          os_mat = elem_prod(n_mat_ns, 1.0 - molt_prob_pass(h));                             // previously mature, did not molt
-          ns_mat = elem_prod(n_mat_ns, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // previously mature, molted and grew
-        } else {//Terminal_molt==1
-          os_mat = n_mat_os + n_mat_ns;  // previously mature, did not molt (couldn't)
-          ns_mat = 0.0;                  // previously mature, molted and grew  <-could not happen with terminal molt
+        cout<<"##--GROWTH SEASON--"<<endl;
+        cout<<"  molt_prob_pass(h)  = "<<molt_prob_pass(h)<<endl;
+        cout<<"  mature_pro_pass(h) = "<<mature_prob_pass(h)<<endl;
+        cout<<"  growth_transition(h,isizeTrans)\n"<<growth_transition(h,isizeTrans)<<endl;
+        cout<<"  n_imm_ns = "<<n_imm_ns<<endl;
+        cout<<"  n_imm_os = "<<n_imm_os<<endl;
+        cout<<"  n_mat_ns = "<<n_mat_ns<<endl;
+        cout<<"  n_mat_os = "<<n_mat_os<<endl;
+        if (Term_molt!=2){
+          //--transition from immature to mature based on post-molt size (standard GMACS)
+          os_imm =  elem_prod(n_imm_ns, 1.0 - molt_prob_pass(h));                                              // did not molt (stayed immature)
+          ns_imm = (elem_prod(n_imm_ns,       molt_prob_pass(h)) + n_imm_os) * growth_transition(h,isizeTrans); // molted and grew (might or might not mature); previous imm_os molts
+          if (Term_molt==0){
+            //--no terminal molt
+            os_mat = elem_prod(n_mat_ns, 1.0 - molt_prob_pass(h));                                   // previously mature, did not molt
+            ns_mat = elem_prod(n_mat_ns,       molt_prob_pass(h)) * growth_transition(h,isizeTrans); // previously mature, molted and grew
+          } else {
+            //--molt to maturity is terminal
+            os_mat = n_mat_os + n_mat_ns;  // previously mature, did not molt (couldn't)
+            ns_mat = 0.0;                  // previously mature, molted and grew  <-could not happen with terminal molt
+          }
+          nn_imm_ns =          elem_prod(os_imm+ns_imm,1.0-mature_prob_pass(h)); // immature crab that molted, but not to maturity
+          nn_imm_os = os_imm;                                                    // immature crab that didn't molt
+          nn_mat_ns = ns_mat + elem_prod(os_imm+ns_imm,    mature_prob_pass(h)); // previously-mature crab that molted + immature crab that molted to maturity
+          nn_mat_os = os_mat;                                                    // previously-mature crab that did not molt
+        } else { //Term_molt==2
+          //--transition from immature to mature based on pre-molt size, terminal molt to maturity (standard TCSAM02)
+          //---previously mature
+          os_mat = n_mat_os + n_mat_ns; //previously mature crab stay mature and do not molt
+          //---previously immature
+          os_imm = elem_prod(n_imm_ns, 1.0 - molt_prob_pass(h));            // immature crab that did not molt, stayed immature, became old shell
+          ns_imm = elem_prod(n_imm_ns,       molt_prob_pass(h)) + n_imm_os; // immature crab that molted, will grow, may mature; all previous imm_os molt, all molted crab become new shell
+          //--evaluate terminal molt to maturity and growth for immature crab that molted
+          ns_mat = elem_prod(ns_imm,     mature_prob_pass(h)) * growth_transition(h,isizeTrans);// grew, underwent terminal molt to maturity, became new shell
+          ns_imm = elem_prod(ns_imm, 1.0-mature_prob_pass(h)) * growth_transition(h,isizeTrans);// grew, did not undergo terminal molt to maturity, became new shell
+
+          nn_imm_ns = ns_imm;
+          nn_imm_os = os_imm;
+          nn_mat_ns = ns_mat;
+          nn_mat_os = os_mat;
         }
-        nn_imm_ns = elem_prod(os_imm+ns_imm,1.0-mature_prob_pass(h));      // immature crab that molted, but not to maturity
-        nn_imm_os = os_imm;                                                // immature crab that didn't molt
-        nn_mat_ns = ns_mat + elem_prod(os_imm+ns_imm,mature_prob_pass(h)); // previously-mature crab that molted + immature crab that molted to maturity
-        nn_mat_os = os_mat;                                                // previously-mature crab that did not molt
       } else {//--no growth this season
         nn_imm_ns = n_imm_ns; 
         nn_imm_os = n_imm_os; 
@@ -7968,8 +8040,9 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
       }
       // Recruitment
       if (j == season_recruitment) {
-        cout<<"rec_sdd(h)  = "<<rec_sdd(h)<<endl;
-        cout<<"rec_pass(h) = "<<rec_pass(h)<<endl;
+        cout<<"##--RECRUIMTENT SEASON--"<<endl;
+        cout<<"  rec_sdd(h)  = "<<rec_sdd(h)<<endl;
+        cout<<"  rec_pass(h) = "<<rec_pass(h)<<endl;
         nn_imm_ns += rec_pass(h);//recruitment only to immatures
       }
       next(ig_imm_ns) = nn_imm_ns;
@@ -8068,6 +8141,8 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
     if (Case==2) x = d4_N_init(ig,i,j);
     if (Case==3) x = numbers_proj_gytl(ig,i,j);
     if (Case==4) x = numbers_proj_gytl(ig,i,j);
+    if (Case==5) x = d4_N_coh(ig)(i)(j);
+    if (Case==6) x = d4_N_coh(ig)(i)(j);
     if ((verbose>3)&&(NfunCall<2)){
       cout<<"--original"<<x<<endl;
       if (std::isnan(value(sum(x)))) {
@@ -8082,6 +8157,8 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
     if (Case==2) x = x * SS_pass(h,m,j);
     if (Case==3) x = x * SS_pass(h,m,j);
     if (Case==4) x = x * SS_pass(h,m,j);
+    if ((Case==5)||(Case==6)) x = x * SS_pass(h,m,j);
+
     if ((verbose>3)&&(NfunCall<2)){
       cout<<"--after mortality: "<<x<<endl;
       if (std::isnan(value(sum(x)))) {
@@ -8123,7 +8200,7 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
     //-------------------------------------------------------------------------------------------------------------------------------
     // Case-B && C: One shell condition, two maturity stages
 
-    // Terminal molt does not impact imature animals
+    // Terminal molt does not impact immature animals
     if (nshell == 1 && nmature == 2 && m == IMMATURE) 
      { 
       // Molting and growth
@@ -8137,11 +8214,11 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
        if (j == season_growth) {
          y = elem_prod(x, 1.0 - molt_prob_pass(h));                                        // did not molt
          x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew
-                                                                                             // only one shell type so combine
+         // 
        
-         z = elem_prod(x , mature_prob_pass(h)) ; 		                                // molted to maturity
+         z = elem_prod(x ,       mature_prob_pass(h)) ; 		                               // molted to maturity
          x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                    // did not molt to maturity (and stayed immature)
-         x = x + y;  
+         x = x + y;  // immature: only one shell type so combine x ("new shell") and y ("old shell")
          }
       if (j == season_recruitment) x += rec_pass(h);
       next(ig-1) += z; next(ig) += x;
@@ -8167,10 +8244,10 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
     if (Term_molt==0 && nshell == 1 && nmature == 2 && m == MATURE) {
       // Molting and growth
       if (j == season_growth) {
-       y = elem_prod(x, 1.0 - molt_prob_pass(h));                                       // did not molt, become oldshell
-       x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);           // molted and grew, stay newshell
-       x = x + y;                                                                       // only one shell type so combine
-       }
+        y = elem_prod(x, 1.0 - molt_prob_pass(h));                                       // did not molt, become "oldshell"
+        x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);           // molted and grew, stay "newshell"
+        x = x + y;                                                                       // only one shell type, so combine
+      }
       next(ig) += x;
       if (verbose==4 && i==syr) cout << "Case-B2: no terminal molt, one shell condition, and two maturity states; MATURE" << endl;
       if ((verbose>3)&&(NfunCall<2)){
@@ -8205,9 +8282,9 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
     if (Term_molt==0 && nshell == 2  && nmature == 1 && o == NEW_SHELL) {
       // Molting and growth
       if (j == season_growth){
-       y = elem_prod(x, 1.0 - molt_prob_pass(h));                              // did not molt, become oldshell
-       x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);  // molted and grew, stay newshell
-       }
+        y = elem_prod(x, 1.0 - molt_prob_pass(h));                              // did not molt,    become oldshell
+        x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);  // molted and grew, stay newshell
+      }
       // Recruitment
       if (j == season_recruitment) x += rec_pass(h);
       next(ig) += x;
@@ -8229,7 +8306,7 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       z.initialize();
       if (j == season_growth) {
         z = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
-        x = elem_prod(x, 1 - molt_prob_pass(h)) + y;                           // did not molt, remain oldshell and add the newshell that become oldshell
+        x = elem_prod(x, 1 - molt_prob_pass(h)) + y;                           // did not molt, remain oldshell; add y, the newshell that become oldshell
       }
       next(ig-1) += z; next(ig) += x;
       if (verbose==4 && i==syr) cout << "Case-D2: No-terminal molt, two shell condition, and one maturity state; OLD_SHELL" << endl;
@@ -8251,14 +8328,14 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       z.initialize();
       y.initialize();
       if (j == season_growth) {
-         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                                // did not molt (immature old shell)
-         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);                    // molted and grew (new shell)
-         z = elem_prod(x , mature_prob_pass(h)) ; 		                                        // molted to maturity (mature new shell)
-         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                            // did not molt to maturity (immature new shell)
+         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                  // did not molt (immature old shell)
+         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);      // molted and grew (new shell, maturity not yet determined)
+         z = elem_prod(x , mature_prob_pass(h)) ; 		                               // molted to maturity (mature new shell)
+         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                              // did not molt to maturity (immature new shell)
         if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-E1: no terminal molt, two shell condition, and two maturity states; NEW_SHELL & IMMATURE " << ig << endl;
         if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F1: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & IMMATURE " << ig << endl;
       }
-      if (j == season_recruitment) x += rec_pass(h);
+      if (j == season_recruitment) x += rec_pass(h);  //--recruitment to immature, new shell state
       next(ig-2) += z; next(ig) += x; next(ig+1) += y;
       if ((verbose>3)&&(NfunCall<2)){
         if (std::isnan(value(sum(x+y+z)))) {
@@ -8274,11 +8351,11 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       // Molting and growth
       y.initialize();
       if (j == season_growth) {
-         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                                // did not molt (mature old shell)
-         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);                    // molted and grew (mature new shell)
+         y = elem_prod(x, 1.0 - molt_prob_pass(h));                               // did not molt    (mature old shell)
+         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);   // molted and grew (mature new shell)
         if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-E2: no terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
       }
-      if (j == season_recruitment) x += rec_pass(h);
+      if (j == season_recruitment) x += rec_pass(h); //-TODO: this is WRONG!! no recruitment to mature new shell!!
       next(ig) += x; next(ig+1) += y;
       if ((verbose>3)&&(NfunCall<2)){
         if (std::isnan(value(sum(x+y)))) {
@@ -8290,14 +8367,15 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       }
     }
     if (Term_molt==1 && nshell == 2 && nmature == 2 && o == NEW_SHELL && m == MATURE) {
-      // Only become oldshell
+      // newshell mature crab only become oldshell mature crab
       y.initialize();
       if (j == season_growth) {
-       y = x;
-       x.initialize();
-       if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F2: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
-       }
-      next(ig+1) += y;  next(ig) += x;
+        y = x;          //--oldshell mature crab
+        x.initialize(); //--new shell mature crab
+        if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F2: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
+      }
+      next(ig+1) += y;  //--add "new" oldshell crab to previous oldshell crab
+      //next(ig) += x;    //--x is identically 0 (no previously oldshell crab that became newshell crab), so addition is unnecessary
       if ((verbose>3)&&(NfunCall<2)){
         if (std::isnan(value(sum(x+y)))) {
           cout<<"in update_PNAL_season Case-F2--NaNs detected for " << endl;
@@ -8313,14 +8391,17 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       z.initialize();
       y.initialize();
       if (j == season_growth) {
-         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                                // did not molt (immature old shell)
-         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);                    // molted and grew (new shell)
-         z = elem_prod(x , mature_prob_pass(h)) ; 		                                        // molted to maturity (mature new shell)
-         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                            // did not molt to maturity (immature new shell)
+         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                           // did not molt (immature oldshell remained immature oldshell)
+         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);               // molted and grew (immature oldshell molted to newshell, maturity not yet determined)
+         z = elem_prod(x , mature_prob_pass(h)) ; 		                                        // molted to maturity (mature newshell)
+         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                       // did not molt to maturity (immature newshell)
          if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-E3: no terminal molt, two shell condition, and two maturity states; OLD_SHELL & IMMATURE " << ig << endl;
-         if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F3: Terminal molt, two shell condition, and two maturity states; OLD_SHELL & IMMATURE " << ig << endl;
-       }
-      next(ig-3) += z; next(ig-1) += x; next(ig) += y;
+         if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F3:    terminal molt, two shell condition, and two maturity states; OLD_SHELL & IMMATURE " << ig << endl;
+      }
+      // TODO: get appropriate ig's for below from pntr_hmo(h,m,o) 
+      next(ig-3) += z; //--add z ("new" newshell mature) to previous mature newshell TODO: is this correct?? If Term_molt=1, should be no previous mature newshell crab
+      next(ig-1) += x; //--add x
+      next(ig) += y;
       if ((verbose>3)&&(NfunCall<2)){
         if (std::isnan(value(sum(x+y+z)))) {
           if (Term_molt==0) cout<<"in update_PNAL_season Case-E3--NaNs detected for " << endl;
@@ -8392,7 +8473,113 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
         { numbers_proj_gytl(ig)(i)(j+1) = next(ig); }
     }
   }
+  if ((Case==5) || (Case==6)){
+    for (int ig=1;ig<=n_grp;ig++){
+      if (j == nseason)
+        { d4_N_coh(ig)(i+1)(1) = next(ig); }
+      else 
+        { d4_N_coh(ig)(i)(j+1) = next(ig); }
+    }
+  }
 
+// --------------------------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * @brief Update cohort-at-length
+   * @author WTS
+   * @details Simulate cohort ptogression using
+   *
+   * @param Case inital population case (5: smallest size bin has n = 1 for imature crab;m6: uses R_z(iyr))
+   * @param iyr year to use for population rates
+ **/
+FUNCTION void update_cohort_numbers_at_length(int iyr, int Case)
+  if ((verbose>3)&&(NfunCall<2)) cout<<"--Starting update_cohort_numbers_at_length--"<<endl;
+
+  int isizeTrans;
+  double xi;                                                               ///> discard mortality rate
+  dvariable log_ftmp;
+  dvar3_array _ft(1,nfleet,1,nsex,1,nseason);                              ///> Fishing mortality by gear (fleet)
+  dvar3_array FF1(1,nsex,1,nseason,1,nclass);                              ///> Fishing mortality (continuous)
+  dvar3_array FF2(1,nsex,1,nseason,1,nclass);                              ///> Fishing mortality (instantaneous)
+  dvar4_array ZZ1(1,nsex,1,nmature,1,nseason,1,nclass);                              ///> Total mortality (continuous)
+  dvar4_array ZZ2(1,nsex,1,nmature,1,nseason,1,nclass);                              ///> Total mortality (instananeous)
+
+  dvar_vector sel(1,nclass);                                               ///> Capture selectivity
+  dvar_vector ret(1,nclass);                                               ///> Retained probability
+  dvar_vector vul(1,nclass);                                               ///> Total vulnerability
+  dvar_vector Mbar(1,nclass);                                              ///> Natural mortality
+  dvariable Mprop;                                                         ///> Proportion of M in season before before fishery removals
+ 
+  // Initialize the Fs
+  FF1.initialize();
+  for ( int h = 1; h <= nsex; h++ )
+    for ( int j = 1; j <= nseason; j++ )
+      for ( int l = 1; l <= nclass; l++)
+        FF2(h,j,l) = 1.0e-10;
+
+  // compute the F matrix
+  for ( int k = 1; k <= nfleet; k++ ){
+    for ( int h = 1; h <= nsex; h++ ){
+      for ( int j = 1; j <= nseason; j++ ){
+        if ( fhit(iyr,j,k) ){
+          log_ftmp = log_fimpbar(k);
+          if (h==2) log_ftmp += log_foff(k);
+          _ft(k,h,j) = mfexp(log_ftmp);          
+          sel = mfexp(log_slx_capture(k,h,iyr))+1.0e-10;                     // Selectivity
+          ret = mfexp(log_slx_retaind(k,h,iyr)) * slx_nret(nsex+h,k);        // Retention
+          xi  = dmr(iyr,k);                                                  // discard mortality proportion
+          vul = elem_prod(sel, ret + (1.0 - ret) * xi);                      // Vulnerability
+          FF1(h,j) += _ft(k,h,j) * vul;
+          FF2(h,j) += _ft(k,h,j) * sel;
+        }//--if
+      }//--j loop
+    }//--h loop
+  }//--k loop
+
+  // compute the total mortality
+  ZZ1.initialize(); ZZ2.initialize(); SS_pass.initialize();
+  for(int m = 1; m <=nmature;m++){
+    for ( int h = 1; h <= nsex; h++ ){
+      for ( int j = 1; j <= nseason; j++ ){
+        Mbar.initialize();
+        Mbar = M(h,m,iyr);
+        Mprop = m_prop(iyr,j);
+        ZZ1(h,m,j) = Mprop * Mbar + FF1(h,j);
+        ZZ2(h,m,j) = Mprop * Mbar + FF2(h,j);
+        if (season_type(j) == INSTANT_F)    for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-ZZ1(h,m,j,l)/ZZ2(h,m,j,l)*(1.0-mfexp(-ZZ2(h,m,j,l)));
+        if (season_type(j) == CONTINUOUS_F) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-ZZ1(h,m,j,l));
+      }//--j loop
+    }//--h loop
+  }//--m loop
+
+  // Specify initial size structure
+  int ig;
+  d4_N_coh.initialize(); 
+  for (int h = 1; h <= nsex; h++) {
+    if ((nmature==1)&&(nshell==1)) ig = pntr_hmo(h,1,1);
+    if ((nmature==2)&&(nshell==1)) ig = pntr_hmo(h,IMMATURE,1);
+    if ((nmature==1)&&(nshell==2)) ig = pntr_hmo(h,1,NEW_SHELL);
+    if ((nmature==2)&&(nshell==2)) ig = pntr_hmo(h,IMMATURE,NEW_SHELL);
+    if (Case==5) d4_N_coh(ig,1,1,1) = 1.0;         //--only first size class is non-zero
+    if (Case==6) d4_N_coh(ig,1,1)   = rec_sdd(h);  //--using recruitment distribution
+  }
+
+  // Now loop over year to propagate cohort by sex by season
+  for (int i = 1; i <= 20; i++){
+    if ((verbose>3)&&(NfunCall<2)) cout<<"\n\n---looping to update cohort Ns: i(yr): "<<i<<endl;
+    // Pass the molt probabilities
+    for (int h=1;h<=nsex;h++){
+      isizeTrans_pass(h) = iYrsIncChanges(h,iyr);                       ///> size transition
+      molt_prob_pass(h)  = molt_probability(h,iyr);                     ///> probability of molting
+      if (nmature==2) mature_prob_pass(h) = mature_probability(h,iyr);  ///> probability of maturing
+    }  
+    // Now for the year-update
+    if (Term_molt!=2)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);     ///> Update the sesonal-dynamics (if terminal molt, non-Tanner-type)
+    if (Term_molt==2)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case); ///> Update the sesonal-dynamics (Tanner-type terminal molt)
+  } //--i loop 
+   
 // --------------------------------------------------------------------------------------------------------------------------------------
 
   /**
@@ -8411,6 +8598,8 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
   **/
 FUNCTION update_population_numbers_at_length
   if ((verbose>3)&&(NfunCall<2)) cout<<"--Starting update_population_numbers_at_length--"<<endl;
+  int Case = 1;
+
   int isizeTrans;
   
   dmatrix Id = identity_matrix(1,nclass);
@@ -8476,9 +8665,10 @@ FUNCTION update_population_numbers_at_length
       if (nmature==2) mature_prob_pass(h) = mature_probability(h,i);  ///> probability of maturing
     }  
     // Now for the year-update
-    for (int j = 1; j <= nseason; j++) {
-      update_population_numbers_at_length_season(i,j,1);     ///> Update the sesonal-dynamics: Case = 1
-    }//--j loop
+    if (Term_molt!=2)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);     ///> Update the sesonal-dynamics: Case = 1
+    if (Term_molt==2)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case); ///> Update the sesonal-dynamics: Case = 1
   } //--i loop 
    
 // =================================================================================================================================================
@@ -10866,10 +11056,14 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
     }//-- Eqn_basis != CONSTANTREC
   
     // Projections for Case 2
+    int Case = 2;
     // Pass the molt probabilities
     for (int h=1;h<=nsex;h++) rec_pass(h) = rtt(h);                                                           ///> recruitment as a function of class 
     // Now for the year-update
-    for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,2);                     ///> Update the seasonal-dynamics
+    if (Term_molt!=2)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);      ///> Update the seasonal-dynamics
+    if (Term_molt==2)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case);  ///> Update the seasonal-dynamics
      
     // Project SSB
     for ( int ig = 1; ig <= n_grp; ig++ ){
@@ -11172,7 +11366,10 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
     mature_prob_pass(h) = mature_probability(h,YrRefGrow);                            ///> probability of maturity
     } //-- h 
   // Now fo the year-update
-  for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,3);     ///> Update the sesonal-dynamics
+  if (Term_molt!=2)
+    for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,3);     ///> Update the sesonal-dynamics
+  if (Term_molt==2)
+    for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,3); ///> Update the sesonal-dynamics
  
   // Project SSB
   ssb_pass = 0;
@@ -11417,25 +11614,27 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
     }
   
   // Projections for Case 3
+  int Case = 3;
   dvar_vector ssb(1,iyr+iproj-1);
   ssb.initialize();
-  for (int i = iyr; i <= iyr+iproj-1; i++)
-   {
+  for (int i = iyr; i <= iyr+iproj-1; i++){
     // Pass the molt probabilities
-    for (int h=1;h<=nsex;h++)
-     {
+    for (int h=1;h<=nsex;h++){
       isizeTrans_pass(h) = iYrsIncChanges(h,YrRefGrow);
-      for (int l=1;l<=nclass;l++)
-       {
+      for (int l=1;l<=nclass;l++){
         rec_pass(h,l) = rtt(h,l);                                                           ///> recruitment as a function of class 
         molt_prob_pass(h,l) = molt_probability(h,YrRefGrow,l);                              ///> probability of molting
         if (nmature==2) mature_prob_pass(h,l) = mature_probability(h,YrRefGrow,l);           ///> probability of maturity
-       }
-     } //-- h 
-     // Now fo the year-update
-    for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,3);     ///> Update the seasonal-dynamics
-    for ( int ig = 1; ig <= n_grp; ig++ )
-     {
+      }
+    } //-- h 
+
+    // Now for the year-update
+    if (Term_molt!=2)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);     ///> Update the seasonal-dynamics
+    if (Term_molt==2)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case); ///> Update the seasonal-dynamics
+
+    for ( int ig = 1; ig <= n_grp; ig++ ){
       int h = isex(ig);
       int o = ishell(ig);
       int m = imature(ig);
@@ -11445,14 +11644,13 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
        ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(YrRefGrow), maturity(h));
       if(nmature==2 && use_func_mat==0)
        if(m == MATURE)
- 	ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * mean_wt(h,m)(YrRefGrow); 
+         ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * mean_wt(h,m)(YrRefGrow); 
        if(nmature==2 && use_func_mat==1)
         if(m == MATURE)
- 	ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(YrRefGrow), maturity(h));
-     } //--ig
-     
-   } // i
- 	
+          ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(YrRefGrow), maturity(h));
+    } //--ig
+  } // i
+  
   // return material
   ssb_pass = ssb(iyr+iproj-1);
   for ( int j = 1; j <= nseason; j++ )
@@ -13987,7 +14185,7 @@ FUNCTION WriteFiles
   OutInpFile1 << "##  ------------------------------------------------------------------------------------ ##" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off, 1 = on). If on, the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
   OutInpFile1 << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
   OutInpFile1 << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
@@ -15585,6 +15783,11 @@ FINAL_SECTION
 // 2026-03-10 ** WTS. Removed M_out(syr,nyrRetro,1,nclass), which was never used anywhere. Added isexM and imatM vectors to correct mirroring/indexing problem when the 
 //                    model includes multiple shell conditions and M values are mirrored.
 //                    Incremented version to 2.20.34c.
+// 2026-03-13 ** WTS. Added Term_molt = 2 flag and associated logic to implement Tanner crab growth, which assumes the probability 
+//                    of undergoing the terminal molt to maturity depends on pre-molt, not post-molt size. Choose Term_molt=2 in 
+//                    the CTL file by setting "Other Control 3" (Terminal molting) to 2. update_population_numbers_at_length_season_new will 
+//                    now be used to update the population numbers. 
+//                    Incremented version to 2.20.35.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps

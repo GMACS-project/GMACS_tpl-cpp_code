@@ -1,0 +1,5 @@
+#--notes on compilation
+##--after deleting _build subfolder, run the following to set up make and _build:
+cmake -S . -B _build -G "Unix Makefiles"
+##--run the following to build the executable in _build
+cmake --build _build
