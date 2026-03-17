@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.35; ** WTS **; Compiled 2026-03-13");
+ !! TheHeader = adstring("## GMACS Version 2.20.35; ** WTS **; Compiled 2026-03-16");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -492,9 +492,9 @@ DATA_SECTION
       imature(hmo) = m;
       gmacs_data << "# " << hmo << " : " << sexes(h) << " ";
       if (o==NEW_SHELL) gmacs_data << "New shell(" << o << ") ";
-      if (o==OLD_SHELL) gmacs_data << "old shell(" << o << ") ";
-      if (m==IMMATURE) gmacs_data << "Immature(" << m << ") ";
-      if (m==MATURE) gmacs_data << "Mature(" << m << ") ";
+      if (o==OLD_SHELL) gmacs_data << "Old shell(" << o << ") ";
+      if (m==IMMATURE)  gmacs_data << " Immature(" << m << ") ";
+      if (m==MATURE)    gmacs_data << "   Mature(" << m << ") ";
       pntr_hmo(h,m,o) = hmo++;
       gmacs_data << pntr_hmo(h,m,o) << endl;
      }
@@ -4875,6 +4875,9 @@ DATA_SECTION
   int NfunCall;
   !! NfunCall = 0;
 
+  int mxYrsCohortProgression; //--max number of years to project cohort
+  !! mxYrsCohortProgression = 21;
+
 // ================================================================================================
 
 // Label 200: INITIALIZATION_SECTION
@@ -5130,7 +5133,7 @@ PARAMETER_SECTION
   3darray d3_newShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> New shell crabs-at-length.
   3darray d3_oldShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> Old shell crabs-at-length.
 
-  4darray d4_N_coh(1,n_grp,1,20,1,nseason,1,nclass);               ///> Cohort-type umbers-at-sex/mature/shell/year/season/length.
+  4darray d4_N_coh(1,n_grp,1,mxYrsCohortProgression,1,nseason,1,nclass);   ///> Cohort-type numbers-at-sex/mature/shell/year/season/length.
 
   number TempSS;                                                    ///> Use to compute the selextivity penalty
 
@@ -7855,9 +7858,10 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
     //-----------NMATURE = 1; NSHELL = 1
     if ((nmature==1)&&(nshell==1)){
       //----terminal molt is irrelevant (no change in maturity state)
-      if (verbose==4 && i==syr) {cout << "Case-A: 1 shell condition and 1 maturity state. sex = "<< h << endl;}
+      if ((verbose>3)&&(NfunCall<2)) {cout << "Case-A: 1 shell condition and 1 maturity state. sex = "<< h << endl;}
       int ig = pntr_hmo(h,1,1);
       dvar_vector n = getNumbersAtLengthByCase(ig,i,j,Case);//includes mortality
+      dvar_vector  r(1,nclass);  r.initialize();
       dvar_vector ns(1,nclass); ns.initialize();
       dvar_vector os(1,nclass); os.initialize();
       dvar_vector nn(1,nclass); nn.initialize();
@@ -7869,13 +7873,14 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
         nn = n;//no growth
       }
       // Recruitment
-      if (j == season_recruitment) nn += rec_pass(h);
-      next(ig) = nn;
+      if ((j==season_recruitment) && (Case!=5) && (Case!=6)) r = rec_pass(h);
+      next(ig) = nn +r ;
       if ((verbose>3)&&(NfunCall<2)){
-        cout<<"n  = "<<n <<endl;
-        cout<<"ns = "<<ns<<endl;
-        cout<<"os = "<<os<<endl;
-        cout<<"nn = "<<nn<<endl;
+        cout<<"n  = "<< n <<endl;
+        cout<<"r =  "<< r <<endl;
+        cout<<"ns = "<< ns<<endl;
+        cout<<"os = "<< os<<endl;
+        cout<<"nn = "<< nn<<endl;
         if (std::isnan(value(sum(nn)))) {
           cout<<"in update_PNAL_season Case-A--NaNs detected for " << endl;
           cout <<"Case   i    j   h    ig" << endl;
@@ -7888,6 +7893,7 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
     //-----------NMATURE = 1; NSHELL = 2
     if ((nmature==1)&&(nshell==2)){
       if (verbose==4 && i==syr) {cout << "Case C: 2 shell conditions and 1 maturity state. sex = "<< h << endl;}
+      //TODO: implement
     }//--(nmature==1)&&(nshell==2)
 
     //-----------NMATURE = 2; NSHELL = 1
@@ -7943,7 +7949,7 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
         nn_mat = n_mat; //--mo molting
       }
       // Recruitment
-      if (j == season_recruitment) {
+      if ((j==season_recruitment) && (Case!=5) && (Case!=6)) {
         cout<<"rec_sdd(h)  = "<<rec_sdd(h)<<endl;
         cout<<"rec_pass(h) = "<<rec_pass(h)<<endl;
         nn_imm += rec_pass(h);//recruitment only to immatures
@@ -8039,7 +8045,7 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
         nn_mat_os = n_mat_os;
       }
       // Recruitment
-      if (j == season_recruitment) {
+      if ((j==season_recruitment) && (Case!=5) && (Case!=6)) {
         cout<<"##--RECRUIMTENT SEASON--"<<endl;
         cout<<"  rec_sdd(h)  = "<<rec_sdd(h)<<endl;
         cout<<"  rec_pass(h) = "<<rec_pass(h)<<endl;
@@ -8079,7 +8085,7 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
  
  // --------------------------------------------------------------------------------------------------------------------------------------
   /**
-   * @brief Update numbers-at-length for a season(ORIGINAL)
+   * @brief Update numbers-at-length for a season(ORIGINAL, but extensively edited by WTS, 20260316)
    * @author Team
    * @param i - year
    * @param j - season
@@ -8094,49 +8100,47 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
   if ((verbose>3)&&(NfunCall<2))cout << "\n\nStarting update_population_numbers_at_length_season_old(year="<<i<<",season="<<j<<",Case="<<Case<<")"<< endl;
   int h,o,m,isizeTrans;
 
-  dvar_vector rt(1,nclass);
+  dvar_vector  r(1,nclass);
   dvar_vector  x(1,nclass);
   dvar_vector  y(1,nclass);
   dvar_vector  z(1,nclass);
-  dvar_vector  t1(1,nclass);
-  dvar_vector  t2(1,nclass);
   dvar_matrix next(1,n_grp,1,nclass);
 
   // Loop over groups to indicate order of traversal
-  if ((verbose>3)&&(NfunCall<2)) {
-    cout <<"Group sequence:"<<endl;
-    for (int ig = 1; ig <= n_grp; ig++){
-      // Extract group
-      h = isex(ig);
-      isizeTrans  = isizeTrans_pass(h);
-      m = imature(ig);
-      o = ishell(ig);
-      cout <<"\nig sex mature shell (h,m,o) = "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-    }
-  }
+  // if ((verbose>3)&&(NfunCall<2)) {
+  //   cout <<"Group sequence:"<<endl;
+  //   for (int ig = 1; ig <= n_grp; ig++){
+  //     // Extract group
+  //     h = isex(ig);
+  //     isizeTrans  = isizeTrans_pass(h);
+  //     m = imature(ig);
+  //     o = ishell(ig);
+  //     cout <<"ig sex mature shell (h,m,o) = "<<ig<<" "<<sexes(h)<<" "<<maturestate(m)<<" "<<shellstate(o)<<endl;
+  //   }
+  // }
 
-  dvar_vector  (1,nclass);
+  //dvar_vector  (1,nclass);
 
   // initialize all
-  rt.initialize();
+  r.initialize();
   x.initialize();
   y.initialize();
   z.initialize();
-  t1.initialize();
-  t2.initialize();
   next.initialize();
   
   // Loop over groups
+  if ((verbose>3)&&(NfunCall<2)) cout << "#--looping over groups" << endl;
   for (int ig = 1; ig <= n_grp; ig++){
    
     // Extract group
     h = isex(ig);
-    isizeTrans  = isizeTrans_pass(h);
     m = imature(ig);
     o = ishell(ig);
-    if ((verbose>3)&&(NfunCall<2)) cout <<"\nig sex mature shell (h,m,o) = "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+    isizeTrans  = isizeTrans_pass(h);
+    if ((verbose>3)&&(NfunCall<2)) cout << "###--sex = " << sexes(h) << endl;
+    //if ((verbose>3)&&(NfunCall<2)) cout <<"ig sex mature shell (h,m,o) = "<<ig<<" "<<sexes(h)<<" "<<maturestate(m)<<" "<<shellstate(o)<<endl;
 
-    // Numbers-at-age for this group
+    // Initial numbers-at-size for this group
     if (Case==1) x = d4_N(ig)(i)(j);
     if (Case==2) x = d4_N_init(ig,i,j);
     if (Case==3) x = numbers_proj_gytl(ig,i,j);
@@ -8144,7 +8148,7 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
     if (Case==5) x = d4_N_coh(ig)(i)(j);
     if (Case==6) x = d4_N_coh(ig)(i)(j);
     if ((verbose>3)&&(NfunCall<2)){
-      cout<<"--original"<<x<<endl;
+      cout<<"####--original: "<<x<<endl;
       if (std::isnan(value(sum(x)))) {
         cout<<"in update_PNAL_season--NaNs detected for " << endl;
         cout <<"Case   i    j   ig    h    m     o" << endl;
@@ -8152,7 +8156,7 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
         exit(-1);
       }
     }
-    // Mortality (natural and fishing)
+    // Adjust for mortality (natural and fishing)
     if (Case==1) x = x * S(h,m)(i)(j);
     if (Case==2) x = x * SS_pass(h,m,j);
     if (Case==3) x = x * SS_pass(h,m,j);
@@ -8160,7 +8164,7 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
     if ((Case==5)||(Case==6)) x = x * SS_pass(h,m,j);
 
     if ((verbose>3)&&(NfunCall<2)){
-      cout<<"--after mortality: "<<x<<endl;
+      cout<<"####--after mortality: "<<x<<endl<<endl;
       if (std::isnan(value(sum(x)))) {
         cout<<"in update_PNAL_season after SS_pass applied--NaNs detected for " << endl;
         cout <<"Case   i    j   ig    h    m     o" << endl;
@@ -8174,19 +8178,28 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
     
     // Case-A: one shell condition and one maturity state
     if (nshell == 1 && nmature == 1) {
+      if ((verbose>3)&&(NfunCall<2)) {
+        cout << "Case-A: one shell condition and one maturity state" << endl;
+        cout << "original state: " << x << endl;
+      }
       // Molting and growth
+      r.initialize();
+      y.initialize();
       if (j == season_growth) {
-       y = elem_prod(x, 1.0 - molt_prob_pass(h));                                        // did not molt, become oldshell
-       x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew, stay newshell
-       x = x + y;                                                                        // only one shell type so combine
-       }
+        y = elem_prod(x, 1.0 - molt_prob_pass(h));                                        // did not molt, become "old shell"
+        x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew, stayed "new shell"
+      }
       // Recruitment
-      if (j == season_recruitment) x += rec_pass(h);
-      next(ig) += x;
-      if (verbose==4 && i==syr) cout << "Case-A: one shell condition and one maturity state" << endl;
+      if ((j==season_recruitment) && (Case!=5) && (Case!=6)) r = rec_pass(h);
+
+      next(ig) = x + y + r;// total crab
       if ((verbose>3)&&(NfunCall<2)){
-        cout<<x<<endl;
-        cout<<y<<endl;
+        cout<<"molt prob:        "<<molt_prob_pass(h)<<endl;
+        //cout<<"grwth trns:"<<endl<<growth_transition(h,isizeTrans)<<endl;
+        cout<<"'new shell' crab: " << x << endl;
+        cout<<"'old shell' crab: " << y << endl;
+        cout<<"recruitment:      " << r << endl;
+        cout<<"all crab:         " << next(ig) << endl;
         if (std::isnan(value(sum(x)))) {
           cout<<"in update_PNAL_season Case-A--NaNs detected for " << endl;
           cout <<"Case   i    j   ig    h    m     o" << endl;
@@ -8196,259 +8209,338 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
       }
     } // nshell == 1 && nmature == 1
 
-
     //-------------------------------------------------------------------------------------------------------------------------------
     // Case-B && C: One shell condition, two maturity stages
 
-    // Terminal molt does not impact immature animals
-    if (nshell == 1 && nmature == 2 && m == IMMATURE) 
-     { 
-      // Molting and growth
-      z.initialize();
-//      This works
-//      if (j == season_growth) {
-//       z = elem_prod(x * growth_transition(h,isizeTrans), mature_prob_pass(h)) ; 		// molted to maturity
-//       x = elem_prod(x * growth_transition(h,isizeTrans), 1.0 - mature_prob_pass(h)) ;     // molted, but immature
-//       }
-       // This does not work!
-       if (j == season_growth) {
-         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                        // did not molt
-         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew
-         // 
-       
-         z = elem_prod(x ,       mature_prob_pass(h)) ; 		                               // molted to maturity
-         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                    // did not molt to maturity (and stayed immature)
-         x = x + y;  // immature: only one shell type so combine x ("new shell") and y ("old shell")
-         }
-      if (j == season_recruitment) x += rec_pass(h);
-      next(ig-1) += z; next(ig) += x;
-      if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-B1: no terminal molt, one shell condition, and two maturity states; IMMATURE" << endl;
-      if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-C1: Terminal molt, one shell condition, and two maturity states; IMMATURE" << endl;
-      if ((verbose>3)&&(NfunCall<2)){
-        cout<<"molt prob: "<<molt_prob_pass(h)<<endl;
-        cout<<"mat  prob: "<<mature_prob_pass(h)<<endl;
-        cout<<"grwth trns:"<<endl<<growth_transition(h,isizeTrans)<<endl;
-        cout<<x<<endl;
-        cout<<y<<endl;
-        cout<<z<<endl;
-        if (std::isnan(value(sum(x+z)))) {
-          if (Term_molt==0) cout<<"in update_PNAL_season Case-B1--NaNs detected for " << endl;
-          if (Term_molt==1) cout<<"in update_PNAL_season Case-C1--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+    if (nshell == 1 && nmature == 2) { 
+      if ((verbose>3)&&(NfunCall<2)) cout << "nshell == 1 && nmature == 2" << endl;
+      if (m == IMMATURE){
+        // Terminal molt does not impact immature animals
+        if ((verbose>3)&&(NfunCall<2)) cout << "original state IMMATURE: " << x << endl;
+        r.initialize();
+        y.initialize();
+        z.initialize();
+        if (j == season_growth) {
+          y = elem_prod(x, 1.0 - molt_prob_pass(h));                                        // did not molt, stayed immature
+          x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);            // molted and grew, maturity not yet determined
+        
+          z = elem_prod(x ,       mature_prob_pass(h)) ; 		                                // molted and grew to maturity
+          x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                    // molted and grew but stayed immature
         }
-      }
-    } // Term_molt==0 or 1 &&  nshell == 1 && nmature == 2 && m == IMMATURE
 
-    if (Term_molt==0 && nshell == 1 && nmature == 2 && m == MATURE) {
-      // Molting and growth
-      if (j == season_growth) {
-        y = elem_prod(x, 1.0 - molt_prob_pass(h));                                       // did not molt, become "oldshell"
-        x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);           // molted and grew, stay "newshell"
-        x = x + y;                                                                       // only one shell type, so combine
-      }
-      next(ig) += x;
-      if (verbose==4 && i==syr) cout << "Case-B2: no terminal molt, one shell condition, and two maturity states; MATURE" << endl;
-      if ((verbose>3)&&(NfunCall<2)){
-        cout<<x<<endl;
-        cout<<y<<endl;
-        if (std::isnan(value(sum(x)))) {
-          cout<<"in update_PNAL_season Case-B2--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
-        }
-      }
-    } // Term_molt==0 && nshell == 1 && nmature == 2 && m == MATURE
+        if ((j==season_recruitment) && (Case!=5) && (Case!=6)) r = rec_pass(h);// recruits to immature state
 
-    // Terminal molt: No molting, growth, or recruitment for mature animals if there is a terminal molt
-    if (Term_molt==1 && nshell == 1 && nmature == 2 && m == MATURE) {
-      next(ig) += x;
-      if (verbose==4 && i==syr) cout << "Case-C2: Terminal molt, one shell condition, and two maturity states; MATURE" << endl;
-      if ((verbose>3)&&(NfunCall<2)){
-        cout<<x<<endl;
-        if (std::isnan(value(sum(x)))) {
-          cout<<"in update_PNAL_season Case-C2--NaNs detected for " << endl;
-          cout<<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+        next(ig-1) += z;         // "new" mature crab from immature crab
+        next(ig)   += x + y + r; // crab that remained immature (whether they grew or not, or recruited)
+
+        if ((verbose>3)&&(NfunCall<2)){
+          cout<<"molt prob: "<<molt_prob_pass(h)<<endl;
+          cout<<"mat  prob: "<<mature_prob_pass(h)<<endl;
+          //cout<<"grwth trns:"<<endl<<growth_transition(h,isizeTrans)<<endl;
+          cout<<"'new shell' immature crab from imm crab = " << x <<endl;
+          cout<<"'old shell' immature crab from imm crab = " << y <<endl;
+          cout<<"recruitment to immature crab =            " << r <<endl;
+          cout<<"total immature crab = "                     << next(ig) << endl;
+          cout<<"'new'   mature crab from imm crab = " << z <<endl;
+          if (std::isnan(value(sum(x+z)))) {
+            if (Term_molt==0) cout<<"in update_PNAL_season Case-B1--NaNs detected for " << endl;
+            if (Term_molt==1) cout<<"in update_PNAL_season Case-C1--NaNs detected for " << endl;
+            cout <<"Case   i    j   ig    h    m     o" << endl;
+            cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+            exit(-1);
+          }
         }
-      }
-    } // Term-Molt == 1 && nshell == 1 && nmature == 2 && m == MATURE
+      } // m == IMMATURE
+
+      if (m == MATURE){
+        if ((verbose>3)&&(NfunCall<2)) cout << "original state: MATURE" << endl;
+        r.initialize(); // no recruitment to mature stage
+        y.initialize();
+        z.initialize(); // not used in this section
+        if (Term_molt==0) {
+          // no terminal molt, evaluate molting and growth, but no recruitment for mature crab
+          if (j == season_growth) {
+            y = elem_prod(x, 1.0 - molt_prob_pass(h));                                       // did not molt,    become "oldshell" mature
+            x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);           // molted and grew, became "newshell" mature
+          }
+          next(ig) += x + y; // add in both "newshell" and "oldshell" crab
+          if ((verbose>3)&&(NfunCall<2)){
+            cout << "Case-B2: no terminal molt" << endl;
+            cout << "mature crab that did not molt/grow =   " << y <<endl;
+            cout << "mature crab that molted/grew =         " << x <<endl;
+            cout << "total mat crab (incl. 'new' matures) = " << next(ig) <<endl;
+            if (std::isnan(value(sum(x)))) {
+              cout<<"in update_PNAL_season Case-B2--NaNs detected for " << endl;
+              cout <<"Case   i    j   ig    h    m     o" << endl;
+              cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+              exit(-1);
+            }
+          }
+        } // Term_molt==0
+
+        // Terminal molt: No molting, growth, or recruitment for previously-mature crab
+        if (Term_molt == 1) {
+          next(ig) += x; // add in previously mature crab
+          if ((verbose>3)&&(NfunCall<2)){
+            cout << "Case-C2: Terminal molt" << endl;
+            cout << "previously-mature crab = " << x <<endl;
+            cout << "total mature crab =      " << next(ig) <<endl;
+            if (std::isnan(value(sum(x)))) {
+              cout<<"in update_PNAL_season Case-C2--NaNs detected for " << endl;
+              cout<<"Case   i    j   ig    h    m     o" << endl;
+              cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+              exit(-1);
+            }
+          }
+        } // Term-Molt == 1 
+      } // m == MATURE
+    } // nshell == 1 && nmature == 2 
          
     //-------------------------------------------------------------------------------------------------------------------------------
-    // Case-D: No-terminal molt; two shell conditions, one maturity stage
-    if (Term_molt==0 && nshell == 2  && nmature == 1 && o == NEW_SHELL) {
-      // Molting and growth
-      if (j == season_growth){
-        y = elem_prod(x, 1.0 - molt_prob_pass(h));                              // did not molt,    become oldshell
-        x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);  // molted and grew, stay newshell
+    // Case-D: two shell conditions, one maturity stage: terminal molt is not a possible sccenario
+    if (nshell == 2  && nmature == 1 ){
+      if (Term_molt==1){
+        cout << "\n\n!!ERROR! Model has two shell conditions, one maturity stage. Terminal molt does not make sense!!" <<endl;
+        exit(-1);
       }
-      // Recruitment
-      if (j == season_recruitment) x += rec_pass(h);
-      next(ig) += x;
-      if (verbose==4 && i==syr) cout << "Case-D1: No-terminal molt, two shell condition, and one maturity state; NEW_SHELL" << endl;
-      if ((verbose>3)&&(NfunCall<2)){
-        cout<<x<<endl;        
-        cout<<y<<endl;
-        if (std::isnan(value(sum(x+y)))) {
-          cout<<"in update_PNAL_season Case-D1--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+      if (o == NEW_SHELL) {
+        if ((verbose>3)&&(NfunCall<2)) cout << "Case-D1: original state: NEW_SHELL" << endl;
+        // Molting and growth
+        r.initialize();
+        y.initialize();
+        if (j == season_growth){
+          y = elem_prod(x, 1.0 - molt_prob_pass(h));                              // did not molt,    became oldshell
+          x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);  // molted and grew, stayed newshell
         }
-      }
-    } // Term_molt==0 && nshell == 0 && o == NEW_SHELL
-         
-    if (Term_molt==0 && nshell == 2  && nmature == 1 && o == OLD_SHELL) {
-      // Molting and growth
-      z.initialize();
-      if (j == season_growth) {
-        z = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // molted and grew, become newshell
-        x = elem_prod(x, 1 - molt_prob_pass(h)) + y;                           // did not molt, remain oldshell; add y, the newshell that become oldshell
-      }
-      next(ig-1) += z; next(ig) += x;
-      if (verbose==4 && i==syr) cout << "Case-D2: No-terminal molt, two shell condition, and one maturity state; OLD_SHELL" << endl;
-      if ((verbose>3)&&(NfunCall<2)){
-        if (std::isnan(value(sum(x+z)))) {
-          cout<<"in update_PNAL_season Case-D2--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+
+        // Recruitment occurs to only to new shell crab category
+        if ((j==season_recruitment) && (Case!=5) && (Case!=6)) r = rec_pass(h);
+
+        next(ig)   += x + r; //--"new" new shell crab from new shell crab
+        next(ig+1) += y;     //--"new" old shell crab from new shell crab
+        if ((verbose>3)&&(NfunCall<2)){
+          cout << "'new' new shell crab from new shell crab " << x << endl;        
+          cout << "recruited new shell crab                 " << r << endl;        
+          cout << "'new' old shell crab from new shell crab " << y << endl;
+          if (std::isnan(value(sum(x+y)))) {
+            cout<<"in update_PNAL_season Case-D1--NaNs detected for " << endl;
+            cout <<"Case   i    j   ig    h    m     o" << endl;
+            cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+            exit(-1);
+          }
         }
-      }
-    } // Term_molt==0 && nshell == 0 && o == OLD_SHELL
+      } // o == NEW_SHELL
+          
+      if (o == OLD_SHELL) {
+        if ((verbose>3)&&(NfunCall<2)) cout << "Case-D1: original state: OLD_SHELL" << endl;
+        // Molting and growth
+        y.initialize();
+        if (j == season_growth) {
+          y = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans); // molted and grew, became newshell
+          x = elem_prod(x, 1 - molt_prob_pass(h));                               // did not molt, remained oldshell
+        }
+        next(ig-1) += y; // "new" new shell crab from old shell crab
+        next(ig)   += x; // "new" old shell crab from old shell crab
+        if ((verbose>3)&&(NfunCall<2)){
+          cout << "'new' new shell crab from old shell crab = " << y << endl;        
+          cout << "'new' old shell crab from old shell crab = " << x << endl;
+          cout << "total new shell crab                     = " << next(ig-1) << endl;
+          cout << "total old shell crab                     = " << next(ig)   << endl;
+          if (std::isnan(value(sum(x+z)))) {
+            cout<<"in update_PNAL_season Case-D2--NaNs detected for " << endl;
+            cout <<"Case   i    j   ig    h    m     o" << endl;
+            cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+            exit(-1);
+          }
+        }
+      } 
+    } // nshell == 2  && nmature == 1 
 
     //-------------------------------------------------------------------------------------------------------------------------------
     // Cases-E and F: Two shell conditions, two maturity stages
     //if (verbose==4 && i==syr) cout << Term_molt << " " << j << " " << ig << " " << h << " " << o << " " << m << endl;
-    if (nshell == 2 && nmature == 2 && o == NEW_SHELL && m == IMMATURE) {
-      // Molting and growth
-      z.initialize();
-      y.initialize();
-      if (j == season_growth) {
-         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                  // did not molt (immature old shell)
-         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);      // molted and grew (new shell, maturity not yet determined)
-         z = elem_prod(x , mature_prob_pass(h)) ; 		                               // molted to maturity (mature new shell)
-         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                              // did not molt to maturity (immature new shell)
-        if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-E1: no terminal molt, two shell condition, and two maturity states; NEW_SHELL & IMMATURE " << ig << endl;
-        if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F1: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & IMMATURE " << ig << endl;
-      }
-      if (j == season_recruitment) x += rec_pass(h);  //--recruitment to immature, new shell state
-      next(ig-2) += z; next(ig) += x; next(ig+1) += y;
-      if ((verbose>3)&&(NfunCall<2)){
-        if (std::isnan(value(sum(x+y+z)))) {
-          if (Term_molt==0) cout<<"in update_PNAL_season Case-E1--NaNs detected for " << endl;
-          if (Term_molt==1) cout<<"in update_PNAL_season Case-F1--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+    if (nshell == 2 && nmature == 2) {
+      //if ((verbose>3)&&(NfunCall<2)) cout << "two shell states, two maturity states" <<endl;
+      if (o == NEW_SHELL && m == IMMATURE) {
+        if ((verbose>3)&&(NfunCall<2)) cout << "original state NEW_SHELL & IMMATURE: " << x << endl;
+        // Molting and growth
+        r.initialize();
+        y.initialize();
+        z.initialize();
+        if (j == season_growth) {
+          if ((verbose>3)&&(NfunCall<2)) cout << "Terminal molt irrelevant" << endl;
+          y = elem_prod(x, 1.0 - molt_prob_pass(h));                                  // did not molt (immature old shell)
+          x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);      // molted and grew (new shell, maturity not yet determined)
+          z = elem_prod(x , mature_prob_pass(h)) ; 		                                // molted to maturity (mature new shell)
+          x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                              // did not molt to maturity (remained immature new shell)
+          if ((verbose>3)&&(NfunCall<2)) {
+            cout << "intmd state: immature new shell: " << x << endl;
+            cout << "final state: immature old shell: " << y << endl;
+            cout << "intmd state: mature new shell:   " << z << endl;
+          }
         }
-      }
-    }
-    if (Term_molt==0 && nshell == 2 && nmature == 2 && o == NEW_SHELL && m == MATURE) {
-      // Molting and growth
-      y.initialize();
-      if (j == season_growth) {
-         y = elem_prod(x, 1.0 - molt_prob_pass(h));                               // did not molt    (mature old shell)
-         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);   // molted and grew (mature new shell)
-        if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-E2: no terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
-      }
-      if (j == season_recruitment) x += rec_pass(h); //-TODO: this is WRONG!! no recruitment to mature new shell!!
-      next(ig) += x; next(ig+1) += y;
-      if ((verbose>3)&&(NfunCall<2)){
-        if (std::isnan(value(sum(x+y)))) {
-          cout<<"in update_PNAL_season Case-E2--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+
+        if ((j==season_recruitment) && (Case!=5) && (Case!=6)) {
+          r = rec_pass(h);  //--recruitment to immature, new shell state
+          if ((verbose>3)&&(NfunCall<2)) cout << "recruitment: " << r << endl;
         }
-      }
-    }
-    if (Term_molt==1 && nshell == 2 && nmature == 2 && o == NEW_SHELL && m == MATURE) {
-      // newshell mature crab only become oldshell mature crab
-      y.initialize();
-      if (j == season_growth) {
-        y = x;          //--oldshell mature crab
-        x.initialize(); //--new shell mature crab
-        if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F2: Terminal molt, two shell condition, and two maturity states; NEW_SHELL & MATURE " << ig << endl;
-      }
-      next(ig+1) += y;  //--add "new" oldshell crab to previous oldshell crab
-      //next(ig) += x;    //--x is identically 0 (no previously oldshell crab that became newshell crab), so addition is unnecessary
-      if ((verbose>3)&&(NfunCall<2)){
-        if (std::isnan(value(sum(x+y)))) {
-          cout<<"in update_PNAL_season Case-F2--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+
+        next(ig-2) += z;     // 'new state:   mature newshell crab 
+        next(ig)   += x + r; // 'new' immature newshell crab
+        next(ig+1) += y;     // 'new': immature oldshell crab
+
+        if ((verbose>3)&&(NfunCall<2)){
+          if (std::isnan(value(sum(x+y+z+r)))) {
+            if (Term_molt==0) cout<<"in update_PNAL_season Case-E1--NaNs detected for " << endl;
+            if (Term_molt==1) cout<<"in update_PNAL_season Case-F1--NaNs detected for " << endl;
+            cout <<"Case   i    j   ig    h    m     o" << endl;
+            cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+            exit(-1);
+          }
         }
-      }
-    }
-    
-    if (nshell == 2 && nmature == 2 && o == OLD_SHELL && m==IMMATURE) {
-      // Molting and growth
-      z.initialize();
-      y.initialize();
-      if (j == season_growth) {
-         y = elem_prod(x, 1.0 - molt_prob_pass(h));                                           // did not molt (immature oldshell remained immature oldshell)
-         x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);               // molted and grew (immature oldshell molted to newshell, maturity not yet determined)
-         z = elem_prod(x , mature_prob_pass(h)) ; 		                                        // molted to maturity (mature newshell)
-         x = elem_prod(x , 1.0 - mature_prob_pass(h)) ;                                       // did not molt to maturity (immature newshell)
-         if (Term_molt==0 && verbose==4 && i==syr) cout << "Case-E3: no terminal molt, two shell condition, and two maturity states; OLD_SHELL & IMMATURE " << ig << endl;
-         if (Term_molt==1 && verbose==4 && i==syr) cout << "Case-F3:    terminal molt, two shell condition, and two maturity states; OLD_SHELL & IMMATURE " << ig << endl;
-      }
-      // TODO: get appropriate ig's for below from pntr_hmo(h,m,o) 
-      next(ig-3) += z; //--add z ("new" newshell mature) to previous mature newshell TODO: is this correct?? If Term_molt=1, should be no previous mature newshell crab
-      next(ig-1) += x; //--add x
-      next(ig) += y;
-      if ((verbose>3)&&(NfunCall<2)){
-        if (std::isnan(value(sum(x+y+z)))) {
-          if (Term_molt==0) cout<<"in update_PNAL_season Case-E3--NaNs detected for " << endl;
-          if (Term_molt==1) cout<<"in update_PNAL_season Case-F3--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+      }// if (o == NEW_SHELL && m == IMMATURE)
+
+      if (o == OLD_SHELL && m==IMMATURE) {
+        if ((verbose>3)&&(NfunCall<2)) cout << "original state OLD_SHELL & IMMATURE: " << x << endl;
+        // Molting and growth
+        r.initialize(); // no recruitment to old shell immature category
+        y.initialize();
+        z.initialize();
+        if (j == season_growth) {
+          if ((verbose>3)&&(NfunCall<2)) cout << "Terminal molt irrelevant" << endl;
+          y = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);     // molted and grew (immature oldshell molted to newshell, maturity not yet determined)
+          x = elem_prod(x, 1.0 - molt_prob_pass(h));                                 // did not molt (immature oldshell remained immature oldshell)
+          z = elem_prod(y , mature_prob_pass(h)) ; 		                               // molted to maturity (mature newshell)
+          y = elem_prod(y , 1.0 - mature_prob_pass(h)) ;                             // did not molt to maturity (immature newshell)
+          if ((verbose>3)&&(NfunCall<2)){
+            cout << "'new' newshell   mature: " << z << endl;
+            cout << "'new' newshell immature: " << x << endl;
+            cout << "'new' oldshell immature: " << y << endl;
+          }
         }
-      }
-     }
-     
-    if (Term_molt==0 && nshell == 2 && nmature == 2 && o == OLD_SHELL && m==MATURE) {
-      // Molting and growth
-      y.initialize();
-      if (j == season_growth) {
-         y = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);                    // molted and grew (mature new shell)
-         x = elem_prod(x, 1.0 - molt_prob_pass(h));                                                // did not molt (mature old shell)
-         if (verbose==4 && i==syr) cout << "Case-E4: No-terminal molt, two shell condition, and two maturity states; OLD_SHELL & MATURE " << ig << endl;
-       }
-      next(ig) += x; next(ig-1) += y;
-      if ((verbose>3)&&(NfunCall<2)){
-        if (std::isnan(value(sum(x+y)))) {
-          cout<<"in update_PNAL_season Case-E4--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
+        // TODO?: get appropriate ig's for below from pntr_hmo(h,m,o) 
+        next(ig-3) += z; //--add z ("new" newshell mature) to previous mature newshell 
+        next(ig-1) += y; //--add y ("new" newshell immature)
+        next(ig)   += x; //--add x ("new" oldshell immature)
+        if ((verbose>3)&&(NfunCall<2)){
+          if (std::isnan(value(sum(x+y+z)))) {
+            if (Term_molt==0) cout<<"in update_PNAL_season Case-E3--NaNs detected for " << endl;
+            if (Term_molt==1) cout<<"in update_PNAL_season Case-F3--NaNs detected for " << endl;
+            cout <<"Case   i    j   ig    h    m     o" << endl;
+            cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+            exit(-1);
+          }
         }
-      }
-    }
-    
-    if (Term_molt==1 && nshell == 2 && nmature == 2 && o == OLD_SHELL && m==MATURE) {
-      if (j == season_growth) {
-        if (verbose==4 && i==syr) cout << "Case-F4: Terminal molt, two shell condition, and two maturity states; OLD_SHELL & MATURE " << ig << endl;
-      }
-      next(ig) += x;
-      if ((verbose>3)&&(NfunCall<2)){
-        if (std::isnan(value(sum(x)))) {
-          cout<<"in update_PNAL_season Case-F4--NaNs detected for " << endl;
-          cout <<"Case   i    j   ig    h    m     o" << endl;
-          cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
-          exit(-1);
-        }
-      }
-     }
+      } // o == OLD_SHELL && m==IMMATURE
+      
+      if (o == NEW_SHELL && m == MATURE){
+        if ((verbose>3)&&(NfunCall<2)) cout << "original state NEW_SHELL & MATURE: " << x << endl;
+        if (Term_molt==0) {
+          // Molting and growth
+          y.initialize();
+          if (j == season_growth) {
+            if ((verbose>3)&&(NfunCall<2)) cout << "Case-E3: No-terminal molt" << endl;
+            y = elem_prod(x, 1.0 - molt_prob_pass(h));                               // did not molt    (mature old shell)
+            x = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);   // molted and grew (mature new shell)
+            if ((verbose>3)&&(NfunCall<2)){
+              cout << "intmd 'new' oldshell   mature: " << y << endl;
+              cout << "intmd 'new' newshell   mature: " << x << endl;
+            }
+          }
+
+          //if ((j==season_recruitment) && (Case!=5) && (Case!=6)) x += rec_pass(h); //-NOTE (20260316): this was WRONG!! no recruitment to mature new shell!!
+
+          next(ig)   += x; // 'new' newshell mature
+          next(ig+1) += y; // 'new' oldshell mature (0's if not growth season)
+          if ((verbose>3)&&(NfunCall<2)){
+            if (std::isnan(value(sum(x+y)))) {
+              cout<<"in update_PNAL_season Case-E2--NaNs detected for " << endl;
+              cout <<"Case   i    j   ig    h    m     o" << endl;
+              cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+              exit(-1);
+            }
+          }
+        } // Term_molt==0
+
+        if (Term_molt==1) {
+          // newshell mature crab only become oldshell mature crab
+          y.initialize();
+          if (j == season_growth) {
+            if ((verbose>3)&&(NfunCall<2)) cout << "Case-F3: Terminal molt" << endl;
+            y = x;          //--oldshell mature crab
+            x.initialize(); //--new shell mature crab
+            if ((verbose>3)&&(NfunCall<2)){
+              cout << "intmd 'new' oldshell   mature: " << y << endl;
+              cout << "intmd 'new' newshell   mature: " << x << endl;
+            }
+          }
+          next(ig+1) += y;  //--add in "new" oldshell crab (0's if not growth season)
+          next(ig)   += x;  //--x is identically 0 if growth occurred (all newshell mature crab became oldshell mature crab)
+          if ((verbose>3)&&(NfunCall<2)){
+            if (std::isnan(value(sum(x+y)))) {
+              cout<<"in update_PNAL_season Case-F2--NaNs detected for " << endl;
+              cout <<"Case   i    j   ig    h    m     o" << endl;
+              cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+              exit(-1);
+            }
+          }
+        } // Term_molt==1
+      } // o == NEW_SHELL && m == MATURE
+      
+      if (o == OLD_SHELL && m==MATURE){
+        if ((verbose>3)&&(NfunCall<2)) cout << "original state OLD_SHELL & MATURE: " << x << endl;
+        y.initialize();
+        if (Term_molt==0) {
+          // Molting and growth
+          if (j == season_growth) {
+            if ((verbose>3)&&(NfunCall<2)) cout << "Case-E4: No-terminal molt" << endl;
+            y = elem_prod(x, molt_prob_pass(h)) * growth_transition(h,isizeTrans);        // molted and grew (mature new shell)
+            x = elem_prod(x, 1.0 - molt_prob_pass(h));                                    // did not molt (mature old shell)
+            if ((verbose>3)&&(NfunCall<2)){
+              cout << "intmd 'new' newshell   mature: " << y << endl;
+              cout << "intmd 'new' oldshell   mature: " << x << endl;
+            }
+          }
+          next(ig)   += x; // remained oldshell mature
+          next(ig-1) += y; // molted to newshell, already mature (if growth_season, otherwise 0's)
+          if ((verbose>3)&&(NfunCall<2)){
+            if (std::isnan(value(sum(x+y)))) {
+              cout<<"in update_PNAL_season Case-E4--NaNs detected for " << endl;
+              cout <<"Case   i    j   ig    h    m     o" << endl;
+              cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+              exit(-1);
+            }
+          }
+        } // Term_molt==0
+        
+        if (Term_molt==1) {
+          if (j == season_growth) {
+            if ((verbose>3)&&(NfunCall<2)) cout << "Case-F4: Terminal molt" << endl;
+            if ((verbose>3)&&(NfunCall<2)){
+              cout << "intmd 'new' oldshell   mature: " << x << endl;
+            }
+          }
+          next(ig) += x; // add in previous old shell mature (no state changes)
+          if ((verbose>3)&&(NfunCall<2)){
+            if (std::isnan(value(sum(x)))) {
+              cout<<"in update_PNAL_season Case-F4--NaNs detected for " << endl;
+              cout <<"Case   i    j   ig    h    m     o" << endl;
+              cout<<Case<<" "<<i<<" "<<j<<" "<<ig<<" "<<h<<" "<<m<<" "<<o<<endl;
+              exit(-1);
+            }
+          }
+        } // Term_molt==1
+      } // o == OLD_SHELL && m==MATURE
+    } // nshell == 2 && nmature == 2
   } //--ig loop 
 
   // update the n-matrix
+  if ((verbose>3)&&(NfunCall<2)){
+    cout << "#--'next' array " << endl;
+    for (int ig=1;ig<=n_grp;ig++){
+      cout << getPopStateString(ig) << ": " << next(ig) << endl;
+    }
+  }
   if (Case==1) {
     for (int ig=1;ig<=n_grp;ig++){
       if (j == nseason)
@@ -8484,16 +8576,23 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 
+FUNCTION adstring getPopStateString(int ig)
+  adstring s = sexes(isex(ig)) + " " + maturestate(imature(ig)) + " " + shellstate(ishell(ig));
+  return s;
+
+// --------------------------------------------------------------------------------------------------------------------------------------
+
   /**
-   * @brief Update cohort-at-length
+   * @brief Project cohort numbers-at-length
    * @author WTS
-   * @details Simulate cohort ptogression using
+   * @details Simulate cohort ptogression
    *
-   * @param Case inital population case (5: smallest size bin has n = 1 for imature crab;m6: uses R_z(iyr))
    * @param iyr year to use for population rates
+   * @param mxYr max number of years to project cohort
+   * @param Case inital population case (5: smallest size bin has n = 1 for imature crab;m6: uses R_z(iyr))
  **/
-FUNCTION void update_cohort_numbers_at_length(int iyr, int Case)
-  if ((verbose>3)&&(NfunCall<2)) cout<<"--Starting update_cohort_numbers_at_length--"<<endl;
+FUNCTION void project_cohort_numbers_at_length(int iyr, int mxYr, int Case)
+  if ((verbose>3)&&(NfunCall<2)) cout<<"--Starting project_cohort_numbers_at_length--"<<endl;
 
   int isizeTrans;
   double xi;                                                               ///> discard mortality rate
@@ -8565,13 +8664,19 @@ FUNCTION void update_cohort_numbers_at_length(int iyr, int Case)
   }
 
   // Now loop over year to propagate cohort by sex by season
-  for (int i = 1; i <= 20; i++){
-    if ((verbose>3)&&(NfunCall<2)) cout<<"\n\n---looping to update cohort Ns: i(yr): "<<i<<endl;
+  for (int i = 1; i <= (mxYr-1); i++){
+    if ((verbose>3)) cout<<"\n\n---looping to update cohort Ns: i(yr): "<<i<<endl;
     // Pass the molt probabilities
     for (int h=1;h<=nsex;h++){
       isizeTrans_pass(h) = iYrsIncChanges(h,iyr);                       ///> size transition
       molt_prob_pass(h)  = molt_probability(h,iyr);                     ///> probability of molting
       if (nmature==2) mature_prob_pass(h) = mature_probability(h,iyr);  ///> probability of maturing
+      if ((verbose>3)) {
+        cout << "iyr = " << iyr << " " << "isizeTrans_pass = "<< isizeTrans_pass(h) << endl;
+        //cout << "growth_transition("<<sexes(h)<<"):\n" << growth_transition(h,isizeTrans_pass(h)) << endl;
+        cout << "molt_prob("<<sexes(h)<<"):         " << molt_prob_pass(h) << endl;
+        if (nmature==2) cout << "mature_prob_pass()"<<sexes(h)<<"): " << mature_prob_pass(h) << endl;
+      }
     }  
     // Now for the year-update
     if (Term_molt!=2)
@@ -12243,7 +12348,7 @@ FUNCTION dvector calc_Francis_weights()
    double Obs, Pre, Var;
    dvector lfwt(1,nSizeComps);
 
-   lfwt = 0.0;//--initiaize
+   lfwt = 0.0;//--initialize
    for ( int k = 1; k <= nSizeComps; k++ ){
      nobs = nSizeCompRows(k);
      dvector resid(1,nobs);
@@ -13040,6 +13145,35 @@ FUNCTION CreateOutput
    for (int h=1;h<=nsex;h++)
     RepFile1 << i << " " << sexes(h) << " " << recruits(h,i) << endl;
   RepFile1 << ">EOD<" << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "CohortProgression1: dataframe" << endl;
+  project_cohort_numbers_at_length(syr, mxYrsCohortProgression, 5);//using N=1 in min size class corresponding to immature newshell crab
+  RepFile1 << "year season  sex   maturity   shell  "<< mid_points << endl;
+  {
+    for (int i=1;i<=mxYrsCohortProgression-1;i++)
+      for (int j=1;j<=nseason;j++)
+        for (int h=1;h<=nsex;h++) 
+          for (int m=1;m<=nmature;m++)
+            for (int o=1;o<=nshell;o++)
+              RepFile1 << i << " " << j <<" " << sexes(h) << " " << maturestate(m) << " " << shellstate(o) << " " << d4_N_coh(pntr_hmo(h,m,o),i,j) << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+ 
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "CohortProgression2: dataframe" << endl;
+  project_cohort_numbers_at_length(syr, mxYrsCohortProgression, 6);//--using recruitment size distribution for size classes corresponding to immature newshell crab
+  RepFile1 << "year season  sex   maturity   shell  "<< mid_points << endl;
+  {
+    for (int i=1;i<=mxYrsCohortProgression-1;i++)
+      for (int j=1;j<=nseason;j++)
+        for (int h=1;h<=nsex;h++) 
+          for (int m=1;m<=nmature;m++)
+            for (int o=1;o<=nshell;o++)
+              RepFile1 << i << " " << j <<" " << sexes(h) << " " << maturestate(m) << " " << shellstate(o) << " " << d4_N_coh(pntr_hmo(h,m,o),i,j) << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+ 
 
 //=========================================================================================================================
    
@@ -15788,6 +15922,13 @@ FINAL_SECTION
 //                    the CTL file by setting "Other Control 3" (Terminal molting) to 2. update_population_numbers_at_length_season_new will 
 //                    now be used to update the population numbers. 
 //                    Incremented version to 2.20.35.
+// 2026-03-16 ** WTS. Added calculations to determine the progression of a cohort through 20 successive years based on population/fishery rates for a 
+//                    selected year. Progressions are calculated for a single "spike" in abundance in the smallest size bin, or as per the sex-specific 
+//                    recruitment size structure, consistent with the recruits being new shell, immature crab (even if model categories are less precise). 
+//                    Results are output to gmacs.rep1 as dataframes CohortProgression1 and CohortProgression2.
+//                    Revised update_population_numbers_at_length_season to simplify the code flow (broke up if statements with 4 or 5 terms into smaller, nested 
+//                    code fragments). Corrected an error in update_population_numbers_at_length_season where recruitment was being added to mature new shell 
+//                    crab abundance as well as immature new shell crab abundance when nmature=2, nshellcon=2, and Term_molt=0.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps

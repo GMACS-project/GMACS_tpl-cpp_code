@@ -1,5 +1,18 @@
 #--notes on compilation
-##--after deleting _build subfolder, run the following to set up make and _build:
+
+##--to rebuild cmake system
+###--delete _build folder
+###--after deleting _build subfolder, run the following to set up "make" and _build folder:
 cmake -S . -B _build -G "Unix Makefiles"
-##--run the following to build the executable in _build
+###--run the following from the project folder to build the executable in "_build"
 cmake --build _build
+
+##--to recompile all code, run the following in _build
+make clean
+make
+
+##--to recompile just an edited gmacsbase.TPL file, run the following in _build
+rm gmacs.tpl
+make
+
+
