@@ -64,3 +64,44 @@ const dmatrix acl::multinomial::pearson_residuals(const dvar_vector& log_vn, con
 	}
 	return res;
 }
+
+
+/**
+ * @brief multinomial desity function with estimated effective sample size.
+ *
+ * @details Negative log likelihood using the multinomial distribution as referenced to the "best" fit (i.e., p_i=x_i).	
+ *
+ * @author WTS
+ * @param log_vn dvar_vector of the log of effective sample sizes.
+ * @param o dmatrix of the observed proportions.
+ * @param p dvar_matrix of the predicted proportions
+ * @return negative loglikelihood.
+**/
+const dvariable acl::multinomial_alt::dmultinom_alt(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const
+{
+  if ( o.colsize() != p.colsize() || o.rowsize() != p.rowsize() ){
+    cerr << "Error in dmultinom, "
+    " observed and predicted matrixes"
+    " are not the same size" << endl;
+    ad_exit(1);
+  }
+
+  dvar_vector vn = mfexp(log_vn);
+  dvariable ff = 0.0;
+  for ( int i = o.rowmin(); i <= o.rowmax(); i++ ){
+    ff -= vn(i) * o(i) * (log(p(i)+m_smlVal)-log(o(i)+m_smlVal));
+  }
+  return ff;
+}
+
+
+const dmatrix acl::multinomial_alt::pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const
+{
+  dvector vn = value(mfexp(log_vn));
+  dmatrix res = o - value(p);
+  for ( int i = o.rowmin(); i <= o.rowmax(); i++ ){
+    dvector var = value(elem_prod(p(i),1.0-p(i)+m_smlVal)) / vn(i);
+    res(i) = elem_div(res(i),sqrt(var+m_smlVal));
+  }
+  return res;
+}

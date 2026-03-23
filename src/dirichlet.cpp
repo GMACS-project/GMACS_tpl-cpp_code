@@ -85,31 +85,56 @@ const dmatrix acl::dirichlet::pearson_residuals(const dvar_vector& log_vn, const
  * @param p dvar_matrix of predicted proportions
  * @return negative loglikelihood.
 **/
-const dvariable acl::dirichlet_alt::ddirichlet(const dmatrix& o, const dvar_matrix& p) const
+const dvariable acl::dirichlet_alt::ddirichlet_alt(const dmatrix& o, const dvar_matrix& p) const
 {
-	if ( o.colsize() != p.colsize() || o.rowsize() != p.rowsize() )
-	{
-		cerr << "Error in dirichlet_alt::ddirichlet calc: observed and predicted matrixes are not the same size" << endl;
-		ad_exit(1);
-	}
+  // cout<<"In dirichlet_alt::ddirichlet_alt"<<endl;
+  if ( o.colsize() != p.colsize() || o.rowsize() != p.rowsize() )
+  {
+    cerr << "Error in dirichlet_alt::ddirichlet_alt calc: observed and predicted matrices are not the same size" << endl;
+    ad_exit(1);
+  }
 
   dvariable tot_nll = 0.0;
   dvariable theta = mfexp(m_log_th);
-	for (int r = o.rowmin(); r<=o.rowmax();r++){
-		//the following is from Thorson et al. 2016
-		double      n   = m_iss[r];      //to maintain semblance to Thorson et al.
-		dvariable   thn = theta*n;
-		dvector     obsp = o(r)/sum(o(r));
-		dvar_vector modp = p(r)/sum(p(r));
+  // cout<<"theta = "<<theta<<endl;
+  for (int r = o.rowmin(); r<=o.rowmax();r++){
+    //the following is from Thorson et al. 2016
+    double      n   = m_iss[r];      //to maintain semblance to Thorson et al.
+    dvariable   thn = theta*n;
+    // dvector     obsp = o(r)/sum(o(r));   replaced 20260318
+    // dvar_vector modp = p(r)/sum(p(r));
+    dvector     obsp = (o(r)+1.0e-10)/sum(o(r)+1.0e-10);
+    dvar_vector modp = (p(r)+1.0e-10)/sum(p(r)+1.0e-10);
+    // cout<<"row "<<r<<" n = "<<n<<" thn = "<<thn<<endl;
+    // cout<<"obsp = "<<obsp<<endl;
+    // cout<<"modp = "<<modp<<endl;
     dvariable nll;
     nll.initialize();
-		if (n>0){//blows up if ss=0
-			nll = -( gammln(n+1.0)-sum(gammln(n*obsp+1.0)) );//constant term
-			nll -= gammln(thn)-gammln(n+thn);
-			nll -= sum(gammln(n*obsp+thn*modp) - gammln(thn*modp));
-		}
+    if (n>0){//blows up if ss=0
+      nll = -( gammln(n+1.0)-sum(gammln(n*obsp+1.0)) );//constant term
+      // cout<<"nll 1 = "<<nll<<endl;
+      nll -= gammln(thn)-gammln(n+thn);
+      // cout<<"nll 2 = "<<nll<<endl;
+      nll -= sum(gammln(n*obsp+thn*modp) - gammln(thn*modp));
+      // cout << "gammln(n*obsp+thn*modp) = " << gammln(n*obsp+thn*modp) << endl;
+      // cout << "gammln(thn*modp)        = " << gammln(thn*modp) << endl;
+      if (isnan(value(nll))){
+        cout<<"In dirichlet_alt::ddirichlet_alt"<<endl;
+        cout<<"theta = "<<theta<<endl;
+        cout<<"row "<<r<<" n = "<<n<<" thn = "<<thn<<endl;
+        cout<<"obsp = "<<obsp<<endl;
+        cout<<"modp = "<<modp<<endl;
+        cout<<"nll 1 = "<<nll<<endl;
+        cout<<"nll2  = "<<gammln(thn)-gammln(n+thn)<<endl;
+        cout<<"gammln(n*obsp+thn*modp) = " << gammln(n*obsp+thn*modp) << endl;
+        cout<<"gammln(thn*modp)        = " << gammln(thn*modp) << endl;
+        ad_exit(1);
+      }
+    }
+    // cout<<"nll = "<<nll<<endl;
     tot_nll += nll;
   } //--r loop
+  cout<<"tot_nll = "<<tot_nll<<endl;
   return(tot_nll);
 }
 

@@ -1,0 +1,263 @@
+---
+title: "Functions"
+---
+
+This section documents the C++ functions defined in the `gmacsbase.TPL` file which implement the GMACS assessment model.
+
+## Initialization
+
+### `initialize_model_parameters`
+**Brief**: Initialize model parameters.  
+**Details**: Set global variable equal to the estimated parameter vectors.
+
+### `init_selectivities`
+**Brief**: Instantiate and initialize selectivities for each gear as an array of pointers.  
+**Author**: William Stockhausen  
+**Details**: Selectivity "functions" are handled as classes. The class for each non-mirrored selectivity function is instantiated once here (called in the PRELIMINARY_CALCS_SECTION), and a pointer to it is saved to an array of pointers. Hopefully this will speed up calculating the selectivities in the PROCEDURE_SECTION.
+
+### `calc_initial_numbers_at_length`
+**Brief**: Initialize populations numbers-at-length in the start year.  
+**Author**: Steve Martell  
+**Details**: This function initializes the populations numbers-at-length in the initial year of the model.
+
+### `calc_prior_densities`
+**Brief**: Calculate prior density functions for leading parameters.  
+**Details**: 
+ - case 0 is a uniform density between the lower and upper bounds.
+ - case 1 is a normal density with mean = p1 and sd = p2
+ - case 2 is a lognormal density with mean = log(p1) and sd = p2
+ - case 3 is a beta density bounded between lb-ub with p1 and p2 as alpha & beta
+ - case 4 is a gamma density with parameters p1 and p2.
+
+
+## Population Dynamics
+
+### `calc_fishing_mortality`
+**Brief**: Calculate fishing mortality rates for each fleet.  
+**Details**: For each fleet estimate scaler log_fbar and deviates (f_devs). This function calculates the fishing mortality rate including deaths due to discards. Where xi is the discard mortality rate.
+
+### `calc_natural_mortality`
+**Brief**: Calculate natural mortality array.  
+**Details**: Natural mortality (M) is a 3d array for sex, year and size.
+
+### `calc_total_mortality`
+**Brief**: Calculate total instantaneous mortality rate and survival rate.  
+**Details**: $S = exp(-Z)$.
+
+### `calc_molting_probability`
+**Brief**: Calculate the probability of moulting by carapace width.  
+**Details**: Note that the parameters `molt_mu` and `molt_cv` can only be estimated in cases where there is new shell and old shell data. Note that the diagonal of the P matrix != 0, otherwise the matrix is singular in `inv(P)`.
+
+### `calc_mature_probability`
+**Brief**: Calculate the probability of maturing by carapace width.
+**Details**: Calculates the probability of maturing for immature crab.
+
+### `calc_growth_increments`
+**Brief**: Calculate mean molt increment as a (linear or power law) function of pre-molt size.
+
+### `calc_growth_increments_linear`
+**Brief**: Compute (mean) growth increments based on linear form.  
+**Details**: Mean growth increments are calculated based on a linear relationship between pre-molt size and molt increment size.
+
+### `calc_growth_transition`
+**Brief**: Calculate the growth and size transition matrix.  
+**Details**: Calculates the size transition matrix for each sex based on growth increments, which is a linear function of the size interval, and the scale parameter for the gamma distribution. This function does the proper integration from the lower to upper size bin, where the mode of the growth increment is scaled by the scale parameter.
+
+### `calc_recruitment_size_distribution`
+**Brief**: Calculate size distribution for new recruits.  
+**Details**: Based on the gamma distribution, calculates the probability of a new recruit being in size-interval size.
+
+### `update_population_numbers_at_length`
+**Brief**: Update numbers-at-length.  
+**Author**: Team  
+**Details**: Projections for entire period.
+
+### `update_population_numbers_at_length_season`
+**Brief**: Update numbers-at-length for a season (ORIGINAL logic).  
+**Author**: Team  
+**Details**: Numbers at length are propagated each year for each sex based on the size transition matrix and a vector of size-specific survival rates. This is for one season. The columns of the size-transition matrix are multiplied by the size-specific survival rate (a scalar). New recruits are added based on the estimated average recruitment and annual deviate, multiplied by a vector of size-proportions (rec_sdd).
+
+### `update_population_numbers_at_length_season_new`
+**Brief**: Update numbers-at-length (REVISED logic).  
+**Author**: William Stockhausen  
+**Details**: Numbers at length are propagated each year for each sex based on the size transition matrix and a vector of size-specific survival rates. This function implements logic for Terminal Molt option 2 (Tanner crab approach).
+
+### `updateNumbersAtLengthByCase`
+**Brief**: Update numbers-at-length by Case to next season/year.
+
+### `getNumbersAtLengthByCase`
+**Brief**: Get numbers-at-length by Case.
+
+### `calc_ssb`
+**Brief**: Calculate mature male biomass (MMB).  
+**Details**: Calculation of the mature male biomass is based on the numbers-at-length summed over each shell condition.
+
+### `calc_ssba`
+**Brief**: Calculate mature male abundance (MMA).  
+**Details**: Calculation of the mature male abundance is based on the numbers-at-length summed over each shell condition.
+
+### `calc_stock_recruitment_relationship`
+**Brief**: Calculate stock recruitment relationship.  
+**Details**: Assuming a Beverton-Holt relationship between the mature biomass (user defined) and the annual recruits. Note that we derive so and bb in $R = \frac{so \cdot MB}{1 + bb \cdot MB}$ from Ro and steepness.
+
+
+## Observation Models
+
+### `calc_selectivities`
+**Brief**: Calculate selectivities for each gear.  
+**Author**: Steve Martell, D'Arcy N. Webber  
+**Details**: Three selectivities must be accounted for by each fleet: 1) capture probability, 2) retention probability, and 3) release/discard probability. Only the parameters for capture probability and retention probability are estimated. The discard probability is calculated from these two probabilities. Maintain the possibility of estimating selectivity independently for each sex; assumes there are data to estimate female selex.
+
+### `calc_predicted_catch`
+**Brief**: Calculate predicted catch observations.  
+**Details**: The function uses the Baranov catch equation to predict the retained and discarded catch.
+
+### `calc_predicted_catch_det`
+**Brief**: Calculate predicted catch for a combination of years.  
+**Author**: Andre Punt  
+**Details**: The function uses the Baranov catch equation to predict the retained, discarded, or total catch for a specific year, season, sex, gear, type, and unit.
+
+### `calc_predicted_catch_out`
+**Brief**: Calculate predicted catch for all years (not just data years).  
+**Author**: D'Arcy N. Webber  
+**Details**: The function uses the Baranov catch equation to predict the retained and discarded catch for all model years (not just those years for which we have observations). This is used for plotting purposes only.
+
+### `calc_predicted_capture_abdbio`
+**Brief**: Calculate predicted capture abundance/biomass by year, fishery, sex, and size.  
+**Author**: William Stockhausen  
+**Details**: The function uses the Baranov catch equation to predict the fishery captures for all model years (not just those years for which we have observations). This is used for plotting purposes only.
+
+### `calc_relative_abundance`
+**Brief**: Calculate predicted relative abundance and residuals (accommodates q blocks).  
+**Author**: Steve Martell, D'Arcy Webber, William Stockhausen  
+**Details**: Calculates predicted relative abundance and residuals for each row in `dSurveyData`.
+
+### `calc_predicted_composition`
+**Brief**: Calculate predicted size composition data.  
+**Details**: Predicted size composition data are given in proportions.
+
+
+## Likelihoods
+
+### `calc_objective_function`
+**Brief**: Calculate objective function.  
+**Details**: Sums likelihood components (catch, index, size comps, recruitment, growth, tagging) and penalty components (F-devs, regularization, smoothness).
+
+### `catch_likelihood`
+**Brief**: Calculate likelihood of the catch data (assumes lognormal error).
+
+### `index_likelihood`
+**Brief**: Calculate likelihood of the relative abundance data.
+
+### `length_likelihood`
+**Brief**: Calculate likelihood for size composition data.
+
+### `recruitment_likelihood`
+**Brief**: Calculate likelihood for recruitment deviations.
+
+### `growth_likelihood`
+**Brief**: Calculate likelihood for growth data.
+
+### `calc_like_gamma_linear_growth`
+**Brief**: Calculate likelihood of observed molt increments based on linear relationship for mean growth and a gamma distribution.  
+**Details**: Growth likelihood is calculated based on a linear relationship for mean molt increment as a function of pre-molt size and an assumed gamma distribution about the mean.
+
+### `calc_like_gamma_pwrlaw_growth`
+**Brief**: Calculate likelihood of observed postmolt size based on a power law for mean growth and a gamma distribution for molt increment.  
+**Details**: Growth likelihood is calculated based on a power law relationship for mean post-molt size given pre-molt size and an assumed gamma distribution for the observed molt increment.
+
+### `calc_like_gamma_pwrlawalt_growth`
+**Brief**: Calculate likelihood of observed postmolt size based on an alternative power law for mean growth and a gamma distribution.  
+**Details**: Growth likelihood is calculated based on an alternative power law relationship for mean post-molt size given pre-molt size and an assumed gamma distribution about the mean.
+
+### `get_prior_pdf`
+**Brief**: Calculate prior pdf.  
+**Details**: Function to calculate prior pdf value based on prior type and parameters.
+
+
+## Projections and Management
+
+### `calc_spr_reference_points2`
+**Brief**: Calculate SPR reference points.
+
+### `calc_brute_equilibrium`
+**Brief**: Calculate equilibrium initial conditions.  
+**Author**: Andre Punt
+
+### `project_biomass`
+**Brief**: Project biomass forward.
+
+### `project_biomass_OFL`
+**Brief**: Project biomass for OFL calculation.
+
+### `project_one_year`
+**Brief**: Project population one year forward.
+
+### `calc_predicted_project`
+**Brief**: Calculate predicted catch/quantities for projection.
+
+### `compute_OFL_and_ABC`
+**Brief**: Compute OFL and ABC.
+
+### `project_cohort_numbers_at_length`
+**Brief**: Project cohort numbers-at-length.  
+**Author**: WTS  
+**Details**: Simulate cohort progression through time.
+
+
+## Output and Simulation
+
+### `CreateOutput`
+**Brief**: Generate report files.  
+**Details**: Creates `Gmacsall.out`, `gmacs.rep`, `gmacs.rep1`, and other output files.
+
+### `WriteFiles`
+**Brief**: Write formatted input files with estimated parameters.  
+**Details**: Writes `gmacs_out.dat`, `gmacs_out.ctl` containing estimated values and expected data.
+
+### `write_eval`
+**Brief**: Conduct projections and write evaluation output.  
+**Author**: Andre Punt
+
+### `calc_sdreport`
+**Brief**: Calculate sd_report variables.  
+**Details**: Sets up variables for which standard deviations are required in the final phase.
+
+### `simulation_model`
+**Brief**: Simulation model.  
+**Details**: Uses many of the same routines as the assessment model but over-writes the observed data in memory with simulated data generated using the current parameter values.
+
+
+## Helper Functions
+
+### `get_all_sdnr_MAR`
+**Brief**: Calculate SDNR and MAR.  
+**Details**: Calculates Standard Deviation of Normalized Residuals and Median Absolute Residuals.
+
+### `calc_sdnr_MAR`
+**Brief**: Find the standard deviation of the standardized residuals and their median.
+
+### `calc_Francis_weights`
+**Brief**: Calculate Francis weights.  
+**Details**: This code is based on equation TA1.8 in Francis (2011). Produces the new weight that should be used for composition data.
+
+### `strg`
+**Brief**: Format a double using 'g'-type formatting.  
+**Details**: Helper for string formatting.
+
+### `to_str`
+**Brief**: Convert dvector to string.  
+**Details**: Converts dvector to string of unquoted, space-separated values.
+
+### `timevarparV`
+**Brief**: Time-varying parameter helper (Vector return).
+
+### `timevarparV2`
+**Brief**: Time-varying parameter helper (Vector return, alternative).
+
+### `timevarparM`
+**Brief**: Time-varying natural mortality parameter helper.
+
+### `getPopStateString`
+**Brief**: Get population state string.  
+**Details**: Returns a string describing sex, maturity, and shell condition for a group index.

@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.35; ** WTS **; Compiled 2026-03-16");
+ !! TheHeader = adstring("## GMACS Version 2.20.35a; ** WTS **; Compiled 2026-03-23");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -453,7 +453,7 @@ DATA_SECTION
 
  LOC_CALCS
   n_grp = nsex * nshell * nmature;
-  nlikes = 6;          ///> catch, cpue, size comps, recruits, growth data from tagging, non-tagging molt increments
+  nlikes = 7;          ///> catch, cpue, size comps, recruits, growth data from tagging, non-tagging molt increments, male maturity ogives
   gmacs_data << syr << " # Start year" << endl;
   gmacs_data << nyrRetro << " # End year (retro)" << endl;
   gmacs_data << nseason << " # Number of seasons" << endl;
@@ -1027,12 +1027,17 @@ DATA_SECTION
   vector cpue_cv_add(1,nSurveyRows);
   vector cpue_time(1,nSurveyRows);
   vector rai_id(1,nSurveyRows); //--relative abundance index ids
+  int n_rai;                    //--number of unique RAIs
+  imatrix uRAI_ids;             //--map from unique RAI (column 1) to first row in dSurveyData (column 2)
  LOC_CALCS
   obs_cpue  = column(dSurveyData,6);
   cpue_cv   = column(dSurveyData,7);
   cpue_sd   = sqrt(log(1.0 + square(cpue_cv)));
   cpue_time = column(dSurveyData,9);
   rai_id    = column(dSurveyData,10);
+  imatrix mRAI_ids(1,100,1,2); //temporary storage to identify unique RAIs
+  n_rai = 0;
+  mRAI_ids = 0;
   if (fmtRAD) gmacs_data << "# old format:" << endl;
   gmacs_data << "## Q_index: index of associated q. Multiple q's (e.g., in time blocks) can now be estimated for each relative abundance index/survey." << endl;
   gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
@@ -1041,6 +1046,9 @@ DATA_SECTION
   gmacs_data << "## Time: CPUE timing within season" << endl;
   gmacs_data << "## RAI_id: integer id for the associated survey" << endl;
   gmacs_data << "# row Q_index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAI_id" << endl;
+  n_rai = 1;
+  mRAI_ids(1,1) = (int) dSurveyData(1,10);
+  mRAI_ids(1,2) = 1;
   for (int irow=1;irow<=nSurveyRows; irow++){
     int iyr = dSurveyData(irow,1);
     if ((syr <= iyr)&&(( iyr <= nyrRetro) || ((iyr == nyrRetro+1) && (dSurveyData(irow,2) == 1)))){
@@ -1053,7 +1061,7 @@ DATA_SECTION
      gmacs_data << dSurveyData(irow)(6,7)    << " ";//obs, cv
      gmacs_data << (int) dSurveyData(irow,8) << " ";//units type
      gmacs_data << dSurveyData(irow,9)       << " ";//CPUE time
-     gmacs_data << dSurveyData(irow,10)      << " ";//rai_id
+     gmacs_data << (int) dSurveyData(irow,10)<< " ";//rai_id
      anystring = "# " + fleetname(dSurveyData(irow,3));
      if (dSurveyData(irow,4)==UNDET_SEX)        anystring = anystring +"_male+female";
      if (dSurveyData(irow,4)==MALES)            anystring = anystring +"_male";
@@ -1067,9 +1075,19 @@ DATA_SECTION
      TempW = 0.5/(SDlogD*SDlogD);
      gmacs_data << "Sd of log = " << SDlogD << "; Weight = " << TempW << " ";
      gmacs_data << anystring << endl;
+
+     int chk = 1;//--remains 1 if dSurveyData(irow,10) doesn't match any previous RAI ids
+     for (int id=1;id<=n_rai;id++) {if(mRAI_ids(id,1)==(int)dSurveyData(irow,10)) chk=0;}
+     if (chk) {
+      n_rai++;
+      mRAI_ids(n_rai,1) = (int)dSurveyData(irow,10);//--new unique RAI
+      mRAI_ids(n_rai,2) = irow;                     //--row at which RAI id starts
+     }
     }
+    uRAI_ids.allocate(1,n_rai,1,2);
+    for (int id=1;id<=n_rai;id++) uRAI_ids(id) = mRAI_ids(id);
   }
-  ECHO(obs_cpue); ECHO(cpue_cv); ECHO(cpue_sd); ECHO(cpue_time);
+  ECHO(obs_cpue); ECHO(cpue_cv); ECHO(cpue_sd); ECHO(cpue_time); ECHO(uRAI_ids);
  END_CALCS
 
   // |-----------------------|
@@ -1369,6 +1387,57 @@ DATA_SECTION
     {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
   if (GrowthObsType==GROWTHCLASS_VALS)
     {  ECHO(iMoltIncSex);ECHO(iMoltInitSizeClass); ECHO(iMoltEndSizeClass); ECHO(iMoltTimeAtLib); ECHO(iMoltFleetRecap); ECHO(iMoltYearRecap); ECHO(iMoltSampSize);}
+ END_CALCS
+
+  // |--------------------------|
+  // | MALE MATURITY OGIVE DATA | new 20260318
+  // |--------------------------|
+  !! ECHO(" * male maturity ogive data");
+  !! gmacs_data << endl << "#------------------------------------#" << endl;
+  !! gmacs_data << "#------MALE MATURITY OGIVE DATA------#" << endl;
+  !! gmacs_data << "#------------------------------------#" << endl;
+  init_int hasMMOD;                                  ///> 0: no MMOD, 1: has MMOD
+  !! gmacs_data << hasMMOD << "  #--has mature male ogive data? (0: no, 1: yes)" << endl;
+  number mmodLkWgt;    //--likehood weight
+  int mmodNumZBs;      //--number of size bins
+  ivector mmodZCs;     //--vector of size cutpoints (size: mmodNumZBs+1)
+  int mmodNumObs;      //--number of observations
+  matrix mmodObsData;  //--data matrix (mmodNumObs x 5)
+  int mmodNumYrs;      //--number of years of mmo data
+  matrix zbRemapper;   //--matrix conversion from model sie bins to MMOD size bins (calculated in PRELIMINARY_CALCS)
+ LOCAL_CALCS
+  mmodNumYrs = 0;
+  if (hasMMOD){
+    cifstream* pGD = ad_comm::global_datafile;
+    (*pGD) >> mmodLkType;   ECHO(mmodLkType);
+    (*pGD) >> mmodLkWgt;    ECHO(mmodLkWgt);
+    (*pGD) >> mmodNumZBs;   ECHO(mmodNumZBs);
+    mmodZCs.allocate(1,mmodNumZBs+1);
+    (*pGD) >> mmodZCs;      ECHO(mmodZCs);
+    (*pGD) >> mmodNumObs;   ECHO(mmodNumObs);
+    mmodObsData.allocate(1,mmodNumObs,1,6);
+    (*pGD) >> mmodObsData;  ECHO(mmodObsData);
+    gmacs_data << mmodLkType  <<"  # likelihood type " << endl;
+    gmacs_data << mmodLkWgt  <<"  # likelihood weight " << endl;
+    gmacs_data << mmodNumObs  <<"  # number of size  cutpoints" << endl;
+    gmacs_data << "  # size cutpoints " << endl;
+    gmacs_data << mmodZCs << endl;
+    gmacs_data << mmodNumObs  <<"  # number of observations " << endl;
+    gmacs_data << "#--observations " << endl;
+    gmacs_data << "# year  size_bin   index  effN   obsPrMat uncertainty" << endl;
+    gmacs_data << mmodObsData << endl;
+    ivector ys(1,100); ys = 0; int ny = 1;
+    for (int n=1;n<=mmodNumObs;n++){
+      int chk = 1;
+      for (int y=1;y<=ny;y++)
+        if (mmodObsData(n,1)==ys(y)) {chk = 0;}
+      if (chk == 1) {
+        ny++;
+        ys(ny) = mmodObsData(n,1);
+      }
+    }
+    mmodNumYrs = ny;
+  } //--hasMMOD
  END_CALCS
 
   // |--------------------|
@@ -4070,9 +4139,10 @@ DATA_SECTION
   !! ECHOSTR(" * Size composition controls");
   init_ivector iSizeCompType_in(1,nSizeComps_in);                     ///> Size-comp likelihood
   !! for (int k =1; k<=nSizeComps_in; k++)
-  !!  if (iSizeCompType_in(k) != 0 && iSizeCompType_in(k) != 1 && iSizeCompType_in(k) != 2 && iSizeCompType_in(k) != 5 && iSizeCompType_in(k) != 6)
-  !!   { cout << "Size comp type must be 0, 1, 2, 5 or 6" << endl; 
-  !!       ECHOSTR("Size comp type must be 0, 1, 2, 5 or 6"); 
+  !!  if (iSizeCompType_in(k) != 0 && iSizeCompType_in(k) != 1 && iSizeCompType_in(k) != 2 && 
+  !!      iSizeCompType_in(k) != 5 && iSizeCompType_in(k) != 6 && iSizeCompType_in(k) != 7)
+  !!   { cout << "Size comp type must be 0, 1, 2, 5, 6, or 7" << endl; 
+  !!       ECHOSTR("Size comp type must be 0, 1, 2, 5, 6 or 7"); 
   !!       echoinput<<"k = "<<k<<" iSizeCompType_in(k) = "<<iSizeCompType_in(k)<<endl;
   !!       exit(1); 
   !!   }
@@ -4104,8 +4174,8 @@ DATA_SECTION
   vector lf_emphasis(1,nSizeComps);
 
   //--read the information for the effective sample size parameters 
-  init_matrix log_vn_pars(1,nSizeComps,1,7);
-  !! echoinput << "log_vn_pars: " << endl << log_vn_pars << endl;
+  init_matrix vn_pars(1,nSizeComps,1,7);
+  !! echoinput << "vn_pars: " << endl << vn_pars << endl;
   vector log_vn_ival(1,nSizeComps);
   vector log_vn_lb(1,nSizeComps);
   vector log_vn_ub(1,nSizeComps);
@@ -4193,25 +4263,26 @@ DATA_SECTION
   gmacs_ctl << "# Effective sample size parameters (number matches max(Composition Aggregator code)) " << endl;
   gmacs_ctl << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
   for (int b=1; b<=nSizeComps;b++){
-    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
-    gmacs_ctl << setw(11) << setfixed() << int(log_vn_pars(b,4)) << " ";
-    for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
-    gmacs_ctl << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << "(possibly extended)" << endl;;
+    for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << vn_pars(b,ii) << " ";
+    gmacs_ctl << setw(11) << setfixed() << int(vn_pars(b,4)) << " ";
+    for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(14) << setprecision(8) << setfixed() << vn_pars(b,ii) << " ";
+    gmacs_ctl << setw(6) << setfixed() << int(vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << "(possibly extended)" << endl;;
   }
   echoinput << endl;
   echoinput << "# Initial Lower_bound Upper_bound Prior_type Prior_1 Prior_2 Phase " << endl;
-  echoinput << log_vn_pars << endl;
+  echoinput << vn_pars << endl;
   
   for ( int k = 1; k <= nSizeComps; k++ ){
-    log_vn_ival(k)        = log(log_vn_pars(k,1));
-    log_vn_lb(k)          = log(log_vn_pars(k,2));
-    log_vn_ub(k)          = log(log_vn_pars(k,3));
-    prior_log_vn_type(k)  = int(log_vn_pars(k,4));
-    prior_log_vn_p1(k)    = log(log_vn_pars(k,5));
-    prior_log_vn_p2(k)    = log(log_vn_pars(k,6));
-    log_vn_phz(k)         = int(log_vn_pars(k,7));
+    log_vn_ival(k)        = log(vn_pars(k,1));
+    log_vn_lb(k)          = log(vn_pars(k,2));
+    log_vn_ub(k)          = log(vn_pars(k,3));
+    prior_log_vn_type(k)  = int(vn_pars(k,4));
+    prior_log_vn_p1(k)    = log(vn_pars(k,5));
+    prior_log_vn_p2(k)    = log(vn_pars(k,6));
+    log_vn_phz(k)         = int(vn_pars(k,7));
   }
-   
+  ECHO(log_vn_ival); ECHO(log_vn_lb); ECHO(log_vn_ub);
+
   for ( int k = 1; k <= nSizeComps; k++ ){
     // If a uniform prior is specified then use the lb and ub rather than p1 and p2.
     if ( prior_log_vn_type(k) == UNIFORM_PRIOR )
@@ -4275,7 +4346,7 @@ DATA_SECTION
   matrix size_comp_sample_size(1,nSizeComps,1,nSizeCompRows);
   matrix size_comp_year(1,nSizeComps,1,nSizeCompRows);
   matrix size_comp_season(1,nSizeComps,1,nSizeCompRows);
-  ivector ilike_vector(1,nlikes);
+  imatrix ilike_matrix(1,nlikes,1,2);
   vector TempSize(1,nclass);
   vector cumsum(1,nclass);
   number pmin;
@@ -4291,7 +4362,6 @@ DATA_SECTION
   size_comp_sample_size.initialize();
   size_comp_year.initialize();
   size_comp_season.initialize();
-  ilike_vector.initialize();
   TempSize.initialize();
   cumsum.initialize();
   tailcompind.initialize();
@@ -4423,15 +4493,16 @@ DATA_SECTION
 
   //ECHO(d3_obs_size_comps);
   ECHOSTR("Done with d3_obs_size_comps")
-  ilike_vector(1) = nCatchDF;
+  ilike_matrix(1,1) = 1;   ilike_matrix(1,2) = nCatchDF;
   like_names      =  adstring("Catch ");
-  ilike_vector(2) = nSurveys;
+  ilike_matrix(2,1) = 1;   ilike_matrix(2,2) = nSurveys;
   like_names      = like_names + adstring("Survey_Indices ");
-  ilike_vector(3) = nSizeComps;
+  ilike_matrix(3,1) = 1;   ilike_matrix(3,2) = nSizeComps;
   like_names      = like_names + adstring("SizeComps ");
-  ilike_vector(4) = 3;
-  ilike_vector(5) = nsex; //--tagging-related growth data
-  ilike_vector(6) = nsex; //--non-tagging growth data
+  ilike_matrix(4,1) = 1;   ilike_matrix(4,2) = 3;
+  ilike_matrix(5,1) = 1;   ilike_matrix(5,2) = nsex;         //--tagging-related growth data
+  ilike_matrix(6,1) = 1;   ilike_matrix(6,2) = nsex;         //--non-tagging growth data
+  ilike_matrix(7,1) = syr; ilike_matrix(7,2) = nyrRetro+1; //--mmo data
  END_CALCS
 
   // |---------------------------------------------------------|
@@ -5030,7 +5101,8 @@ PARAMETER_SECTION
   !! ECHO(log_vn);
 
   // Catchability coefficient (q)
-  !! ECHO(n_qpar)
+  !! ECHO(n_qpar);
+  !! ECHO(q_ival);
   init_bounded_number_vector survey_q(1,n_qpar,q_lb,q_ub,q_phz);
   !! ECHO(survey_q);
 
@@ -5048,7 +5120,9 @@ PARAMETER_SECTION
 
   // Items related to the objective function
   vector priorDensity(1,NVarPar);
-  matrix nloglike(1,nlikes,1,ilike_vector);
+  matrix nloglike(1,nlikes);
+  !!for (int i=1;i<=nlikes;i++) 
+  !!  nloglike(i).allocate(ilike_matrix(i,1),ilike_matrix(i,2));
   vector nlogPenalty(1,13);                                ///>  Penalty terms
   matrix sdnr_MAR_cpue(1,nSurveys,1,2);
   matrix sdnr_MAR_lf(1,nSizeComps,1,2);
@@ -5133,6 +5207,8 @@ PARAMETER_SECTION
   3darray d3_newShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> New shell crabs-at-length.
   3darray d3_oldShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> Old shell crabs-at-length.
 
+  3darray d3_PrdMMOs(syr,nyrRetro+1,1,3,1,nclass)                          ///> predicted annual mature male ogives using model size bins
+  3darray d3_PrdMMOsP(syr,nyrRetro+1,1,3,1,mmodNumZBs)                     ///> predicted annual mature male ogives using observed data size bins
   4darray d4_N_coh(1,n_grp,1,mxYrsCohortProgression,1,nseason,1,nclass);   ///> Cohort-type numbers-at-sex/mature/shell/year/season/length.
 
   number TempSS;                                                    ///> Use to compute the selextivity penalty
@@ -5240,6 +5316,9 @@ PRELIMINARY_CALCS_SECTION
   cout << "+----------------------+" << endl;
   cout << "| Preliminary section  |" << endl;
   cout << "+----------------------+" << endl;
+
+  zbRemapper = getRebinMatrix(size_breaks,mmodZCs);//--matrix to "remap" vectors with model size bins to vectors with MMOD size bins
+  cout << "zbRemapper = " << endl << zbRemapper << endl;
   
   // 32 Gaussian evaluation points
   xg( 1)=-0.99726; xg( 2)=-0.98561; xg( 3)=-0.96476; xg( 4)=-0.93490; xg( 5)=-0.89632; xg( 6)=-0.84936; xg( 7)=-0.79448; xg( 8)=-0.73218;
@@ -5452,6 +5531,8 @@ PROCEDURE_SECTION
   calc_predicted_catch();                                  if ( verbose >= 3 ) cout << "Ok after calc_predicted_catch ..." << endl;
   calc_relative_abundance();                               if ( verbose >= 3 ) cout << "Ok after calc_relative_abundance ..." << endl;
   calc_predicted_composition();                            if ( verbose >= 3 ) cout << "Ok after calc_predicted_composition ..." << endl;
+  calc_predicted_MMOs();                                   if ( verbose >= 3 ) cout << "Ok after calc_predicted_MMOs ..." << endl;
+
   if ( verbose >= 3 ) cout << "Ok after observation models ..." << endl;
 
   // objective function ...
@@ -10109,6 +10190,192 @@ FUNCTION calc_predicted_composition
   }
   if (verbose> 3) cout <<"--Finished calc_predicted_compositions"<< endl;
 
+// =================================================================================================================================================
+
+  /**
+   * @brief Calculate annual predicted MMOs: annual maturity ogives for males.
+   * @author WTS
+   * @details  This function predicts the annual male maturity ogive as the ratio of, 
+   * ideally, new shell mature male abundance to the sum of all new shell 
+   * males, by model size bin. If only one shell condition is included in the model, MMO is 
+   * taken as the ratio of mature male abundance to all male abundance, although this is not ideal. 
+   * 
+   * Calculates d3_PrdMMOs(syr:(nYrRetro+1),1:3,1:nclass)
+   * 
+   * NOTES: Added 2026-03-19.
+   * 
+   * - The calculation requires two maturity states, so if nmature < 2, the model will abort. 
+   * 
+   * - If nsex = 1, the model should be male-only.
+   * 
+  **/
+FUNCTION calc_predicted_MMOs
+  if (verbose> 3) cout <<"--Starting calc_predicted_MMOs"<< endl;
+  if (nmature<2) {
+     cout << "--In calc_predicted_MMOs: nmature < 2, so cannot calculate male maturity ogives!. Exiting." << endl;
+     ad_exit(1);
+  }
+  int shell_state = NEW_SHELL; 
+  if (nshell==1) {shell_state = UNDET_SHELL;}
+  d3_PrdMMOs.initialize();
+  //--model distinguishes "new shell" (just molted) from "old shell" (previously molted) crab.
+  int ig_nm = pntr_hmo(MALES,  MATURE,shell_state);//--index to (new shell) mature crab
+  int ig_ni = pntr_hmo(MALES,IMMATURE,shell_state);//--index to (new shell) immature crab
+
+  int ssn = 1; //--season in  which to calculate MMOs: assumes this is same timing for NMFS survey
+  dvar_vector mat(1,nclass);//--
+  dvar_vector imm(1,nclass);//--
+  for (int iy=syr; iy<=(nyrRetro+1);iy++){
+    mat = d4_N(ig_nm,iy,ssn); //--predicted (new shell) mature male abundance
+    imm = d4_N(ig_ni,iy,ssn); //--predicted (new shell) immature crab abundance
+    d3_PrdMMOs(iy,1) = mat;                            //--total (new shell) abundance 
+    d3_PrdMMOs(iy,2) = imm+mat;                        //--total (new shell) abundance 
+    d3_PrdMMOs(iy,3) = elem_div(mat,imm+mat+1.0e-10);  //--fraction (new shell) mature male abundance
+  }
+  if (verbose> 3) {cout <<"--Finished calc_predicted_MMOs" << endl;}
+
+// =================================================================================================================================================
+
+  /**
+   * @brief Calculate annual predicted MMOs (annual maturity ogives) for males using the observed data size bins.
+   * @author WTS
+   * @details  This function predicts the annual male maturity ogive as the ratio of, 
+   * ideally, new shell mature male abundance to the sum of all new shell 
+   * males, by *observed* MMO size bin. If only one shell condition is included in the model, MMO is 
+   * taken as the ratio of mature male abundance to all male abundance, although this is not ideal. 
+   * 
+   * Calculates d3_PrdMMOsP(syr:(nYrRetro+1),1:3,1:mmodNumZBs)
+   * 
+   * NOTES: Added 2026-03-19.
+   * 
+   * - The calculation is not done if hasMMOD is FALSE.
+   * 
+  **/
+FUNCTION mmos_likelihood
+  if (verbose > 3) cout << "--Starting mmos_likelihood" << endl;
+  nloglike(7).initialize();
+  if (hasMMOD){
+    if (verbose > 3) {cout<<"calculating predicted MMOs"<<endl;} 
+    d3_PrdMMOsP.initialize();  //--MMO by MMOD size bin
+    for (int iy=syr;iy<=(nyrRetro+1);iy++){
+      d3_PrdMMOsP(iy,1) = zbRemapper*d3_PrdMMOs(iy,1); //--abundance of "new shell" mature males by MMOD size bin
+      d3_PrdMMOsP(iy,2) = zbRemapper*d3_PrdMMOs(iy,2); //--abundance of total "new shell" males by MMOD size bin
+      d3_PrdMMOsP(iy,3) = elem_div(d3_PrdMMOsP(iy,1),
+                                    d3_PrdMMOsP(iy,2)+1.0e-10);//--small value added to keep 0's from blowing up
+      if (verbose > 3) {cout<<iy<<" "<<d3_PrdMMOsP(iy,3)<<endl;} 
+    }
+    if (verbose > 3) cout << "calculate nlls" << endl;
+    int nzscrs = 0;
+    dvar_vector nlls_y(syr,nyrRetro+1);  nlls_y.initialize();
+    dvar_vector modPM_n(1,mmodNumObs);   modPM_n.initialize();
+    dvector diffs_n(1,mmodNumObs);       diffs_n.initialize();
+    dvector zscrs_n(1,mmodNumObs);       zscrs_n.initialize();
+    for (int n=1;n<=mmodNumObs;n++){
+      int    y_n   = mmodObsData(n,1);   //--year of observation
+      double z_n   = mmodObsData(n,2);   //--observed size bin
+      int    id_n  = mmodObsData(n,3);   //--observed size bin index
+      double ss_n  = mmodObsData(n,4);   //--effective sample size
+      double obsPM_n = mmodObsData(n,5); //--observed mmod for size bin
+      if (verbose > 3) cout << n << " " << y_n << " " << z_n << " " << id_n << " " << ss_n << " " << obsPM_n << " " << endl;
+      if ((syr<=y_n)&&(y_n<=(nyrRetro+1))){
+        modPM_n(n) = d3_PrdMMOsP(y_n,3)(id_n);
+        if (verbose > 3) cout << "modPM_n = " << modPM_n(n) << endl;
+        if (to_lower(mmodLkType)=="binomial"){
+          if ((modPM_n(n)>0.0)&(modPM_n(n)<1.0)){
+            if (obsPM_n>0.0) nlls_y(y_n) -= ss_n*   obsPM_n   *(log(  modPM_n(n))  -log(  obsPM_n  ));
+            if (obsPM_n<1.0) nlls_y(y_n) -= ss_n*(1.0-obsPM_n)*(log(1.0-modPM_n(n))-log(1.0-obsPM_n));
+            double modPMv = value(modPM_n(n));
+            diffs_n(n) = (obsPM_n-modPMv);
+            zscrs_n(n) = (obsPM_n-modPMv)/sqrt(modPMv*(1.0-modPMv)/ss_n);
+            nzscrs++;
+          }
+        } else {
+          cout<< "Error in  mmos_likelihood. Unknown likelihood type '"<< mmodLkType <<"'. Exiting."<<endl;
+          ad_exit(1);
+        }
+        if (verbose > 3) cout << "got here" << endl;
+      }//if ((syr<=y_n)&&(y_n<=nyrRetro+1))
+    }//loop over n
+    if (verbose > 3) cout<<"nlls_y = "<< nlls_y <<endl;
+    nloglike(7) = nlls_y; //--note: not yet multiplied by multiplier
+  }
+  if (verbose > 3) cout << "--Finished mmos_likelihood" << endl;
+
+// =================================================================================================================================================
+
+  /**
+   * @brief Get a matrix capable of rebinning one binned vector (model results) 
+   * to another (data results).
+   * @author WTS
+   * 
+   * @param origCtPts - cut points of original bin structure
+   * @param finlCutPts - cut points of final bin structure
+   * 
+   * @return - matrix such that N_finl = mat * N_orig.
+   * 
+   * NOTES: Added 2026-03-19.
+  **/
+FUNCTION dmatrix getRebinMatrix(dvector origCtPts, dvector finlCtPts)
+  bool debug = TRUE; // = (verbose>3);
+  if (debug) cout<<"Starting getRebinMatrix()"<<endl;
+  adstring tb = "\t";
+  int nO = origCtPts.size()-1;//no. original (i.e. model) bins
+  int nF = finlCtPts.size()-1;//no. final (i.e. data) bins
+  if (debug){
+      cout<<"origCtPts = "<<origCtPts<<endl;
+      cout<<"finlCtPts = "<<finlCtPts<<endl;
+  }
+  
+  dmatrix p_ij(1,nF,1,nO);
+  p_ij = 0.0;
+  
+  dvector cms = 1.0*origCtPts;
+  dvector cds = 1.0*finlCtPts;
+  for (int j=1;j<=nO;j++){  
+      if (debug) cout<<"j = "<<j<<tb<<cms[j]<<endl;
+      for (int i=1; i<=nF; i++){
+          if (debug) cout<<tb<<"i = "<<i<<tb<<cds[i]<<endl;
+          if (cds[i+1]<=cms[j]) {
+            p_ij(i,j) = 0;
+            if (debug) cout<<tb<<"cds["<<i+1<<"]="<<cds[i+1]<<" <= cms["<<j<<"]="<<cms[j]<<" => p_ij = 0"<<endl;
+          } else if (cms[j+1]<cds[i]){
+            p_ij(i,j) = 0;
+            if (debug) cout<<tb<<"cms["<<j+1<<"]="<<cms[j+1]<<" <  cds["<<i<<"]="<<cds[i]<<" => p_ij = 0"<<endl;
+          } else {
+            double del = cms[j+1]-cms[j];
+            if ((cds[i]<cms[j])&(cms[j+1]<cds[i+1])) {
+              p_ij(i,j) = 1.0;
+              if (debug) {
+                  cout<<tb<<"cds["<<i<<"]="<<cds[i]<<" < cms["<<j<<"]="<<cms[j]<<endl;
+                  cout<<tb<<"cms["<<j+1<<"]="<<cms[j+1]<<" <= cds["<<i+1<<"]="<<cds[i+1]<<endl;
+                  cout<<tb<<tb<<" => p_ij = "<<p_ij(i,j)<<endl;
+              }
+            } else if (cms[j]<=cds[i]) {
+              double delp = cms[j+1]-max(cds[i],cms[j]);
+              p_ij(i,j) = delp/del;
+              if (debug){
+                  cout<<tb<<"cms["<<j<<"]="<<cms[j]<<" <= cds["<<i<<"]="<<cds[i]<<endl;
+                  cout<<tb<<tb<<cms[j+1]<<tb<<max(cds[i],cms[j])<<tb<<delp<<endl;
+                  cout<<tb<<tb<<" => p_ij = "<<p_ij(i,j)<<endl;
+              }
+            } else if (cds[i+1]<=cms[j+1]) {
+              double delp = min(cds[i+1],cms[j+1])-cms[j];
+              p_ij(i,j) = delp/del;
+              if (debug){
+                  cout<<tb<<"cds["<<i+1<<"]="<<cds[i+1]<<" < cms["<<j+1<<"]="<<cms[j+1]<<endl;
+                  cout<<tb<<tb<<min(cds[i+1],cms[j+1])<<tb<<cms[j]<<tb<<delp<<endl;
+                  cout<<tb<<tb<<" => p_ij = "<<p_ij(i,j)<<endl;
+              }
+            }
+          }
+      }//--i
+  }//--j
+  if (debug){
+      cout<<"p_ij = "<<endl<<p_ij<<endl;
+      cout<<"Finished getRebinMatrix"<<endl;
+  }
+  return p_ij;
+
 
 // =================================================================================================================================================
 
@@ -10472,8 +10739,8 @@ FUNCTION length_likelihood
 
   // 3) Likelihood for size composition data.
   if (verbose >= 3) {
-    cout << "Starting length-likelihood" << endl;
-    ECHOSTR("Starting length-likelihood")
+    cout << "Starting length_likelihood" << endl;
+    ECHOSTR("Starting length_likelihood")
   }
   d3_res_size_comps.initialize();
   if (verbose >= 6) ECHO(nSizeComps)
@@ -10504,13 +10771,26 @@ FUNCTION length_likelihood
         case 2:                                                                                 ///> robust approximation to the multinomial
         ploglike = new class acl::robust_multi(O, bCmp);
         break;
+        case 3:  
+        cout << "Error: size composition likelihood option 3 is not yet implemented. Exiting." << endl;
+        exit(-1);
+        break;
+        case 4:  
+        cout << "Error: size composition likelihood option 4 is not yet implemented. Exiting." << endl;
+        exit(-1);
+        break;
         case 5:                                                                                 ///> Dirichlet
         ploglike = new class acl::dirichlet(O, bCmp);
         break;
         case 6:                                                                                 ///> Dirichlet-multinomial with Thorson 2016 rec'd parameterization
-        dvariable log_th = log_vn(ii);//--log-scale theta parameter
-        dvector iss = size_comp_sample_size(ii) * lf_lambda(ii);
-        ploglike = new class acl::dirichlet_alt(O, log_th, iss, bCmp);
+        {
+          dvariable log_th = log_vn(ii);//--log-scale theta parameter
+          dvector iss = size_comp_sample_size(ii) * lf_lambda(ii);
+          ploglike = new class acl::dirichlet_alt(O, log_th, iss, bCmp);
+        }
+        break;
+        case 7:                                                                                 ///> alternative multinomial with fixed or estimated n
+        ploglike = new class acl::multinomial_alt(O, bCmp);
         break;
       }
 
@@ -10534,8 +10814,8 @@ FUNCTION length_likelihood
     }
   }//--loop ii
   if ( verbose >= 3 ) {
-    ECHOSTR("Ok after composition likelihood ...")
-    cout<< "Ok after composition likelihood ..." << endl;
+    ECHOSTR("Ok after length_likelihood ...")
+    cout<< "Ok after length_likelihood ..." << endl;
   }
 
 // --------------------------------------------------------------------------------------------------
@@ -10664,6 +10944,7 @@ FUNCTION calc_objective_function
   length_likelihood();
   recruitment_likelihood();
   growth_likelihood();
+  mmos_likelihood();
 
   // |---------------------------------------------------------------------------------|
   // | PENALTIES AND CONSTRAINTS                                                       |
@@ -10766,6 +11047,7 @@ FUNCTION calc_objective_function
   w_nloglike += sum(nloglike(4));
   w_nloglike += sum(nloglike(5))*tag_emphasis;
   w_nloglike += sum(nloglike(6));
+  w_nloglike += sum(nloglike(7))*mmodLkWgt;
 
   objfun =  w_nloglike + sum(elem_prod(nlogPenalty,Penalty_emphasis))+ sum(priorDensity) + TempSS + grwthPosFun;
 
@@ -12546,6 +12828,12 @@ FUNCTION CreateOutput
   RepFile1 << "Max size classes:           \t " << nSizeSex << endl;
   RepFile1 << "size_breaks:                \t " << size_breaks << endl;
   RepFile1 << "size_midpoints:             \t " << mid_points << endl;
+  if (hasMMOD){
+    dvector mmodZBs(1,mmodNumZBs); 
+    for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
+    RepFile1 << "mmodZCs:             \t " << mmodZCs << endl;
+    RepFile1 << "mmodZBs:             \t " << mmodZBs << endl;
+  }
   
   // Likelihood summary
   OutFile1 << endl << "#--Likelihoods-by-type (raw and weighted)" << endl;
@@ -12597,16 +12885,16 @@ FUNCTION CreateOutput
   OutFile1 << ">EOL<"<<endl<<endl;
 
   OutFile1 << "--Penalties: list" << endl;
-    OutFile1 << "1. Mean_Fbar=0: " << nlogPenalty(1) << " " << Penalty_emphasis(1) << " " << nlogPenalty(1)*Penalty_emphasis(1) << endl;
-    OutFile1 << "2. Mean_Fdev: " << nlogPenalty(2) << " " << Penalty_emphasis(2) << " " << nlogPenalty(2)*Penalty_emphasis(2) << endl;
-    OutFile1 << "6. Rec_dev: " << nlogPenalty(6) << " " << Penalty_emphasis(6) << " " << nlogPenalty(6)*Penalty_emphasis(6) << endl;
-    OutFile1 << "7. Sex_ratio: " << nlogPenalty(7) << " " << Penalty_emphasis(7) << " " << nlogPenalty(7)*Penalty_emphasis(7) << endl;
-    OutFile1 << "8. Molt_prob: " << nlogPenalty(8) << " " << Penalty_emphasis(8) << " " << nlogPenalty(8)*Penalty_emphasis(8) << endl;
-    OutFile1 << "9. Smooth_select: " << nlogPenalty(9) << " " << Penalty_emphasis(9) << " " << nlogPenalty(9)*Penalty_emphasis(9) << endl;
+    OutFile1 << "1. Mean_Fbar=0: "   << nlogPenalty(1)  << " " << Penalty_emphasis(1)  << " " << nlogPenalty(1)*Penalty_emphasis(1) << endl;
+    OutFile1 << "2. Mean_Fdev: "     << nlogPenalty(2)  << " " << Penalty_emphasis(2)  << " " << nlogPenalty(2)*Penalty_emphasis(2) << endl;
+    OutFile1 << "6. Rec_dev: "       << nlogPenalty(6)  << " " << Penalty_emphasis(6)  << " " << nlogPenalty(6)*Penalty_emphasis(6) << endl;
+    OutFile1 << "7. Sex_ratio: "     << nlogPenalty(7)  << " " << Penalty_emphasis(7)  << " " << nlogPenalty(7)*Penalty_emphasis(7) << endl;
+    OutFile1 << "8. Molt_prob: "     << nlogPenalty(8)  << " " << Penalty_emphasis(8)  << " " << nlogPenalty(8)*Penalty_emphasis(8) << endl;
+    OutFile1 << "9. Smooth_select: " << nlogPenalty(9)  << " " << Penalty_emphasis(9)  << " " << nlogPenalty(9)*Penalty_emphasis(9) << endl;
     OutFile1 << "10. Init_numbers: " << nlogPenalty(10) << " " << Penalty_emphasis(10) << " " << nlogPenalty(10)*Penalty_emphasis(10) << endl;
-    OutFile1 << "11. Fdevs_(flt): " << nlogPenalty(11) << " " << Penalty_emphasis(11) << " " << nlogPenalty(11)*Penalty_emphasis(11) << endl;
-    OutFile1 << "12. Fdovs_(flt): " << nlogPenalty(12) << " " << Penalty_emphasis(12) << " " << nlogPenalty(12)*Penalty_emphasis(12) << endl;
-    OutFile1 << "13. SelDevs: " << nlogPenalty(13) << " " << Penalty_emphasis(13) << " " << nlogPenalty(13)*Penalty_emphasis(13) << endl;
+    OutFile1 << "11. Fdevs_(flt): "  << nlogPenalty(11) << " " << Penalty_emphasis(11) << " " << nlogPenalty(11)*Penalty_emphasis(11) << endl;
+    OutFile1 << "12. Fdovs_(flt): "  << nlogPenalty(12) << " " << Penalty_emphasis(12) << " " << nlogPenalty(12)*Penalty_emphasis(12) << endl;
+    OutFile1 << "13. SelDevs: "      << nlogPenalty(13) << " " << Penalty_emphasis(13) << " " << nlogPenalty(13)*Penalty_emphasis(13) << endl;
     OutFile1 << endl;
     
     MaxGrad = 0;
@@ -12614,6 +12902,62 @@ FUNCTION CreateOutput
     OutFile1 << "Maximum gradient: " << MaxGrad << endl;
   OutFile1 << ">EOL<" <<endl<<endl;
  
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Likelihood_summary: dataframe" << endl;
+  RepFile1 << "term                     type           year     fleet     units   sex     maturity           nll                      emphasis         objfun_value" << endl;
+  RepFile1 << "Catch_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(1)) << " " << catch_emphasis            << " "  << sum(elem_prod(nloglike(1),catch_emphasis))   << endl;
+  RepFile1 << "Index_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(2)) << " " << cpue_emphasis            << " "  << sum(elem_prod(nloglike(2),cpue_emphasis))    << endl;
+  RepFile1 << "Size_data              " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(3)) << " " << lf_emphasis            << " "  << sum(elem_prod(nloglike(3),lf_emphasis))      << endl;
+  RepFile1 << "Stock_recruitment      " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(4)) << " " << 1            << " "  << sum(nloglike(4))                             << endl;
+  RepFile1 << "Tagging_data           " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(5)) << " " << tag_emphasis << " "  << sum(nloglike(5))*tag_emphasis                << endl;
+  RepFile1 << "Growth_data            " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(6)) << " " << 1            << " "  << sum(nloglike(6))                             << endl;
+  RepFile1 << "MMO_data               " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(7)) << " " << mmodLkWgt    << " "  << mmodLkWgt*sum(nloglike(7))                   << endl;
+  RepFile1 << "Penalties              " << " summary    NA        NA        NA    NA        NA      " << sum(nlogPenalty) << " " << 1            << " "  << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
+  RepFile1 << "Priors                 " << " summary    NA        NA        NA    NA        NA      " << sum(priorDensity)<< " " << 1            << " "  << sum(priorDensity)                            << endl;
+  RepFile1 << "Initial_size_structure " << " summary    NA        NA        NA    NA        NA      " << TempSS           << " " << 1            << " "  << TempSS      << endl;
+  RepFile1 << "Positive_growth_penalty" << " summary    NA        NA        NA    NA        NA      " << grwthPosFun      << " " << 1            << " "  << grwthPosFun << endl;
+  RepFile1 << "Total                  " << " summary    NA        NA        NA    NA        NA      " << objfun           << " " << 1            << " "  << objfun      << endl;
+  RepFile1 << "Mean_Fbar=0            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(1)   << " " << Penalty_emphasis(1)  << " " << nlogPenalty(1)*Penalty_emphasis(1) << endl;
+  RepFile1 << "Mean_Fdev              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(2)   << " " << Penalty_emphasis(2)  << " " << nlogPenalty(2)*Penalty_emphasis(2) << endl;
+  RepFile1 << "Rec_dev                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(6)   << " " << Penalty_emphasis(6)  << " " << nlogPenalty(6)*Penalty_emphasis(6) << endl;
+  RepFile1 << "Sex_ratio              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(7)   << " " << Penalty_emphasis(7)  << " " << nlogPenalty(7)*Penalty_emphasis(7) << endl;
+  RepFile1 << "Molt_prob              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(8)   << " " << Penalty_emphasis(8)  << " " << nlogPenalty(8)*Penalty_emphasis(8) << endl;
+  RepFile1 << "Smooth_select          " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(9)   << " " << Penalty_emphasis(9)  << " " << nlogPenalty(9)*Penalty_emphasis(9) << endl;
+  RepFile1 << "Init_numbers           " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(10)  << " " << Penalty_emphasis(10) << " " << nlogPenalty(10)*Penalty_emphasis(10) << endl;
+  RepFile1 << "Fdevs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(11)  << " " << Penalty_emphasis(11) << " " << nlogPenalty(11)*Penalty_emphasis(11) << endl;
+  RepFile1 << "Fdovs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(12)  << " " << Penalty_emphasis(12) << " " << nlogPenalty(12)*Penalty_emphasis(12) << endl;
+  RepFile1 << "SelDevs                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(13)  << " " << Penalty_emphasis(13) << " " << nlogPenalty(13)*Penalty_emphasis(13) << endl;
+  for (int id=1; id<=nloglike(1).size();id++){
+    dvector dc = dCatchData(id,1);
+    RepFile1 << "Catch_data              " << catchtypes(dc(7)) << " NA      " << fleetname(dc(3)) << " " << unitstypes(dc(8)) << " " << sexes(dc(4)) << " " << "NA" << " " <<  
+                                              nloglike(1,id) << " " << catch_emphasis(id) << " " << nloglike(1,id)*catch_emphasis(id) << endl;
+  }
+  for (int id=1; id<=nloglike(2).size();id++){
+    int rw = uRAI_ids(id,2); 
+    dvector sd = dSurveyData(rw);
+    RepFile1 << "Index_data              " << "index_data      NA    " << fleetname(sd(3)) << " " << unitstypes(sd(4)) << " " << sexes(sd(4)) << " " << maturestate(sd(4)) << " " << 
+                                              nloglike(2,id) << " " << cpue_emphasis(id) << " " << nloglike(2,id)*cpue_emphasis(id) << endl;
+  }
+  for (int id=1; id<=nloglike(3).size();id++){
+    dvector zc = d3_SizeComps_in(id,1);
+    RepFile1 << "Size_data               " << catchtypes(zc(-3)) << " NA    " << fleetname(zc(-5)) << " " << shellstate(zc(-2)) << " " << sexes(zc(-4)) << " " << maturestate(zc(-1)) << " " << 
+                                             nloglike(3,id) << " " << lf_emphasis(id)   << " " << nloglike(3,id)*lf_emphasis(id) << endl;
+  }
+  for (int id=1; id<=nloglike(5).size();id++){
+    RepFile1 << "Tagging_data           " << "tagging_data        NA      NA      NA     " << sexes(id) << " " << "NA" << " " <<
+                                            nloglike(5,id) << " " << tag_emphasis << " " << nloglike(5,id)*tag_emphasis                << endl;
+  }
+  for (int id=1; id<=nloglike(6).size();id++){
+    RepFile1 << "Growth_data            " << "growth_data         NA      NA      NA     " << sexes(id) << " " << "NA" << " " <<
+                                           nloglike(6,id) << " " << 1             << " " << nloglike(6,id)                             << endl;
+  }
+    RepFile1 << "Growth_data            " << " posfun             NA       NA      NA     NA       NA  "       << 
+                                             grwthPosFun    << " " << 1             << " " << grwthPosFun                              << endl;
+  for (int iy=syr; iy<=(nyrRetro+1);iy++){
+    RepFile1 << "MMOD_data              " << "mmod_data         " << iy << "  NA      NA       NA      NA " <<
+                                           nloglike(7,iy) << " " << mmodLkWgt             << " " << nloglike(7,iy)                             << endl;
+  }
+  RepFile1 << ">EOD<" <<endl<<endl;
   
   // Estimated parameters
   // ====================
@@ -13174,6 +13518,41 @@ FUNCTION CreateOutput
   }
   RepFile1 << ">EOD<" << endl;
  
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "PredictedMMOs: dataframe" << endl;
+  RepFile1 << "year type  "<< mid_points << endl;
+  for (int i=syr;i<=(nyrRetro+1);i++){
+    RepFile1 << i << " " << " matN  " << d3_PrdMMOs(i,1) << endl;
+    RepFile1 << i << " " << " totN  " << d3_PrdMMOs(i,2) << endl;
+    RepFile1 << i << " " << " prMat " << d3_PrdMMOs(i,3) << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+ 
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "PredictedMMOsP: dataframe" << endl;
+  {
+    dvector mmodZBs(1,mmodNumZBs); 
+    for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
+    RepFile1 << "year type  "<< mmodZBs << endl;
+    for (int i=syr;i<=(nyrRetro+1);i++){
+      RepFile1 << i << " " << " matN  " << d3_PrdMMOsP(i,1) << endl;
+      RepFile1 << i << " " << " totN  " << d3_PrdMMOsP(i,2) << endl;
+      RepFile1 << i << " " << " prMat " << d3_PrdMMOsP(i,3) << endl;
+    }
+  }
+  RepFile1 << ">EOD<" << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "zbRemapper: dataframe" << endl;
+  {
+    dvector mmodZBs(1,mmodNumZBs); 
+    for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
+    RepFile1 << "mdlZB  obsZB  val  " << endl;
+    for (int izm=1;izm<=nclass;izm++)
+      for (int izo=1;izo<=mmodNumZBs;izo++)
+        RepFile1 << mid_points(izm) << " " << mmodZBs(izo) << " " << zbRemapper(izo,izm) << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
 
 //=========================================================================================================================
    
@@ -14123,6 +14502,8 @@ FUNCTION CreateOutput
   OutFile2 <<  nloglike(5) << endl;
   OutFile2 << "Growth_like" << endl;
   OutFile2 <<  nloglike(6) << endl;
+  OutFile2 << "MMOD_like" << endl;
+  OutFile2 <<  nloglike(7) << endl;
 
   OutFile2 << "Growth_posfun" << endl;
   OutFile2 <<  grwthPosFun << endl;
@@ -14989,10 +15370,10 @@ FUNCTION WriteFiles
   OutInpFile1 << "#      Initial    Lower_bound    Upper_bound  Prior_type        Prior_1        Prior_2  Phase " << endl;
   for (int b=1; b<=nSizeComps;b++){
     OutInpFile1 << setw(14) << setprecision(8) << setfixed() << exp(log_vn(b)) << " ";
-    for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
-    OutInpFile1 << setw(11) << setfixed() << int(log_vn_pars(b,4)) << " ";
-    for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << log_vn_pars(b,ii) << " ";
-    OutInpFile1 << setw(6) << setfixed() << int(log_vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << " (possibly extended)" << endl;;
+    for (int ii=2;ii<=3;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << vn_pars(b,ii) << " ";
+    OutInpFile1 << setw(11) << setfixed() << int(vn_pars(b,4)) << " ";
+    for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(14) << setprecision(8) << setfixed() << vn_pars(b,ii) << " ";
+    OutInpFile1 << setw(6) << setfixed() << int(vn_pars(b,7)) << " # Overdispersion_parameter_for_size_comp_" << b << " (possibly extended)" << endl;;
   }
 
   OutInpFile1 << endl;
@@ -15454,6 +15835,7 @@ GLOBALS_SECTION
   adstring_array unitstypes;
   adstring_array seltypes;
   adstring TheHeader;
+  adstring mmodLkType; //--likelihood type for MMO data
   
   // Open output files using ofstream
   // This one for easy reading all input to R
@@ -15929,6 +16311,21 @@ FINAL_SECTION
 //                    Revised update_population_numbers_at_length_season to simplify the code flow (broke up if statements with 4 or 5 terms into smaller, nested 
 //                    code fragments). Corrected an error in update_population_numbers_at_length_season where recruitment was being added to mature new shell 
 //                    crab abundance as well as immature new shell crab abundance when nmature=2, nshellcon=2, and Term_molt=0.
+// 2026-03-17 ** WTS. Added alternative multinomial likelihood as option to fit size comps (option 7) to match TCSAM02 calculation. This just changes the 
+//                    the overall constant (so exact fit results in nll = 0).
+// 2026-03-18 ** WTS. Changed name of input effective sample size parameters array from log_vn_pars to vn_pars to avoid confusion because the input values 
+//                    are on the arithmetic scale, not on the ln scale--the values are converted to the ln-scale. Revised ddirichlet_alt function in dirchlet_alt 
+//                    class so that all elements of `obsp` and `modp` vectors are non-zero by adding a small constant to each element of `o` and `p` during 
+//                    normalization to `obsp` and `modp`; this avoids generating nan's where `o` or `p` were zero.
+// 2026-03-19 ** WTS. Added male maturity data section to data file. Requires older data files to add "0" on a line just before the environmental data section.
+// 2026-03-23 ** WTS. Completed adding male maturity ogive data as a component in the likelihood as nloglike(7), which is a vector with the unweighted NLL for 
+//                    each model year (syr->nyrRetro+1). Likelihood calculation occurs in function "mmos_likelihood"; currently, only a binomial likelihood option 
+//                    is implemented. Data quantities begin with "mmod"; model 
+//                    quantities are d3_PrdMMOs (annual model-predicted male maturity ogives by model size bins) and d3_PrdMMOsP (annual model-predicted male maturity ogives 
+//                    by observed size bins). Total and annual values for the nll are reported in the Likelihood_summary dataframe of the gmacs.rep1 file. The ivector 
+//                    "ilike_vector" was modified to an imatrix ("ilike_matrix") to facilitate dimensioning the ragged array "nloglike" correctly. 
+//                    Version incremented to 2.20.35a.
+//
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
