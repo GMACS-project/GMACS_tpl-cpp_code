@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.35a; ** WTS **; Compiled 2026-03-23");
+ !! TheHeader = adstring("## GMACS Version 2.20.35b; ** WTS **; Compiled 2026-03-27");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -453,7 +453,7 @@ DATA_SECTION
 
  LOC_CALCS
   n_grp = nsex * nshell * nmature;
-  nlikes = 7;          ///> catch, cpue, size comps, recruits, growth data from tagging, non-tagging molt increments, male maturity ogives
+  nlikes = 8;          ///> catch, cpue, size comps, recruits, growth data from tagging, non-tagging molt increments, male maturity ogives, effort extrapolation
   gmacs_data << syr << " # Start year" << endl;
   gmacs_data << nyrRetro << " # End year (retro)" << endl;
   gmacs_data << nseason << " # Number of seasons" << endl;
@@ -667,11 +667,15 @@ DATA_SECTION
   !! gmacs_data << "##------------------------------------------------------------" << endl;
   init_int fmtCDS_in;
   !! gmacs_data << fmtCDS_in << " #--input catch data format (0: old format, 1: new format)" << endl;
+  init_int doTCSAM02EffExp;      // flag to do missing catch expansion like TCSAM02
+  !! gmacs_data << doTCSAM02EffExp << " #--option for effort extrapolation (0: standard gmacs approach; 1: TCSAM02 approach)" << endl;
+  
   init_int nCatchDF;
   !! gmacs_data << nCatchDF << "  #--Number of catch data frames" << endl;
 
   ivector nCatchRows(1,nCatchDF); // this can't be an init_vector here--incompatible with "new" format
   3darray dCatchData(1,nCatchDF); // array of catch data WTS: full allocation delayed until nCatchRows is determined
+  matrix mEffAvgYrs(1,nCatchDF);  // ragged array for including observed effort in effort averaging
   !!float TempW;
   !!float SDlogD;
  LOCAL_CALCS
@@ -705,23 +709,26 @@ DATA_SECTION
           gmacs_data << maturity  << "   #--maturity (immature, mature, undetermined)" << endl;
           gmacs_data << shell     << "   #--shell condition (new shell, old shell, undetermined)" << endl;
           gmacs_data << nCatchRows(idf) << "   #--number of rows in dataframe" << endl;
-          dmatrix inpCatchData(1,nCatchRows(idf),1,7);
+          dmatrix inpCatchData(1,nCatchRows(idf),1,8);
           dCatchData(idf).allocate(1,nCatchRows(idf),1,11);//--finish allocation
+          mEffAvgYrs(idf).allocate(1,nCatchRows(idf));     //--finish allocation
           (*pGD) >> inpCatchData;
-          gmacs_data << "#year season value cv multiplier effort discard_mortality" << endl;
+          gmacs_data << "#year season value cv multiplier effort eff_avg  discard_mortality" << endl;
           gmacs_data << inpCatchData << endl;
+          
           for (int irw=1;irw<=nCatchRows(idf);irw++){
-            dCatchData(idf,irw, 1) = (int) inpCatchData(irw,1);
-            dCatchData(idf,irw, 2) = (int) inpCatchData(irw,2);
+            dCatchData(idf,irw, 1) = (int) inpCatchData(irw,1); //--year
+            dCatchData(idf,irw, 2) = (int) inpCatchData(irw,2); //--season
             dCatchData(idf,irw, 3) = iF;
             dCatchData(idf,irw, 4) = iX;
-            dCatchData(idf,irw, 5) = inpCatchData(irw,3);
-            dCatchData(idf,irw, 6) = inpCatchData(irw,4);
+            dCatchData(idf,irw, 5) = inpCatchData(irw,3); //--value
+            dCatchData(idf,irw, 6) = inpCatchData(irw,4); //--cv
             dCatchData(idf,irw, 7) = iCT;
             dCatchData(idf,irw, 8) = iUT;
-            dCatchData(idf,irw, 9) = inpCatchData(irw,5);
-            dCatchData(idf,irw,10) = inpCatchData(irw,6);
-            dCatchData(idf,irw,11) = inpCatchData(irw,7);
+            dCatchData(idf,irw, 9) = inpCatchData(irw,5); //--multiplier
+            dCatchData(idf,irw,10) = inpCatchData(irw,6); //--effort
+            dCatchData(idf,irw,11) = inpCatchData(irw,8); //--discard mortality multiplier
+            mEffAvgYrs(idf,irw)    = inpCatchData(irw,7); //--flag to include in effort averaging
           }//--irw
         }//--idf
         gmacs_data << "#--old format:"<<endl;
@@ -794,8 +801,10 @@ DATA_SECTION
   // Note that there are a number of combinations which require an F to be estimated.
   ivector nFparams(1,nfleet);                     ///> The number of deviations required for each fleet, by fleet
   ivector nYparams(1,nfleet);                     ///> The number of deviations for female Fs, by fleet
-  3darray fhit(syr,nyrRetro,1,nseason,1,nfleet);  ///> set to 1 for present; 0 for absent
-  3darray yhit(syr,nyrRetro,1,nseason,1,nfleet);  ///> set to 1 for present; 0 for absent
+  3darray fhit(syr,nyrRetro,1,nseason,1,nfleet);  ///> set to 1 for present; 0 for absent to indicate catch and/OR effort
+  3darray yhit(syr,nyrRetro,1,nseason,1,nfleet);  ///> set to 1 for present; 0 for absent to indicate catch and/OR effort for females
+  3darray cfhit(syr,nyrRetro,1,nseason,1,nfleet); ///> 0 if catch is absent; > 0 if catch is present (regardless of effort)
+  3darray cyhit(syr,nyrRetro,1,nseason,1,nfleet); ///> 0 if catch is absent; > 0 if catch is present  (regardless of effort) for females
   matrix dmr(syr,nyrRetro,1,nfleet);              ///> discard mortality - has to be the same for all catch series for each fleet
   matrix fhitfut(1,nseason,1,nfleet);             ///> set to 1 for present in any year; 0 for absent
 
@@ -804,6 +813,8 @@ DATA_SECTION
   nYparams.initialize();
   fhit.initialize();
   yhit.initialize();
+  cfhit.initialize();
+  cyhit.initialize();
   dmr.initialize();
   echoinput<<"\n\nDetermining number of fishing rate parameters to be estimated."<<endl;
   for ( int k = 1; k <= nCatchDF; k++ ){
@@ -824,13 +835,23 @@ DATA_SECTION
         }
 
         if ( !fhit(y,j,g) ){
-          fhit(y,j,g) ++;
-          nFparams(g) ++;
+          fhit(y,j,g) ++;  //--flag if not already flagged
+          if (doTCSAM02EffExp){
+            if (obs_catch(k,i)>0) {
+              ++cfhit(y,j,g);  //--indicate non-zero catch
+              nFparams(g) ++;  //--increment number of F parameters when catch is reported (i.e., non-zero)
+            }
+          } else nFparams(g) ++;                    //--increment number of F parameters regardless of reported catch
           dmr(y,g) = catch_dm(k)(i);//TODO: presumably dmr could depend on season and sex, as well as year and gear/fleet
         }
         if ( (!yhit(y,j,g)) && (h == 2) ){
-          yhit(y,j,g) ++;
-          nYparams(g) ++;
+          yhit(y,j,g) ++; //--flag if not already flagged
+          if (doTCSAM02EffExp){
+            if (obs_catch(k,i)>0) {
+              ++cyhit(y,j,g);  //--indicate non-zero catch
+              nYparams(g) ++;  //--increment number of Y parameters when catch is reported (i.e., non-zero)
+            }
+          } else nYparams(g) ++;
           dmr(y,g) = catch_dm(k)(i);
         }
       }//--in year range
@@ -2396,8 +2417,8 @@ DATA_SECTION
   for (int ig=1;ig<=nsex;ig++)  { echoinput << Growth_controls(ig) << endl; }
   for (int ig=1;ig<=nsex;ig++) {
     bUseCustomGrowthMatrix2(ig) = Growth_controls(ig,1);
-    if (bUseCustomGrowthMatrix2(ig) < 1 || bUseCustomGrowthMatrix2(ig) > 8)
-      { cout << "growth matrix type can only be 1-8; STOPPING" << endl; exit(1); }
+    if (bUseCustomGrowthMatrix2(ig) < 1 || bUseCustomGrowthMatrix2(ig) > 10)
+      { cout << "growth matrix type can only be 1-10; STOPPING" << endl; exit(1); }
   }
   for (int ig=1;ig<=nsex;ig++) {
     bUseGrowthIncrementModel2(ig) = Growth_controls(ig,2);
@@ -4346,7 +4367,7 @@ DATA_SECTION
   matrix size_comp_sample_size(1,nSizeComps,1,nSizeCompRows);
   matrix size_comp_year(1,nSizeComps,1,nSizeCompRows);
   matrix size_comp_season(1,nSizeComps,1,nSizeCompRows);
-  imatrix ilike_matrix(1,nlikes,1,2);
+  imatrix ilike_matrix(1,nlikes,1,2); //--ragged dimensioning for nloglikes
   vector TempSize(1,nclass);
   vector cumsum(1,nclass);
   number pmin;
@@ -4500,9 +4521,10 @@ DATA_SECTION
   ilike_matrix(3,1) = 1;   ilike_matrix(3,2) = nSizeComps;
   like_names      = like_names + adstring("SizeComps ");
   ilike_matrix(4,1) = 1;   ilike_matrix(4,2) = 3;
-  ilike_matrix(5,1) = 1;   ilike_matrix(5,2) = nsex;         //--tagging-related growth data
-  ilike_matrix(6,1) = 1;   ilike_matrix(6,2) = nsex;         //--non-tagging growth data
+  ilike_matrix(5,1) = 1;   ilike_matrix(5,2) = nsex;       //--tagging-related growth data
+  ilike_matrix(6,1) = 1;   ilike_matrix(6,2) = nsex;       //--non-tagging growth data
   ilike_matrix(7,1) = syr; ilike_matrix(7,2) = nyrRetro+1; //--mmo data
+  ilike_matrix(8,1) = 1;   ilike_matrix(8,2) = nCatchDF;   //--extrapolated capture rates if doTCSAM02EffExp is TRUE
  END_CALCS
 
   // |---------------------------------------------------------|
@@ -5165,10 +5187,12 @@ PARAMETER_SECTION
 
   matrix pre_catch(1,nCatchDF,1,nCatchRows);               ///> predicted catch (Baranov eq)
   matrix res_catch(1,nCatchDF,1,nCatchRows);               ///> catch residuals in log-space
+  matrix nll_catch(1,nCatchDF,1,nCatchRows);               ///> nll for catch residuals in log-space
   matrix obs_catch_effort(1,nCatchDF,1,nCatchRows);        ///> inferred catch if there is no catch but some effort
-  matrix pre_catch_out(1,nCatchDF,syr,nyrRetro);           ///> Predicted catch for output       WTS note: calculated but never used or exported
-  matrix res_catch_out(1,nCatchDF,syr,nyrRetro);           ///> Residuals for output             WTS note: calculated but never used or exported
-  vector log_q_catch(1,nCatchDF);                          ///> Catchability
+  // matrix pre_catch_out(1,nCatchDF,syr,nyrRetro);           ///> Predicted catch for output       WTS note: calculated but never used or exported
+  // matrix res_catch_out(1,nCatchDF,syr,nyrRetro);           ///> Residuals for output             WTS note: calculated but never used or exported
+  vector log_q_catch(1,nCatchDF);                           ///> log-scale mean catchability for effort expansion (standard gmacs)
+  matrix art_q_catch(1,nCatchDF,1,nsex);                    ///> arithmetic-scale mean catchability for effort expansion (ala TCSAM02)
   4darray pre_capabd(syr,nyrRetro,1,nfleet,1,nsex,1,nclass);///> predicted fishery capture abundance for output (summed over maturity state, shell condition)
   4darray pre_capbio(syr,nyrRetro,1,nfleet,1,nsex,1,nclass);///> predicted fishery capture biomass for output (summed over maturity state, shell condition)
 
@@ -6890,6 +6914,7 @@ FUNCTION calc_selectivities
     ECHO(log_slx_discard)
     ECHO(exp(log_slx_discard))
   }
+  if (verbose>3) cout << "Finished calc_selectivities" << endl << endl;
   
 // --------------------------------------------------------------------------------------------------
 
@@ -6909,6 +6934,7 @@ FUNCTION calc_selectivities
 
 
 FUNCTION calc_fishing_mortality
+  if (verbose>3) cout << "Starting calc_fishing_mortality" << endl << endl;
   int ik,yk;
   double xi; // discard mortality rate
   dvar_vector sel(1,nclass);
@@ -6926,8 +6952,8 @@ FUNCTION calc_fishing_mortality
     }
   }
 
-  // fishing mortality and capture rates generally
-  //cout<<"setting ft"<<endl;
+  // fully-selected capture rates generally
+  if (verbose>3) cout << "Calculating ft's in calc_fishing_mortality" << endl << endl;
   ft.initialize(); fout.initialize();
   for ( int k = 1; k <= nfleet; k++ ){
     for ( int h = 1; h <= nsex; h++ ){
@@ -6935,12 +6961,109 @@ FUNCTION calc_fishing_mortality
       for ( int i = syr; i <= nyrRetro; i++ ){
         for ( int j = 1; j <= nseason; j++ ){
           if ( fhit(i,j,k)>0 ){  //--does not depend on sex
-            //cout<< "k, h, i, j = " << k << " " << h << " " << i << " " << j << " fhit(i,j,k) = " << fhit(i,j,k) << " ";
-            log_ftmp = log_fbar(k) + log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
-            fout(k,i) = exp(log_ftmp);                                 ///> Report of male F
-            if (h==2) log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
-            if (h==2 && yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++);    ///> annual female F dev
-            ft(k,h,i,j) = mfexp(log_ftmp);  //--fully-selected fleet/sex/year-specific capture rate
+            cout << "k, h, i, j = " << k << " " << h << " " << i << " " << j << " ik = "  << ik << endl;
+            cout << "  fhit(i,j,k) = " << fhit(i,j,k) << "  cfhit(i,j,k) = " << cfhit(i,j,k) << "  cyhit(i,j,k) = " << cyhit(i,j,k) << endl;
+            if (doTCSAM02EffExp){
+              // doing TCSAM02 approach to effort expansion
+              log_ftmp    = log_fbar(k);
+              if (cfhit(i,j,k)) { //--catch present
+                // log_ftmp    = log_fbar(k) + log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
+                log_ftmp    += log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
+              }
+              fout(k,i)   = exp(log_ftmp);                     ///> Report of male F
+              if (h==2) {
+                log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
+                if (cyhit(i,j,k)) { //--female catch present
+                  if (yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++); ///> annual female F dev
+                  // ft(k,h,i,j) = mfexp(log_ftmp);
+                }
+              }
+              ft(k,h,i,j) = mfexp(log_ftmp);
+            } else {
+              // doing standard gmacs approach to effort expansion
+              log_ftmp  = log_fbar(k) + log_fdev(k,ik++);                ///> Male F is the reference plus the annual deviation
+              fout(k,i) = exp(log_ftmp);                                 ///> Report of male F
+              if (h==2) {
+                log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
+                if (yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++); ///> annual female F dev
+              }
+              ft(k,h,i,j) = mfexp(log_ftmp);  //--fully-selected fleet/sex/year-specific capture rate based on parameters
+            } //if (doTCSAM02EffExp)
+          }
+        } // j loop: seasons
+      } // i loop: years
+    } // h loop: sex
+  } // k loop: fleets
+
+  art_q_catch.initialize(); // arithmetic-scale AVERAGE CPUE ("q") for effort extrapolation to match TCSAM02 approach
+  if (doTCSAM02EffExp){
+    if (verbose>3) cout << "Calculating arithmetic-scale q in calc_fishing_mortality" << endl << endl;
+    // calculate art_q_catch, the arithmetic average
+    int nEff; double eff; double cat;
+    dvar_vector sumObsFc(1,nsex); dvector sumObsEff(1,nsex);
+    for ( int kk = 1; kk <= nCatchDF; kk++ ){
+      sumObsFc.initialize(); sumObsEff.initialize();
+      for ( int jj = 1; jj <= nCatchRows(kk); jj++ ){
+        int i  = dCatchData(kk,jj,1);   // year
+        int j  = dCatchData(kk,jj,2);   // season index
+        int k  = dCatchData(kk,jj,3);   // fleet/gear index
+        int h  = dCatchData(kk,jj,4);   // sex index
+        eff    = dCatchData(kk,jj,10);
+        if (verbose >3) cout << "kk, jj = " << kk << " " << jj << endl;
+        if (verbose >3) cout << "k, h, i, j = " << k << " " << h << " " << i << " " << j << endl;
+        if (i <= nyrRetro && i >= syr){
+          if (mEffAvgYrs(kk,jj)){       // only average over years specified in CatchDF
+            if (h==0){ // need to include for all sexes
+              for (int hp=1;hp<=nsex;hp++){
+                if (verbose>3) cout << "including ft(k,hp="<<hp<<",i,j) = " << ft(k,hp,i,j) << " and eff = " << eff << " in sums." << endl;
+                sumObsFc(hp)  += ft(k,hp,i,j);
+                sumObsEff(hp) += eff;
+              }
+            } else { // just include for specific sex
+              if (verbose>3) cout << "including ft(k,h,i,j) = " << ft(k,h,i,j) << " and eff = " << eff << " in sums." << endl;
+              sumObsFc(h)  += ft(k,h,i,j);
+              sumObsEff(h) += eff;
+            }
+          }
+        }
+      } // jj loop
+      for (int h=1;h<=nsex;h++) if (sumObsEff(h)>0) art_q_catch(kk,h) = sumObsFc(h)/sumObsEff(h);
+    } // kk loop
+    if (verbose>3) cout << "art_q_catch = " << endl << art_q_catch << endl;
+
+    // apply effort expansion as necessary
+    if (verbose>3) cout << "Applying arithmetic-scale q in calc_fishing_mortality" << endl;
+    for ( int kk = 1; kk <= nCatchDF; kk++ ){
+      for ( int jj = 1; jj <= nCatchRows(kk); jj++ ){
+        int i  = dCatchData(kk,jj,1);   // year
+        int j  = dCatchData(kk,jj,2);   // season index
+        int k  = dCatchData(kk,jj,3);   // fleet/gear index
+        cat = obs_catch(kk,jj); 
+        eff = obs_effort(kk,jj);
+        if (i <= nyrRetro && i >= syr){
+          if ((cat==0) & (eff>0)){
+            for (int h=1;h<=nsex;h++) ft(k,h,i,j) = art_q_catch(kk,h) * eff;
+          }
+        }
+      } // jj loop
+    } //kk loop
+  if (verbose>3) cout << "Done with arithmetic-scale q in calc_fishing_mortality" << endl << endl;
+  } // if (doTCSAM02EffExp)
+
+  // fishing mortality and capture rates generally
+  if (verbose>3) cout << "Calculating F's in calc_fishing_mortality" << endl << endl;
+  for ( int k = 1; k <= nfleet; k++ ){
+    for ( int h = 1; h <= nsex; h++ ){
+      ik = 1; yk = 1;
+      for ( int i = syr; i <= nyrRetro; i++ ){
+        for ( int j = 1; j <= nseason; j++ ){
+          // if ( fhit(i,j,k)>0 ){  //--does not depend on sex
+          //   //cout<< "k, h, i, j = " << k << " " << h << " " << i << " " << j << " fhit(i,j,k) = " << fhit(i,j,k) << " ";
+          //   log_ftmp = log_fbar(k) + log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
+          //   fout(k,i) = exp(log_ftmp);                                 ///> Report of male F
+          //   if (h==2) log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
+          //   if (h==2 && yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++);    ///> annual female F dev
+          //   ft(k,h,i,j) = mfexp(log_ftmp);  //--fully-selected fleet/sex/year-specific capture rate
             //cout << "ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
             xi  = dmr(i,k);                                            ///> Fleet/year-specific discard mortality rate
             sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;               ///> Fleet/sex/year/size-specific capture selectivity
@@ -6948,17 +7071,18 @@ FUNCTION calc_fishing_mortality
             vul = elem_prod(sel, ret + (1.0 - ret) * xi);              ///> Fleet/sex/year/size-specific vulnerability (includes discard mortality "rate")
             F(h,i,j)  += ft(k,h,i,j) * vul;                            ///> Sex/year/season/size-specific fishing mortality rate (summed over fleet)
             F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Sex/year/season/size-specific capture rate (not "mortality") (summed over fleet)
-          }
+          // } // fhit(i,j,k)>0
         } // j loop: seasons
       } // i loop: years
       //cout << "k (fleet): " << k << " h (sex): " << h <<endl;
-      for ( int i = syr; i <= nyrRetro; i++ ) {
-        //cout << "i (year): " << i <<" ft(k,h,i) = " << ft(k,h,i) << " ";
-        //for (int j = 1; j <= nseason; j++) cout << " j = " << j << " fhit(i,j,k)  = " << fhit(i,j,k) << " ";
-        //cout << endl;
-      }
+      // for ( int i = syr; i <= nyrRetro; i++ ) {
+      //   //cout << "i (year): " << i <<" ft(k,h,i) = " << ft(k,h,i) << " ";
+      //   //for (int j = 1; j <= nseason; j++) cout << " j = " << j << " fhit(i,j,k)  = " << fhit(i,j,k) << " ";
+      //   //cout << endl;
+      // }
     } // h loop: sex
   } // k loop: fleets
+  if (verbose>3) cout << "Finished calc_fishing_mortality" << endl << endl;
 
 // --------------------------------------------------------------------------------------------------------------------------------------
 
@@ -7317,7 +7441,8 @@ FUNCTION calc_growth_transition
     }
 
     // Set the growth-transition matrix (size-increment is gamma)
-    if ( bUseCustomGrowthMatrix2(h) == GROWTH_INCGAMMA ){
+    if (( bUseCustomGrowthMatrix2(h) == GROWTH_INCGAMMA )||( bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02A )){
+      int mxGrBins = 10;// TODO: add as input via ctl file 
       for (int k =1; k<=nSizeIncVaries(h);k++){
         gt.initialize();
         for ( int l = 1; l <= nSizeSex(h)-1; l++ ){
@@ -7330,7 +7455,14 @@ FUNCTION calc_growth_transition
             Accum = CumInc;
           }
           gt(l,nSizeSex(h)) = 1.0 - Accum;
-        }
+          if (bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02A){
+            if (l+mxGrBins<nSizeSex(h)){
+              gt(l)(l+mxGrBins) += sum(gt(l)(l+mxGrBins+1,nSizeSex(h))); // limit growth to mxGrBins from l
+              gt(l)(l+mxGrBins+1,nSizeSex(h)) = 0.0;
+            }
+            gt(l) = gt(l)/sum(gt(l));// normalize to 1
+          }
+        } // l loop
         gt(nSizeSex(h),nSizeSex(h)) = 1.0;
         growth_transition(h,k) = gt;
         if ((verbose>3)&&(NfunCall<2)){
@@ -7343,7 +7475,8 @@ FUNCTION calc_growth_transition
     }//--GROWTH_INCGAMMA
 
     // Set the growth-transition matrix (size after increment is gamma)
-    if ( bUseCustomGrowthMatrix2(h) == GROWTH_SIZEGAMMA ){
+    if (( bUseCustomGrowthMatrix2(h) == GROWTH_SIZEGAMMA )||( bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02B )){
+      int mxGrBins = 10;// TODO: add as input via ctl file
       for (int k =1; k<=nSizeIncVaries(h);k++){
         gt.initialize();
         sbi = size_breaks / gscale(h,k);
@@ -7353,8 +7486,19 @@ FUNCTION calc_growth_transition
           for (int ll = l; ll <= nclass+1; ll++ )
             psi(ll) = cumd_gamma(sbi(ll), mean_size_after_molt);
           gt(l)(l,nSizeSex(h)) = first_difference(psi(l,nclass+1));
-          gt(l)(l,nSizeSex(h)) = gt(l)(l,nSizeSex(h)) / sum(gt(l)); // TCSAM02 does an accumulation, not a rescaling
-        }
+          if (!(bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02B)){
+            gt(l)(l,nSizeSex(h)) = gt(l)(l,nSizeSex(h)) / sum(gt(l)); // rescaling changes probability in all size classes
+          } else {
+            // do growth like TCSAM02
+            int mxGrBins = 10;
+            gt(l)(nSizeSex(h))  += 1.0 - psi(nclass+1); // accumulation changes proability only final size class
+            if (l+mxGrBins<nSizeSex(h)){
+              gt(l)(l+mxGrBins) += sum(gt(l)(l+mxGrBins+1,nSizeSex(h))); // limit growth to mxGrBins from l
+              gt(l)(l+mxGrBins+1,nSizeSex(h)) = 0.0;
+            }
+            gt(l) = gt(l)/sum(gt(l));// normalize to 1
+          } // if (!doTCSAM02Growth)
+        } // l loop
         growth_transition(h,k) = gt;
         if ((verbose>3)&&(NfunCall<2)){
           if (std::isnan(value(sum(growth_transition(h,k))))){
@@ -7363,7 +7507,7 @@ FUNCTION calc_growth_transition
           }
         }
       } // k loop
-    } // if GROWTH_SIZEGAMMA
+    } // if GROWTH_SIZEGAMMA or GROWTH_TCSAM02B
 
     // Set the growth-transition matrix (size after increment is normal)
     if ( bUseCustomGrowthMatrix2(h) == GROWTH_NORMAL ){
@@ -8860,6 +9004,18 @@ FUNCTION update_population_numbers_at_length
 // =================================================================================================================================================
 
   /**
+   * @brief Calculate predicted effort observations
+   * @details The function uses the Baranov catch equation to predict the retained and discarded catch.
+   *
+   * Assumptions:
+   *  1) retained (landed catch) is assume to be newshell male only. (WTS 2025-06: is this still true??)
+   *  2) discards are all females (new and old) and male only crab.  (WTS 2025-06: "male old shell only"??)
+   *  3) Natural and fishing mortality occur simultaneously.
+   *  4) discard is the total number of crab caught and discarded.
+  **/
+// =================================================================================================================================================
+
+  /**
    * @brief Calculate predicted catch observations
    * @details The function uses the Baranov catch equation to predict the retained and discarded catch.
    *
@@ -8882,79 +9038,84 @@ FUNCTION calc_predicted_catch
   dvariable xi;                                                      ///> Discard mortality rate
 
   // First need to calculate a catchability (q) for each catch data frame if there is any catch and effort (must be both)
-  log_q_catch.initialize();
-  for ( int kk = 1; kk <= nCatchDF; kk++ ){
-    nhit = 0;
-    for ( int jj = 1; jj <= nCatchRows(kk); jj++ ){
-      int i    =     dCatchData(kk,jj,1);                          ///> year index
-      if (i <= nyrRetro && i >= syr){
-        cobs =   obs_catch(kk,jj);                                     ///> catch data
-        effort = dCatchData(kk,jj,10);                                 ///> Effort data
+  log_q_catch.initialize(); // log-scale average cpue ("q") for effort extrapolation (standard gmacs)
+  if (doTCSAM02EffExp){
+    //--already calculated art_q_catch in calc_fishing_mortality
+  } else {
+    // do standard gmacs effort extrapolation approach by calculating log_q_catch
+    for ( int kk = 1; kk <= nCatchDF; kk++ ){
+      nhit = 0;
+      for ( int jj = 1; jj <= nCatchRows(kk); jj++ ){
+        int i    =     dCatchData(kk,jj,1);                          ///> year index
+        if (i <= nyrRetro && i >= syr){
+          cobs =   obs_catch(kk,jj);                                     ///> catch data
+          effort = dCatchData(kk,jj,10);                                 ///> Effort data
 
-        if ((cobs > 0.0) && (effort > 0.0)) {                          ///> There are catch and effort data
-          int j    =     dCatchData(kk,jj,2);                          ///> season index
-          int k    =     dCatchData(kk,jj,3);                          ///> fleet/gear index
-          int h    =     dCatchData(kk,jj,4);                          ///> sex index
-          int type = int(dCatchData(kk,jj,7));                         ///> Type of catch (total= 0, retained = 1, discard = 2)
-          int unit = int(dCatchData(kk,jj,8));                         ///> Units of catch equation (1 = biomass, 2 = numbers)
-      
-          if ( h != UNDET_SEX ) {                                        ///> sex specific
-            if ((ft(k,h,i,j)<1.0e-10)) {
-              cout << "Error in computing log_q_catch for CatchDF kk = "<<kk<<", row jj = "<< jj << ", sex h = "<< h << ", year = " << i;
-              cout  << ", season j = " << j << ", effort = " << effort <<", ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
-              exit(-1);
-            }
-            log_q_catch(kk) += log(ft(k,h,i,j) / effort);
-            nhit += 1;
-          } else {
-            // sexes combinded
-            totalnalobs.initialize(); totalnalpre.initialize();
-            for ( h = 1; h <= nsex; h++ ){
-              sel = log_slx_capture(k,h,i);                            ///> Capture selectivity
-              switch( type ) {
-                case RETAINED: // retained catch
-                 sel = mfexp(sel + log_slx_retaind(k,h,i));
-                 break;
-                case DISCARDED: // discarded catch
-                 sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
-                 break;
-                case TOTALCATCH: // total catch
-                 sel = mfexp(sel);
-                 break;
+          if ((cobs > 0.0) && (effort > 0.0)) {                          ///> There are catch and effort data
+            int j    =     dCatchData(kk,jj,2);                          ///> season index
+            int k    =     dCatchData(kk,jj,3);                          ///> fleet/gear index
+            int h    =     dCatchData(kk,jj,4);                          ///> sex index
+            int type = int(dCatchData(kk,jj,7));                         ///> Type of catch (total= 0, retained = 1, discard = 2)
+            int unit = int(dCatchData(kk,jj,8));                         ///> Units of catch equation (1 = biomass, 2 = numbers)
+        
+            if ( h != UNDET_SEX ) {                                        ///> sex specific
+              if ((ft(k,h,i,j)<1.0e-10)) {
+                cout << "Error in computing log_q_catch for CatchDF kk = "<<kk<<", row jj = "<< jj << ", sex h = "<< h << ", year = " << i;
+                cout  << ", season j = " << j << ", effort = " << effort <<", ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
+                exit(-1);
               }
-              nal.initialize();                                        ///> Compute numbers
-              for ( int m = 1; m <= nmature; m++ ){
-                for ( int o = 1; o <= nshell; o++ ){
-                  int ig = pntr_hmo(h,m,o); 
-                  nal = d4_N(ig,i,j);
-                  nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-                  tmp_ft = ft(k,h,i,j);
+              log_q_catch(kk) += log(ft(k,h,i,j) / effort);
+              nhit += 1;
+            } else {
+              // sexes combinded
+              totalnalobs.initialize(); totalnalpre.initialize();
+              for ( h = 1; h <= nsex; h++ ){
+                sel = log_slx_capture(k,h,i);                            ///> Capture selectivity
+                switch( type ) {
+                  case RETAINED: // retained catch
+                  sel = mfexp(sel + log_slx_retaind(k,h,i));
+                  break;
+                  case DISCARDED: // discarded catch
+                  sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+                  break;
+                  case TOTALCATCH: // total catch
+                  sel = mfexp(sel);
+                  break;
+                }
+                nal.initialize();                                        ///> Compute numbers
+                for ( int m = 1; m <= nmature; m++ ){
+                  for ( int o = 1; o <= nshell; o++ ){
+                    int ig = pntr_hmo(h,m,o); 
+                    nal = d4_N(ig,i,j);
+                    nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+                    tmp_ft = ft(k,h,i,j);
 
-                  if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);
-                  if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
-                    totalnalobs += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-                    totalnalpre += nal * elem_div(elem_prod(effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-                  }
-                  if (season_type(j)==EXPLOIT_F){
-                    totalnalobs += nal * tmp_ft * sel;
-                    totalnalpre += nal * effort * sel;
+                    if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);
+                    if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
+                      totalnalobs += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                      totalnalpre += nal * elem_div(elem_prod(effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                    }
+                    if (season_type(j)==EXPLOIT_F){
+                      totalnalobs += nal * tmp_ft * sel;
+                      totalnalpre += nal * effort * sel;
+                    }
                   }
                 }
               }
-            }
-            if ((totalnalobs<1.0e-10)||(totalnalpre<1.0e-10)) {
-              cout << "Error in computing log_q_catch for CatchDF "<<kk<<", row "<< jj << ", year = " << i;
-              cout << ", totalnalobs = " << totalnalobs <<", totalnalpre = " << totalnalpre << endl;
-              exit(-1);
-            }
-            log_q_catch(kk) += log(totalnalobs / totalnalpre);
-            nhit += 1;
-          } //--if (h == UNDET_SEX)
-        } // if (cobs > 0.0 && effort > 0.0)
-      } // if i in years
-    } // jj
-    if ( nhit > 0 ) log_q_catch(kk) /= nhit; //--average ln-scale CPUE for dataframe kk
-  }//--kk
+              if ((totalnalobs<1.0e-10)||(totalnalpre<1.0e-10)) {
+                cout << "Error in computing log_q_catch for CatchDF "<<kk<<", row "<< jj << ", year = " << i;
+                cout << ", totalnalobs = " << totalnalobs <<", totalnalpre = " << totalnalpre << endl;
+                exit(-1);
+              }
+              log_q_catch(kk) += log(totalnalobs / totalnalpre);
+              nhit += 1;
+            } //--if (h == UNDET_SEX)
+          } // if (cobs > 0.0 && effort > 0.0)
+        } // if i in years
+      } // jj
+      if ( nhit > 0 ) log_q_catch(kk) /= nhit; //--average ln-scale CPUE for dataframe kk
+    }//--kk
+  }
    
   // Now make predictions
   res_catch.initialize();
@@ -9001,12 +9162,18 @@ FUNCTION calc_predicted_catch
               if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F) {
                 pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
                 if (cobs == 0 && effort > 0.0)
-                  obs_catch_effort(kk,jj) += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                  if (doTCSAM02EffExp)
+                    obs_catch_effort(kk,jj) += nal * elem_div(elem_prod(art_q_catch(kk,h) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                  else
+                    obs_catch_effort(kk,jj) += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
               }
               if (season_type(j)==EXPLOIT_F) {
                 pre_catch(kk,jj) += nal * tmp_ft * sel;
                 if (cobs == 0 && effort > 0.0)
-                  obs_catch_effort(kk,jj) += nal * mfexp(log_q_catch(kk)) * effort * sel;
+                  if (doTCSAM02EffExp)
+                    obs_catch_effort(kk,jj) += nal * art_q_catch(kk,h) * effort * sel;
+                  else
+                    obs_catch_effort(kk,jj) += nal * mfexp(log_q_catch(kk)) * effort * sel;
               }
             }//--o loop
           }//--m loop
@@ -9038,19 +9205,25 @@ FUNCTION calc_predicted_catch
                 if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
                   pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
                   if (cobs == 0 && effort > 0.0)
-                    obs_catch_effort(kk,jj) +=  nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                    if (doTCSAM02EffExp)
+                      obs_catch_effort(kk,jj) +=  nal * elem_div(elem_prod(art_q_catch(kk,h) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+                    else
+                      obs_catch_effort(kk,jj) +=  nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
                 }
                 if (season_type(j)==EXPLOIT_F) {
                   pre_catch(kk,jj) += nal * tmp_ft * sel;
                   if (cobs == 0 && effort > 0.0)
-                    obs_catch_effort(kk,jj) +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
+                    if (doTCSAM02EffExp)
+                      obs_catch_effort(kk,jj) +=  nal * art_q_catch(kk,h) * effort * sel;
+                    else 
+                      obs_catch_effort(kk,jj) +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
                 }
               }//--o
             }//--m
           }//--h
         } // sex-specific
               
-        // Catch residuals
+        // Catch residuals (TODO: why here? Recalculated in catch_likelihood--WTS)
         // In first case (obs_catch > 0) then if there is only catch data, calculate the residual as per usual; 
         // if there is catch and effort data, then still use observed catch to calculate the residual, despite the predicted catch being calculated differently.
         // In second case, when effort > 0 then the residual is the pred catch using Fs - pred catch using q
@@ -9059,7 +9232,7 @@ FUNCTION calc_predicted_catch
         } else if (effort > 0.0) {
           res_catch(kk,jj) = log(obs_catch_effort(kk,jj)) - log(pre_catch(kk,jj));
         }
-      } // lines of catch
+      } // data year in model time frame
     }//--jj
   } //--kk
 
@@ -9155,8 +9328,10 @@ FUNCTION dvariable calc_predicted_catch_det(const int i, const int j, const int 
   /**
    * @brief Calculate predicted capture abundance/biomass by year, fishery, sex, and size
    * @author William Stockhausen
-   * @details The function uses the Baranov catch equation to predict the fishery captures for all model years 
-   *          (not just those years for which we have observations). This is used for plotting purposes only.
+   * 
+   * @details The function uses the Baranov catch equation to predict fishery captures as abundance (pre_capabd) and biomass (pre_capbio)
+   *          for all model years (not just those years for which there were observations). The resulting arrays are output to RepFile1
+   *          for plotting purposes.
   **/
 FUNCTION calc_predicted_capture_abdbio
   int debug = 0;
@@ -9214,99 +9389,99 @@ FUNCTION calc_predicted_capture_abdbio
    * @details The function uses the Baranov catch equation to predict the retained and discarded catch for all model years 
    *          (not just those years for which we have observations). This is used for plotting purposes only.
   **/
-FUNCTION calc_predicted_catch_out
-  dvariable tmp_ft,out2;
-  dvar_vector sel(1,nclass);                                         ///> capture selectivity
-  dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
-  dvar_vector tempZ1(1,nclass);                                      ///> total mortality
+// FUNCTION calc_predicted_catch_out
+//   dvariable tmp_ft,out2;
+//   dvar_vector sel(1,nclass);                                         ///> capture selectivity
+//   dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
+//   dvar_vector tempZ1(1,nclass);                                      ///> total mortality
 
-  pre_catch_out.initialize(); // matrix pre_catch_out(1,nCatchDF,syr,nyrRetro)
-  for ( int i = syr; i <= nyrRetro; i++ ){
-    for ( int kk = 1; kk <= nCatchDF; kk++ ){
-      int j    =     dCatchData_out(kk,i,2);                         ///> season index
-      int k    =     dCatchData_out(kk,i,3);                         ///> fleet/gear index
-      int h    =     dCatchData_out(kk,i,4);                         ///> sex index
-      int type = int(dCatchData_out(kk,i,7));                        ///> Type of catch (total= 0, retained = 1, discard = 2)
-      int unit = int(dCatchData_out(kk,i,8));                        ///> Units of catch equation (1 = biomass, 2 = numbers)
+//   pre_catch_out.initialize(); // matrix pre_catch_out(1,nCatchDF,syr,nyrRetro)
+//   for ( int i = syr; i <= nyrRetro; i++ ){
+//     for ( int kk = 1; kk <= nCatchDF; kk++ ){
+//       int j    =     dCatchData_out(kk,i,2);                         ///> season index
+//       int k    =     dCatchData_out(kk,i,3);                         ///> fleet/gear index
+//       int h    =     dCatchData_out(kk,i,4);                         ///> sex index
+//       int type = int(dCatchData_out(kk,i,7));                        ///> Type of catch (total= 0, retained = 1, discard = 2)
+//       int unit = int(dCatchData_out(kk,i,8));                        ///> Units of catch equation (1 = biomass, 2 = numbers)
 
-      if ( h != UNDET_SEX ) {                                            ///> sex specific
-        sel = log_slx_capture(k,h,i);
-        switch ( type ){
-          case RETAINED: // retained catch
-           sel = mfexp(sel + log_slx_retaind(k,h,i));
-           break;
-          case DISCARDED: // discarded catch
-           sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));//--NOT discard mortality!
-           break;
-          case TOTALCATCH: // total catch
-           sel = mfexp(sel);
-           break;
-        }
+//       if ( h != UNDET_SEX ) {                                            ///> sex specific
+//         sel = log_slx_capture(k,h,i);
+//         switch ( type ){
+//           case RETAINED: // retained catch
+//            sel = mfexp(sel + log_slx_retaind(k,h,i));
+//            break;
+//           case DISCARDED: // discarded catch
+//            sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));//--NOT discard mortality!
+//            break;
+//           case TOTALCATCH: // total catch
+//            sel = mfexp(sel);
+//            break;
+//         }
 
-        nal.initialize();
-        for ( int m = 1; m <= nmature; m++ ){
-          for ( int o = 1; o <= nshell; o++ ){ 
-            int ig = pntr_hmo(h,m,o); 
-            nal = d4_N(ig,i,j); 
+//         nal.initialize();
+//         for ( int m = 1; m <= nmature; m++ ){
+//           for ( int o = 1; o <= nshell; o++ ){ 
+//             int ig = pntr_hmo(h,m,o); 
+//             nal = d4_N(ig,i,j); 
 
-            tmp_ft = ft(k,h,i,j);
-            nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-            if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10; //consistent
-            if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
-              pre_catch_out(kk,i) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-            }
-            if (season_type(j)==EXPLOIT_F){
-              pre_catch_out(kk,i) += nal * tmp_ft * sel;
-            }
-          }
-        }
-      } else {
-        // sexes combined
-        out2 = 0;
-        for ( int h = 1; h <= nsex; h++ ){
-          sel = log_slx_capture(k)(h)(i);
-          switch( type ){
-            case RETAINED: // retained catch
-             sel = mfexp(sel + log_slx_retaind(k)(h)(i));
-             break;
-            case DISCARDED: // discarded catch
-             sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k)(h)(i)));//--NOT discard mortality!
-             break;
-            case TOTALCATCH: // total catch
-             sel = mfexp(sel);
-             break;
-          }
+//             tmp_ft = ft(k,h,i,j);
+//             nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+//             if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10; //consistent
+//             if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F){
+//               pre_catch_out(kk,i) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+//             }
+//             if (season_type(j)==EXPLOIT_F){
+//               pre_catch_out(kk,i) += nal * tmp_ft * sel;
+//             }
+//           }
+//         }
+//       } else {
+//         // sexes combined
+//         out2 = 0;
+//         for ( int h = 1; h <= nsex; h++ ){
+//           sel = log_slx_capture(k)(h)(i);
+//           switch( type ){
+//             case RETAINED: // retained catch
+//              sel = mfexp(sel + log_slx_retaind(k)(h)(i));
+//              break;
+//             case DISCARDED: // discarded catch
+//              sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k)(h)(i)));//--NOT discard mortality!
+//              break;
+//             case TOTALCATCH: // total catch
+//              sel = mfexp(sel);
+//              break;
+//           }
 
-          nal.initialize();
-          for ( int m = 1; m <= nmature; m++ ){
-            for ( int o = 1; o <= nshell; o++ ){
-              int ig = pntr_hmo(h,m,o);
-              nal = d4_N(ig,i,j); 
-              nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+//           nal.initialize();
+//           for ( int m = 1; m <= nmature; m++ ){
+//             for ( int o = 1; o <= nshell; o++ ){
+//               int ig = pntr_hmo(h,m,o);
+//               nal = d4_N(ig,i,j); 
+//               nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
 
-              tmp_ft = ft(k,h,i,j);
-              if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10;//consistent
-              if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F) {
-                pre_catch_out(kk,i) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-              }
-              if (season_type(j)==EXPLOIT_F){
-                pre_catch_out(kk,i) += nal * tmp_ft * sel;
-              }
-            }//--o
-          }//--m
-          //out2 += calc_predicted_catch_det(i, j, h, k, type, unit);
-        } // h
-      } // sex
-    } // kk
-  } // i
+//               tmp_ft = ft(k,h,i,j);
+//               if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10;//consistent
+//               if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F) {
+//                 pre_catch_out(kk,i) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+//               }
+//               if (season_type(j)==EXPLOIT_F){
+//                 pre_catch_out(kk,i) += nal * tmp_ft * sel;
+//               }
+//             }//--o
+//           }//--m
+//           //out2 += calc_predicted_catch_det(i, j, h, k, type, unit);
+//         } // h
+//       } // sex
+//     } // kk
+//   } // i
 
-  res_catch_out.initialize();
-  for ( int kk = 1; kk <= nCatchDF; kk++ ){
-    for ( int i = syr; i <= nyrRetro; i++ ){
-      if ( obs_catch_out(kk,i) > 0.0 && pre_catch_out(kk,i) > 0.0 )
-        res_catch_out(kk,i) = log(obs_catch_out(kk,i)) - log(pre_catch_out(kk,i));          ///> Catch residuals
-    }
-  }
+//   res_catch_out.initialize();
+//   for ( int kk = 1; kk <= nCatchDF; kk++ ){
+//     for ( int i = syr; i <= nyrRetro; i++ ){
+//       if ( obs_catch_out(kk,i) > 0.0 && pre_catch_out(kk,i) > 0.0 )
+//         res_catch_out(kk,i) = log(obs_catch_out(kk,i)) - log(pre_catch_out(kk,i));          ///> Catch residuals
+//     }
+//   }
 
 // // =================================================================================================================================================
 
@@ -10673,31 +10848,40 @@ FUNCTION catch_likelihood
 
   // 1) Likelihood of the catch data.
   res_catch.initialize();
-  for ( int k = 1; k <= nCatchDF; k++ )
-   {
-    for ( int jj = 1; jj <= nCatchRows(k); jj++ )
-     if (dCatchData(k,jj,1) <= nyrRetro && dCatchData(k,jj,1) >= syr)
-      {
-       effort =   dCatchData(k,jj,10);                                ///> Effort data
-       // In first case (obs_catch > 0) then if there is only catch data, calculate the residual as per usual; if there is catch and effort data, then still use observed catch to calculate the residual, despite the predicted catch being calculated differently.
-       // In second case, when effort > 0 then the residual is the pred catch using Fs - pred catch using q
-       if ( obs_catch(k,jj) > 0.0 )
-        {
-         res_catch(k,jj) = log(obs_catch(k,jj)) - log(pre_catch(k,jj));
-        }
-       else
-        if (effort > 0.0)
-         {
+  nll_catch.initialize();
+  for ( int k = 1; k <= nCatchDF; k++ ){
+    dvector catch_sd = sqrt(log(1.0 + square(catch_cv(k))));
+    for ( int jj = 1; jj <= nCatchRows(k); jj++ ){
+      if (dCatchData(k,jj,1) <= nyrRetro && dCatchData(k,jj,1) >= syr){
+        effort =   dCatchData(k,jj,10);                                ///> Effort data
+        // In first case (obs_catch > 0) then if there is only catch data, calculate the residual as per usual; if there is catch and effort data, then still use observed catch to calculate the residual, despite the predicted catch being calculated differently.
+        // In second case, when effort > 0 then the residual is the pred catch using Fs - pred catch using q
+        if ( obs_catch(k,jj) > 0.0 ){
+          res_catch(k,jj) = log(obs_catch(k,jj)) - log(pre_catch(k,jj));
+          nloglike(1,k)  += dnorm(res_catch(k,jj), catch_sd(jj));//--WTS: note that this includes residuals (0's) from years outside model time frame
+        } else
+        if (effort > 0.0) {
           res_catch(k,jj) = log(obs_catch_effort(k,jj)) - log(pre_catch(k,jj));
-         }
-      }
-     dvector catch_sd = sqrt(log(1.0 + square(catch_cv(k))));
-     nloglike(1,k) += dnorm(res_catch(k), catch_sd);
-//	 for ( int jj = 1; jj <= nCatchRows(k); jj++ )
-//     if (dCatchData(k,jj,1) <= nyrRetro)
-//      nloglike(1,k) += log(sqrt(2.0*pi)*catch_sd(jj)) + 0.5*square(res_catch(k,jj)/catch_sd(jj));
-   }
+          if (!doTCSAM02EffExp) nloglike(1,k) += dnorm(res_catch(k,jj), catch_sd(jj));//--WTS: these residuals should NOT be included in the likelihoodof using the TCSAM02 effort expansion
+        }
+        nll_catch(k,jj) = dnorm(res_catch(k,jj), catch_sd(jj));//--for output (unlike nloglike(1,k), includes no extra constants from years outside model time frame)
+      } //--catch data in model time frame
+    } //--jj loop
+    //nloglike(1,k) += dnorm(res_catch(k), catch_sd);//-WTS: note that this includes residuals (0's) from years outside model time frame: doesn't affect convergence but does add constants 
+  }
   if ( verbose >= 3 ) cout << "Ok after catch likelihood ..." << endl;
+
+// --------------------------------------------------------------------------------------------------
+// Label 401a: effexp_likelihood
+// FUNCTION effexp_likelihood
+//   if ( verbose >= 3 ) cout << "Starting effexp_likelihood ..." << endl;
+//   if (doTCSAM02EffExp){
+//     nloglike(8).initialize();
+//     double stdv = sqrt(log(1.0+square(0.1)));//TODO: fixed CV
+//                     zscrEffX_nxmsy(n,x,m,s) = (log(obsEff_nxmsy(n,x,m,s)+smlVal)-log(prdEff_nxmsy(n,x,m,s)+smlVal))/stdv;
+//                     nllEffX_nxms(n,x,m,s)   = norm2(zscrEffX_nxmsy(n,x,m,s));
+//   }
+//   if ( verbose >= 3 ) cout << "Ok after effexp_likelihood ..." << endl;
 
 // --------------------------------------------------------------------------------------------------
 // Label 402: index_likelihood
@@ -12685,14 +12869,13 @@ FUNCTION adstring strg(double d)
       sprintf(buffer,"%g",d);
       adstring tmp(buffer);
       return tmp;
-
   /**
   * Convert dvector to string of unquoted, space-separated values
   * @param v - dvector to format as csv string
   * @return - adstring
   */
 FUNCTION adstring to_str(const dvector& v)
-      int g=1;
+      int g=1; // flag to use strg (>0) or str (0) to format individual numbers
       int mn = v.indexmin();
       int mx = v.indexmax();
       adstring s;
@@ -12712,6 +12895,40 @@ FUNCTION adstring to_str(const dvector& v)
 FUNCTION adstring to_str(const dvar_vector& v)
       dvector vp = value(v);
       adstring s = to_str(vp);
+      return s;
+
+// -------------------------------------------------------------------------------------------------------------------------------------------------
+  /**
+  * Function to format a double using 'g'-type formatting in sprintf() with precision to 15 places.
+  * 
+  * @param d
+  * @return g-formatted adstring representation of d with precision to 15 places
+  */
+FUNCTION adstring strg15(double d)
+      char  buffer[50];
+      sprintf(buffer,"%.15g",d);
+      adstring tmp(buffer);
+      return tmp;
+  /**
+  * Convert dvector to string of unquoted, space-separated values
+  * @param v - dvector to format as csv string
+  * @return - adstring
+  */
+FUNCTION adstring to_str15(const dvector& v)
+      int mn = v.indexmin();
+      int mx = v.indexmax();
+      adstring s;
+      s = strg15(v(mn));
+      for (int i=mn;i<mx;i++) s = s+" "+strg15(v(i+1));
+      return s;
+  /**
+  * Convert dvar_vector to string of unquoted, space-separated values
+  * @param v - dvar_vector to format as csv string
+  * @return - adstring
+  */
+FUNCTION adstring to_str15(const dvar_vector& v)
+      dvector vp = value(v);
+      adstring s = to_str15(vp);
       return s;
 
 // =====================================================================================================================================
@@ -12792,7 +13009,7 @@ FUNCTION CreateOutput
   OutFile1 << "#*******************************************" << endl;
  
   OutFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
-  RepFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
+  //RepFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
   // The header material
   OutFile5 << TheHeader << endl;
   OutFile5 << "Par_No Est_No Paramter Estimate Standard_Error" << endl;
@@ -12906,8 +13123,9 @@ FUNCTION CreateOutput
   RepFile1 << "Likelihood_summary: dataframe" << endl;
   RepFile1 << "term                     type           year     fleet     units   sex     maturity           nll                      emphasis         objfun_value" << endl;
   RepFile1 << "Catch_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(1)) << " " << catch_emphasis            << " "  << sum(elem_prod(nloglike(1),catch_emphasis))   << endl;
-  RepFile1 << "Index_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(2)) << " " << cpue_emphasis            << " "  << sum(elem_prod(nloglike(2),cpue_emphasis))    << endl;
-  RepFile1 << "Size_data              " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(3)) << " " << lf_emphasis            << " "  << sum(elem_prod(nloglike(3),lf_emphasis))      << endl;
+  RepFile1 << "Catch_data_alt         " << " summary    NA        NA        NA    NA        NA      " << sum(nll_catch)   << " " << catch_emphasis            << " "  << sum(nll_catch)                               << endl;
+  RepFile1 << "Index_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(2)) << " " << cpue_emphasis             << " "  << sum(elem_prod(nloglike(2),cpue_emphasis))    << endl;
+  RepFile1 << "Size_data              " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(3)) << " " << lf_emphasis               << " "  << sum(elem_prod(nloglike(3),lf_emphasis))      << endl;
   RepFile1 << "Stock_recruitment      " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(4)) << " " << 1            << " "  << sum(nloglike(4))                             << endl;
   RepFile1 << "Tagging_data           " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(5)) << " " << tag_emphasis << " "  << sum(nloglike(5))*tag_emphasis                << endl;
   RepFile1 << "Growth_data            " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(6)) << " " << 1            << " "  << sum(nloglike(6))                             << endl;
@@ -12932,10 +13150,15 @@ FUNCTION CreateOutput
     RepFile1 << "Catch_data              " << catchtypes(dc(7)) << " NA      " << fleetname(dc(3)) << " " << unitstypes(dc(8)) << " " << sexes(dc(4)) << " " << "NA" << " " <<  
                                               nloglike(1,id) << " " << catch_emphasis(id) << " " << nloglike(1,id)*catch_emphasis(id) << endl;
   }
+  for (int id=1; id<=nloglike(1).size();id++){
+    dvector dc = dCatchData(id,1);
+    RepFile1 << "Catch_data_alt           " << catchtypes(dc(7)) << " NA      " << fleetname(dc(3)) << " " << unitstypes(dc(8)) << " " << sexes(dc(4)) << " " << "NA" << " " <<  
+                                               sum(nll_catch(id)) << " " << catch_emphasis(id) << " " << sum(nll_catch(id))*catch_emphasis(id) << endl;
+  }
   for (int id=1; id<=nloglike(2).size();id++){
     int rw = uRAI_ids(id,2); 
     dvector sd = dSurveyData(rw);
-    RepFile1 << "Index_data              " << "index_data      NA    " << fleetname(sd(3)) << " " << unitstypes(sd(4)) << " " << sexes(sd(4)) << " " << maturestate(sd(4)) << " " << 
+    RepFile1 << "Index_data              " << "index_data      NA    " << fleetname(sd(3)) << " " << unitstypes(sd(8)) << " " << sexes(sd(4)) << " " << maturestate(sd(5)) << " " << 
                                               nloglike(2,id) << " " << cpue_emphasis(id) << " " << nloglike(2,id)*cpue_emphasis(id) << endl;
   }
   for (int id=1; id<=nloglike(3).size();id++){
@@ -13076,7 +13299,48 @@ FUNCTION CreateOutput
   }
 
   RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
-  { int Kpar = 0;
+  if (doTCSAM02EffExp){ 
+    int Kpar = 0;
+    for (Ipar=1;Ipar<=nfleet;Ipar++){
+      Jpar = 0;
+      for (int iy=syr;iy<=nyrRetro;iy++){
+        for (int j=1;j<=nseason;j++){
+          if (fhit(iy,j,Ipar) >0){
+            if (cfhit(iy,j,Ipar)>0){
+              Jpar +=1;
+              Npar +=1;
+              anystring = "Log_fdev_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
+              OutFile1 << Npar << " " << anystring << ": " << log_fdev(Ipar,Jpar) << " " << f_phz(Ipar) << " ";
+              RepFile1 << Npar << " " << anystring << "  " << log_fdev(Ipar,Jpar) << " " << f_phz(Ipar) << " ";
+              ParFile1 << log_fdev(Ipar,Jpar) << " \t# " << Npar << "\t" << anystring << "\t";
+              if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
+                RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+                ParFile1 << "(not_estd)" << endl;
+              }
+              if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) { 
+                NparEst +=1; CheckBounds(log_fdev(Ipar,Jpar),-1000.0,1000.0);  
+                OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+                RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+                ParFile1 << NparEst << endl;
+                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
+              }
+              OutFile1 << endl;
+              RepFile1 << endl;
+            }
+          }//--if (fhit(iy,j,Ipar) >0)
+        }//--j loop
+      }//--iy loop
+      if (Jpar==0){//WTS 2026-03-09
+        // log_fdev defined (=0) but not applied for surveys. TODO: this may only work if log_fdev is not estimated for ANY fleets
+        Npar++;
+        anystring = "Log_fdev_"+fleetname(Ipar);
+        OutFile1 << Npar+Kpar << " " << anystring << ": " << log_fdev(Ipar,1) << " " << foffdevs_phz(Ipar) << " " << endl;
+        RepFile1 << Npar+Kpar << " " << anystring << "  " << log_fdev(Ipar,1) << " " << foffdevs_phz(Ipar) << " " << "NA NA NA NA NA NA NA " << endl;
+        ParFile1 << log_fdev(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
+      }
+    }//--Ipar loop
+  } else {
+    int Kpar = 0;
     for (Ipar=1;Ipar<=nfleet;Ipar++){
       Jpar = 0;
       for (int iy=syr;iy<=nyrRetro;iy++){
@@ -13138,7 +13402,48 @@ FUNCTION CreateOutput
   }
 
   RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
-  { int Kpar =  0;
+  if (doTCSAM02EffExp){ 
+    int Kpar =  0;
+    for (Ipar=1;Ipar<=nfleet;Ipar++){
+      Jpar = 0;
+      for (int iy=syr;iy<=nyrRetro;iy++){
+        for (int j=1;j<=nseason;j++){
+          if (yhit(iy,j,Ipar) >0){
+            if (cyhit(iy,j,Ipar) >0){
+              Jpar +=1;
+              Npar +=1;
+              anystring = "Log_fdov_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
+              OutFile1 << Npar << " " << anystring << ": " << log_fdov(Ipar,Jpar) << " " << foffdevs_phz(Ipar) << " ";
+              RepFile1 << Npar << " " << anystring << "  " << log_fdov(Ipar,Jpar) << " " << foffdevs_phz(Ipar) << " ";
+              ParFile1 << log_fdov(Ipar,Jpar) << " \t# " << Npar << "\t" << anystring << "\t";
+              if ((foffdevs_phz(Ipar) < 0) || (foffdevs_phz(Ipar) > current_phase())) {
+                RepFile1 << "NA NA NA NA NA NA NA ";// << endl;
+                ParFile1 << "(not_estd)" << endl;
+              }
+              if (foffdevs_phz(Ipar) > 0 && foffdevs_phz(Ipar) <= current_phase()) { 
+                NparEst +=1; CheckBounds(log_fdov(Ipar,Jpar),-1000.0,1000.0);  
+                OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+                RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
+                ParFile1 << NparEst << endl;
+                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
+              }
+              OutFile1 << endl;
+              RepFile1 << endl;
+            }//--if (cyhit(iy,j,Ipar) >0)
+          }//--if (yhit(iy,j,Ipar) >0)
+        }//--j loop
+      }//--iy loop
+      if (Jpar==0){//WTS 2026-03-09
+        // log_fdov defined (=0) but not applied. TODO: think this only works if log_fdov is not estimated for ANY fleets
+        Npar++;
+        anystring = "Log_fdov_"+fleetname(Ipar);
+        OutFile1 << Npar+Kpar << " " << anystring << ": " << log_fdov(Ipar,1) << " " << foffdevs_phz(Ipar) << " " << endl;
+        RepFile1 << Npar+Kpar << " " << anystring << "  " << log_fdov(Ipar,1) << " " << foffdevs_phz(Ipar) << " " << "NA NA NA NA NA NA NA " << endl;
+        ParFile1 << log_fdov(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
+      }
+    }//--iPar loop
+  } else {
+    int Kpar =  0;
     for (Ipar=1;Ipar<=nfleet;Ipar++){
       Jpar = 0;
       for (int iy=syr;iy<=nyrRetro;iy++){
@@ -13175,7 +13480,8 @@ FUNCTION CreateOutput
         ParFile1 << log_fdov(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
       }
     }//--iPar loop
-  }
+  }//--if (doTCSAM02EffExp)
+
   // if (Jpar!=sum(nYparams)) {
   //   ECHOSTR("Jpar != sum(nYparams)")
   //   ECHO(Jpar); ECHO(sum(nYparams)); ECHO(Npar);
@@ -13419,7 +13725,7 @@ FUNCTION CreateOutput
   // Big summary
   OutFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   OutFile1 << "#Overall_summary" << endl;
-  calc_predicted_catch_out();
+  // calc_predicted_catch_out();
   dvector ssb = value(calc_ssb());
   dvector ssba = value(calc_ssba());
   OutFile1 << "Summary: dataframe" << endl;
@@ -13617,7 +13923,7 @@ FUNCTION CreateOutput
   
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Catch_fit_summary: dataframe" << endl;
-  RepFile1 << "series year fleet season sex obs cv type units mult effort HM prd rsd" << endl;
+  RepFile1 << "series year fleet season sex obs cv type units mult effort HM obs_cat_eff prd rsd nll" << endl;
   for (int iCatOut=1;iCatOut<=nCatchDF;iCatOut++)
    for (int irow=1;irow<=nCatchRows(iCatOut); irow++)
     if ((int(dCatchData(iCatOut,irow,1)) >= syr) && int(dCatchData(iCatOut,irow,1)) <= nyrRetro)
@@ -13633,8 +13939,10 @@ FUNCTION CreateOutput
                                 << dCatchData(iCatOut,irow,9) << " " 
                                 << dCatchData(iCatOut,irow,10) << " " 
                                 << dCatchData(iCatOut,irow,11) << " "
+                                << obs_catch_effort(iCatOut,irow) << " "
                                 << pre_catch(iCatOut,irow) << " " 
-                                << res_catch(iCatOut,irow) << endl;
+                                << res_catch(iCatOut,irow) << " " 
+                                << nll_catch(iCatOut,irow) << endl;
     } // -- iCatOut and irow
   RepFile1 << ">EOD<" << endl;
   
@@ -14349,7 +14657,7 @@ FUNCTION CreateOutput
   for (int h=1; h<=nsex; h++) {
     for (int i=1;i<=nSizeIncVaries(h);i++){ 
       for (int j=1;j<=nclass;j++)
-        RepFile1 << sexes(h) << " " << i << " " << mid_points(j) << " " << to_str(growth_transition(h,i,j)) << endl;
+        RepFile1 << sexes(h) << " " << i << " " << mid_points(j) << " " << to_str15(growth_transition(h,i,j)) << endl;
     }
   }
   RepFile1 << ">EOD<" << endl;
@@ -14835,6 +15143,9 @@ FUNCTION WriteFiles
   OutInpFile1 << "#  6: Von Bert.: Linf varies among individuals (requires molt probability)" << endl;
   OutInpFile1 << "#  7: Von Bert.: kappa and Linf varies among individuals (requires molt probability)" << endl;
   OutInpFile1 << "#  8: Growth increment is normally distributed (requires molt probability)" << endl;
+  OutInpFile1 << "#  8: Growth increment is normally distributed (requires molt probability)" << endl;
+  OutInpFile1 << "#  9: TCSAM02-like growth like 3, but limits max growth and max size bin is an accumulator" << endl;
+  OutInpFile1 << "# 10: TCSAM02-like growth like 4, but limits max growth and max size bin is an accumulator" << endl;
   OutInpFile1 << endl;
   OutInpFile1 << "## Type_2: Options for the growth increment model matrix" << endl;
   OutInpFile1 << "#  1: Linear" << endl;
@@ -15273,33 +15584,63 @@ FUNCTION WriteFiles
     OutInpFile1 << "#"; for (int Ipar=1;Ipar<=nfleet;Ipar++) OutInpFile1 << setw(12) << setprecision(8) << setfixed() << log_foff(Ipar) << " ";  OutInpFile1 << endl;
   } 
   OutInpFile1 << "# Male annual offset fishing mortality deviations by fleet" << endl;
-  for (int Ipar=1;Ipar<=nfleet;Ipar++){
-    int Jpar = 0;
-    OutInpFile1 << "# " << fleetname(Ipar) << " "; 
-    for (int iy=syr;iy<=nyrRetro;iy++)
-      for (int j=1;j<=nseason;j++) if (fhit(iy,j,Ipar) >0) OutInpFile1 << setw(12) << setfixed() << iy << " ";
-    OutInpFile1 << endl;
-    OutInpFile1 << "# " << fleetname(Ipar) << " "; 
-    for (int iy=syr;iy<=nyrRetro;iy++)
-      for (int j=1;j<=nseason;j++) 
-        if (fhit(iy,j,Ipar) >0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdev(Ipar,Jpar) << " "; }
-    OutInpFile1 << endl;
-  }// ipar loop
-  if (nsex > 1){
-    OutInpFile1 << "# Female annual offset fishing mortality deviations by fleet" << endl;
+  if (doTCSAM02EffExp){
     for (int Ipar=1;Ipar<=nfleet;Ipar++){
       int Jpar = 0;
       OutInpFile1 << "# " << fleetname(Ipar) << " "; 
       for (int iy=syr;iy<=nyrRetro;iy++)
-        for (int j=1;j<=nseason;j++) if (yhit(iy,j,Ipar) >0) OutInpFile1 << setw(12) << setfixed() << iy << " ";
+        for (int j=1;j<=nseason;j++) if (fhit(iy,j,Ipar) >0) if (cfhit(iy,j,Ipar) > 0) OutInpFile1 << setw(12) << setfixed() << iy << " ";
       OutInpFile1 << endl;
       OutInpFile1 << "# " << fleetname(Ipar) << " "; 
       for (int iy=syr;iy<=nyrRetro;iy++)
         for (int j=1;j<=nseason;j++) 
-          if (yhit(iy,j,Ipar) >0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdov(Ipar,Jpar) << " "; }
+          if (fhit(iy,j,Ipar) >0) if (cfhit(iy,j,Ipar) > 0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdev(Ipar,Jpar) << " "; }
       OutInpFile1 << endl;
-    }
-  } //--if (nsex)  
+    }// ipar loop
+    if (nsex > 1){
+      OutInpFile1 << "# Female annual offset fishing mortality deviations by fleet" << endl;
+      for (int Ipar=1;Ipar<=nfleet;Ipar++){
+        int Jpar = 0;
+        OutInpFile1 << "# " << fleetname(Ipar) << " "; 
+        for (int iy=syr;iy<=nyrRetro;iy++)
+          for (int j=1;j<=nseason;j++) if (yhit(iy,j,Ipar) >0) if (cyhit(iy,j,Ipar) > 0) OutInpFile1 << setw(12) << setfixed() << iy << " ";
+        OutInpFile1 << endl;
+        OutInpFile1 << "# " << fleetname(Ipar) << " "; 
+        for (int iy=syr;iy<=nyrRetro;iy++)
+          for (int j=1;j<=nseason;j++) 
+            if (yhit(iy,j,Ipar) >0) if (cyhit(iy,j,Ipar) > 0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdov(Ipar,Jpar) << " "; }
+        OutInpFile1 << endl;
+      }
+    } //--if (nsex > 1)  
+  } else {
+    for (int Ipar=1;Ipar<=nfleet;Ipar++){
+      int Jpar = 0;
+      OutInpFile1 << "# " << fleetname(Ipar) << " "; 
+      for (int iy=syr;iy<=nyrRetro;iy++)
+        for (int j=1;j<=nseason;j++) if (fhit(iy,j,Ipar) >0) OutInpFile1 << setw(12) << setfixed() << iy << " ";
+      OutInpFile1 << endl;
+      OutInpFile1 << "# " << fleetname(Ipar) << " "; 
+      for (int iy=syr;iy<=nyrRetro;iy++)
+        for (int j=1;j<=nseason;j++) 
+          if (fhit(iy,j,Ipar) >0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdev(Ipar,Jpar) << " "; }
+      OutInpFile1 << endl;
+    }// ipar loop
+    if (nsex > 1){
+      OutInpFile1 << "# Female annual offset fishing mortality deviations by fleet" << endl;
+      for (int Ipar=1;Ipar<=nfleet;Ipar++){
+        int Jpar = 0;
+        OutInpFile1 << "# " << fleetname(Ipar) << " "; 
+        for (int iy=syr;iy<=nyrRetro;iy++)
+          for (int j=1;j<=nseason;j++) if (yhit(iy,j,Ipar) >0) OutInpFile1 << setw(12) << setfixed() << iy << " ";
+        OutInpFile1 << endl;
+        OutInpFile1 << "# " << fleetname(Ipar) << " "; 
+        for (int iy=syr;iy<=nyrRetro;iy++)
+          for (int j=1;j<=nseason;j++) 
+            if (yhit(iy,j,Ipar) >0) { Jpar += 1; OutInpFile1 << setw(12) << setprecision(8) << setfixed()<< log_fdov(Ipar,Jpar) << " "; }
+        OutInpFile1 << endl;
+      }
+    } //--if (nsex > 1)  
+  }//--if (doTCSAM02EffExp)
  
   OutInpFile1 << "#\n # Estimates related to recruitment" << endl;
   OutInpFile1 << "# Annual_deviations "; for (int Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++) OutInpFile1 << setw(12) << setfixed() << Ipar << " "; OutInpFile1 << endl;
@@ -15480,8 +15821,8 @@ GLOBALS_SECTION
   OutFile2 << #object "\n" << setw(8) \
   << setprecision(4) << setfixed() << object << endl; \
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl; \
-  RepFile1 << #object << ": vector \n" << setw(8) \
-  << setprecision(4) << setfixed() << object << endl; 
+  RepFile1 << #object << ": vector \n" << setw(15) \
+  << setprecision(10) << object << endl; 
 
   #undef REPVEC2
   #define REPVEC2(object) \
@@ -15490,8 +15831,8 @@ GLOBALS_SECTION
   OutFile2 << #object "\n" << setw(12) \
   << setprecision(8) << setfixed() << object << endl; \
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl; \
-  RepFile1 << #object << ": vector\n" << setw(12) \
-  << setprecision(8) << setfixed() << object << endl;
+  RepFile1 << #object << ": vector\n" << setw(15) \
+  << setprecision(10) << object << endl;
 
   /**
   \def REPMAT(object)
@@ -15504,8 +15845,8 @@ GLOBALS_SECTION
   OutFile2 << #object "\n" << setw(8) \
   << setprecision(4) << setfixed() << object << endl; \
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl; \
-  RepFile1 << #object << ": matrix\n" << setw(8) \
-  << setprecision(4) << setfixed() << object << endl << ">EOM<" << endl; 
+  RepFile1 << #object << ": matrix\n" << setw(15) \
+  << setprecision(10) << object << endl << ">EOM<" << endl; 
 
   #undef REPMAT2
   #define REPMAT2(object) \
@@ -15514,8 +15855,8 @@ GLOBALS_SECTION
   OutFile2 << #object "\n" << setw(12) \
   << setprecision(8) << setfixed() << object << endl; \
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl; \
-  RepFile1 << #object << ": matrix\n" << setw(12) \
-  << setprecision(8) << setfixed() << object << endl << ">EOM<" << endl;
+  RepFile1 << #object << ": matrix\n" << setw(15) \
+  << setprecision(10) << object << endl << ">EOM<" << endl;
 
   /**
    * \def COUT(object)
@@ -15741,6 +16082,10 @@ GLOBALS_SECTION
   #define GROWTH_VARYKLINF 7
   #undef GROWTH_NORMAL
   #define GROWTH_NORMAL 8
+  #undef GROWTH_TCSAM02A
+  #define GROWTH_TCSAM02A 9
+  #undef GROWTH_TCSAM02B
+  #define GROWTH_TCSAM02B 10
 
   #undef FIXED_PROB_MOLT
   #define FIXED_PROB_MOLT 0
@@ -16325,7 +16670,17 @@ FINAL_SECTION
 //                    by observed size bins). Total and annual values for the nll are reported in the Likelihood_summary dataframe of the gmacs.rep1 file. The ivector 
 //                    "ilike_vector" was modified to an imatrix ("ilike_matrix") to facilitate dimensioning the ragged array "nloglike" correctly. 
 //                    Version incremented to 2.20.35a.
-//
+//                    Commented out "calc_predicted_catch_out" and associated results arrays (obs_catch_out,pre_catch_out) because these were never used for anything constructive 
+//                    (the function was called, but nothing was done with the results).
+// 2026-03-25 ** WTS. Added "doTCSAM02EffExp" flag to dat file (right after flag to read catch data in new format). Setting doTCSAM02EffExp=0 ("off") results in the 
+//                    original method of effort extrapolation for missing catch based on "log_q_catch" being used (see "calc_predicted_catch"). If "on" (1), effort extrapolation for missing catch is 
+//                    based on average catch divided by average effort for years specified by new "avg_eff" column in new-format CatchDFs. Functions "calc_fishing_mortality" 
+//                    and "calc_predicted _catch" have been modified. If "off", the number of log_fdevs and log_fdovs for each catch dataframe depends on the number of rows of catch data 
+//                    given (whether catch was observed or not). If "on", the number of log_fdevs and log_fdovs depends only on the number of rows which contain 
+//                    non-missing catch data. Thsu, the required number of estimated fishing mortality parameters may be different between 
+//                    the two options and different par files would be required to switch between options if initializing model runs with a par file.
+//                    Incremented version to 2.20.35b.
+// 2026-03-27 ** WTS. Added growth transition options 9 and 10 to provide same functionality as TCSAM02, mainly for direct comparisons with results from that code.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
