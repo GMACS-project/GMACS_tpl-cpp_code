@@ -6961,8 +6961,8 @@ FUNCTION calc_fishing_mortality
       for ( int i = syr; i <= nyrRetro; i++ ){
         for ( int j = 1; j <= nseason; j++ ){
           if ( fhit(i,j,k)>0 ){  //--does not depend on sex
-            cout << "k, h, i, j = " << k << " " << h << " " << i << " " << j << " ik = "  << ik << endl;
-            cout << "  fhit(i,j,k) = " << fhit(i,j,k) << "  cfhit(i,j,k) = " << cfhit(i,j,k) << "  cyhit(i,j,k) = " << cyhit(i,j,k) << endl;
+            if (verbose>4) cout << "k, h, i, j = " << k << " " << h << " " << i << " " << j << " ik = "  << ik << endl;
+            if (verbose>4) cout << "  fhit(i,j,k) = " << fhit(i,j,k) << "  cfhit(i,j,k) = " << cfhit(i,j,k) << "  cyhit(i,j,k) = " << cyhit(i,j,k) << endl;
             if (doTCSAM02EffExp){
               // doing TCSAM02 approach to effort expansion
               log_ftmp    = log_fbar(k);
@@ -7009,8 +7009,8 @@ FUNCTION calc_fishing_mortality
         int k  = dCatchData(kk,jj,3);   // fleet/gear index
         int h  = dCatchData(kk,jj,4);   // sex index
         eff    = dCatchData(kk,jj,10);
-        if (verbose >3) cout << "kk, jj = " << kk << " " << jj << endl;
-        if (verbose >3) cout << "k, h, i, j = " << k << " " << h << " " << i << " " << j << endl;
+        if (verbose >4) cout << "kk, jj = " << kk << " " << jj << endl;
+        if (verbose >4) cout << "k, h, i, j = " << k << " " << h << " " << i << " " << j << endl;
         if (i <= nyrRetro && i >= syr){
           if (mEffAvgYrs(kk,jj)){       // only average over years specified in CatchDF
             if (h==0){ // need to include for all sexes
@@ -7020,7 +7020,7 @@ FUNCTION calc_fishing_mortality
                 sumObsEff(hp) += eff;
               }
             } else { // just include for specific sex
-              if (verbose>3) cout << "including ft(k,h,i,j) = " << ft(k,h,i,j) << " and eff = " << eff << " in sums." << endl;
+              if (verbose>4) cout << "including ft(k,h,i,j) = " << ft(k,h,i,j) << " and eff = " << eff << " in sums." << endl;
               sumObsFc(h)  += ft(k,h,i,j);
               sumObsEff(h) += eff;
             }
@@ -10321,14 +10321,14 @@ FUNCTION calc_predicted_composition
             i = ii; 
             qmult = 1;
             if (survey_for_q_in(kk) >0) {
-              if (verbose) cout<<"----survey_for_q_in(kk) = "<< survey_for_q_in(kk) << endl;
+              if (verbose>3) cout<<"----survey_for_q_in(kk) = "<< survey_for_q_in(kk) << endl;
               qmult = SurveyQT(survey_for_q_in(kk),iyr);
-              if (verbose) cout<<"----qmult = "<< qmult << endl;
+              if (verbose>3) cout<<"----qmult = "<< qmult << endl;
             }
             if (verbose>3) cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
             if (verbose>3) cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
             if (std::isnan(value(d3_pre_size_comps_in(kk,ii,jj)))){
-              cout << "line 8551" << endl;
+              cout << "line 10331" << endl;
               cout << " k,i,j    = "<< k <<", "<< i <<", "<< j << endl;
               cout << " kk,ii,jj = "<< kk <<", "<< ii <<", "<< jj << endl;
               cout << "d3_pre_size_comps_in(kk,ii,jj) is NaN"<< endl;
@@ -10350,7 +10350,7 @@ FUNCTION calc_predicted_composition
           d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
           // AEP: BUG
           if (std::isnan(value(sum(d3_pre_size_comps(k,i))))){
-            cout << "line 8736" << endl;
+            cout << "line 10353" << endl;
             cout << " k,i    = "<< k <<", "<< i << endl;
             cout << "d3_pre_size_comps(k,i) is NaN: " << d3_pre_size_comps(k,i) << endl;
             exit(-1);
@@ -10862,7 +10862,7 @@ FUNCTION catch_likelihood
         } else
         if (effort > 0.0) {
           res_catch(k,jj) = log(obs_catch_effort(k,jj)) - log(pre_catch(k,jj));
-          if (!doTCSAM02EffExp) nloglike(1,k) += dnorm(res_catch(k,jj), catch_sd(jj));//--WTS: these residuals should NOT be included in the likelihoodof using the TCSAM02 effort expansion
+          if (!doTCSAM02EffExp) nloglike(1,k) += dnorm(res_catch(k,jj), catch_sd(jj));//--WTS: these residuals should NOT be included in the likelihood if using the TCSAM02 effort expansion
         }
         nll_catch(k,jj) = dnorm(res_catch(k,jj), catch_sd(jj));//--for output (unlike nloglike(1,k), includes no extra constants from years outside model time frame)
       } //--catch data in model time frame
@@ -11235,20 +11235,30 @@ FUNCTION calc_objective_function
 
   objfun =  w_nloglike + sum(elem_prod(nlogPenalty,Penalty_emphasis))+ sum(priorDensity) + TempSS + grwthPosFun;
 
+  if ( verbose >= 1 && !sd_phase()) cout  << "fn Call: " << current_phase() << " " << NfunCall << endl 
+                                          << " objun: " << objfun << " w_nloglike: " << w_nloglike << endl
+                                          << " Sum(nlogPenalty): " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) 
+                                          << " Sum(priorDensity):" << sum(priorDensity) << endl 
+                                          << " TempSS: " << TempSS << " grwthPosFun: " << grwthPosFun << endl;
+
   // Summary tables
   if (verbose>=2){
-    cout << "Priors: " << priorDensity << endl;
-    cout << "TempSS: " << TempSS << endl;
-    cout << "Penalties: " << nlogPenalty << endl;
-    cout << "Penalties: " << elem_prod(nlogPenalty,Penalty_emphasis) << " " << TempSS << endl;
-    cout << "posfun pen." << grwthPosFun << endl;
-    cout << "Likelihoods: " << endl;
-    cout << nloglike << endl;
+    cout << "Priors             : " << priorDensity << endl;
+    cout << "TempSS             : " << TempSS << endl;
+    cout << "Penalties          : " << nlogPenalty << endl;
+    cout << "Penalties (w/ emph): " << elem_prod(nlogPenalty,Penalty_emphasis) << endl;
+    cout << "posfun pen.        : " << grwthPosFun << endl;
+    cout << "Likelihoods        : " << endl;
+    cout << "1. fishery catch   : " << sum(nloglike(1)) << " : " << nloglike(1) << endl;
+    cout << "2. index catch     : " << sum(nloglike(2)) << " : " << nloglike(2) << endl;
+    cout << "3. sise comps      : " << sum(nloglike(3)) << " : " << nloglike(3) << endl;
+    cout << "4. recruitment     : " << sum(nloglike(4)) << " : " << nloglike(4) << endl;
+    cout << "5. tagging growth  : " << sum(nloglike(5)) << " : " << nloglike(5) << endl;
+    cout << "6. growth data     : " << sum(nloglike(6)) << " : " << nloglike(6) << endl;
+    cout << "7. male mat. og.s  : " << sum(nloglike(7)) << " : " << nloglike(7) << endl;
+    cout << "8. effort expansion: " << sum(nloglike(8)) << " : " << nloglike(8) << endl;
+    writeRepPar();
   }
-
-  if ( verbose >= 1 && !sd_phase()) cout  << "fn Call: " << current_phase() << " " << NfunCall << " " 
-                                          << objfun << " " << w_nloglike << " " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << " " 
-                                          << sum(priorDensity)+TempSS << " " << grwthPosFun << endl;
 
 // ==================================================================================================================================================
 // === Main routines ended
@@ -12931,6 +12941,298 @@ FUNCTION adstring to_str15(const dvar_vector& v)
       adstring s = to_str15(vp);
       return s;
 
+FUNCTION writeRepPar
+  // write estimated parameters to "gmacs_rep_last.par"
+  int Ipar,Jpar,Npar,NparEst;
+  ParFile1.open("gmacs_rep_last.par");
+  ParFile1 << "# current phase: " << current_phase() << "fn call: " << NfunCall << endl;
+  ParFile1 << "#est    par_count  par_type     est_par_count    prior " << endl;
+
+  Npar = 0; NparEst = 0;
+  for (Ipar=1;Ipar<=n_Tpar;Ipar++){
+    Npar +=1;
+    ParFile1 << T_pars_est(Ipar) << " \t# " << Npar << "\t" << parname1(Npar) << "\t";
+    if ((T_phz(Ipar) < 0) || (T_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if ((T_phz(Ipar) > 0) && (T_phz(Ipar) <= current_phase())) { 
+      NparEst +=1; CheckBounds(T_pars_est(Ipar),T_lb(Ipar),T_ub(Ipar));  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+
+  for (Ipar=1;Ipar<=n_Gpar;Ipar++){
+    Npar +=1;
+    ParFile1 << G_pars_est(Ipar) << " \t# " << Npar << "\t" << parname1(Npar) << "\t";
+    if ((G_phz(Ipar) < 0) || (G_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if ((G_phz(Ipar) > 0) && (G_phz(Ipar) <= current_phase())) { 
+      NparEst +=1; CheckBounds(G_pars_est(Ipar),G_lb(Ipar),G_ub(Ipar));  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+   }
+  }
+
+  for (Ipar=1;Ipar<=n_Mpar;Ipar++){
+    Npar +=1;
+    ParFile1 << M_pars_est(Ipar) << " \t# " << Npar << "\t" << parname1(Npar) << "\t";
+    if ((M_phz(Ipar) < 0) || (M_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (M_phz(Ipar) > 0 && M_phz(Ipar) <= current_phase()) { 
+      NparEst +=1; CheckBounds(M_pars_est(Ipar),M_lb(Ipar),M_ub(Ipar));  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+
+  for (Ipar=1;Ipar<=n_Spar;Ipar++){
+    Npar +=1;
+    ParFile1 << S_pars_est(Ipar) << " \t# " << Npar << "\t" << parname1(Npar) << "\t";
+    if ((S_phz(Ipar) < 0) || (S_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (S_phz(Ipar) > 0 && S_phz(Ipar) <= current_phase()) { 
+      NparEst +=1; CheckBounds(S_pars_est(Ipar),S_lb(Ipar),S_ub(Ipar));  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+
+  for (Ipar=1;Ipar<=nfleet;Ipar++){
+    Npar +=1;
+    anystring = "Log_fbar_"+fleetname(Ipar);
+    ParFile1 << log_fbar(Ipar) << " \t# " << Npar << "\t" << anystring << "\t";
+    if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) { 
+      NparEst +=1; CheckBounds(log_fbar(Ipar),-1000.0,1000.0);  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+
+  if (doTCSAM02EffExp){ 
+    int Kpar = 0;
+    for (Ipar=1;Ipar<=nfleet;Ipar++){
+      Jpar = 0;
+      for (int iy=syr;iy<=nyrRetro;iy++){
+        for (int j=1;j<=nseason;j++){
+          if (fhit(iy,j,Ipar) >0){
+            if (cfhit(iy,j,Ipar)>0){
+              Jpar +=1;
+              Npar +=1;
+              anystring = "Log_fdev_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
+              ParFile1 << log_fdev(Ipar,Jpar) << " \t# " << Npar << "\t" << anystring << "\t";
+              if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
+                ParFile1 << "(not_estd)" << endl;
+              }
+              if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) { 
+                NparEst +=1; CheckBounds(log_fdev(Ipar,Jpar),-1000.0,1000.0);  
+                ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+              }
+             }
+          }//--if (fhit(iy,j,Ipar) >0)
+        }//--j loop
+      }//--iy loop
+      if (Jpar==0){//WTS 2026-03-09
+        // log_fdev defined (=0) but not applied for surveys. TODO: this may only work if log_fdev is not estimated for ANY fleets
+        Npar++;
+        anystring = "Log_fdev_"+fleetname(Ipar);
+        ParFile1 << log_fdev(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
+      }
+    }//--Ipar loop
+  } else {
+    int Kpar = 0;
+    for (Ipar=1;Ipar<=nfleet;Ipar++){
+      Jpar = 0;
+      for (int iy=syr;iy<=nyrRetro;iy++){
+        for (int j=1;j<=nseason;j++){
+          if (fhit(iy,j,Ipar) >0){
+            Jpar +=1;
+            Npar +=1;
+            anystring = "Log_fdev_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
+            ParFile1 << log_fdev(Ipar,Jpar) << " \t# " << Npar << "\t" << anystring << "\t";
+            if ((f_phz(Ipar) < 0) || (f_phz(Ipar) > current_phase())) {
+              ParFile1 << "(not_estd)" << endl;
+            }
+            if (f_phz(Ipar) > 0 && f_phz(Ipar) <= current_phase()) { 
+              NparEst +=1; CheckBounds(log_fdev(Ipar,Jpar),-1000.0,1000.0);  
+              ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+            }
+          }//--if (fhit(iy,j,Ipar) >0)
+        }//--j loop
+      }//--iy loop
+      if (Jpar==0){//WTS 2026-03-09
+        // log_fdev defined (=0) but not applied for surveys. TODO: this may only work if log_fdev is not estimated for ANY fleets
+        Npar++;
+        anystring = "Log_fdev_"+fleetname(Ipar);
+        ParFile1 << log_fdev(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
+      }
+    }//--Ipar loop
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=nfleet;Ipar++){
+    Npar +=1;
+    anystring = "Log_foff_"+fleetname(Ipar);
+    ParFile1 << log_foff(Ipar) << " \t# " << Npar << "\t" << anystring << "\t";
+    if ((foff_phz(Ipar) < 0) || (foff_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if ((foff_phz(Ipar) > 0) && (foff_phz(Ipar) <= current_phase())) { 
+      NparEst +=1; CheckBounds(log_foff(Ipar),-1000.0,1000.0);  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  if (doTCSAM02EffExp){ 
+    int Kpar =  0;
+    for (Ipar=1;Ipar<=nfleet;Ipar++){
+      Jpar = 0;
+      for (int iy=syr;iy<=nyrRetro;iy++){
+        for (int j=1;j<=nseason;j++){
+          if (yhit(iy,j,Ipar) >0){
+            if (cyhit(iy,j,Ipar) >0){
+              Jpar +=1;
+              Npar +=1;
+              anystring = "Log_fdov_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
+              ParFile1 << log_fdov(Ipar,Jpar) << " \t# " << Npar << "\t" << anystring << "\t";
+              if ((foffdevs_phz(Ipar) < 0) || (foffdevs_phz(Ipar) > current_phase())) {
+                ParFile1 << "(not_estd)" << endl;
+              }
+              if (foffdevs_phz(Ipar) > 0 && foffdevs_phz(Ipar) <= current_phase()) { 
+                NparEst +=1; CheckBounds(log_fdov(Ipar,Jpar),-1000.0,1000.0);  
+                ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+              }
+            }//--if (cyhit(iy,j,Ipar) >0)
+          }//--if (yhit(iy,j,Ipar) >0)
+        }//--j loop
+      }//--iy loop
+      if (Jpar==0){//WTS 2026-03-09
+        // log_fdov defined (=0) but not applied. TODO: think this only works if log_fdov is not estimated for ANY fleets
+        Npar++;
+        anystring = "Log_fdov_"+fleetname(Ipar);
+        ParFile1 << log_fdov(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
+      }
+    }//--iPar loop
+  } else {
+    int Kpar =  0;
+    for (Ipar=1;Ipar<=nfleet;Ipar++){
+      Jpar = 0;
+      for (int iy=syr;iy<=nyrRetro;iy++){
+        for (int j=1;j<=nseason;j++){
+          if (yhit(iy,j,Ipar) >0){
+            Jpar +=1;
+            Npar +=1;
+            anystring = "Log_fdov_"+fleetname(Ipar)+"_year_"+str(iy)+"_season_"+str(j);
+            ParFile1 << log_fdov(Ipar,Jpar) << " \t# " << Npar << "\t" << anystring << "\t";
+            if ((foffdevs_phz(Ipar) < 0) || (foffdevs_phz(Ipar) > current_phase())) {
+              ParFile1 << "(not_estd)" << endl;
+            }
+            if (foffdevs_phz(Ipar) > 0 && foffdevs_phz(Ipar) <= current_phase()) { 
+              NparEst +=1; CheckBounds(log_fdov(Ipar,Jpar),-1000.0,1000.0);  
+              ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+            }
+          }//--if (yhit(iy,j,Ipar) >0)
+        }//--j loop
+      }//--iy loop
+      if (Jpar==0){//WTS 2026-03-09
+        // log_fdov defined (=0) but not applied. TODO: think this only works if log_fdov is not estimated for ANY fleets
+        Npar++;
+        anystring = "Log_fdov_"+fleetname(Ipar);
+        ParFile1 << log_fdov(Ipar,1) << " \t# " << Npar+Kpar << "\t" << anystring << "\t" << "(not estd)" <<endl;
+      }
+    }//--iPar loop
+  }//--if (doTCSAM02EffExp)
+
+  // if (Jpar!=sum(nYparams)) {
+  //   ECHOSTR("Jpar != sum(nYparams)")
+  //   ECHO(Jpar); ECHO(sum(nYparams)); ECHO(Npar);
+  //   ParFile1 << "# JPar, sum(nYparams), Npar " << Jpar << " " << sum(nYparams) << " " << Npar << endl;
+  //   for (int i=1;i<=sum(nYparams)-Jpar;i++) {Npar = Npar + 1;}
+  //   ECHOSTR2("Adjusted Npr = ",Npar);
+  //   ParFile1 <<"# Adjusted Npr = " << Npar << endl;
+  // }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++){
+    Npar +=1;
+    ParFile1 << rec_dev_est(Ipar) << " \t# " << Npar << "\t" << " Rec_dev_est_" << Ipar << "\t";
+    if ((rdv_phz < 0) || (rdv_phz > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (rdv_phz > 0 && rdv_phz <= current_phase()) { 
+      NparEst +=1; CheckBounds(rec_dev_est(Ipar),-8.0,8.0);  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+     }
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++){
+    Npar +=1;
+    ParFile1 << logit_rec_prop_est(Ipar) << " \t# " << Npar << "\t" << " Logit_rec_prop_est_" << Ipar << "\t";
+    if ((rec_prop_phz < 0) || (rec_prop_phz > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (rec_prop_phz > 0 && rec_prop_phz <= current_phase()) { 
+      NparEst +=1; CheckBounds(logit_rec_prop_est(Ipar),-100.0,100.0);  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+     }
+  }
+
+  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  for (Ipar=1;Ipar<=nSizeComps;Ipar++){
+    Npar +=1;
+    anystring = "Log_vn_size_comp_"+str(Ipar);
+    ParFile1 << log_vn(Ipar)<< " \t# " << Npar << "\t" << anystring << "\t";
+    if ((log_vn_phz(Ipar) < 0) || (log_vn_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (log_vn_phz(Ipar) > 0 && log_vn_phz(Ipar) <= current_phase()) { 
+      NparEst +=1; CheckBounds(log_vn(Ipar),log_vn_lb(Ipar),log_vn_ub(Ipar));  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+
+  for (Ipar=1;Ipar<=n_qpar;Ipar++){
+    Npar +=1;
+    anystring = "Survey_q_survey_"+str(Ipar);
+    ParFile1 << survey_q(Ipar)<< " \t# " << Npar << "\t" << anystring << "\t";
+    if ((q_phz(Ipar) < 0) || (q_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (q_phz(Ipar) > 0 && q_phz(Ipar) <= current_phase()) { 
+      NparEst +=1; CheckBounds(survey_q(Ipar),q_lb(Ipar),q_ub(Ipar));  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+
+  for (Ipar=1;Ipar<=n_addcv_par;Ipar++){
+    Npar +=1;
+    anystring = "Log_add_cvt_survey_"+str(Ipar);
+    ParFile1 << log_add_cv(Ipar)<< " \t# " << Npar << "\t" << anystring << "\t";
+    if ((cv_phz(Ipar) < 0) || (cv_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (cv_phz(Ipar) > 0 && cv_phz(Ipar) <= current_phase()) { 
+      NparEst +=1; CheckBounds(log_add_cv(Ipar),log_add_cv_lb(Ipar),log_add_cv_ub(Ipar));  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+
+  for (Ipar=1;Ipar<=n_deviations_est;Ipar++){
+    Npar +=1;
+    ParFile1 << par_devs(Ipar)<< " \t# " << Npar << "\t" << devnames1(Ipar) << "\t";
+    if ((deviations_phz(Ipar) < 0) || (deviations_phz(Ipar) > current_phase())) {
+      ParFile1 << "(not_estd)" << endl;
+    }
+    if (deviations_phz(Ipar) > 0 && deviations_phz(Ipar) <= current_phase()) { 
+      NparEst +=1; CheckBounds(par_devs(Ipar),-12.0,12.0);  
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
+    }
+  }
+  ParFile1.close();
+
 // =====================================================================================================================================
 
 // Label 600: CreateOutput
@@ -13008,8 +13310,8 @@ FUNCTION CreateOutput
   OutFile1 << "#--Number of function evaluations: " << NfunCall << endl;
   OutFile1 << "#*******************************************" << endl;
  
-  OutFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
-  //RepFile1 <<  setw(12) << setprecision(8) << setfixed() << endl;
+  OutFile1 <<  setw(12) << setprecision(8)  << setfixed() << endl;
+  RepFile1 <<  setw(15) << setprecision(12) << setfixed() << endl;
   // The header material
   OutFile5 << TheHeader << endl;
   OutFile5 << "Par_No Est_No Paramter Estimate Standard_Error" << endl;
@@ -13190,7 +13492,7 @@ FUNCTION CreateOutput
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Estimated parameters: dataframe" << endl;
   RepFile1 << "par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
-  ParFile1 << "#est    par_count  par_type     est_par_count" << endl;
+  ParFile1 << "#est    par_count  par_type     est_par_count    prior " << endl;
 
   Npar = 0; NparEst = 0;
   for (Ipar=1;Ipar<=n_Tpar;Ipar++){
@@ -13206,7 +13508,7 @@ FUNCTION CreateOutput
       NparEst +=1; CheckBounds(T_pars_est(Ipar),T_lb(Ipar),T_ub(Ipar));  
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
-      ParFile1 << NparEst << endl;
+      ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
       OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << T_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
@@ -16681,6 +16983,9 @@ FINAL_SECTION
 //                    the two options and different par files would be required to switch between options if initializing model runs with a par file.
 //                    Incremented version to 2.20.35b.
 // 2026-03-27 ** WTS. Added growth transition options 9 and 10 to provide same functionality as TCSAM02, mainly for direct comparisons with results from that code.
+// 2026-04-06 ** WTS. Increased required verbose level to > 4 on fishing mortality devs. Added function writeRepPar to write parameters and prior values 
+//                    to gmacs_rep_last.par on a function call basis if verbose > 2. Increased precision and width of output to RepFile1.
+//
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
