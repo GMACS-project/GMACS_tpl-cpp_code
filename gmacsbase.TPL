@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.35b; ** WTS **; Compiled 2026-03-27");
+ !! TheHeader = adstring("## GMACS Version 2.20.36; ** WTS **; Compiled 2026-04-13");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1056,9 +1056,9 @@ DATA_SECTION
   cpue_sd   = sqrt(log(1.0 + square(cpue_cv)));
   cpue_time = column(dSurveyData,9);
   rai_id    = column(dSurveyData,10);
-  imatrix mRAI_ids(1,100,1,2); //temporary storage to identify unique RAIs
+  imatrix tmpRAI_ids(1,100,1,2); //temporary storage to identify unique RAIs
   n_rai = 0;
-  mRAI_ids = 0;
+  tmpRAI_ids = 0;
   if (fmtRAD) gmacs_data << "# old format:" << endl;
   gmacs_data << "## Q_index: index of associated q. Multiple q's (e.g., in time blocks) can now be estimated for each relative abundance index/survey." << endl;
   gmacs_data << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
@@ -1068,8 +1068,8 @@ DATA_SECTION
   gmacs_data << "## RAI_id: integer id for the associated survey" << endl;
   gmacs_data << "# row Q_index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAI_id" << endl;
   n_rai = 1;
-  mRAI_ids(1,1) = (int) dSurveyData(1,10);
-  mRAI_ids(1,2) = 1;
+  tmpRAI_ids(1,1) = (int) dSurveyData(1,10);
+  tmpRAI_ids(1,2) = 1;
   for (int irow=1;irow<=nSurveyRows; irow++){
     int iyr = dSurveyData(irow,1);
     if ((syr <= iyr)&&(( iyr <= nyrRetro) || ((iyr == nyrRetro+1) && (dSurveyData(irow,2) == 1)))){
@@ -1098,15 +1098,15 @@ DATA_SECTION
      gmacs_data << anystring << endl;
 
      int chk = 1;//--remains 1 if dSurveyData(irow,10) doesn't match any previous RAI ids
-     for (int id=1;id<=n_rai;id++) {if(mRAI_ids(id,1)==(int)dSurveyData(irow,10)) chk=0;}
+     for (int id=1;id<=n_rai;id++) {if(tmpRAI_ids(id,1)==(int)dSurveyData(irow,10)) chk=0;}
      if (chk) {
       n_rai++;
-      mRAI_ids(n_rai,1) = (int)dSurveyData(irow,10);//--new unique RAI
-      mRAI_ids(n_rai,2) = irow;                     //--row at which RAI id starts
+      tmpRAI_ids(n_rai,1) = (int)dSurveyData(irow,10);//--new unique RAI
+      tmpRAI_ids(n_rai,2) = irow;                     //--row at which RAI id starts
      }
     }
     uRAI_ids.allocate(1,n_rai,1,2);
-    for (int id=1;id<=n_rai;id++) uRAI_ids(id) = mRAI_ids(id);
+    for (int id=1;id<=n_rai;id++) uRAI_ids(id) = tmpRAI_ids(id);
   }
   ECHO(obs_cpue); ECHO(cpue_cv); ECHO(cpue_sd); ECHO(cpue_time); ECHO(uRAI_ids);
  END_CALCS
@@ -1423,11 +1423,12 @@ DATA_SECTION
   int mmodNumZBs;      //--number of size bins
   ivector mmodZCs;     //--vector of size cutpoints (size: mmodNumZBs+1)
   int mmodNumObs;      //--number of observations
-  matrix mmodObsData;  //--data matrix (mmodNumObs x 5)
+  matrix mmodObsData;  //--data matrix (mmodNumObs x 10: yr, season, fleet, rai_id, q_id, size bin,bin index, effN, prMat, uncertainty)
   int mmodNumYrs;      //--number of years of mmo data
+  matrix likeSumSrvMMOs; //--matrix for MMO likelihood info
   matrix zbRemapper;   //--matrix conversion from model sie bins to MMOD size bins (calculated in PRELIMINARY_CALCS)
  LOCAL_CALCS
-  mmodNumYrs = 0;
+  mmodNumYrs = 0; 
   if (hasMMOD){
     cifstream* pGD = ad_comm::global_datafile;
     (*pGD) >> mmodLkType;   ECHO(mmodLkType);
@@ -1436,7 +1437,7 @@ DATA_SECTION
     mmodZCs.allocate(1,mmodNumZBs+1);
     (*pGD) >> mmodZCs;      ECHO(mmodZCs);
     (*pGD) >> mmodNumObs;   ECHO(mmodNumObs);
-    mmodObsData.allocate(1,mmodNumObs,1,6);
+    mmodObsData.allocate(1,mmodNumObs,1,10);
     (*pGD) >> mmodObsData;  ECHO(mmodObsData);
     gmacs_data << mmodLkType  <<"  # likelihood type " << endl;
     gmacs_data << mmodLkWgt  <<"  # likelihood weight " << endl;
@@ -1445,7 +1446,7 @@ DATA_SECTION
     gmacs_data << mmodZCs << endl;
     gmacs_data << mmodNumObs  <<"  # number of observations " << endl;
     gmacs_data << "#--observations " << endl;
-    gmacs_data << "# year  size_bin   index  effN   obsPrMat uncertainty" << endl;
+    gmacs_data << "# year  season  fleet_id  rai_id   q_id  size_bin   index  effN   obsPrMat uncertainty" << endl;
     gmacs_data << mmodObsData << endl;
     ivector ys(1,100); ys = 0; int ny = 1;
     for (int n=1;n<=mmodNumObs;n++){
@@ -1458,6 +1459,7 @@ DATA_SECTION
       }
     }
     mmodNumYrs = ny;
+    likeSumSrvMMOs.allocate(1,mmodNumObs,1,8);
   } //--hasMMOD
  END_CALCS
 
@@ -3307,9 +3309,10 @@ DATA_SECTION
         if (slx_type_in(ipnt,k) == SELEX_5095LOGISTIC) nparS = 2;                      ///> logistic has 2 parameters
         if (slx_type_in(ipnt,k) == SELEX_ONE_PAR_LOGISTIC) nparS = 1;                  ///> logisticOne has 1 parameter
         if (slx_type_in(ipnt,k) == SELEX_DECLLOGISTIC) nparS = 2+slx_extra_in(h,k);    ///> declining logistic has 2 + extra parameters
-        if (slx_type_in(ipnt,k) == SELEX_ASCNORM)     nparS = 2;                       ///> ascending normal has 2 parameters
-        if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM)  nparS = 3;                       ///> double normal has 3 parameters
-        if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM4) nparS = 4;                       ///> double normal 4 has 4 parameters
+        if (slx_type_in(ipnt,k) == SELEX_ASCNORM)      nparS = 2;                      ///> ascending normal has 2 parameters
+        if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM)   nparS = 3;                      ///> double normal has 3 parameters
+        if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM4)  nparS = 4;                      ///> double normal 4 has 4 parameters
+        if (slx_type_in(ipnt,k) == SELEX_DOUBLENORM4a) nparS = 5;                      ///> double normal 4a has 5 parameters
         if (slx_type_in(ipnt,k) == SELEX_UNIFORM1) nparS = 0;                          ///> uniform has 0 parameters
         if (slx_type_in(ipnt,k) == SELEX_UNIFORM0) nparS = 0;                          ///> uniform has 0 parameters
         if (slx_type_in(ipnt,k) == SELEX_CUBIC_SPLINE) nparS = 2 * slx_extra_in(h,k);  ///> spline has parameters for knots and values
@@ -3385,34 +3388,40 @@ DATA_SECTION
               for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii);
               if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_base_";
               if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_base_";
-              if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
-              if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
-              if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
-              if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
-              if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
-              if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
-              if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
-              if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
-              if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
-              if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-              if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
-              if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
-              if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
-              if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
-              if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
-              if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
-              if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
-              if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
-              if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
-              if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
-              if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
-              if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
-              if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
-              if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
-              if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
-              if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
-              if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
-              if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
+              anystring  = addToAnystring(anystring,slx_type_in(ipnt4,k),ipar,slx_extra_in(ipnt4,k),slx_extra_in(h,k));
+              // if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
+              // if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
+              // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
+              // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
+              // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
+              // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
+              // if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
+              // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
+              // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
+              // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
+              // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
+              // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 1) anystring += "Double_normala_par_1";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 2) anystring += "Double_normala_par_2";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 3) anystring += "Double_normala_par_3";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 4) anystring += "Double_normala_par_4";
+              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 5) anystring += "Double_normala_par_5";
+              // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
+              // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k))  anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
+              // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
+              // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k))  anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
+              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
           
               gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
               gmacs_ctl << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
@@ -3462,34 +3471,40 @@ DATA_SECTION
                     { SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar; SelPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Spar; }
                   if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_";
                   if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_";
-                  if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
-                  if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
-                  if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
-                  if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
-                  if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
-                  if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
-                  if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
-                  if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
-                  if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
-                  if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-                  if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
-                  if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
-                  if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
-                  if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
-                  if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
-                  if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
-                  if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
-                  if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
-                  if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
-                  if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
-                  if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
-                  if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
-                  if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
-                  if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
-                  if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
-                  if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
-                  if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
-                  if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
+                  anystring  = addToAnystring(anystring,slx_type_in(ipnt4,k),ipar,slx_extra_in(ipnt4,k),slx_extra_in(h,k));
+                  // if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
+                  // if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
+                  // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
+                  // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
+                  // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
+                  // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
+                  // if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
+                  // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
+                  // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 1) anystring += "Double_normala_par_1";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 2) anystring += "Double_normala_par_2";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 3) anystring += "Double_normala_par_3";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 4) anystring += "Double_normala_par_4";
+                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 5) anystring += "Double_normala_par_5";
+                  // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
+                  // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k))  anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
+                  // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
+                  // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k))  anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
+                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
                   anystring += "_block_group_"+str(IgBlock)+"_block_"+str(kpar); 
 
                   gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) {gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";}
@@ -3508,39 +3523,45 @@ DATA_SECTION
                 if (IgEnvLinkVar <= 0 || IgEnvLinkVar > NenvIndics) { cout << "Error: Environmental variable outside range - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); } 
                 if (IgRWBlock <=0) { cout << "Error: There needs to a block for environment variables - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); }
                 anystring = "Env_link_"+fleetname(k)+"_"+sexes(h)+"_";
-                if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
-                if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
-                if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
-                if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
-                if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
-                if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
-                if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
-                if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
-                if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
-                if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-                if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
-                if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
-                if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
-                if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
-                if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
-                if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
-                if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
-                if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
-                if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
-                if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
-                if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
-                if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
-                if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
-                if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
-                if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
-                if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
-                if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
-                if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
+                anystring  = addToAnystring(anystring,slx_type_in(ipnt4,k),ipar,slx_extra_in(ipnt4,k),slx_extra_in(h,k));
+                // if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
+                // if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
+                // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
+                // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
+                // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
+                // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
+                // if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
+                // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
+                // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
+                // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
+                // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
+                // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 1) anystring += "Double_normala_par_1";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 2) anystring += "Double_normala_par_2";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 3) anystring += "Double_normala_par_3";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 4) anystring += "Double_normala_par_4";
+                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 5) anystring += "Double_normala_par_5";
+                // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
+                // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar >  slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
+                // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
+                // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar >  slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
+                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
 
                 echoinput << "Environmental link specifications 0 sele" << endl;
                 for (int ienv_par=1;ienv_par<=N_env_par(IgEnvLinkVar);ienv_par++)
                  {
-	          parname1(PPnt+1) = anystring+"_par_"+str(ienv_par);
+                  parname1(PPnt+1) = anystring+"_par_"+str(ienv_par);
                   PPnt += 1;
                   StoIG(n_Spar+ienv_par,1) = ipnt2;
                   StoIG(n_Spar+ienv_par,2) = ipar;
@@ -3854,7 +3875,7 @@ DATA_SECTION
   ECHOSTR("after survey Q env_links, RW")
   ECHO(n_deviations)
  END_CALCS
-  imatrix qToSurv(1,n_qpar,1,4);//--map from q index to non-mirrored survey index
+  imatrix qToSurv(1,n_qpar,1,4);//--map from q index to non-mirrored survey index (what are columns 2, 3, and 4 for? they're never set!)
   ivector qType(1,n_qpar);  //--"0" is block, "1" if environmental link
   ivector qPoint(1,n_qpar); //--TODO: this is used nowhere
  LOC_CALCS
@@ -5231,8 +5252,10 @@ PARAMETER_SECTION
   3darray d3_newShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> New shell crabs-at-length.
   3darray d3_oldShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> Old shell crabs-at-length.
 
-  3darray d3_PrdMMOs(syr,nyrRetro+1,1,3,1,nclass)                          ///> predicted annual mature male ogives using model size bins
-  3darray d3_PrdMMOsP(syr,nyrRetro+1,1,3,1,mmodNumZBs)                     ///> predicted annual mature male ogives using observed data size bins
+  3darray d3_PrdMMOs(syr,nyrRetro+1,1,3,1,nclass)                          ///> predicted annual mature male ogives using predicted model abundance and size bins
+  3darray d3_PrdMMOsP(syr,nyrRetro+1,1,3,1,mmodNumZBs)                     ///> predicted annual mature male ogives using predicted model abundance and observed data size bins
+  3darray d3_PrdSrvMMOs(syr,nyrRetro+1,1,3,1,nclass)                       ///> predicted  mature male ogives using model size bins and predicted survey abundance
+  3darray d3_PrdSrvMMOsP(syr,nyrRetro+1,1,3,1,mmodNumZBs)                  ///> predicted  mature male ogives using observed size bins and predicted survey abundance
   4darray d4_N_coh(1,n_grp,1,mxYrsCohortProgression,1,nseason,1,nclass);   ///> Cohort-type numbers-at-sex/mature/shell/year/season/length.
 
   number TempSS;                                                    ///> Use to compute the selextivity penalty
@@ -5518,6 +5541,8 @@ PROCEDURE_SECTION
   }
 
   // Initialize model parameters
+  popprog.open("gmacs_popprog.csv", ios::trunc); popprog.width(15); popprog.precision(12);
+  popprog<<"y,  ssn,  x,   m,   s"; for (int l=1;l<=nclass;l++) {popprog<<", "<<mid_points(l);} popprog<<endl;
   initialize_model_parameters();                            if ( verbose >= 3 ) cout << "Ok after initialize_model_parameters ..." << endl;
 
   // Fishing fleet dynamics ...
@@ -5544,6 +5569,7 @@ PROCEDURE_SECTION
   calc_recruitment_size_distribution();                    if ( verbose >= 3 ) cout << "Ok after calc_recruitment_size_distribution ..." << endl;
   calc_initial_numbers_at_length();                        if ( verbose >= 3 ) cout << "Ok after calc_initial_numbers_at_length ..." << endl;
   update_population_numbers_at_length();                   if ( verbose >= 3 ) cout << "Ok after update_population_numbers_at_length ..." << endl;
+  popprog.close();
   if (Term_molt == 0){
     calc_stock_recruitment_relationship();                 if ( verbose >= 3 ) cout << "Ok after calc_stock_recruitment_relationship ..." << endl;
   } else {
@@ -5555,7 +5581,8 @@ PROCEDURE_SECTION
   calc_predicted_catch();                                  if ( verbose >= 3 ) cout << "Ok after calc_predicted_catch ..." << endl;
   calc_relative_abundance();                               if ( verbose >= 3 ) cout << "Ok after calc_relative_abundance ..." << endl;
   calc_predicted_composition();                            if ( verbose >= 3 ) cout << "Ok after calc_predicted_composition ..." << endl;
-  calc_predicted_MMOs();                                   if ( verbose >= 3 ) cout << "Ok after calc_predicted_MMOs ..." << endl;
+  calc_predicted_MMOs_pop();                               if ( verbose >= 3 ) cout << "Ok after calc_predicted_MMOs_pop ..." << endl;
+  calc_predicted_MMOs_survey();                            if ( verbose >= 3 ) cout << "Ok after calc_predicted_MMOs_survey ..." << endl;
 
   if ( verbose >= 3 ) cout << "Ok after observation models ..." << endl;
 
@@ -6595,9 +6622,9 @@ FUNCTION init_selectivities
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
          pSLX = new class gsm::AscNormal<dvar_vector,dvariable>(p1,p2);
-         echoinput << "SELEX_ASCNORM for " << is << ": " << p1 << " " << p2 << endl;
-         echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
-         echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+        //  echoinput << "SELEX_ASCNORM for " << is << ": " << p1 << " " << p2 << endl;
+        //  echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+        //  echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
         break;
         case SELEX_DOUBLENORM:                               ///> double normal
          p1 = mfexp(S_pars(is,1));
@@ -6615,6 +6642,17 @@ FUNCTION init_selectivities
          p4 = mfexp(S_pars(is,4));
          pSLX = new class gsm::DoubleNormal4<dvar_vector,dvariable>(p1,p2,p3,p4);
          echoinput << "SELEX_DOUBLENORM4 for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << endl;
+         echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+         echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+        break;
+        case SELEX_DOUBLENORM4a:                               ///> double normal4
+         p1 = mfexp(S_pars(is,1));
+         p2 = mfexp(S_pars(is,2));
+         p3 = mfexp(S_pars(is,3));
+         p4 = S_pars(is,4);        //--NOTE: no exponentiation
+         p5 = S_pars(is,5);        //--NOTE: no exponentiation, relevant parameter should not be estimated (i.e., it should be fixed)
+         pSLX = new class gsm::DoubleNormal4a<dvar_vector,dvariable,dvariable>(p1,p2,p3,p4,p5);
+         echoinput << "SELEX_DOUBLENORM4a for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << " " << p5 << endl;
          echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
          echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
         break;
@@ -6745,11 +6783,11 @@ FUNCTION calc_selectivities
          p2 = mfexp(S_pars(is,2));
          ((gsm::AscNormal<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2);
          pSLX = ppSLX[is-1];
-         if (verbose>4){
-           echoinput << "SELEX_ASCNORM for " << is << ": " << p1 << " " << p2 << endl;
-           echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
-           echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
-         }
+        //  if (verbose>4){
+        //    echoinput << "SELEX_ASCNORM for " << is << ": " << p1 << " " << p2 << endl;
+        //    echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+        //    echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+        //  }
          break;
         case SELEX_DOUBLENORM:                               ///> double normal
          p1 = mfexp(S_pars(is,1));
@@ -6772,6 +6810,20 @@ FUNCTION calc_selectivities
          pSLX = ppSLX[is-1];
          if (verbose>4){
            echoinput << "SELEX_DOUBLENORM4 for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << endl;
+           echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+           echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+         }
+         break;
+        case SELEX_DOUBLENORM4a:                               ///> alternative double normal4
+         p1 = mfexp(S_pars(is,1));
+         p2 = mfexp(S_pars(is,2));
+         p3 = mfexp(S_pars(is,3));
+         p4 = S_pars(is,4);        //--NOTE: no exponentiation
+         p5 = S_pars(is,5);        //--NOTE: no exponentiation, relevant parameter should not be estimated (i.e., it should be fixed)
+         ((gsm::DoubleNormal4a<dvar_vector,dvariable,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3,p4,p5);
+         pSLX = ppSLX[is-1];
+         if (verbose>4){
+           echoinput << "SELEX_DOUBLENORM4a for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 <<  " " << p5 << endl;
            echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
            echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
          }
@@ -7430,6 +7482,9 @@ FUNCTION calc_growth_transition
   dvariable Temp,Val,Cum;
   dvar_vector prob_val_vec(1,1024);
 
+  ofstream tmp;
+  int outflg = 0;
+
   // reset the growth transition matrix
   growth_transition.initialize();
 
@@ -7441,7 +7496,8 @@ FUNCTION calc_growth_transition
     }
 
     // Set the growth-transition matrix (size-increment is gamma)
-    if (( bUseCustomGrowthMatrix2(h) == GROWTH_INCGAMMA )||( bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02A )){
+    if (( bUseCustomGrowthMatrix2(h) == GROWTH_INCGAMMA )||
+        ( bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02A ) || ( bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02B )){
       int mxGrBins = 10;// TODO: add as input via ctl file 
       for (int k =1; k<=nSizeIncVaries(h);k++){
         gt.initialize();
@@ -7457,6 +7513,12 @@ FUNCTION calc_growth_transition
           gt(l,nSizeSex(h)) = 1.0 - Accum;
           if (bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02A){
             if (l+mxGrBins<nSizeSex(h)){
+             gt(l)(l+mxGrBins+1,nSizeSex(h)) = 0.0; // no probability of growth > mxGrBins
+            }
+            gt(l) = gt(l)/sum(gt(l));// normalize to 1
+          }
+          if (bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02B){
+            if (l+mxGrBins<nSizeSex(h)){
               gt(l)(l+mxGrBins) += sum(gt(l)(l+mxGrBins+1,nSizeSex(h))); // limit growth to mxGrBins from l
               gt(l)(l+mxGrBins+1,nSizeSex(h)) = 0.0;
             }
@@ -7465,6 +7527,25 @@ FUNCTION calc_growth_transition
         } // l loop
         gt(nSizeSex(h),nSizeSex(h)) = 1.0;
         growth_transition(h,k) = gt;
+        if ((NfunCall<2) && ((bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02A)||(bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02B))){
+          if (outflg==0) {tmp.open("gmacs_growth.out");} else {tmp.open("gmacs_growth.out",std::ios_base::app);}
+          outflg=1;
+          tmp << "#--TCSAM02A growth" << endl;
+          tmp <<  " h: " << h << endl;
+          tmp <<  " k: " << k << endl;
+          tmp << "mxGrBins:    " << mxGrBins << endl;
+          tmp << "gscale(h,k): " << gscale(h,k) << endl;
+          tmp << "mid_points:  "  << mid_points << endl;
+          tmp << "size_breaks: " << size_breaks << endl;
+          tmp << "sbi:         " << sbi << endl;
+          tmp << "pGr: dataframe" << endl;
+          tmp << "zb   mn_molt_increment  mn_postmolt_size " << mid_points << endl;
+          for (int l = 1; l <= nSizeSex(h); l++){
+            tmp << mid_points(l) << " " << molt_increment(h,k,l) << " " << molt_increment(h,k,l)+mid_points(l) << " " << gt(l) << endl;
+          }
+          tmp << ">EOD<" << endl;
+          tmp.close();
+        }
         if ((verbose>3)&&(NfunCall<2)){
           if (std::isnan(value(sum(growth_transition(h,k))))){
             cout << "GROWTH_INCGAMMA GTM has NaNs for sex, k " << h << " " << k << endl;
@@ -7474,8 +7555,9 @@ FUNCTION calc_growth_transition
       }//--k loop
     }//--GROWTH_INCGAMMA
 
-    // Set the growth-transition matrix (size after increment is gamma)
-    if (( bUseCustomGrowthMatrix2(h) == GROWTH_SIZEGAMMA )||( bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02B )){
+    // Set the growth-transition matrix (size after increment is gamma-distributed)
+    if (( bUseCustomGrowthMatrix2(h) == GROWTH_SIZEGAMMA )||
+        ( bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02C ) || ( bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02D )){
       int mxGrBins = 10;// TODO: add as input via ctl file
       for (int k =1; k<=nSizeIncVaries(h);k++){
         gt.initialize();
@@ -7486,20 +7568,48 @@ FUNCTION calc_growth_transition
           for (int ll = l; ll <= nclass+1; ll++ )
             psi(ll) = cumd_gamma(sbi(ll), mean_size_after_molt);
           gt(l)(l,nSizeSex(h)) = first_difference(psi(l,nclass+1));
-          if (!(bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02B)){
-            gt(l)(l,nSizeSex(h)) = gt(l)(l,nSizeSex(h)) / sum(gt(l)); // rescaling changes probability in all size classes
-          } else {
+          if (bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02C){
+            // do growth like TCSAM02
+            int mxGrBins = 10;
+            gt(l)(nSizeSex(h))  += 1.0 - psi(nclass+1); // accumulation changes proability only final size class
+            if (l+mxGrBins<nSizeSex(h)){
+              gt(l)(l+mxGrBins+1,nSizeSex(h)) = 0.0; // no probability of growth > mxGrBins
+            }
+            gt(l) = gt(l)/sum(gt(l));// normalize to 1
+          } else if (bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02C){
             // do growth like TCSAM02
             int mxGrBins = 10;
             gt(l)(nSizeSex(h))  += 1.0 - psi(nclass+1); // accumulation changes proability only final size class
             if (l+mxGrBins<nSizeSex(h)){
               gt(l)(l+mxGrBins) += sum(gt(l)(l+mxGrBins+1,nSizeSex(h))); // limit growth to mxGrBins from l
-              gt(l)(l+mxGrBins+1,nSizeSex(h)) = 0.0;
+              gt(l)(l+mxGrBins+1,nSizeSex(h)) = 0.0;                     // no probability of growth > mxGrBins
             }
             gt(l) = gt(l)/sum(gt(l));// normalize to 1
-          } // if (!doTCSAM02Growth)
+          } else {
+            gt(l)(l,nSizeSex(h)) = gt(l)(l,nSizeSex(h)) / sum(gt(l)); // rescaling changes probability in all size classes
+          } 
         } // l loop
         growth_transition(h,k) = gt;
+        if ((NfunCall<2) && (bUseCustomGrowthMatrix2(h) == GROWTH_TCSAM02C)){
+          if (outflg==0) {tmp.open("gmacs_growth.out");} else {tmp.open("gmacs_growth.out",std::ios_base::app);}
+          outflg = 1;
+          tmp << "#--TCSAM02B growth" << endl;
+          tmp <<  " h: " << h << endl;
+          tmp <<  " k: " << k << endl;
+          tmp << "mxGrBins:    " << mxGrBins << endl;
+          tmp << "gscale(h,k): " << gscale(h,k) << endl;
+          tmp << "mid_points:  "  << mid_points << endl;
+          tmp << "size_breaks: " << size_breaks << endl;
+          tmp << "mean_size_after_molt: " << mean_size_after_molt << endl;
+          tmp << "sbi:                  " << sbi << endl;
+          tmp << "pGr: dataframe" << endl;
+          tmp << "preZ mn_molt_increment mn_postmolt_size " << mid_points(1,nSizeSex(h)) << endl;
+          for (int l = 1; l <= nSizeSex(h); l++){
+            tmp << mid_points(l) << " " << molt_increment(h,k,l) << " " << molt_increment(h,k,l)+mid_points(l) << " " << gt(l) << endl;
+          }
+          tmp << ">EOD<" << endl;
+          tmp.close();
+        }
         if ((verbose>3)&&(NfunCall<2)){
           if (std::isnan(value(sum(growth_transition(h,k))))){
             cout << "GROWTH_SIZEGAMMA GTM has NaNs for sex, k " << h << " " << k << endl;
@@ -7711,7 +7821,6 @@ FUNCTION calc_growth_transition
     if (IsTyler ==1 & nsex >1 ) 
      for (int k =1; k<=nSizeIncVaries(h);k++) growth_transition(nsex,k) = growth_transition(1,k);
 
-    
   } // h
 
 // =======================================================================================================================================
@@ -7801,6 +7910,25 @@ FUNCTION calc_recruitment_size_distribution
     }
    }
    
+//-------------------------------------------------------------------------------------
+  /**
+   * @brief Write population abundance in csv format
+   * @author WTS
+  **/
+FUNCTION void writeToPopProg(ofstream& cout, int y, int ssn, const dvar_matrix& n_gz)
+  adstring cc = ", ";
+  for (int x=1;x<=nsex;x++){
+    for (int m=1;m<=nmature;m++){
+      for (int s=1;s<=nshell;s++){
+        int ig = pntr_hmo(x,m,s);
+        cout<<y<<cc<<ssn<<cc<<sexes(x)<<cc<<maturestate(m)<<cc<<shellstate(s);
+        for (int z=1;z<=n_gz(ig).indexmax();z++) cout<<cc<<n_gz(ig,z);
+        cout<<endl;
+      }
+    }
+  }
+  cout.flush();
+
 // ============================================================================================================================================
 
   /**
@@ -7940,7 +8068,7 @@ FUNCTION calc_initial_numbers_at_length
        for ( int o = 1; o <= nshell; o++ )
         {
          int ig = pntr_hmo(h,m,o);
-         d4_N(ig)(syr)(1) = mfexp(logN0(ig)); //--very small numbers
+         d4_N(ig)(syr)(1) = 0.0; 
         }
      break;
   }//--switch
@@ -7958,6 +8086,17 @@ FUNCTION calc_initial_numbers_at_length
     }//--h loop
   }
 
+  dvar_matrix d2_N_gz(1,n_grp,1,nclass);
+  for ( int h = 1; h <= nsex; h++ ){
+    for ( int m = 1; m <= nmature; m++ ){
+      for ( int o = 1; o <= nshell; o++ ){
+        int ig = pntr_hmo(h,m,o);
+        d2_N_gz(ig) = d4_N(ig)(syr)(1);
+      }
+    }
+  }
+  writeToPopProg(popprog,syr,1,d2_N_gz); //--pop abundance at START of start year, season 1
+
 // --------------------------------------------------------------------------------------------------------------------------------------
   /**
    * @brief Get numbers-at-length by Case
@@ -7965,7 +8104,7 @@ FUNCTION calc_initial_numbers_at_length
    * @param i - year index
    * @param j - season index
    * @param Case - flag indicating type of numbers-at-length array to update
-   * @return dvar_vector from one of d4_N, d4N_init, numbers_proj_gytl
+   * @return dvar_vector from one of d4_N, d4_N_init, numbers_proj_gytl, d4_N_coh
    */
 FUNCTION dvar_vector getNumbersAtLengthByCase(const int ig, const int i, const int j, const int Case)
   RETURN_ARRAYS_INCREMENT();
@@ -8012,10 +8151,10 @@ FUNCTION dvar_vector getNumbersAtLengthByCase(const int ig, const int i, const i
    * @param Case - flag indicating type of numbers-at-length array to update
    */
 FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, const int j, const int Case)
-  //if (verbose>3){
+  if (verbose>3){
     cout<<"#--Starting updateNumbersAtLengthByCase(next,i,j,Case ): "<<i<<" "<<j<<" "<<Case<<endl;
     cout<<"--next is\n"<<next<<endl;
-  //}
+  }
   for (int ig=1;ig<=n_grp;ig++){
     if (j==nseason){
       //--next is year i+1, season 1
@@ -8036,29 +8175,39 @@ FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, 
     }
   }
 
-  cout<<"updates to 'next' time step:"<<endl;
-  if (j==nseason){
-    cout<<"new values for year "<<i+1<<" season 1"<<endl;
-    for (int ig=1;ig<=n_grp;ig++){
-      if (Case==1) cout<<d4_N(ig,i+1,1)<<endl;
-      if (Case==2) cout<<d4_N_init(ig,i+1,1)<<endl;
-      if (Case==3) cout<<numbers_proj_gytl(ig,i+1,1)<<endl;
-      if (Case==4) cout<<numbers_proj_gytl(ig,i+1,1)<<endl;
-      if (Case==5) cout<<d4_N_coh(ig,i+1,1)<<endl;
-      if (Case==6) cout<<d4_N_coh(ig,i+1,1)<<endl;
-    } 
-  } else {
-    cout<<"new values for year "<<i<<" season "<<j+1<<endl;
-    for (int ig=1;ig<=n_grp;ig++){
-      if (Case==1) cout<<d4_N(ig,i,j+1)<<endl;
-      if (Case==2) cout<<d4_N_init(ig,i,j+1)<<endl;
-      if (Case==3) cout<<numbers_proj_gytl(ig,i,j+1)<<endl;
-      if (Case==4) cout<<numbers_proj_gytl(ig,i,j+1)<<endl;
-      if (Case==5) cout<<d4_N_coh(ig,i,j+1)<<endl;
-      if (Case==6) cout<<d4_N_coh(ig,i,j+1)<<endl;
+  if (Case==1){
+    if (j==nseason){
+      writeToPopProg(popprog,i+1,1,next); //--pop abundance at START of year i+1, season 1
+    } else {
+      writeToPopProg(popprog,i,j+1,next); //--pop abundance at START of year i, season j+1
     }
   }
-  cout<<"#--Finished updateNumbersAtLengthByCase(next,i,j,Case): "<<i<<" "<<j<<" "<<Case<<endl;
+
+  if (verbose>3){
+    cout<<"updates to 'next' time step:"<<endl;
+    if (j==nseason){
+      cout<<"new values for year "<<i+1<<" season 1"<<endl;
+      for (int ig=1;ig<=n_grp;ig++){
+        if (Case==1) cout<<d4_N(ig,i+1,1)<<endl;
+        if (Case==2) cout<<d4_N_init(ig,i+1,1)<<endl;
+        if (Case==3) cout<<numbers_proj_gytl(ig,i+1,1)<<endl;
+        if (Case==4) cout<<numbers_proj_gytl(ig,i+1,1)<<endl;
+        if (Case==5) cout<<d4_N_coh(ig,i+1,1)<<endl;
+        if (Case==6) cout<<d4_N_coh(ig,i+1,1)<<endl;
+      } 
+    } else {
+      cout<<"new values for year "<<i<<" season "<<j+1<<endl;
+      for (int ig=1;ig<=n_grp;ig++){
+        if (Case==1) cout<<d4_N(ig,i,j+1)<<endl;
+        if (Case==2) cout<<d4_N_init(ig,i,j+1)<<endl;
+        if (Case==3) cout<<numbers_proj_gytl(ig,i,j+1)<<endl;
+        if (Case==4) cout<<numbers_proj_gytl(ig,i,j+1)<<endl;
+        if (Case==5) cout<<d4_N_coh(ig,i,j+1)<<endl;
+        if (Case==6) cout<<d4_N_coh(ig,i,j+1)<<endl;
+      }
+    }
+    cout<<"#--Finished updateNumbersAtLengthByCase(next,i,j,Case): "<<i<<" "<<j<<" "<<Case<<endl;
+  }
 
 // --------------------------------------------------------------------------------------------------------------------------------------
   /**
@@ -8075,6 +8224,7 @@ FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, 
 
 FUNCTION void update_population_numbers_at_length_season_new(const int i, const int j, const int Case)
   if ((verbose>3)&&(NfunCall<2))cout << "\n\nStarting update_population_numbers_at_length_season_new(year="<<i<<",season="<<j<<",Case="<<Case<<")"<< endl;
+  bool debug = FALSE;
   
   dvar_matrix next(1,n_grp,1,nclass); next.initialize();
   for (int h=1;h<=nsex;h++){
@@ -8207,93 +8357,95 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
       int ig_mat_ns = pntr_hmo(h,  MATURE,NEW_SHELL);
       int ig_mat_os = pntr_hmo(h,  MATURE,OLD_SHELL);
       //--"orignal" numbers
-      dvar_vector n_imm_ns = getNumbersAtLengthByCase(ig_imm_ns,i,j,Case);// immature, new shell crab; includes mortality
-      dvar_vector n_imm_os = getNumbersAtLengthByCase(ig_imm_os,i,j,Case);// immature, old shell crab; includes mortality
-      dvar_vector n_mat_ns = getNumbersAtLengthByCase(ig_mat_ns,i,j,Case);//   mature, new shell crab; includes mortality
-      dvar_vector n_mat_os = getNumbersAtLengthByCase(ig_mat_os,i,j,Case);//   mature, old shell crab; includes mortality
+      dvar_vector o_imm_ns = getNumbersAtLengthByCase(ig_imm_ns,i,j,Case);// immature, new shell crab; includes mortality
+      dvar_vector o_imm_os = getNumbersAtLengthByCase(ig_imm_os,i,j,Case);// immature, old shell crab; includes mortality
+      dvar_vector o_mat_ns = getNumbersAtLengthByCase(ig_mat_ns,i,j,Case);//   mature, new shell crab; includes mortality
+      dvar_vector o_mat_os = getNumbersAtLengthByCase(ig_mat_os,i,j,Case);//   mature, old shell crab; includes mortality
       //--"updated" numbers
-      dvar_vector ns_imm(1,nclass); ns_imm.initialize();
-      dvar_vector os_imm(1,nclass); os_imm.initialize();
-      dvar_vector ns_mat(1,nclass); ns_mat.initialize();
-      dvar_vector os_mat(1,nclass); os_mat.initialize();
+      dvar_vector u_imm_ns(1,nclass); u_imm_ns.initialize();
+      dvar_vector u_imm_os(1,nclass); u_imm_os.initialize();
+      dvar_vector u_mat_ns(1,nclass); u_mat_ns.initialize();
+      dvar_vector u_mat_os(1,nclass); u_mat_os.initialize();
       //--"final" numbers for time step
-      dvar_vector nn_imm_ns(1,nclass); nn_imm_ns.initialize();
-      dvar_vector nn_imm_os(1,nclass); nn_imm_os.initialize();
-      dvar_vector nn_mat_ns(1,nclass); nn_mat_ns.initialize();
-      dvar_vector nn_mat_os(1,nclass); nn_mat_os.initialize();
+      dvar_vector f_imm_ns(1,nclass); f_imm_ns.initialize();
+      dvar_vector f_imm_os(1,nclass); f_imm_os.initialize();
+      dvar_vector f_mat_ns(1,nclass); f_mat_ns.initialize();
+      dvar_vector f_mat_os(1,nclass); f_mat_os.initialize();
       if (j == season_growth) {
-        cout<<"##--GROWTH SEASON--"<<endl;
-        cout<<"  molt_prob_pass(h)  = "<<molt_prob_pass(h)<<endl;
-        cout<<"  mature_pro_pass(h) = "<<mature_prob_pass(h)<<endl;
-        cout<<"  growth_transition(h,isizeTrans)\n"<<growth_transition(h,isizeTrans)<<endl;
-        cout<<"  n_imm_ns = "<<n_imm_ns<<endl;
-        cout<<"  n_imm_os = "<<n_imm_os<<endl;
-        cout<<"  n_mat_ns = "<<n_mat_ns<<endl;
-        cout<<"  n_mat_os = "<<n_mat_os<<endl;
+        if (debug){
+          cout<<"##--GROWTH SEASON--"<<endl;
+          cout<<"  molt_prob_pass(h)  = "<<molt_prob_pass(h)<<endl;
+          cout<<"  mature_pro_pass(h) = "<<mature_prob_pass(h)<<endl;
+          cout<<"  growth_transition(h,isizeTrans)\n"<<growth_transition(h,isizeTrans)<<endl;
+          cout<<"  o_imm_ns = "<<o_imm_ns<<endl;
+          cout<<"  o_imm_os = "<<o_imm_os<<endl;
+          cout<<"  o_mat_ns = "<<o_mat_ns<<endl;
+          cout<<"  o_mat_os = "<<o_mat_os<<endl;
+        }
         if (Term_molt!=2){
           //--transition from immature to mature based on post-molt size (standard GMACS)
-          os_imm =  elem_prod(n_imm_ns, 1.0 - molt_prob_pass(h));                                              // did not molt (stayed immature)
-          ns_imm = (elem_prod(n_imm_ns,       molt_prob_pass(h)) + n_imm_os) * growth_transition(h,isizeTrans); // molted and grew (might or might not mature); previous imm_os molts
+          //--all old shell immature crab molt and grow
+          u_imm_os =  elem_prod(o_imm_ns, 1.0 - molt_prob_pass(h));                                              // did not molt (stayed immature)
+          u_imm_ns = (elem_prod(o_imm_ns,       molt_prob_pass(h)) + o_imm_os) * growth_transition(h,isizeTrans); // molted and grew (might or might not mature); previous imm_os molts
           if (Term_molt==0){
-            //--no terminal molt
-            os_mat = elem_prod(n_mat_ns, 1.0 - molt_prob_pass(h));                                   // previously mature, did not molt
-            ns_mat = elem_prod(n_mat_ns,       molt_prob_pass(h)) * growth_transition(h,isizeTrans); // previously mature, molted and grew
+            //--no terminal molt, mature crab can molt and grow
+            u_mat_os = elem_prod(o_mat_ns, 1.0 - molt_prob_pass(h));                                   // previously mature, did not molt
+            u_mat_ns = elem_prod(o_mat_ns,       molt_prob_pass(h)) * growth_transition(h,isizeTrans); // previously mature, molted and grew
           } else {
             //--molt to maturity is terminal
-            os_mat = n_mat_os + n_mat_ns;  // previously mature, did not molt (couldn't)
-            ns_mat = 0.0;                  // previously mature, molted and grew  <-could not happen with terminal molt
+            //--previously mature crab can't molt and all previously new shell mature crab are now old shell
+            u_mat_os = o_mat_os + o_mat_ns;  // previously mature, did not molt (couldn't)
+            u_mat_ns = 0.0;                  // previously mature, molted and grew  <-could not happen with terminal molt
           }
-          nn_imm_ns =          elem_prod(os_imm+ns_imm,1.0-mature_prob_pass(h)); // immature crab that molted, but not to maturity
-          nn_imm_os = os_imm;                                                    // immature crab that didn't molt
-          nn_mat_ns = ns_mat + elem_prod(os_imm+ns_imm,    mature_prob_pass(h)); // previously-mature crab that molted + immature crab that molted to maturity
-          nn_mat_os = os_mat;                                                    // previously-mature crab that did not molt
+          //--evaluate transition to maturity for crab that molted
+          f_imm_ns = elem_prod(u_imm_ns,1.0-mature_prob_pass(h)); // immature crab that molted, but not to maturity
+          f_imm_os = u_imm_os;                                    // immature crab that didn't molt
+          f_mat_ns = u_mat_ns + elem_prod(u_imm_ns,mature_prob_pass(h)); // previously-mature crab that molted + immature crab that molted to maturity
+          f_mat_os = u_mat_os;                                           // previously-mature crab that did not molt
         } else { //Term_molt==2
           //--transition from immature to mature based on pre-molt size, terminal molt to maturity (standard TCSAM02)
           //---previously mature
-          os_mat = n_mat_os + n_mat_ns; //previously mature crab stay mature and do not molt
+          f_mat_os = o_mat_os + o_mat_ns; //previously mature crab stay mature and do not molt (all are now old shell)
           //---previously immature
-          os_imm = elem_prod(n_imm_ns, 1.0 - molt_prob_pass(h));            // immature crab that did not molt, stayed immature, became old shell
-          ns_imm = elem_prod(n_imm_ns,       molt_prob_pass(h)) + n_imm_os; // immature crab that molted, will grow, may mature; all previous imm_os molt, all molted crab become new shell
+          f_imm_os = elem_prod(o_imm_ns, 1.0 - molt_prob_pass(h));            // immature crab that did not molt, stayed immature, became old shell
+          u_imm_ns = elem_prod(o_imm_ns,       molt_prob_pass(h)) + o_imm_os; // immature crab that will molted and grow and become new shell, may mature; all previous imm_os molt
           //--evaluate terminal molt to maturity and growth for immature crab that molted
-          ns_mat = elem_prod(ns_imm,     mature_prob_pass(h)) * growth_transition(h,isizeTrans);// grew, underwent terminal molt to maturity, became new shell
-          ns_imm = elem_prod(ns_imm, 1.0-mature_prob_pass(h)) * growth_transition(h,isizeTrans);// grew, did not undergo terminal molt to maturity, became new shell
-
-          nn_imm_ns = ns_imm;
-          nn_imm_os = os_imm;
-          nn_mat_ns = ns_mat;
-          nn_mat_os = os_mat;
+          f_mat_ns = elem_prod(u_imm_ns,     mature_prob_pass(h)) * growth_transition(h,isizeTrans);// grew, underwent terminal molt to maturity, became new shell
+          f_imm_ns = elem_prod(u_imm_ns, 1.0-mature_prob_pass(h)) * growth_transition(h,isizeTrans);// grew, did not undergo terminal molt to maturity, became new shell
         }
       } else {//--no growth this season
-        nn_imm_ns = n_imm_ns; 
-        nn_imm_os = n_imm_os; 
-        nn_mat_ns = n_mat_ns;
-        nn_mat_os = n_mat_os;
+        f_imm_ns = o_imm_ns; 
+        f_imm_os = o_imm_os; 
+        f_mat_ns = o_mat_ns;
+        f_mat_os = o_mat_os;
       }
       // Recruitment
       if ((j==season_recruitment) && (Case!=5) && (Case!=6)) {
-        cout<<"##--RECRUIMTENT SEASON--"<<endl;
-        cout<<"  rec_sdd(h)  = "<<rec_sdd(h)<<endl;
-        cout<<"  rec_pass(h) = "<<rec_pass(h)<<endl;
-        nn_imm_ns += rec_pass(h);//recruitment only to immatures
+        if (debug){
+          cout<<"##--RECRUIMTENT SEASON--"<<endl;
+          cout<<"  rec_sdd(h)  = "<<rec_sdd(h)<<endl;
+          cout<<"  rec_pass(h) = "<<rec_pass(h)<<endl;
+        }
+        f_imm_ns += rec_pass(h);//recruitment only to immature new shells
       }
-      next(ig_imm_ns) = nn_imm_ns;
-      next(ig_imm_os) = nn_imm_os;
-      next(ig_mat_ns) = nn_mat_ns;
-      next(ig_mat_os) = nn_mat_os;
+      next(ig_imm_ns) = f_imm_ns;
+      next(ig_imm_os) = f_imm_os;
+      next(ig_mat_ns) = f_mat_ns;
+      next(ig_mat_os) = f_mat_os;
       if ((verbose>3)&&(NfunCall<2)){
-        cout<<"n_imm_ns = "<<n_imm_ns <<endl;
-        cout<<"n_imm_os = "<<n_imm_os <<endl;
-        cout<<"n_mat_ns = "<<n_mat_ns <<endl;
-        cout<<"n_mat_os = "<<n_mat_os <<endl;
-        cout<<"ns_imm   = "<<ns_imm<<endl;
-        cout<<"os_imm   = "<<os_imm<<endl;
-        cout<<"ns_mat   = "<<ns_mat<<endl;
-        cout<<"os_mat   = "<<os_mat<<endl;
+        cout<<"o_imm_ns = "<<o_imm_ns <<endl;
+        cout<<"o_imm_os = "<<o_imm_os <<endl;
+        cout<<"o_mat_ns = "<<o_mat_ns <<endl;
+        cout<<"o_mat_os = "<<o_mat_os <<endl;
+        cout<<"u_imm_ns   = "<<u_imm_ns<<endl;
+        cout<<"u_imm_os   = "<<u_imm_os<<endl;
+        cout<<"u_mat_ns   = "<<u_mat_ns<<endl;
+        cout<<"u_mat_os   = "<<u_mat_os<<endl;
         cout<<"next(ig_imm_ns)  = "<<next(ig_imm_ns) <<endl;
         cout<<"next(ig_imm_os)  = "<<next(ig_imm_os) <<endl;
         cout<<"next(ig_mat_ns)  = "<<next(ig_mat_ns) <<endl;
         cout<<"next(ig_mat_os)  = "<<next(ig_mat_os) <<endl;
-        if (std::isnan(value(sum(nn_imm_ns+nn_imm_os+nn_mat_ns+nn_mat_os)))) {
+        if (std::isnan(value(sum(f_imm_ns+f_imm_os+f_mat_ns+f_mat_os)))) {
           cout<<"in update_PNAL_season Case-D--NaNs detected for " << endl;
           cout <<"Case   i    j   h   ig_imm_ns    ig_imm_os   ig_mat_ns   ig_mat_os" << endl;
           cout<<Case<<" "<<i<<" "<<j<<" "<<" "<<h<<" "<<ig_imm_ns<<" "<<ig_imm_os<<" "<<ig_mat_ns<<" "<<ig_mat_os<<endl;
@@ -8303,8 +8455,6 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
     }//--(nmature==2)&&(nshell==2)
   }//--h loop
 
-  cout<<"after calc, before upate. next numbers:\n"<<next<<endl;
-  
   // update the n-matrix
   updateNumbersAtLengthByCase(next,i,j,Case);
  
@@ -8814,9 +8964,10 @@ FUNCTION adstring getPopStateString(int ig)
    *
    * @param iyr year to use for population rates
    * @param mxYr max number of years to project cohort
-   * @param Case inital population case (5: smallest size bin has n = 1 for imature crab;m6: uses R_z(iyr))
+   * @param includefS flag (0/1) to include F's from iyr in projection
+   * @param Case inital population case (5: smallest size bin has n = 1 for imature crab; 6: uses R_z(iyr))
  **/
-FUNCTION void project_cohort_numbers_at_length(int iyr, int mxYr, int Case)
+FUNCTION void project_cohort_numbers_at_length(int iyr, int mxYr, int includeFs, int Case)
   if ((verbose>3)&&(NfunCall<2)) cout<<"--Starting project_cohort_numbers_at_length--"<<endl;
 
   int isizeTrans;
@@ -8836,29 +8987,32 @@ FUNCTION void project_cohort_numbers_at_length(int iyr, int mxYr, int Case)
  
   // Initialize the Fs
   FF1.initialize();
-  for ( int h = 1; h <= nsex; h++ )
-    for ( int j = 1; j <= nseason; j++ )
-      for ( int l = 1; l <= nclass; l++)
-        FF2(h,j,l) = 1.0e-10;
+  FF2.initialize();
+  // for ( int h = 1; h <= nsex; h++ )
+  //   for ( int j = 1; j <= nseason; j++ )
+  //     for ( int l = 1; l <= nclass; l++)
+  //       FF2(h,j,l) = 1.0e-10;
 
-  // compute the F matrix
-  for ( int k = 1; k <= nfleet; k++ ){
-    for ( int h = 1; h <= nsex; h++ ){
-      for ( int j = 1; j <= nseason; j++ ){
-        if ( fhit(iyr,j,k) ){
-          log_ftmp = log_fimpbar(k);
-          if (h==2) log_ftmp += log_foff(k);
-          _ft(k,h,j) = mfexp(log_ftmp);          
-          sel = mfexp(log_slx_capture(k,h,iyr))+1.0e-10;                     // Selectivity
-          ret = mfexp(log_slx_retaind(k,h,iyr)) * slx_nret(nsex+h,k);        // Retention
-          xi  = dmr(iyr,k);                                                  // discard mortality proportion
-          vul = elem_prod(sel, ret + (1.0 - ret) * xi);                      // Vulnerability
-          FF1(h,j) += _ft(k,h,j) * vul;
-          FF2(h,j) += _ft(k,h,j) * sel;
-        }//--if
-      }//--j loop
-    }//--h loop
-  }//--k loop
+  if (includeFs){
+    // compute the F matrix
+    for ( int k = 1; k <= nfleet; k++ ){
+      for ( int h = 1; h <= nsex; h++ ){
+        for ( int j = 1; j <= nseason; j++ ){
+          if ( fhit(iyr,j,k) ){
+            log_ftmp = log_fimpbar(k);
+            if (h==2) log_ftmp += log_foff(k);
+            _ft(k,h,j) = mfexp(log_ftmp);          
+            sel = mfexp(log_slx_capture(k,h,iyr))+1.0e-10;                     // Selectivity
+            ret = mfexp(log_slx_retaind(k,h,iyr)) * slx_nret(nsex+h,k);        // Retention
+            xi  = dmr(iyr,k);                                                  // discard mortality proportion
+            vul = elem_prod(sel, ret + (1.0 - ret) * xi);                      // Vulnerability
+            FF1(h,j) += _ft(k,h,j) * vul;
+            FF2(h,j) += _ft(k,h,j) * sel;
+          }//--if
+        }//--j loop
+      }//--h loop
+    }//--k loop
+  }
 
   // compute the total mortality
   ZZ1.initialize(); ZZ2.initialize(); SS_pass.initialize();
@@ -8870,7 +9024,13 @@ FUNCTION void project_cohort_numbers_at_length(int iyr, int mxYr, int Case)
         Mprop = m_prop(iyr,j);
         ZZ1(h,m,j) = Mprop * Mbar + FF1(h,j);
         ZZ2(h,m,j) = Mprop * Mbar + FF2(h,j);
-        if (season_type(j) == INSTANT_F)    for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-ZZ1(h,m,j,l)/ZZ2(h,m,j,l)*(1.0-mfexp(-ZZ2(h,m,j,l)));
+        if (season_type(j) == INSTANT_F) {
+          for ( int l = 1; l <= nclass; l++ ) {
+            if (ZZ2(h,m,j,l)>0) {
+              SS_pass(h,m,j)(l,l) = 1.0-ZZ1(h,m,j,l)/ZZ2(h,m,j,l)*(1.0-mfexp(-ZZ2(h,m,j,l)));
+            } else {SS_pass(h,m,j)(l,l) = 1.0;}
+          }
+        }
         if (season_type(j) == CONTINUOUS_F) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-ZZ1(h,m,j,l));
       }//--j loop
     }//--h loop
@@ -8904,9 +9064,9 @@ FUNCTION void project_cohort_numbers_at_length(int iyr, int mxYr, int Case)
       }
     }  
     // Now for the year-update
-    if (Term_molt!=2)
+    if (Term_molt==0)
       for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);     ///> Update the sesonal-dynamics (if terminal molt, non-Tanner-type)
-    if (Term_molt==2)
+    if (Term_molt>0)
       for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case); ///> Update the sesonal-dynamics (Tanner-type terminal molt)
   } //--i loop 
    
@@ -8995,9 +9155,9 @@ FUNCTION update_population_numbers_at_length
       if (nmature==2) mature_prob_pass(h) = mature_probability(h,i);  ///> probability of maturing
     }  
     // Now for the year-update
-    if (Term_molt!=2)
+    if (Term_molt==0)
       for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);     ///> Update the sesonal-dynamics: Case = 1
-    if (Term_molt==2)
+    if (Term_molt>0)
       for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case); ///> Update the sesonal-dynamics: Case = 1
   } //--i loop 
    
@@ -10368,7 +10528,7 @@ FUNCTION calc_predicted_composition
 // =================================================================================================================================================
 
   /**
-   * @brief Calculate annual predicted MMOs: annual maturity ogives for males.
+   * @brief Calculate annual predicted MMOs: annual maturity ogives for males in season 1 based on predicted population abundance.
    * @author WTS
    * @details  This function predicts the annual male maturity ogive as the ratio of, 
    * ideally, new shell mature male abundance to the sum of all new shell 
@@ -10384,38 +10544,142 @@ FUNCTION calc_predicted_composition
    * - If nsex = 1, the model should be male-only.
    * 
   **/
-FUNCTION calc_predicted_MMOs
-  if (verbose> 3) cout <<"--Starting calc_predicted_MMOs"<< endl;
+FUNCTION calc_predicted_MMOs_pop
+  if (verbose> 3) 
+    cout <<"--Starting calc_predicted_MMOs_pop"<< endl;
   if (nmature<2) {
-     cout << "--In calc_predicted_MMOs: nmature < 2, so cannot calculate male maturity ogives!. Exiting." << endl;
+     cout << "--In calc_predicted_MMOs_pop: nmature < 2, so cannot calculate male maturity ogives!. Exiting." << endl;
      ad_exit(1);
   }
+  bool debug = FALSE;
+
   int shell_state = NEW_SHELL; 
   if (nshell==1) {shell_state = UNDET_SHELL;}
   d3_PrdMMOs.initialize();
+  d3_PrdMMOsP.initialize();
   //--model distinguishes "new shell" (just molted) from "old shell" (previously molted) crab.
   int ig_nm = pntr_hmo(MALES,  MATURE,shell_state);//--index to (new shell) mature crab
   int ig_ni = pntr_hmo(MALES,IMMATURE,shell_state);//--index to (new shell) immature crab
 
   int ssn = 1; //--season in  which to calculate MMOs: assumes this is same timing for NMFS survey
-  dvar_vector mat(1,nclass);//--
-  dvar_vector imm(1,nclass);//--
-  for (int iy=syr; iy<=(nyrRetro+1);iy++){
-    mat = d4_N(ig_nm,iy,ssn); //--predicted (new shell) mature male abundance
-    imm = d4_N(ig_ni,iy,ssn); //--predicted (new shell) immature crab abundance
-    d3_PrdMMOs(iy,1) = mat;                            //--total (new shell) abundance 
-    d3_PrdMMOs(iy,2) = imm+mat;                        //--total (new shell) abundance 
-    d3_PrdMMOs(iy,3) = elem_div(mat,imm+mat+1.0e-10);  //--fraction (new shell) mature male abundance
+  dvar_vector mat(1,nclass);//--by model size bins
+  dvar_vector imm(1,nclass);//--by model size bins
+  for (int iy=syr; iy<=(nyrRetro+1);iy++){ //--calculate for model size bins
+    mat = d4_N(ig_nm,iy,ssn); //--predicted (new shell) mature male population abundance  
+    imm = d4_N(ig_ni,iy,ssn); //--predicted (new shell) immature crab population abundance
+    d3_PrdMMOs(iy,1)  = mat;                           //--mature (new shell) abundance by model size bin
+    d3_PrdMMOs(iy,2)  = imm+mat;                       //--total (new shell) abundance by model size bin
+    d3_PrdMMOs(iy,3)  = elem_div(mat,imm+mat+1.0e-10); //--male maturity ogive by model size bin
+    d3_PrdMMOsP(iy,1) = zbRemapper*d3_PrdMMOs(iy,1);   //--mature (new shell) abundance by observed size bin
+    d3_PrdMMOsP(iy,2) = zbRemapper*d3_PrdMMOs(iy,2);   //--total (new shell) abundance by observed size bin
+    d3_PrdMMOsP(iy,3) = elem_div(d3_PrdMMOsP(iy,1),(d3_PrdMMOsP(iy,2)+1.0e-10));//--male maturity ogive by observed bin
+    if (debug){
+      cout << "y = " << iy << endl;
+      cout << "matN    = " << d3_PrdMMOs(iy,1) << endl;
+      cout << "totN    = " << d3_PrdMMOs(iy,2) << endl;
+      cout << "prMatN  = " << d3_PrdMMOs(iy,3) << endl;
+      cout << "matNP   = " << d3_PrdMMOsP(iy,1) << endl;
+      cout << "totNP   = " << d3_PrdMMOsP(iy,2) << endl;
+      cout << "prMatNP = " << d3_PrdMMOsP(iy,3) << endl;
+    }
   }
-  if (verbose> 3) {cout <<"--Finished calc_predicted_MMOs" << endl;}
+  if (verbose> 3) 
+    {cout <<"--Finished calc_predicted_MMOs_pop" << endl;}
 
 // =================================================================================================================================================
 
   /**
-   * @brief Calculate annual predicted MMOs (annual maturity ogives) for males using the observed data size bins.
+   * @brief Calculate predicted MMOs (maturity ogives for males) based on predicted survey abundance.
    * @author WTS
    * @details  This function predicts the annual male maturity ogive as the ratio of, 
    * ideally, new shell mature male abundance to the sum of all new shell 
+   * males, by model size bin. If only one shell condition is included in the model, MMO is 
+   * taken as the ratio of mature male abundance to all male abundance, although this is not ideal. 
+   * 
+   * Calculates d3_PrdSrvMMOs(syr,nyrRetro+1,1:3,1:nclass) for years when MMO data exists
+   * 
+   * NOTES: Added 2026-04-11.
+   * 
+   * - The calculation requires two maturity states, so if nmature < 2, the model will abort. 
+   * 
+   * - If nsex = 1, the model should be male-only.
+   * 
+  **/
+FUNCTION calc_predicted_MMOs_survey
+  if (verbose> 3) 
+    cout <<"--Starting calc_predicted_MMOs_survey"<< endl;
+  if (nmature<2) {
+     cout << "--In calc_predicted_MMOs_survey: nmature < 2, so cannot calculate male maturity ogives!. Exiting." << endl;
+     ad_exit(1);
+  }
+  bool debug = FALSE;
+
+  int shell_state = NEW_SHELL; 
+  if (nshell==1) {shell_state = UNDET_SHELL;}
+  d3_PrdSrvMMOs.initialize();
+  d3_PrdSrvMMOsP.initialize();
+  //--model distinguishes "new shell" (just molted) from "old shell" (previously molted) crab.
+  int ig_nm = pntr_hmo(MALES,  MATURE,shell_state);//--index to (new shell) mature crab
+  int ig_ni = pntr_hmo(MALES,IMMATURE,shell_state);//--index to (new shell) immature crab
+  if (debug) cout << "ig_nm = "<<ig_nm<<" ig_ni = " << ig_ni << endl;
+
+  dvar_vector sel(1,nclass);
+  dvar_vector matSrvN(1,nclass);//--
+  dvar_vector immSrvN(1,nclass);//--
+  ivector chk(syr,nyrRetro+1); //--if one, predictions for year have already been calculated
+  chk.initialize();
+  for (int n=1;n<=mmodNumObs;n++){
+    int    y_n    = mmodObsData(n,1);   //--year of observation
+    int    s_n    = mmodObsData(n,2);   //--season of observation
+    int    f_n    = mmodObsData(n,3);   //--fleet id for observation
+    int    r_n    = mmodObsData(n,4);   //--rai id for observation
+    int    q_n    = mmodObsData(n,5);   //--q_id for observation
+    double z_n    = mmodObsData(n,6);   //--observed size bin
+    int    id_n   = mmodObsData(n,7);   //--observed size bin index
+    double ss_n   = mmodObsData(n,8);   //--effective sample size
+    double obsPM_n = mmodObsData(n,9); //--observed mmod for size bin
+    if ((syr<=y_n)&&(y_n<=(nyrRetro+1))&&(chk(y_n)==0)){
+      //--only do this if it hasn't been done already
+      chk(y_n)++;
+      if (debug){
+        cout << "y = " << y_n << " ssn = " << s_n << " flt = " << f_n << " rai_id = " << r_n<< " q_id = " << q_n << endl;
+        cout << "SurveyQT(r_n,y_n) = " << SurveyQT(r_n,y_n) << endl;
+        cout << "log_slx_capture(f_n)(MALES)(y_n) = " << log_slx_capture(f_n)(MALES)(y_n) << endl;
+        cout << "d4_N(ig_nm,y_n,s_n) = " << d4_N(ig_nm,y_n,s_n) << endl;
+        cout << "d4_N(ig_ni,y_n,s_n) = " << d4_N(ig_ni,y_n,s_n) << endl;
+      }
+      sel = SurveyQT(r_n,y_n) * mfexp(log_slx_capture(f_n)(MALES)(y_n));//--size-specific male survey catchability
+      matSrvN = elem_prod(sel,d4_N(ig_nm,y_n,s_n));//--predicted   mature, new shell male survey abundance by model size bin
+      immSrvN = elem_prod(sel,d4_N(ig_ni,y_n,s_n));//--predicted immature, new shell male survey abundance by model size bin
+      d3_PrdSrvMMOs(y_n,1)  = matSrvN;             //--predicted   mature, new shell male survey abundance by model size bin
+      d3_PrdSrvMMOs(y_n,2)  = matSrvN + immSrvN;   //--predicted    total, new shell male survey abundance by model size bin
+      d3_PrdSrvMMOs(y_n,3)  = elem_div(d3_PrdSrvMMOs(y_n,1),(d3_PrdSrvMMOs(y_n,2)+1.0e-10));//--male maturity ogive for model bins
+      d3_PrdSrvMMOsP(y_n,1) = zbRemapper*d3_PrdSrvMMOs(y_n,1);//--predicted   mature, new shell male survey abundance by observed size bin
+      d3_PrdSrvMMOsP(y_n,2) = zbRemapper*d3_PrdSrvMMOs(y_n,2);//--predicted    total, new shell male survey abundance by observed size bin
+      d3_PrdSrvMMOsP(y_n,3) = elem_div(d3_PrdSrvMMOsP(y_n,1),(d3_PrdSrvMMOsP(y_n,2)+1.0e-10));//--male maturity ogive by observed size bin
+      if (debug) {
+        cout << "sel        = " << sel << endl;
+        cout << "matSrvN    = " << d3_PrdSrvMMOs(y_n,1) << endl;
+        cout << "totSrvN    = " << d3_PrdSrvMMOs(y_n,2) << endl;
+        cout << "prMatSrvN  = " << d3_PrdSrvMMOs(y_n,3) << endl;
+        cout << "matSrvNP   = " << d3_PrdSrvMMOsP(y_n,1) << endl;
+        cout << "totSrvNP   = " << d3_PrdSrvMMOsP(y_n,2) << endl;
+        cout << "prMatSrvNP = " << d3_PrdSrvMMOsP(y_n,3) << endl;
+      }
+    } //--if ((syr<=y_n)&&(y_n<=(nyrRetro+1)))
+  } //--n loop
+
+
+  if (verbose> 3) 
+    {cout <<"--Finished calc_predicted_MMOs_survey" << endl;}
+
+// =================================================================================================================================================
+
+  /**
+   * @brief Calculate likelihoods for predicted MMOs (annual male maturity ogives) based on model-predicted population abundance using the observed data size bins.
+   * @author WTS
+   * @details  This function predicts the annual male maturity ogive as the ratio of, 
+   * ideally, new shell mature male *population* abundance to the sum of all new shell 
    * males, by *observed* MMO size bin. If only one shell condition is included in the model, MMO is 
    * taken as the ratio of mature male abundance to all male abundance, although this is not ideal. 
    * 
@@ -10426,20 +10690,11 @@ FUNCTION calc_predicted_MMOs
    * - The calculation is not done if hasMMOD is FALSE.
    * 
   **/
-FUNCTION mmos_likelihood
-  if (verbose > 3) cout << "--Starting mmos_likelihood" << endl;
+FUNCTION mmos_likelihood_pop
+  if (verbose > 3) cout << "--Starting mmos_likelihood_pop" << endl;
   nloglike(7).initialize();
   if (hasMMOD){
-    if (verbose > 3) {cout<<"calculating predicted MMOs"<<endl;} 
-    d3_PrdMMOsP.initialize();  //--MMO by MMOD size bin
-    for (int iy=syr;iy<=(nyrRetro+1);iy++){
-      d3_PrdMMOsP(iy,1) = zbRemapper*d3_PrdMMOs(iy,1); //--abundance of "new shell" mature males by MMOD size bin
-      d3_PrdMMOsP(iy,2) = zbRemapper*d3_PrdMMOs(iy,2); //--abundance of total "new shell" males by MMOD size bin
-      d3_PrdMMOsP(iy,3) = elem_div(d3_PrdMMOsP(iy,1),
-                                    d3_PrdMMOsP(iy,2)+1.0e-10);//--small value added to keep 0's from blowing up
-      if (verbose > 3) {cout<<iy<<" "<<d3_PrdMMOsP(iy,3)<<endl;} 
-    }
-    if (verbose > 3) cout << "calculate nlls" << endl;
+     if (verbose > 3) cout << "calculate nlls" << endl;
     int nzscrs = 0;
     dvar_vector nlls_y(syr,nyrRetro+1);  nlls_y.initialize();
     dvar_vector modPM_n(1,mmodNumObs);   modPM_n.initialize();
@@ -10447,10 +10702,10 @@ FUNCTION mmos_likelihood
     dvector zscrs_n(1,mmodNumObs);       zscrs_n.initialize();
     for (int n=1;n<=mmodNumObs;n++){
       int    y_n   = mmodObsData(n,1);   //--year of observation
-      double z_n   = mmodObsData(n,2);   //--observed size bin
-      int    id_n  = mmodObsData(n,3);   //--observed size bin index
-      double ss_n  = mmodObsData(n,4);   //--effective sample size
-      double obsPM_n = mmodObsData(n,5); //--observed mmod for size bin
+      double z_n   = mmodObsData(n,6);   //--observed size bin
+      int    id_n  = mmodObsData(n,7);   //--observed size bin index
+      double ss_n  = mmodObsData(n,8);   //--effective sample size
+      double obsPM_n = mmodObsData(n,9); //--observed mmod for size bin
       if (verbose > 3) cout << n << " " << y_n << " " << z_n << " " << id_n << " " << ss_n << " " << obsPM_n << " " << endl;
       if ((syr<=y_n)&&(y_n<=(nyrRetro+1))){
         modPM_n(n) = d3_PrdMMOsP(y_n,3)(id_n);
@@ -10465,7 +10720,7 @@ FUNCTION mmos_likelihood
             nzscrs++;
           }
         } else {
-          cout<< "Error in  mmos_likelihood. Unknown likelihood type '"<< mmodLkType <<"'. Exiting."<<endl;
+          cout<< "Error in  mmos_likelihood_pop. Unknown likelihood type '"<< mmodLkType <<"'. Exiting."<<endl;
           ad_exit(1);
         }
         if (verbose > 3) cout << "got here" << endl;
@@ -10474,7 +10729,73 @@ FUNCTION mmos_likelihood
     if (verbose > 3) cout<<"nlls_y = "<< nlls_y <<endl;
     nloglike(7) = nlls_y; //--note: not yet multiplied by multiplier
   }
-  if (verbose > 3) cout << "--Finished mmos_likelihood" << endl;
+  if (verbose > 3) cout << "--Finished mmos_likelihood_pop" << endl;
+
+// =================================================================================================================================================
+
+  /**
+   * @brief Calculate likelihoods for predicted MMOs (annual maturity ogives) for males based on predicted survey abundance using the observed data size bins.
+   * @author WTS
+   * @details  This function predicts the annual male maturity ogive as the ratio of, 
+   * ideally, new shell mature male *survey* abundance to the sum of all new shell 
+   * males, by *observed* MMO size bin. If only one shell condition is included in the model, MMO is 
+   * taken as the ratio of mature male abundance to all male abundance, although this is not ideal. 
+   * 
+   * Calculates d3_PrdSrvMMOsP(syr:(nYrRetro+1),1:3,1:mmodNumZBs)
+   * 
+   * NOTES: Added 2026-03-19, revised 2026-04-13. Generating same results as TCSAM02 with test dataset.
+   * 
+   * - The calculation is not done if hasMMOD is FALSE.
+   * 
+  **/
+FUNCTION mmos_likelihood_survey
+  if (verbose > 3) cout << "--Starting mmos_likelihood_survey" << endl;
+  nloglike(7).initialize();
+  if (hasMMOD){
+    if (verbose > 3) cout << "calculate nlls" << endl;
+    int nzscrs = 0;
+    dvariable nlls0;
+    dvariable nlls1;
+    dvar_vector nlls_y(syr,nyrRetro+1);  nlls_y.initialize();
+    dvar_vector modPM_n(1,mmodNumObs);   modPM_n.initialize();
+    likeSumSrvMMOs.initialize();
+    for (int n=1;n<=mmodNumObs;n++){
+      int    y_n   = mmodObsData(n,1);   //--year of observation
+      double z_n   = mmodObsData(n,6);   //--observed size bin
+      int    id_n  = mmodObsData(n,7);   //--observed size bin index
+      double ss_n  = mmodObsData(n,8);   //--effective sample size
+      double obsPM_n = mmodObsData(n,9); //--observed mmod for size bin
+      if (verbose > 3) cout << n << " " << y_n << " " << z_n << " " << id_n << " " << ss_n << " " << obsPM_n << " " << endl;
+      if ((syr<=y_n)&&(y_n<=(nyrRetro+1))){
+        modPM_n(n) = d3_PrdSrvMMOsP(y_n,3)(id_n);
+        if (verbose > 3) cout << "modPM_n = " << modPM_n(n) << endl;
+        if (to_lower(mmodLkType)=="binomial"){
+          if ((modPM_n(n)>0.0)&(modPM_n(n)<1.0)){
+            nlls0.initialize(); nlls1.initialize();
+            if (obsPM_n>0.0) nlls0 -= ss_n*   obsPM_n   *(log(  modPM_n(n))  -log(  obsPM_n  ));
+            if (obsPM_n<1.0) nlls1 -= ss_n*(1.0-obsPM_n)*(log(1.0-modPM_n(n))-log(1.0-obsPM_n));
+            nlls_y(y_n) += nlls0 + nlls1;
+            likeSumSrvMMOs(n,1) = y_n;
+            likeSumSrvMMOs(n,2) = z_n;
+            likeSumSrvMMOs(n,3) = ss_n;
+            likeSumSrvMMOs(n,4) = obsPM_n;
+            double modPMv = value(modPM_n(n));
+            likeSumSrvMMOs(n,5) = modPMv;
+            likeSumSrvMMOs(n,6) = (obsPM_n-modPMv);
+            likeSumSrvMMOs(n,7) = (obsPM_n-modPMv)/sqrt(modPMv*(1.0-modPMv)/ss_n);
+            likeSumSrvMMOs(n,8) = value(nlls0 + nlls1);
+          }
+        } else {
+          cout<< "Error in  mmos_likelihood_survey. Unknown likelihood type '"<< mmodLkType <<"'. Exiting."<<endl;
+          ad_exit(1);
+        }
+        if (verbose > 3) cout << "got here" << endl;
+      }//if ((syr<=y_n)&&(y_n<=nyrRetro+1))
+    }//loop over n
+    if (verbose > 3) cout<<"nlls_y = "<< nlls_y <<endl;
+    nloglike(7) = nlls_y; //--note: not yet multiplied by multiplier
+  }
+  if (verbose > 3) cout << "--Finished mmos_likelihood_survey" << endl;
 
 // =================================================================================================================================================
 
@@ -10491,7 +10812,7 @@ FUNCTION mmos_likelihood
    * NOTES: Added 2026-03-19.
   **/
 FUNCTION dmatrix getRebinMatrix(dvector origCtPts, dvector finlCtPts)
-  bool debug = TRUE; // = (verbose>3);
+  bool debug = FALSE; // = (verbose>3);
   if (debug) cout<<"Starting getRebinMatrix()"<<endl;
   adstring tb = "\t";
   int nO = origCtPts.size()-1;//no. original (i.e. model) bins
@@ -11128,7 +11449,7 @@ FUNCTION calc_objective_function
   length_likelihood();
   recruitment_likelihood();
   growth_likelihood();
-  mmos_likelihood();
+  mmos_likelihood_survey();
 
   // |---------------------------------------------------------------------------------|
   // | PENALTIES AND CONSTRAINTS                                                       |
@@ -11641,9 +11962,9 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int YrRefSexR1, const int YrRe
     // Pass the molt probabilities
     for (int h=1;h<=nsex;h++) rec_pass(h) = rtt(h);                                                           ///> recruitment as a function of class 
     // Now for the year-update
-    if (Term_molt!=2)
+    if (Term_molt==0)
       for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);      ///> Update the seasonal-dynamics
-    if (Term_molt==2)
+    if (Term_molt>0)
       for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case);  ///> Update the seasonal-dynamics
      
     // Project SSB
@@ -11946,10 +12267,10 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
     molt_prob_pass(h) = molt_probability(h,YrRefGrow);                                ///> probability of molting
     mature_prob_pass(h) = mature_probability(h,YrRefGrow);                            ///> probability of maturity
     } //-- h 
-  // Now fo the year-update
-  if (Term_molt!=2)
+  // Now for the year-update
+  if (Term_molt==0)
     for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,3);     ///> Update the sesonal-dynamics
-  if (Term_molt==2)
+  if (Term_molt>0)
     for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,3); ///> Update the sesonal-dynamics
  
   // Project SSB
@@ -12210,9 +12531,9 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
     } //-- h 
 
     // Now for the year-update
-    if (Term_molt!=2)
+    if (Term_molt==0)
       for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);     ///> Update the seasonal-dynamics
-    if (Term_molt==2)
+    if (Term_molt>0)
       for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case); ///> Update the seasonal-dynamics
 
     for ( int ig = 1; ig <= n_grp; ig++ ){
@@ -12944,7 +13265,7 @@ FUNCTION adstring to_str15(const dvar_vector& v)
 FUNCTION writeRepPar
   // write estimated parameters to "gmacs_rep_last.par"
   int Ipar,Jpar,Npar,NparEst;
-  ParFile1.open("gmacs_rep_last.par");
+  ParFile1.open("gmacs_rep_last.par"); ParFile1.precision(12); ParFile1.width(15);
   ParFile1 << "# current phase: " << current_phase() << "fn call: " << NfunCall << endl;
   ParFile1 << "#est    par_count  par_type     est_par_count    prior " << endl;
 
@@ -13486,7 +13807,7 @@ FUNCTION CreateOutput
   
   // Estimated parameters
   // ====================
-  ParFile1.open("gmacs_rep.par");
+  ParFile1.open("gmacs_rep.par"); ParFile1.precision(12); ParFile1.width(15);
   OutFile1 << "--Estimated parameters: dataframe" << endl;
   OutFile1 << "Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Status Penalty Gradient Standard_error Estimated_parameter_count" << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
@@ -14100,7 +14421,7 @@ FUNCTION CreateOutput
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "CohortProgression1: dataframe" << endl;
-  project_cohort_numbers_at_length(syr, mxYrsCohortProgression, 5);//using N=1 in min size class corresponding to immature newshell crab
+  project_cohort_numbers_at_length(syr, mxYrsCohortProgression, 0, 5);//using N=1 in min size class corresponding to immature newshell crab
   RepFile1 << "year season  sex   maturity   shell  "<< mid_points << endl;
   {
     for (int i=1;i<=mxYrsCohortProgression-1;i++)
@@ -14114,7 +14435,35 @@ FUNCTION CreateOutput
  
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "CohortProgression2: dataframe" << endl;
-  project_cohort_numbers_at_length(syr, mxYrsCohortProgression, 6);//--using recruitment size distribution for size classes corresponding to immature newshell crab
+  project_cohort_numbers_at_length(syr, mxYrsCohortProgression, 0, 6);//--using recruitment size distribution for size classes corresponding to immature newshell crab
+  RepFile1 << "year season  sex   maturity   shell  "<< mid_points << endl;
+  {
+    for (int i=1;i<=mxYrsCohortProgression-1;i++)
+      for (int j=1;j<=nseason;j++)
+        for (int h=1;h<=nsex;h++) 
+          for (int m=1;m<=nmature;m++)
+            for (int o=1;o<=nshell;o++)
+              RepFile1 << i << " " << j <<" " << sexes(h) << " " << maturestate(m) << " " << shellstate(o) << " " << d4_N_coh(pntr_hmo(h,m,o),i,j) << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+ 
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "CohortProgression3: dataframe" << endl;
+  project_cohort_numbers_at_length(syr, mxYrsCohortProgression, 1, 5);//using N=1 in min size class corresponding to immature newshell crab
+  RepFile1 << "year season  sex   maturity   shell  "<< mid_points << endl;
+  {
+    for (int i=1;i<=mxYrsCohortProgression-1;i++)
+      for (int j=1;j<=nseason;j++)
+        for (int h=1;h<=nsex;h++) 
+          for (int m=1;m<=nmature;m++)
+            for (int o=1;o<=nshell;o++)
+              RepFile1 << i << " " << j <<" " << sexes(h) << " " << maturestate(m) << " " << shellstate(o) << " " << d4_N_coh(pntr_hmo(h,m,o),i,j) << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+ 
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "CohortProgression4: dataframe" << endl;
+  project_cohort_numbers_at_length(syr, mxYrsCohortProgression, 1, 6);//--using recruitment size distribution for size classes corresponding to immature newshell crab
   RepFile1 << "year season  sex   maturity   shell  "<< mid_points << endl;
   {
     for (int i=1;i<=mxYrsCohortProgression-1;i++)
@@ -14129,7 +14478,7 @@ FUNCTION CreateOutput
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "PredictedMMOs: dataframe" << endl;
   RepFile1 << "year type  "<< mid_points << endl;
-  for (int i=syr;i<=(nyrRetro+1);i++){
+  for (int i=syr;i<=nyrRetro+1;i++){
     RepFile1 << i << " " << " matN  " << d3_PrdMMOs(i,1) << endl;
     RepFile1 << i << " " << " totN  " << d3_PrdMMOs(i,2) << endl;
     RepFile1 << i << " " << " prMat " << d3_PrdMMOs(i,3) << endl;
@@ -14142,12 +14491,55 @@ FUNCTION CreateOutput
     dvector mmodZBs(1,mmodNumZBs); 
     for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
     RepFile1 << "year type  "<< mmodZBs << endl;
-    for (int i=syr;i<=(nyrRetro+1);i++){
+    for (int i=syr;i<=nyrRetro+1;i++){
       RepFile1 << i << " " << " matN  " << d3_PrdMMOsP(i,1) << endl;
       RepFile1 << i << " " << " totN  " << d3_PrdMMOsP(i,2) << endl;
       RepFile1 << i << " " << " prMat " << d3_PrdMMOsP(i,3) << endl;
     }
   }
+  RepFile1 << ">EOD<" << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "PredictedSurveyMMOs: dataframe" << endl;
+  RepFile1 << "year type  "<< mid_points << endl;
+  for (int i=syr;i<=nyrRetro+1;i++){
+    RepFile1 << i << " " << " matN  " << d3_PrdSrvMMOs(i,1) << endl;
+    RepFile1 << i << " " << " totN  " << d3_PrdSrvMMOs(i,2) << endl;
+    RepFile1 << i << " " << " prMat " << d3_PrdSrvMMOs(i,3) << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+ 
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "PredictedSurveyMMOsP: dataframe" << endl;
+  {
+    dvector mmodZBs(1,mmodNumZBs); 
+    for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
+    RepFile1 << "year type  "<< mmodZBs << endl;
+    for (int i=syr;i<=nyrRetro+1;i++){
+      RepFile1 << i << " " << " matN  " << d3_PrdSrvMMOsP(i,1) << endl;
+      RepFile1 << i << " " << " totN  " << d3_PrdSrvMMOsP(i,2) << endl;
+      RepFile1 << i << " " << " prMat " << d3_PrdSrvMMOsP(i,3) << endl;
+    }
+  }
+  RepFile1 << ">EOD<" << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "likeSuumaryMMOsP: dataframe" << endl;
+  {
+    dvector mmodZBs(1,mmodNumZBs); 
+    for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
+    RepFile1 << "year zb   ss    obs    prd    res    zscr    nll  "<< endl;
+    for (int n=1; n<=mmodNumObs;n++){
+      RepFile1 << likeSumSrvMMOs(n,1) << " "; // year
+      RepFile1 << likeSumSrvMMOs(n,2) << " "; // size bin
+      RepFile1 << likeSumSrvMMOs(n,3) << " "; // sample size
+      RepFile1 << likeSumSrvMMOs(n,4) << " "; // observed proportion
+      RepFile1 << likeSumSrvMMOs(n,5) << " "; // predicted proportion
+      RepFile1 << likeSumSrvMMOs(n,6) << " "; // residual
+      RepFile1 << likeSumSrvMMOs(n,7) << " "; // zscore
+      RepFile1 << likeSumSrvMMOs(n,8) << endl;// nll
+    }
+   }
   RepFile1 << ">EOD<" << endl;
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
@@ -16092,6 +16484,7 @@ GLOBALS_SECTION
   ofstream RepFile1;
   ofstream ParFile1;
   ofstream OutInpFile1; 
+  ofstream popprog;
 
   int writeToRepFile1 = 1;//--flag to write to RepFile1 (gmacs.rep1): used in CheckBounds
 
@@ -16367,6 +16760,8 @@ GLOBALS_SECTION
   #define SELEX_STACKED_LOGISTIC 13
   #undef SELEX_ASCNORM
   #define SELEX_ASCNORM 14
+  #undef SELEX_DOUBLENORM4a
+  #define SELEX_DOUBLENORM4a 15
 
   #undef GROWTH_FIXEDGROWTHTRANS
   #define GROWTH_FIXEDGROWTHTRANS 1
@@ -16388,6 +16783,10 @@ GLOBALS_SECTION
   #define GROWTH_TCSAM02A 9
   #undef GROWTH_TCSAM02B
   #define GROWTH_TCSAM02B 10
+  #undef GROWTH_TCSAM02C
+  #define GROWTH_TCSAM02C 11
+  #undef GROWTH_TCSAM02D
+  #define GROWTH_TCSAM02D 12
 
   #undef FIXED_PROB_MOLT
   #define FIXED_PROB_MOLT 0
@@ -16621,13 +17020,50 @@ GLOBALS_SECTION
    }
 
 //-------------------------------------------------------------------------------------
+  adstring addToAnystring(adstring& anystring, int slx_type_in, int ipar, int slx_extra_in1, int slx_extra_in2){
+    if (slx_type_in == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
+    if (slx_type_in == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
+    if (slx_type_in == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
+    if (slx_type_in == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
+    if (slx_type_in == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
+    if (slx_type_in == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
+    if (slx_type_in == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
+    if (slx_type_in == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
+    if (slx_type_in == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
+    if (slx_type_in == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
+    if (slx_type_in == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
+    if (slx_type_in == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
+    if (slx_type_in == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
+    if (slx_type_in == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
+    if (slx_type_in == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
+    if (slx_type_in == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
+    if (slx_type_in == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
+    if (slx_type_in == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
+    if (slx_type_in == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
+    if (slx_type_in == SELEX_DOUBLENORM4a && ipar == 1) anystring += "Double_normala_par_1";
+    if (slx_type_in == SELEX_DOUBLENORM4a && ipar == 2) anystring += "Double_normala_par_2";
+    if (slx_type_in == SELEX_DOUBLENORM4a && ipar == 3) anystring += "Double_normala_par_3";
+    if (slx_type_in == SELEX_DOUBLENORM4a && ipar == 4) anystring += "Double_normala_par_4";
+    if (slx_type_in == SELEX_DOUBLENORM4a && ipar == 5) anystring += "Double_normala_par_5";
+    if (slx_type_in == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in1) anystring += "Spline_knot_"+str(ipar);
+    if (slx_type_in == SELEX_CUBIC_SPLINE && ipar > slx_extra_in1)  anystring += "Spline_value_"+str(ipar-slx_extra_in2);
+    if (slx_type_in == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in1) anystring += "Spline_2_knot_"+str(ipar);
+    if (slx_type_in == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in1)  anystring += "Spline_2_value_"+str(ipar-slx_extra_in2);
+    if (slx_type_in == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
+    if (slx_type_in == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
+    if (slx_type_in == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
+    if (slx_type_in == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
+    if (slx_type_in == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
+    return(anystring);
+  }
+
+//-------------------------------------------------------------------------------------
 FUNCTION save_params
     adstring fn = "gmacs."+str(current_phase())+"."+str(NfunCall)+".par";
     ofstream os1(fn, ios::trunc);
     os1.precision(12);
     initial_params::save(os1, 12);
     os1.close();
-
 
 // ===============================================================================================
 
@@ -16985,7 +17421,30 @@ FINAL_SECTION
 // 2026-03-27 ** WTS. Added growth transition options 9 and 10 to provide same functionality as TCSAM02, mainly for direct comparisons with results from that code.
 // 2026-04-06 ** WTS. Increased required verbose level to > 4 on fishing mortality devs. Added function writeRepPar to write parameters and prior values 
 //                    to gmacs_rep_last.par on a function call basis if verbose > 2. Increased precision and width of output to RepFile1.
-//
+// 2026-04-08 ** WTS. The growth options TCSAM02A and TCSAM02B (=9 and 10) that provide similar functionality as TCSAM02 for the growth transition matrices 
+//                    were reassigned and additional options TCSAM02C and TCSAM02D (11 and 12) were added. A and B apply to the case where the molt increment is 
+//                    assumed to be gamma-distributed while C and D apply to the case where postmolt size is gamma-distributed. 
+//                    All of the options limit growth to a maximum number of size bins but treat probabilities 
+//                    from the "excluded" size bins differently: A and C drop them, then normalize the remaining probabilities to sum to 1 whereas B and D treat 
+//                    the max size bin as an accumulator for "raw" probabilities at larger size bins before dropping them. 
+//                    Added includeFs option to project_cohort_numbers_at_length. Revised namture=2, nshell=2 section of update_population_numbers_at_length_season_new
+//                    to clarify original, updated, and final numbers during update using o_, u_, and f_ to indicate such.
+//                    The version number was incremented to 2.20.35c.
+// 2026-04-09 ** WTS. Added alternative 4-parameter double normal selectivity option (SELEX_DOUBLENORM4a = 15) to match TCSAM02. The plateau is determined 
+//                    from a scale parameter and the distance between the max possible size and the size at the ascending limb. See selex.hpp and search here for 
+//                    SELEX_DOUBLENORM4a for details.
+//                    Extracted repeated code (three times!) for construction of "anystring" labels for SELEX functions as a function 
+//                    addToAnystring defined in the GLOBALS section. The function is now called in the three sections where the previous code
+//                    has been commented out (pending deletion).
+// 2026-04-10 ** WTS. Added export of population abundance by year, season, group, size class to "gmacs_popprog.csv" file to facilitate comparison with TCSAM02 
+//                    results.  TODO: apply verbose check to this export.
+// 2026-04-11 ** WTS. Revised data input, prediction, likelihood calculations for male maturity ogive data so that prediction can be based on predicted survey 
+//                    abundance, not population abundance in season 1. Old function mmos_likelihood is now mmos_likelihood_pop and the new function is 
+//                    mmos_likelihood_survey. mmos_likelihood_pop is not called and associated model ouput to RepFile1 is now based on mmos_likelihood_survey.
+// 2026-04-13 ** WTS. Version 2.20.36. Added "flt_id" to input maturity ogive data table to correctly identify fleet to use correct selectivity functions when 
+//                    prodicting MMOs based on predicted survey abundances. Added verbose prints to cout for maturity ogive calculations. Added several sections 
+//                    to RepFile1 output that provide dataframes for verifying maturity ogive calculations and comparisons with TCSAM02 (getting "exact" agreement 
+//                    for maturity ogive dataset from 2025 assessment).
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps

@@ -38,6 +38,7 @@
  * | Uniform           | uniform          | LogisticCurveOne        |
  * | Double normal     | pdubnorm         | DoubleNormal            |
  * | Double normal     | pdubnorm4        | DoubleNormal4           |
+ * | Double normal     | pdubnorm4a       | DoubleNormal4a          |
  * | Double normal     | pDubnorm6        | DoubleNormal6           |
  * | Stacked logistic  | plogis           | StackedLogistic         |
  * | Spline            | spline_cubic_val | SelectivitySpline       |
@@ -222,6 +223,41 @@ namespace gsm {
                                   const T2 &dscWdZ, const T2 &dscPkZ)
     {
         T2 slp = T2(5.0);
+        T ascS = mfexp(-0.5*square((x-ascPkZ)/ascWdZ));
+        T dscS = mfexp(-0.5*square((x-dscPkZ)/dscWdZ));
+        T ascJ = 1.0/(1.0+mfexp( slp*(x-(ascPkZ))));
+        T dscJ = 1.0/(1.0+mfexp(-slp*(x-(dscPkZ))));
+        T s = elem_prod(elem_prod(ascJ,ascS)+(1.0-ascJ),
+                        elem_prod(dscJ,dscS)+(1.0-dscJ));
+        return s;
+    }
+
+    /**
+     * @brief Alternative 4-parameter double normal function with plateau
+     * @details Return type will be the same as x, so x:
+     *            should be a dvar_vector if ascWdZ, ascPkZ, dscWdZ, sclInc are dvariables
+     *            should be a dvector     if ascWdZ, ascPkZ, dscWdZ, sclInc are doubles
+     * fsZ can be a dvariable if ascWdZ and the other parameters are dvariables but should not be estimated
+     * (and thus should be a double in almost all cases).
+     * sclInc should be strictly non-negative. For a double normal without a plateau, simply fix sclInc to 0.
+     *
+     * @param T x - Independent variable (e.g. age or size) as data vector or dvar vector
+     * @param T2 ascWdZ - ascending limb width
+     * @param T2 ascPkZ - ascending limb size/age at full selection
+     * @param T2 dscWdZ - descending limb width
+     * @param T2 sclInc - scaled increment to size at start of descending limb
+     * @param T3 fsZ - maximum possible size (double or dvariable)
+     *
+     * @return selectivity at values of x. Return type will be same as x.
+    **/
+    template<class T, class T2, class T3>
+    inline
+    const T pdubnorm4a(const T &x, const T2 &ascWdZ, const T2 &ascPkZ,
+                                  const T2 &dscWdZ, const T2 &sclInc,
+                                  const T3 &fsZ)
+    {
+        T2 slp = T2(5.0);
+        T2 dscPkZ = ascPkZ + sclInc*(fsZ-ascPkZ);
         T ascS = mfexp(-0.5*square((x-ascPkZ)/ascWdZ));
         T dscS = mfexp(-0.5*square((x-dscPkZ)/dscWdZ));
         T ascJ = 1.0/(1.0+mfexp( slp*(x-(ascPkZ))));
@@ -605,12 +641,12 @@ namespace gsm {
     template<class T,class T2>
     class DoubleNormal: public Selex<T>
     {
-    private:
+      private:
             T2 m_sL;
             T2 m_s50;
             T2 m_sR;
 
-    public:
+      public:
         /**
          * Class constructor.
          *
@@ -667,10 +703,96 @@ namespace gsm {
             }
     };
 
+    // DoubleNormal4a: Alternative 4-parameter double normal (dome shaped) selectivity with plateau
+    /**
+     * @brief Alternative 4-parameter double normal curve with plateau
+     * @details The width of the plateau is a determined by a scaling factor (sclInc) on the distance between 
+     * the size at the ascending peak (ascPkZ) and the maximum allowed size (fsZ). 
+     *
+     * @param T data vector or dvar vector
+     * @param T2 double or dvariable
+     * @param T3 double (or can be dvariable if T2 is dvariable)
+    **/
+    template<class T,class T2, class T3>
+    class DoubleNormal4a: public Selex<T>
+    {
+      private:
+        T2 m_ascWdZ;//ascending limb width
+        T2 m_ascPkZ;//size at which ascending limb reaches 1
+        T2 m_dscWdZ;//descending limb width
+        T2 m_sclInc;//scaled increment to size at start of descending limb
+        T3 m_fsZ;   //maximum possible size at which descending limb departs from 1
+
+      public:
+        /**
+         *
+         * @param ascWdZ - ascending limb width
+         * @param ascPkZ - size at which ascending limb reaches 1
+         * @param dscWdZ - descending limb width
+         * @param sclInc - scaled increment to size at start of descending limb
+         * @param fsZ - max size possible for start of descending limb
+         */
+        DoubleNormal4a(T2 ascWdZ = T2(1), T2 ascPkZ = T2(1),
+                       T2 dscWdZ = T2(1), T2 sclInc = T2(0), T3 fsZ = T3(1))
+        : m_ascWdZ(ascWdZ), m_ascPkZ(ascPkZ), m_dscWdZ(dscWdZ), m_sclInc(sclInc), m_fsZ(fsZ) {}
+
+        T2 GetAscWdZ()  const { return m_ascWdZ; }
+        T2 GetAscPkZ()  const { return m_ascPkZ; }
+        T2 GetDscWdZ()  const { return m_dscWdZ; }
+        T2 GetSclInc()  const { return m_sclInc; }
+        T3 GetFsZ()     const { return m_fsZ; }
+
+
+        void SetAscWdZ(T2 &ascWdZ){ this->m_ascWdZ = ascWdZ; }
+        void SetAscPkZ(T2 &ascPkZ){ this->m_ascPkZ = ascPkZ; }
+        void SetDscWdZ(T2 &dscWdZ){ this->m_dscWdZ = dscWdZ; }
+        void SetSclInc(T2 &sclInc){ this->m_sclInc = sclInc; }
+        void SetFsZ(T3 &fsZ){ this->m_fsZ = fsZ; }
+        void SetParams(T2 &ascWdZ, T2 &ascPkZ, T2 &dscWdZ, T2 &sclInc, T3 &fsZ){
+            this->m_ascWdZ = ascWdZ;
+            this->m_ascPkZ = ascPkZ;
+            this->m_dscWdZ = dscWdZ;
+            this->m_sclInc = sclInc;
+            this->m_fsZ = fsZ;
+        }
+
+        /**
+         * @brief selex
+         * @param T x - independent variable--must be compatible with T2
+         * @return selex with type T
+         */
+        const T Selectivity(const T &x) const
+        {
+            return gsm::pdubnorm4a(x, m_ascWdZ, m_ascPkZ, m_dscWdZ, m_sclInc, m_fsZ);
+        }
+        /**
+         * @brief log(selex)
+         * @param T x - independent variable--must be compatible with T2
+         * @return log(selex) with type T
+         */
+        const T logSelectivity(const T &x) const
+        {
+            return log(gsm::pdubnorm4a(x, m_ascWdZ, m_ascPkZ, m_dscWdZ, m_sclInc, m_fsZ));
+        }
+
+        /**
+         * @brief calculate log(selex/mean(selex))
+         * @param T x - independent variable--must be compatible with T2
+         * @return log(selex/mean(selex)) with type T
+         */
+        const T logSelexMeanOne(const T &x) const
+        {
+            T y = log(gsm::pdubnorm4a(x, m_ascWdZ, m_ascPkZ, m_dscWdZ, m_sclInc, m_fsZ));
+            y  -= log(mean(mfexp(y)));
+            return y;
+        }
+    };
+
     // DoubleNormal4: 4-parameter double normal (dome shaped) selectivity
     /**
-     * @brief 4-parameter double normal curve
-     * @details Uses the logistic curve (plogis95) for a two parameter function
+     * @brief 4-parameter double normal curve with plateau
+     * @details The width of the plateau is a determined by the distance between 
+     * the size at the ascending peak (ascPkZ) and the size at the descending peak (dscPkZ). 
      *
      * @param T data vector or dvar vector
      * @param T2 double or dvariable
@@ -678,13 +800,13 @@ namespace gsm {
     template<class T,class T2>
     class DoubleNormal4: public Selex<T>
     {
-    private:
+      private:
         T2 m_ascWdZ;//ascending limb width
         T2 m_ascPkZ;//size at which ascending limb reaches 1
         T2 m_dscWdZ;//descending limb width
         T2 m_dscPkZ;//size at which descending limb departs from 1
 
-    public:
+      public:
         /**
          *
          * @param ascWdZ - ascending limb width
@@ -707,7 +829,7 @@ namespace gsm {
         void SetDscPkZ(T2 &dscPkZ){ this->m_dscPkZ = dscPkZ; }
         void SetParams(T2 &ascWdZ, T2 &ascPkZ, T2 &dscWdZ, T2 &dscPkZ){
             this->m_ascWdZ = ascWdZ;
-            this->m_ascWdZ = ascPkZ;
+            this->m_ascPkZ = ascPkZ;
             this->m_dscWdZ = dscWdZ;
             this->m_dscPkZ = dscPkZ;
         }
