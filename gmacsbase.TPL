@@ -14254,10 +14254,18 @@ FUNCTION CreateOutput
   OutFile1 << "--Derived quatities: dataframe"<<endl;
   OutFile1 << "Parameter_name Estimate Standard_error Estimated_quantity_count" << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "Derived quatities: dataframe"<<endl;
+  RepFile1 << "Derived_quatities: dataframe"<<endl;
   RepFile1 << "param est se qty_cnt" << endl;
   if (OutRefPars==YES)
    {
+    //--need to assign the following if sd_report has not been called
+    ParsOut(NRefPars+1) = spr_rbar(1);
+    ParsOut(NRefPars+2) = spr_rbar(2);
+    ParsOut(NRefPars+3) = ssbF0;
+    ParsOut(NRefPars+4) = Bmsy;
+    ParsOut(NRefPars+5) = spr_depl;
+    ParsOut(NRefPars+6) = spr_cofl;
+    //--
     OutFile1 << "Male Spr_rbar : "   << ParsOut(NparEst+1) << " " << ParsOut.sd(NparEst+1) << " " << NparEst+1 << endl;
     OutFile1 << "Female Spr_rbar : " << ParsOut(NparEst+2) << " " << ParsOut.sd(NparEst+2) << " " << NparEst+2 << endl;
     OutFile1 << "SSSB/R(F=0) : "     << ParsOut(NparEst+3) << " " << ParsOut.sd(NparEst+3) << " " << NparEst+3 << endl;
@@ -15447,6 +15455,9 @@ FUNCTION CreateOutput
     OutFile1 << "#----------------------------" << endl;
     OutFile1 << "#- Reference points and OFL -" << endl;
     OutFile1 << "#----------------------------" << endl;
+    RepFile1 << "#----------------------------" << endl;
+    RepFile1 << "#- Reference points and OFL -" << endl;
+    RepFile1 << "#----------------------------" << endl;
 
     REPVEC(spr_syr);
     REPVEC(spr_nyr);
@@ -15458,7 +15469,9 @@ FUNCTION CreateOutput
     OutFile1 << "SR_beta_prj: ";
     OutFile1 << setw(15) << setprecision(8) << setfixed() <<  SR_beta_prj << endl;
     REPVEC2(spr_fofl);
+    REPVEC(spr_cofl);
     REPVEC(spr_cofl_ret);
+    REPVEC(Bmsy);
     if (Compute_yield_prj==1) {
       REPMAT(spr_yield);
       //OutFile1 << ">EOM<" << endl;
