@@ -1,6 +1,8 @@
 figures
 tables
+~*
 *.pdf
 *.html
 *.md
 q00_*_files
+!GMACS_Updates.pdf

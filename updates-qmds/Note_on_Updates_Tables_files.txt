@@ -1,0 +1,8 @@
+Note on Updates_Tables files
+1. Add GMACS updates to Updates_Tables.xlsx
+2. Copy new/altered table to Updates_Tables.docx as pdf image
+3. Export new/altered table images as "UpdatesTable_?.pdf)", where ? is a letter
+4. If pdf in 3 is new, add relevant code to q00_GMACS_Updates.qmd
+5. Render q00_GMACS_Updates.qmd as pdf/html
+6. Change q00_GMACS_Updates.pdf to GMACS_Updates.pdf
+6. Push changes to GitHub.

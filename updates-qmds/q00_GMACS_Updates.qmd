@@ -1,5 +1,5 @@
 ---
-title: "Recent GMACS Updates: 2026-04"
+title: "Recent GMACS Updates: 2026-05"
 author:
 - name: William T. Stockhausen
   affiliations:
@@ -67,7 +67,7 @@ format:
 echo: false
 warning: false
 results: 'hide'
-keep-md: true
+keep-md: false
 keep-yaml: false
 editor: source
 editor_options: 
@@ -124,12 +124,12 @@ params:
 Updates to GMACS since the September 2025 Crab Plan Team (CPT) meeting are listed in the following tables. Text highlighted in red indicates a change in input model format or other important information.
 
 ```{r, results='asis'}
-#| label: tbl_202604a
+#| label: tbl_a
   tblno = tblno+1;
   cap = paste0("Table ",LETTERS[tblno],". ",
                "Updates to GMACS 2025-12-30 to 2026-03-19. Versions 2.20.32 - 2.20.35.\n");
   cat(cap);
-  fn = "UpdatesTable_202604a.pdf";
+  fn = "UpdatesTable_A.pdf";
   kbl = wtsQMD::imageAsKable(fn);
   cat(kbl,"\n\n");
   rm(cap,kbl);
@@ -138,12 +138,12 @@ Updates to GMACS since the September 2025 Crab Plan Team (CPT) meeting are liste
 \newpage
 
 ```{r, results='asis'}
-#| label: tbl_202604b
+#| label: tbl_b
   tblno = tblno+1;
   cap = paste0("Table ",LETTERS[tblno],". ",
-               "Updates to GMACS 2026-03-23 to 2026-04-15. Versions 2.20.35 - 2.20.36.\n");
+               "Updates to GMACS 2026-03-23 to 2026-05-05. Versions 2.20.35 - 2.20.37.\n");
   cat(cap);
-  fn = "UpdatesTable_202604b.pdf";
+  fn = "UpdatesTable_B.pdf";
   kbl = wtsQMD::imageAsKable(fn);
   cat(kbl,"\n\n");
   rm(cap,kbl);
