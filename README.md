@@ -1,3 +1,8 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
 # GMACS_tpl-cpp_code
 
 This is a repository with GMACS tpl and C++ source code only. The base code was distributed by Andre Punt on Jan. 18, 2024 following the January 2024 Crab Modeling Workshop in Anchorage, AK. This repository is a bit "cleaner" than the [GMACS_Assessment_code](https://github.com/GMACS-project/GMACS_Assessment_code) repository because it contains **only** the base tpl code, a template for the personal.tpl code, the src and include sub-folders with c++ code, and a platform-independent CMake file to make the gmacs executable. 
@@ -76,6 +81,17 @@ The function will run the models specified (copying the input files from relevan
 Currently GMACS is linked to [`gmr`](gmacs-project.github.io/gmr/), an R package to work with GMACS in R, create plots of GMACS output, compare different models and prepare SAFE documents. Another R package which may be helpful is `wtsGMACS` (https://github.com/wStockhausen/wtsGMACS).
 
 ## Updates
+
+See also pdf version of [updates](./updates-qmds/GMACS_Updates.pdf) since 2025-12-30.
+
+### Versions 2.20.35 - 2.20.37 (2026-03-23 to 2026-05-05)
+
+<img src="./updates-qmds/UpdatesTable_B.png" width="1800" alt="Versions 2.20.35 - 2.20.37 (2026-03-23 to 2026-05-05)">
+
+### Versions 2.20.32 - 2.20.35 (2025-12-30 to 2026-03-19)
+
+<img src="./updates-qmds/UpdatesTable_A.png" width="1800" alt="Versions 2.20.32 - 2.20.35 (2025-12-30 to 2026-03-19)">
+
 ### Through version 2.20.31 (2025-06-16)
  - Added gamma distribution likelihood type (`GROWTHINC_DATA_GAMMA`=4) for non-tagging molt increment data so likelihood is consistent with size transition matrices. Previous normal likelihood based on data CVs (`GROWTHINC_DATA_NORMAL`=1) is still available. 
  - Corrected logic error going back to 2.20.06 that prevented likelihood for non-tagging molt increment data from being calculated. 
