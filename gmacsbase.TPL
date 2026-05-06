@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.36; ** WTS **; Compiled 2026-04-13");
+ !! TheHeader = adstring("## GMACS Version 2.20.37; ** WTS **; Compiled 2026-05-05");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -4176,7 +4176,6 @@ DATA_SECTION
   !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
   !! gmacs_ctl <<"## SIZE COMPOSITIONS OPTIONS                                                            ##" << endl;
   !! gmacs_ctl <<"## ==================================================================================== ##" << endl;
-  !! gmacs_ctl <<"## " << endl;
 
   !! ECHOSTR(" * Size composition controls");
   init_ivector iSizeCompType_in(1,nSizeComps_in);                     ///> Size-comp likelihood
@@ -4189,21 +4188,21 @@ DATA_SECTION
   !!       exit(1); 
   !!   }
   init_ivector bTailCompression_in(1,nSizeComps_in);                 ///> option for tail compression
-  init_vector bTailCompression_pmin_in(1,nSizeComps_in);             ///> extent of tail compression 
+  init_vector  bTailCompression_pmin_in(1,nSizeComps_in);            ///> extent of tail compression 
   init_ivector iCompAggregator(1,nSizeComps_in);                     ///> should data be aggregated
   init_ivector lf_catch_in(1,nSizeComps_in);                         ///> Survey-like predictions or catch-like predictions
-  init_vector lf_lambda_in(1,nSizeComps_in);                         ///> Lambda for effect N
-  init_vector lf_emphasis_in(1,nSizeComps_in);                       ///> Overall lambda
+  init_vector  lf_lambda_in(1,nSizeComps_in);                        ///> Lambda for effect N
+  init_vector  lf_emphasis_in(1,nSizeComps_in);                      ///> Overall lambda
   init_ivector survey_for_q_in(1,nSizeComps_in);                     ///> Survey to which this comp relates
 
-  !! echoinput << "iSizeCompType_in: " << iSizeCompType_in << endl;
-  !! echoinput << "bTailCompression_in: " << bTailCompression_in << endl;
+  !! echoinput << "iSizeCompType_in: "         << iSizeCompType_in << endl;
+  !! echoinput << "bTailCompression_in: "      << bTailCompression_in << endl;
   !! echoinput << "bTailCompression_pmin_in: " << bTailCompression_pmin_in << endl;
-  !! echoinput << "iCompAggregator: " << iCompAggregator << endl;
-  !! echoinput << "lf_catch_in: " << lf_catch_in << endl;
-  !! echoinput << "lf_lambda_in: " << lf_lambda_in << endl;
-  !! echoinput << "lf_emphasis_in: " << lf_emphasis_in << endl;
-  !! echoinput << "survey_for_q_in: " << survey_for_q_in << endl;
+  !! echoinput << "iCompAggregator: "          << iCompAggregator << endl;
+  !! echoinput << "lf_catch_in: "              << lf_catch_in << endl;
+  !! echoinput << "lf_lambda_in: "             << lf_lambda_in << endl;
+  !! echoinput << "lf_emphasis_in: "           << lf_emphasis_in << endl;
+  !! echoinput << "survey_for_q_in: "          << survey_for_q_in << endl;
   int nSizeComps;
   !! nSizeComps = max(iCompAggregator);                              ///> Number of length comps after aggregation
   !! echoinput << "nSizeComps from iCompAggregator: " << nSizeComps << endl;
@@ -4211,7 +4210,6 @@ DATA_SECTION
   ivector nSizeCompCols(1,nSizeComps);
   ivector iSizeCompType(1,nSizeComps);
   ivector bTailCompression(1,nSizeComps);
-  vector lf_catch(1,nSizeComps);
   vector lf_lambda(1,nSizeComps);
   vector lf_emphasis(1,nSizeComps);
 
@@ -4227,15 +4225,27 @@ DATA_SECTION
   vector prior_log_vn_p2(1,nSizeComps);
 
  LOC_CALCS
-  gmacs_ctl <<"# Options when fitting size-composition data" << endl;
-  gmacs_ctl << "## Likelihood types: " << endl;
-  gmacs_ctl << "##  1:Multinomial with estimated/fixed sample size" << endl;
-  gmacs_ctl << "##  2:Robust approximation to multinomial" << endl;
-  gmacs_ctl << "##  3:logistic normal" << endl;
-  gmacs_ctl << "##  4:multivariate-t" << endl;
-  gmacs_ctl << "##  5:Dirichlet" << endl;
-  gmacs_ctl << "##  6:Dirichlet-Alt (Thorson et al 2016 rec'd)" << endl;
-  gmacs_ctl << endl;
+  gmacs_ctl << "## One column for each data matrix in order of entry into dat file                      ##" << endl;
+  gmacs_ctl << "## LEGEND                                                                               ##" << endl;
+  gmacs_ctl << "##     Likelihood: 1 = Multinomial with estimated/fixed sample size                     ##" << endl;
+  gmacs_ctl << "##                 2 = Robust approximation to multinomial                              ##" << endl;
+  gmacs_ctl << "##                 3 = logistic normal (NIY)                                            ##" << endl;
+  gmacs_ctl << "##                 4 = multivariate-t (NIY)                                             ##" << endl;
+  gmacs_ctl << "##                 5 = Dirichlet-Multinomial                                            ##" << endl;
+  gmacs_ctl << "##                 6 = Dirichlet-Multinomial Alt (Thorson et al 206 rec'd)              ##" << endl;
+  gmacs_ctl << "##                 7 = Multinomial Alternative (exact fit has nll=0)                    ##" << endl;
+  gmacs_ctl << "## AUTO TAIL COMPRESSION                                                                ##" << endl;
+  gmacs_ctl << "##     pmin is the cumulative proportion used in tail compression                       ##" << endl;
+  gmacs_ctl << "## CALCULATION/EXTENSION OPTIONS                                                        ##" << endl;
+  gmacs_ctl << "##   1 - as fishery catch data, scale extended comps by sample sizes                    ##" << endl;
+  gmacs_ctl << "##   2 - as survey data                                                                 ##" << endl;
+  gmacs_ctl << "##  -1 - as fishery catch data, do not scale comps by sample sizes                      ##" << endl;
+  gmacs_ctl << "##  -2 - as surveyh data, do not scale comps by sample sizes                            ##" << endl;
+  gmacs_ctl << "## NOTE: when fitting 'extended' size comps                                             ##" << endl;
+  gmacs_ctl << "##   for fishery comps, 1 is appropriate for normalized input comps                     ##" << endl;
+  gmacs_ctl << "##                      3 ia appropriate for inputs comps scaled to catch abundance     ##" << endl;
+  gmacs_ctl << "##   otherwise the choice is irrelevant                                                 ##" << endl;
+  gmacs_ctl << "## ———————————————————————————————————————————————————————————————————————————————————— ##" << endl;
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ) anystring = anystring + " " + fleetname(d3_SizeComps_in(kk,1,-5));
   gmacs_ctl << anystring << endl;
@@ -4277,14 +4287,14 @@ DATA_SECTION
   gmacs_ctl << anystring << endl;
   ECHOSTR(anystring);
 
-  gmacs_ctl << setw(6) << setfixed() << iSizeCompType_in     << " # Type of likelihood" <<  endl;
-  gmacs_ctl << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression" <<  endl;
-  gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << bTailCompression_pmin_in        << " # Auto tail compression (pmin)" << endl;
-  gmacs_ctl << setw(6) << setfixed() << iCompAggregator    << " # Composition aggregator codes" << endl;
-  gmacs_ctl << setw(6) << setfixed() << lf_catch_in        << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
-  gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_lambda_in        << " # Lambda for effective sample size" << endl;
-  gmacs_ctl << setw(6) << setprecision(4) << setfixed()    << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
-  gmacs_ctl << setw(6) << setfixed()                       << survey_for_q_in     << " # Survey to set Q for this comp" << endl;
+  gmacs_ctl << setw(6) << setfixed()                        << iSizeCompType_in         << " # Type of likelihood"           <<  endl;
+  gmacs_ctl << setw(6) << setfixed()                        << bTailCompression_in      << " # Auto tail compression"        <<  endl;
+  gmacs_ctl << setw(6) << setprecision(4) << setfixed()     << bTailCompression_pmin_in << " # Auto tail compression (pmin)" << endl;
+  gmacs_ctl << setw(6) << setfixed()                        << iCompAggregator          << " # Composition aggregator codes" << endl;
+  gmacs_ctl << setw(6) << setfixed()                        << lf_catch_in              << " # CALCULATION/EXTENSION options (see box above)" << endl;
+  gmacs_ctl << setw(6) << setprecision(4) << setfixed()     << lf_lambda_in             << " # Lambda for effective sample size" << endl;
+  gmacs_ctl << setw(6) << setprecision(4) << setfixed()     << lf_emphasis_in           << " # Lambda for overall likelihood"    << endl;
+  gmacs_ctl << setw(6) << setfixed()                        << survey_for_q_in          << " # Survey to set Q for this comp"    << endl;
   nSizeCompRows.initialize();
   nSizeCompCols.initialize();
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ){
@@ -4296,7 +4306,6 @@ DATA_SECTION
     // Again, we are using only the last specification here, may want to add a check to ensure the user specifies that these are the same and throw an error if not.
     iSizeCompType(k)    = iSizeCompType_in(kk);
     bTailCompression(k) = bTailCompression_in(kk);
-    lf_catch(k)    = lf_catch_in(kk);
     lf_lambda(k)   = lf_lambda_in(kk);
     lf_emphasis(k) = lf_emphasis_in(kk);
   }
@@ -4414,14 +4423,15 @@ DATA_SECTION
     for ( int ii = 1; ii <= nSizeCompRows_in(kk); ii++ ){
       if (verbose>4) echoinput << "    ii: " << ii << endl;
       // Tail compression is on
-      if (bTailCompression_in(kk) == 1){
-        if (verbose>4) echoinput << "tail compression is on" << endl;
+      if (bTailCompression_in(kk) > 0){  //--20260501: WTS (was ==1)
+        if (verbose>4) echoinput << "tail compression is on: type = " << bTailCompression_in(kk) << endl;
         pmin =bTailCompression_pmin_in(kk);
         TempSize.initialize();
         if (verbose>4) echoinput << d3_obs_size_comps_in(kk,ii) << endl;
         for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) TempSize(jj) = d3_obs_size_comps_in(kk,ii,jj);
         TotalSize = sum(TempSize);
-        TempSize /= TotalSize; 
+        TempSize /= TotalSize;       //--TempSize normalized to sum to 1
+        //--identify tails and do compression
         int end = 0;
         cumsum.initialize(); 
         for (int jj=1;jj<=nSizeCompCols_in(kk) & end==0;jj++){
@@ -4431,6 +4441,11 @@ DATA_SECTION
           if (cumsum(jj) > pmin) end = jj;
         }
         TempSize(end) = cumsum(end);
+        if (abs(sum(TempSize)-1)>1.0e-10) {
+          cout << "Normalization failed while extending size comps: " << kk << " " << ii << endl;
+          cout << TempSize << endl;
+          exit(1);
+        }
         tailcompind(kk,ii,1) = end;
         end = nSizeCompCols_in(kk)+1;
         int nsizecompscols = nSizeCompCols_in(kk);
@@ -4442,16 +4457,25 @@ DATA_SECTION
         }
         TempSize(end) = cumsum(end);
         tailcompind(kk,ii,2) = end;
-        //--normalize to input sample size
-        //for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TempSize(jj);
-        for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj);
-        if (verbose>4) echoinput<< kk << " " << ii << " " << d3_obs_size_comps_in(kk,ii) << endl;
+        //--lf_catch_in(kk)>0: CATCH_COMP_DOSCL or SURVEY_COMP_DOSCL: scale to input sample size <- WTS: do this if inputs were normailzed to begin with 
+        if (lf_catch_in(kk)>0) //--WTS 20260505: was only option (this now covers CATCH_COMP_DOSCL and SURVEY_COMP_DOSCL options)
+          for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj); //--WTS: FASLE for testing--original approach, but not sure it's correct when inputs weren't normalized to begin with 
+        //--lf_catch_in(kk)<0: CATCH_COMP_NOSCL or SURVEY_COMP_NOSCL: normalize to total abundance <- WTS: do this if inputs were NOT normailzed to begin with 
+        if (lf_catch_in(kk)<0) //--WTS 20260505: new option (this covers new CATCH_COMP_NOSCL and SURVEY_COMP_NOSCL options)
+          for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = TotalSize*TempSize(jj);  //--WTS: consistent with TCSAM02 because inputs are scaled to total catch abundance
+        if (verbose>4) {
+          echoinput << "kk    ii   tailcompind(1)  tailcompind(2)  d3_obs_size_comps_in(kk,ii)" << endl;
+          echoinput << kk << "  " << ii << "  " << tailcompind(kk,ii) << "  " << d3_obs_size_comps_in(kk,ii) << endl;
+        }
         //exit(1);
       } else { //--no tail compression
         tailcompind(kk,ii,1) = 1; tailcompind(kk,ii,2) = nSizeCompCols_in(kk); 
-        //--normalize to input sample size
-        //d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*(d3_obs_size_comps_in(kk,ii)/sum(d3_obs_size_comps_in(kk,ii)));
-        d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*d3_obs_size_comps_in(kk,ii);
+        //--lf_catch_in(kk)>0: CATCH_COMP_DOSCL or SURVEY_COMP_DOSCL; scale to input sample size <- WTS: do this if inputs were normailzed to begin with 
+        if (lf_catch_in(kk)>0)  //--WTS 20260505: was only option (this now covers CATCH_COMP_DOSCL and SURVEY_COMP_DOSCL options)
+          d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*d3_obs_size_comps_in(kk,ii);
+        //--lf_catch_in(kk)<0: CATCH_COMP_NOSCL or SURVEY_COMP_NOSCL: normalize to total abundance <- WTS: do this if inputs were NOT normailzed to begin with 
+        if (lf_catch_in(kk)<0) //--WTS 20260505: new option (this covers new CATCH_COMP_NOSCL and SURVEY_COMP_NOSCL options)
+          d3_obs_size_comps_in(kk,ii) = d3_obs_size_comps_in(kk,ii);  //--WTS: consistent with TCSAM02 because inputs are scaled to total catch abundance
       }
     }//--ii loop (nSizeCompRows_in(kk))
   }//-- kk loop (nSizeComps_in)
@@ -10263,6 +10287,7 @@ FUNCTION calc_predicted_composition
     dvar_vector dNtmp(1,nclass);                                      ///> temporary Ns
     dvar_vector nal(1,nclass);                                        ///> numbers or biomass at length.
     dvar_vector tempZ1(1,nclass);                                     ///> total mortality
+    dvariable   tempF;                                                ///> fully-selected capture rate (or 1 for surveys)
     dvariable qmult;                                                  ///> Q multiplier for comps
     dvariable cumsum;                                                 ///> used for tail compression
 
@@ -10277,7 +10302,7 @@ FUNCTION calc_predicted_composition
              (d3_SizeComps_in(ii,jj,-7) >= syr)) {
           dNtmp.initialize();
           int i       = d3_SizeComps_in(ii)(jj,-7);                     ///> year
-          int j       = d3_SizeComps_in(ii)(jj,-6);                     ///> seas
+          int j       = d3_SizeComps_in(ii)(jj,-6);                     ///> season
           int k       = d3_SizeComps_in(ii)(jj,-5);                     ///> gear (a.k.a. fleet)
           int h       = d3_SizeComps_in(ii)(jj,-4);                     ///> sex
           int type    = d3_SizeComps_in(ii)(jj,-3);                     ///> retained or discard
@@ -10291,7 +10316,8 @@ FUNCTION calc_predicted_composition
           if ( h != UNDET_SEX ) {                                          ///> sex specific
             if (verbose>3) {
               cout<<"--sex-specific observations in size comps ii, jj : "<< ii << " " << jj << endl;
-              cout <<"year: "<< i <<" seas: " << j << "fleet: " << k << "sex: "<<h<<" "<< d3_SizeComps_in(ii)(jj) << endl;
+              cout <<"year: "<< i <<" seas: " << j << "fleet: " << k << "sex: "<<h<< endl; 
+              cout <<"d3_size_comps_in: " << d3_SizeComps_in(ii)(jj) << endl;
             }
             dvar_vector sel = mfexp(log_slx_capture(k,h,i));
             if (std::isnan(value(sum(sel)))) cout<< "NaNs in log_slx_capture" <<endl;
@@ -10302,8 +10328,8 @@ FUNCTION calc_predicted_composition
 
             // AEPCAL--check the maturity index for Z2 and Z1
 
-            if (lf_catch_in(ii)==CATCH_COMP) {
-              if (verbose>3) cout <<"----catch comp: sex-specific"<< endl;
+            if (abs(lf_catch_in(ii))==CATCH_COMP_DOSCL) {
+              //if (verbose>3) cout <<"----catch comp: sex-specific"<< endl;
               // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
               // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
               if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
@@ -10315,11 +10341,14 @@ FUNCTION calc_predicted_composition
                 tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
                 cout << "not coded yet" << endl; exit(1);
               }
-            }//--lf_catch_in(ii)==CATCH_COMP
+            }//--lf_catch_in(ii)==CATCH_COMP_DOSCL or CATCH_COMP_NOSCL
 
-            if (lf_catch_in(ii)==SURVEY_COMP) {
-              if (verbose>3) cout << "----survey comp" << endl;
+            if (abs(lf_catch_in(ii))==SURVEY_COMP_DOSCL) {
+              //if (verbose>3) cout << "----survey comp" << endl;
+              tempF = 1.0;                                               //--WTS  20260505
               for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
+            } else {
+              tempF = ft(k,h,i,j);//fully-selected fishery capture rate  //--WTS  20260505
             }
 
             nal.initialize();                                           ///> Numbers by sex
@@ -10355,15 +10384,15 @@ FUNCTION calc_predicted_composition
 
             switch ( type ) {
               case RETAINED:                                            ///> retained
-                dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1);
+                dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1); //WTS 20260505: added tempF
                 if (std::isnan(value(sum(dNtmp)))) cout<< "NaNs in RETAINED dNtmp " << dNtmp << endl;
                 break;
               case DISCARDED:                                           ///> discarded
-                dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1);
+                dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1); //WTS 20260505: added tempF
                 if (std::isnan(value(sum(dNtmp)))) cout<< "NaNs in DISCARDED dNtmp " << dNtmp << endl;
                 break;
               case TOTALCATCH:                                          ///> both retained and discarded
-                dNtmp += elem_prod(elem_prod(nal, sel),tempZ1);
+                dNtmp += tempF*elem_prod(elem_prod(nal, sel),tempZ1);                 //--WTS  20260505: added tempF
                 if (std::isnan(value(sum(dNtmp)))) {
                   cout<< "NaNs in TOTALCATCH dNtmp " << dNtmp << endl;
                   cout<< "nal: " << nal << endl;
@@ -10377,7 +10406,7 @@ FUNCTION calc_predicted_composition
             // sexes combined in the observations
             if (verbose>3) cout <<"----sexes combined in the observations"<< endl;
             for ( int h = 1; h <= nsex; h++ ){
-              if (verbose>3) cout <<"------h = " << h << endl;
+              //if (verbose>3) cout <<"------h = " << h << endl;
               dvar_vector sel = mfexp(log_slx_capture(k,h,i));
               if (std::isnan(value(sum(sel)))) cout<< "NaNs in log_slx_capture" <<endl;
               dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
@@ -10385,8 +10414,8 @@ FUNCTION calc_predicted_composition
               dvar_vector dis = mfexp(log_slx_discard(k,h,i));
               if (std::isnan(value(sum(dis)))) cout<< "NaNs in log_slx_discard" <<endl;
               // AEPCAL--check the maturity index
-              if (lf_catch_in(ii)==CATCH_COMP) {
-                if (verbose>3) cout <<"------catch comp: sexes combined"<< endl;
+              if (abs(lf_catch_in(ii))==CATCH_COMP_DOSCL) {
+                //if (verbose>3) cout <<"------catch comp: sexes combined"<< endl;
                 // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
                 // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
                 if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
@@ -10399,10 +10428,14 @@ FUNCTION calc_predicted_composition
                   cout << "not coded yet" << endl; exit(1);
                 }
                 if (std::isnan(value(sum(tempZ1)))) cout<< "NaNs in tempZ1" <<endl;
-              }//--lf_catch_in(ii)==CATCH_COMP
-    	        if (lf_catch_in(ii)==SURVEY_COMP) {
-                if (verbose>3) cout <<"------survey comp" << endl;
+              }//--abs(lf_catch_in(ii))==CATCH_COMP_DOSCL or CATCH_COMP_NOSCL
+
+              if (abs(lf_catch_in(ii))==SURVEY_COMP_DOSCL) {
+                //if (verbose>3) cout << "----survey comp" << endl;
+                tempF = 1.0;                                               //--WTS  20260505
                 for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
+              } else {
+                tempF = ft(k,h,i,j);//fully-selected fishery capture rate  //--WTS  20260505
               }
 
               nal.initialize();                                         ///> Numbers by sex
@@ -10416,17 +10449,18 @@ FUNCTION calc_predicted_composition
 
               switch ( type ) {
                 case RETAINED:                                            ///> retained
-                  dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1);
+                  dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1); //WTS 20260505: added tempF
                   break;
                 case DISCARDED:                                           ///> discarded
-                  dNtmp += elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1);
+                  dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1); //WTS 20260505: added tempF
                   break;
                 case TOTALCATCH:                                          ///> both retained and discarded
-                  dNtmp += elem_prod(elem_prod(nal, sel),tempZ1);
+                  dNtmp += tempF*elem_prod(elem_prod(nal, sel),tempZ1);                 //WTS 20260505: added tempF
                   break;
               }//--switch(type)
             }//--h loop
           }//--else sexes combined
+
           d3_pre_size_comps_in(ii)(jj)        = dNtmp(1,nbins);
           d3_pre_size_comps_in(ii)(jj)(nbins) = sum(dNtmp(nbins,nclass));
           if (std::isnan(value(sum(d3_pre_size_comps_in(ii,jj))))){
@@ -10439,7 +10473,10 @@ FUNCTION calc_predicted_composition
 
           // Now apply tail compression (perhaps)
           if (bTailCompression_in(ii) == 1) {
-            if (verbose>3) cout <<"------doing tail compression" << endl;
+            if (verbose>3) { //--WTS 20260430 added
+              cout <<"------doing tail compression: ii  jj " << ii << " " << jj << endl;
+              cout << "orig: " << d3_pre_size_comps_in(ii,jj) << endl;
+            }
             cumsum = 0;
             for (int kk=1;kk<=tailcompind(ii,jj,1);kk++) {
               cumsum += d3_pre_size_comps_in(ii,jj,kk);
@@ -10458,17 +10495,20 @@ FUNCTION calc_predicted_composition
               cout << "d3_pre_size_comps_in(ii,jj,tailcompind(ii,jj,2)) is NaN"<< endl;
               exit(-1);
             }
+            if (verbose>3){ //--WTS 20260430 added
+              cout << "w/ tc: " << d3_pre_size_comps_in(ii,jj) << endl;
+            }
           }//--bTailCompression_in(ii) == 1
         }// if check on whether to include year
       } // jj loop (years)
     } // ii loop (sizecomp)
 
     // This aggregates the size composition data by appending size compositions horizontally
-    if (verbose>=4) cout<<"--Extending size comps horizontally"<<endl;
+    if (verbose>3) cout<<"--Extending size comps horizontally"<<endl;
     int oldk = 9999; int j; int i;
     for ( int kk = 1; kk <= nSizeComps_in; kk++ ) {
       int k = iCompAggregator(kk);
-      if (verbose>=4) cout <<"----kk = "<< kk <<" k = "<< k << endl;
+      if (verbose>3) cout <<"----kk = "<< kk <<" k = "<< k << endl;
       if ( oldk != k ) j = 0;
       oldk = k;
       for ( int jj = 1; jj <= nSizeCompCols_in(kk); jj++ ) {
@@ -10507,7 +10547,9 @@ FUNCTION calc_predicted_composition
         if (verbose>=4) cout<< k << "  " << i << endl;
         if (verbose>=4) cout << size_comp_year(k,i) << endl;
         if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) ){
+          if (verbose>3) cout << "before norm: " << k << " " << i << " " << d3_pre_size_comps(k,i) << endl;  //--WTS: 20260505
           d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
+          if (verbose>3) cout << "after norm: " << k << " " << i << " " << d3_pre_size_comps(k,i) << endl;    //--WTS: 20260505
           // AEP: BUG
           if (std::isnan(value(sum(d3_pre_size_comps(k,i))))){
             cout << "line 10353" << endl;
@@ -10977,6 +11019,9 @@ FUNCTION dvariable get_prior_pdf(const int &pType, const dvariable &_theta, cons
    dvariable prior_pdf;
    switch(pType)
     {
+      case NO_PRIOR: //no prior
+       prior_pdf = 0.0;
+       break;
       case UNIFORM_PRIOR: // uniform
        prior_pdf = dunif(_theta,p1,p2);
        break;
@@ -11258,6 +11303,11 @@ FUNCTION length_likelihood
       for (int jrow=1;jrow<=nSizeCompRows(ii);jrow++){
         if (size_comp_year(ii,jrow) < syr) { 
           for (int k=1;k<=nSizeCompCols(ii);k++) { O(jrow,k) = 1.0/float(nclass); P(jrow,k) = 1.0/float(nclass); }
+        }
+        if (verbose>3){
+          cout << "ii, jrow: " << ii << " " << jrow << endl;
+          cout << "O: " << O(jrow) << endl;
+          cout << "P: " << P(jrow) << endl;
         }
       } // -- jrow
 
@@ -14754,7 +14804,7 @@ FUNCTION CreateOutput
   
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Size_fit_summary: dataframe" << endl;
-  RepFile1 << "origID aggID year season fleet comp_type sex maturity shell size inpSS inpN aggObs aggPrd aggRes" << endl;
+  RepFile1 << "origID aggID origRw  aggRw  year season fleet comp_type sex maturity shell size inpSS inpN effN aggObs aggPrd aggRes" << endl;
   for (int idx=1;idx<=nMapInpToAggSizeComps;idx++){
     int kk = mapInpToAggSizeComps(idx)(1);//--input size comp df index
     int ii = mapInpToAggSizeComps(idx)(2);//--input size comp df row
@@ -14762,24 +14812,39 @@ FUNCTION CreateOutput
     int k  = mapInpToAggSizeComps(idx)(4);//--corresponding aggregated size comp df index
     int i  = mapInpToAggSizeComps(idx)(5);//--corresponding aggregated size comp df row
     int j  = mapInpToAggSizeComps(idx)(6);//--corresponding aggregated size comp df column
-    int yr  = d3_SizeComps_in(kk,ii,-7);
-    int ssn = d3_SizeComps_in(kk,ii,-6);
-    int flt = d3_SizeComps_in(kk,ii,-5);
-    int sex = d3_SizeComps_in(kk,ii,-4);
-    int typ = d3_SizeComps_in(kk,ii,-3);
-    int shl = d3_SizeComps_in(kk,ii,-2);
-    int mat = d3_SizeComps_in(kk,ii,-1);
-    int inN = d3_SizeComps_in(kk,ii, 0);
-    RepFile1 << kk << " " << k << " " << yr << " " << ssn << " " 
+    int yr  = d3_SizeComps_in(kk,ii,-7);  //--year
+    int ssn = d3_SizeComps_in(kk,ii,-6);  //--season
+    int flt = d3_SizeComps_in(kk,ii,-5);  //--fleet
+    int sex = d3_SizeComps_in(kk,ii,-4);  //--sex
+    int typ = d3_SizeComps_in(kk,ii,-3);  //--catch type
+    int shl = d3_SizeComps_in(kk,ii,-2);  //--shell state
+    int mat = d3_SizeComps_in(kk,ii,-1);  //--maturity state
+    double inN = d3_SizeComps_in(kk,ii, 0);  //--input sample size <--TODO (20260502): need the AGGREGATED/EXTENDED sample sizes also
+    dvector effN = value(mfexp(log_vn(k)) * size_comp_sample_size(k));
+    RepFile1 << kk << " " << k << " " << ii  <<  " " << i  << " " << yr << " " << ssn << " " 
              << fleetname(flt) << " " << catchtypes(typ) << " " 
              << sexes(sex) << " " << maturestate(mat) << " " << shellstate(shl) << " "
-             << mid_points(jj) << " "
-             << inN << " "
-             << d3_SizeComps_in(kk,ii,jj) << " "
-             << d3_obs_size_comps(k,i,j) << " "
-             << d3_pre_size_comps(k,i,j) << " "
-             << d3_res_size_comps(k,i,j) << " "
+             << mid_points(jj) << " "               //--size
+             << inN << " "                          //--inpSS
+             << d3_SizeComps_in(kk,ii,jj) << " "    //--inpN
+             << effN(i) << " "                      //--effective N (from length_likelihood)
+             << d3_obs_size_comps(k,i,j) << " "     //--aggObs
+             << d3_pre_size_comps(k,i,j) << " "     //--aggPrd
+             << d3_res_size_comps(k,i,j) << " "     //--aggRes
              << endl;
+  }
+  RepFile1 << ">EOD<" << endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Size_fit_info: dataframe" << endl;
+  RepFile1 << "aggID aggRw effN iSize type " << endl;
+  for (int k=1;k<=nSizeComps;k++){
+    dvector effN = value(mfexp(log_vn(k)) * size_comp_sample_size(k));
+    for (int i=1;i<=nSizeCompRows(k);i++){
+      RepFile1 << k << " " << i << " " << size_comp_year(k,i) << " " << effN(i)  << " obs " << d3_obs_size_comps(k,i) << endl;
+      RepFile1 << k << " " << i << " " << size_comp_year(k,i) << " " << effN(i)  << " pre " << d3_pre_size_comps(k,i) << endl;
+      RepFile1 << k << " " << i << " " << size_comp_year(k,i) << " " << effN(i)  << " res " << d3_res_size_comps(k,i) << endl;
+    }
   }
   RepFile1 << ">EOD<" << endl;
 
@@ -16359,19 +16424,30 @@ FUNCTION WriteFiles
 
 
   OutInpFile1 << endl;
-  OutInpFile1 <<"## ==================================================================================== ##" << endl;
-  OutInpFile1 <<"## SIZE COMPOSITIONS OPTIONS                                                            ##" << endl;
-  OutInpFile1 <<"## ==================================================================================== ##" << endl;
-  OutInpFile1 <<"## " << endl;
-
-  OutInpFile1 <<"# Options when fitting size-composition data" << endl;
-  OutInpFile1 << "## Likelihood types: " << endl;
-  OutInpFile1 << "##  1:Multinomial with estimated/fixed sample size" << endl;
-  OutInpFile1 << "##  2:Robust approximation to multinomial" << endl;
-  OutInpFile1 << "##  3:logistic normal" << endl;
-  OutInpFile1 << "##  4:multivariate-t" << endl;
-  OutInpFile1 << "##  5:Dirichlet" << endl;
-  OutInpFile1 << endl;
+  OutInpFile1 << "## ==================================================================================== ##" << endl;
+  OutInpFile1 << "## SIZE COMPOSITIONS OPTIONS                                                            ##" << endl;
+  OutInpFile1 << "## ==================================================================================== ##" << endl;
+  OutInpFile1 << "## One column for each data matrix in order of entry into dat file                      ##" << endl;
+  OutInpFile1 << "## LEGEND                                                                               ##" << endl;
+  OutInpFile1 << "##     Likelihood: 1 = Multinomial with estimated/fixed sample size                     ##" << endl;
+  OutInpFile1 << "##                 2 = Robust approximation to multinomial                              ##" << endl;
+  OutInpFile1 << "##                 3 = logistic normal (NIY)                                            ##" << endl;
+  OutInpFile1 << "##                 4 = multivariate-t (NIY)                                             ##" << endl;
+  OutInpFile1 << "##                 5 = Dirichlet-Multinomial                                            ##" << endl;
+  OutInpFile1 << "##                 6 = Dirichlet-Multinomial Alt (Thorson et al 206 rec'd)              ##" << endl;
+  OutInpFile1 << "##                 7 = Multinomial Alternative (exact fit has nll=0)                    ##" << endl;
+  OutInpFile1 << "## AUTO TAIL COMPRESSION                                                                ##" << endl;
+  OutInpFile1 << "##     pmin is the cumulative proportion used in tail compression                       ##" << endl;
+  OutInpFile1 << "## CALCULATION/EXTENSION OPTIONS                                                        ##" << endl;
+  OutInpFile1 << "##   1 - as fishery catch data, scale extended comps by sample sizes                    ##" << endl;
+  OutInpFile1 << "##   2 - as survey data                                                                 ##" << endl;
+  OutInpFile1 << "##  -1 - as fishery catch data, do not scale comps by sample sizes                      ##" << endl;
+  OutInpFile1 << "##  -2 - as surveyh data, do not scale comps by sample sizes                            ##" << endl;
+  OutInpFile1 << "## NOTE: when fitting 'extended' size comps                                             ##" << endl;
+  OutInpFile1 << "##   for fishery comps, 1 is appropriate for normalized input comps                     ##" << endl;
+  OutInpFile1 << "##                      3 ia appropriate for inputs comps scaled to catch abundance     ##" << endl;
+  OutInpFile1 << "##   otherwise the choice is irrelevant                                                 ##" << endl;
+  OutInpFile1 << "## ———————————————————————————————————————————————————————————————————————————————————— ##" << endl;
   anystring = "# ";
   for ( int kk = 1; kk <= nSizeComps_in; kk++ ) anystring = anystring + " " + fleetname(d3_SizeComps_in(kk,1,-5));
   OutInpFile1 << anystring << endl;
@@ -16404,14 +16480,14 @@ FUNCTION WriteFiles
   }
   OutInpFile1 << anystring << endl;
  
-  OutInpFile1 << setw(6) << setfixed() << iSizeCompType_in    << " # Type of likelihood" <<  endl;
-  OutInpFile1 << setw(6) << setfixed() << bTailCompression_in << " # Auto tail compression" <<  endl;
-  OutInpFile1 << setw(6) << setprecision(4) << setfixed()     << bTailCompression_in        << " # Auto tail compression (pmin)" << endl;
-  OutInpFile1 << setw(6) << setfixed() << iCompAggregator     << " # Composition aggregator index" << endl;
-  OutInpFile1 << setw(6) << setfixed() << lf_catch_in         << " # Set to 1 for catch-based predictions; 2 for survey or total catch predictions" << endl;
+  OutInpFile1 << setw(6) << setfixed()                        << iSizeCompType_in    << " # Type of likelihood" <<  endl;
+  OutInpFile1 << setw(6) << setfixed()                        << bTailCompression_in << " # Auto tail compression" <<  endl;
+  OutInpFile1 << setw(6) << setprecision(4) << setfixed()     << bTailCompression_in << " # Auto tail compression (pmin)" << endl;
+  OutInpFile1 << setw(6) << setfixed()                        << iCompAggregator     << " # Composition aggregator index" << endl;
+  OutInpFile1 << setw(6) << setfixed()                        << lf_catch_in         << " # CALCULATION/EXTENSION options (see above)" << endl;
   OutInpFile1 << setw(6) << setprecision(4) << setfixed()     << lf_lambda_in        << " # Lambda for effective sample size" << endl;
   OutInpFile1 << setw(6) << setprecision(4) << setfixed()     << lf_emphasis_in      << " # Lambda for overall likelihood" << endl;
-  OutInpFile1 << setw(6) << setfixed() << survey_for_q_in     << " # Survey to set Q for this comp" << endl;
+  OutInpFile1 << setw(6) << setfixed()                        << survey_for_q_in     << " # Survey to set Q for this comp" << endl;
 
   OutInpFile1 << endl;
   OutInpFile1 << "# The number of following parameters must match max(Composition Aggregator Index) " << endl;
@@ -16819,6 +16895,8 @@ GLOBALS_SECTION
   #undef FREE_PROB_MATURE
   #define FREE_PROB_MATURE 3
 
+  #undef NO_PRIOR
+  #define NO_PRIOR -1
   #undef UNIFORM_PRIOR
   #define UNIFORM_PRIOR 0
   #undef NORMAL_PRIOR
@@ -16874,11 +16952,15 @@ GLOBALS_SECTION
   #undef STOCKRECREC
   #define STOCKRECREC 1
   
-  #undef CATCH_COMP
-  #define CATCH_COMP 1
-  #undef SURVEY_COMP
-  #define SURVEY_COMP 2
-  
+  #undef  CATCH_COMP_DOSCL      //--WTS 20260505: was CATCH_COMP
+  #define CATCH_COMP_DOSCL 1    //--WTS 20260505
+  #undef  SURVEY_COMP_DOSCL     //--WTS 20260505: was SURVEY_COMP
+  #define SURVEY_COMP_DOSCL 2   //--WTS 20260505
+  #undef  CATCH_COMP_NOSCL      //--WTS 20260505: added
+  #define CATCH_COMP_NOSCL -1   //--WTS 20260505
+  #undef  SURVEY_COMP_NOSCL     //--WTS 20260505: added
+  #define SURVEY_COMP_NOSCL -2  //--WTS 20260505
+ 
   adstring_array parname1(1,500);
   adstring_array selname1(1,500);
   adstring_array mdevname1(1,100);
@@ -17366,7 +17448,7 @@ FINAL_SECTION
 // 2025-06-16 ** WTS. Revised calculation of `log_q_catch` in `calc_predicted_catch` slightly, added some error checks to help debug.
 //                    Incremented version to 2.20.31. 
 // 2025-07-31 ** AEP. Allowed for more general environmental drivers for M
-// 2026-12-30 ** AEP. Allowed for more general environmental drivers for mean recruitment. Incremented version to 2.20.32.
+// 2025-12-30 ** AEP. Allowed for more general environmental drivers for mean recruitment. Incremented version to 2.20.32.
 //                    NOTE: THIS CHANGES the specification for the "MAIN PARS"/recruitment section of the ctl file: "phase" is specified in the column 
 //                    after Prior_2 and additional columns Block, Block_fn Env_L, Env_vr, RW, RW_Blk, and RW_Sigma are now required.
 //                    NOTE: you will also need to add a line to the ctl file after the Block_Groups specification to specify the number of environmental treatments.
@@ -17458,6 +17540,15 @@ FINAL_SECTION
 //                    prodicting MMOs based on predicted survey abundances. Added verbose prints to cout for maturity ogive calculations. Added several sections 
 //                    to RepFile1 output that provide dataframes for verifying maturity ogive calculations and comparisons with TCSAM02 (getting "exact" agreement 
 //                    for maturity ogive dataset from 2025 assessment).
+// 2026-04-15 ** WTS. Revised output to "Derived quantities" section of Gmacsall.out and RepFile1 to output management quantities ParsOut(NRefPars+1:6) when 
+//                    running under -nohess. Also added output of spr_cofl and Bmsy as vectors using REPVEC to those files.
+// 2026-04-28 ** WTS. Added NO_PRIOR (= -1) as possible prior for parameters. Sets the prior_pdf = 0 for the term in question(perhaps simpler than using UNIFORM_PRIOR (= 0)).
+// 2026-05-05 ** WTS. Version 2.20.37. Added new options for calculating/extending size comps and modified output/input files to reflect new options. 
+//                    Added CATCH_COMP_NOSCL (=-1) and renamed CATCH_COMP (=1) to CATCH_COMP_DOSCL to provide sample size scaling/no scaling options for input fishery size comps.
+//                    Added SURVEY_COMP_NOSCL (=-2) and renamed SURVEY_COMP (=2) to SURVEY_COMP_DOSCL to provide sample size scaling/no scaling options for input survey size comps.
+//                    Fixed calculation of predicted fishery size comps in calc_predicted_composition by including fully-selected F's (ft(k,h,i,j)) in the calculations.
+//                    Calculation of predicted survey size comps in calc_predicted_composition *should* be correct because the calculations apply appropriate q's to the 
+//                    predicted comps. Reformatted some sections of code for better(?) readability.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps

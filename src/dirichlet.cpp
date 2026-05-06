@@ -134,7 +134,7 @@ const dvariable acl::dirichlet_alt::ddirichlet_alt(const dmatrix& o, const dvar_
     // cout<<"nll = "<<nll<<endl;
     tot_nll += nll;
   } //--r loop
-  cout<<"tot_nll = "<<tot_nll<<endl;
+  // cout<<"tot_nll = "<<tot_nll<<endl;
   return(tot_nll);
 }
 
