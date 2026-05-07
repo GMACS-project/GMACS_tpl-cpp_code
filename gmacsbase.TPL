@@ -5605,8 +5605,10 @@ PROCEDURE_SECTION
   calc_predicted_catch();                                  if ( verbose >= 3 ) cout << "Ok after calc_predicted_catch ..." << endl;
   calc_relative_abundance();                               if ( verbose >= 3 ) cout << "Ok after calc_relative_abundance ..." << endl;
   calc_predicted_composition();                            if ( verbose >= 3 ) cout << "Ok after calc_predicted_composition ..." << endl;
-  calc_predicted_MMOs_pop();                               if ( verbose >= 3 ) cout << "Ok after calc_predicted_MMOs_pop ..." << endl;
-  calc_predicted_MMOs_survey();                            if ( verbose >= 3 ) cout << "Ok after calc_predicted_MMOs_survey ..." << endl;
+  if (hasMMOD) {
+    calc_predicted_MMOs_pop();                             if ( verbose >= 3 ) cout << "Ok after calc_predicted_MMOs_pop ..." << endl;
+    calc_predicted_MMOs_survey();                          if ( verbose >= 3 ) cout << "Ok after calc_predicted_MMOs_survey ..." << endl;
+  }
 
   if ( verbose >= 3 ) cout << "Ok after observation models ..." << endl;
 
@@ -10548,11 +10550,12 @@ FUNCTION calc_predicted_composition
         if (verbose>=4) cout << size_comp_year(k,i) << endl;
         if (size_comp_year(k,i) <= nyrRetro || (size_comp_year(k,i) == nyrRetro+1 && size_comp_season(k,i) == 1) ){
           if (verbose>3) cout << "before norm: " << k << " " << i << " " << d3_pre_size_comps(k,i) << endl;  //--WTS: 20260505
-          d3_pre_size_comps(k,i) /= sum(d3_pre_size_comps(k,i));
+          dvariable sumP = sum(d3_pre_size_comps(k,i));  //--WTS 20260506: added check on sum
+          if (sumP>0) d3_pre_size_comps(k,i) /= sumP;
           if (verbose>3) cout << "after norm: " << k << " " << i << " " << d3_pre_size_comps(k,i) << endl;    //--WTS: 20260505
           // AEP: BUG
           if (std::isnan(value(sum(d3_pre_size_comps(k,i))))){
-            cout << "line 10353" << endl;
+            cout << "line 10555" << endl;
             cout << " k,i    = "<< k <<", "<< i << endl;
             cout << "d3_pre_size_comps(k,i) is NaN: " << d3_pre_size_comps(k,i) << endl;
             exit(-1);
@@ -14558,18 +14561,23 @@ FUNCTION CreateOutput
   RepFile1 << ">EOD<" << endl;
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "PredictedSurveyMMOs: dataframe" << endl;
-  RepFile1 << "year type  "<< mid_points << endl;
-  for (int i=syr;i<=nyrRetro+1;i++){
-    RepFile1 << i << " " << " matN  " << d3_PrdSrvMMOs(i,1) << endl;
-    RepFile1 << i << " " << " totN  " << d3_PrdSrvMMOs(i,2) << endl;
-    RepFile1 << i << " " << " prMat " << d3_PrdSrvMMOs(i,3) << endl;
+  if (hasMMOD){
+    RepFile1 << "PredictedSurveyMMOs: dataframe" << endl;
+    RepFile1 << "year type  "<< mid_points << endl;
+    for (int i=syr;i<=nyrRetro+1;i++){
+      RepFile1 << i << " " << " matN  " << d3_PrdSrvMMOs(i,1) << endl;
+      RepFile1 << i << " " << " totN  " << d3_PrdSrvMMOs(i,2) << endl;
+      RepFile1 << i << " " << " prMat " << d3_PrdSrvMMOs(i,3) << endl;
+    }
+    RepFile1 << ">EOD<" << endl;
+  } else {
+    RepFile1 << "# no MMO data" << endl << 
+                "#--------------------------------------------------------------------------------------------" << endl;
   }
-  RepFile1 << ">EOD<" << endl;
  
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "PredictedSurveyMMOsP: dataframe" << endl;
-  {
+  if (hasMMOD) {
+    RepFile1 << "PredictedSurveyMMOsP: dataframe" << endl;
     dvector mmodZBs(1,mmodNumZBs); 
     for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
     RepFile1 << "year type  "<< mmodZBs << endl;
@@ -14578,39 +14586,52 @@ FUNCTION CreateOutput
       RepFile1 << i << " " << " totN  " << d3_PrdSrvMMOsP(i,2) << endl;
       RepFile1 << i << " " << " prMat " << d3_PrdSrvMMOsP(i,3) << endl;
     }
+    RepFile1 << ">EOD<" << endl;
+  } else {
+    RepFile1 << "# no MMO data" << endl << 
+                "#--------------------------------------------------------------------------------------------" << endl;
   }
-  RepFile1 << ">EOD<" << endl;
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "likeSuumaryMMOsP: dataframe" << endl;
-  {
-    dvector mmodZBs(1,mmodNumZBs); 
-    for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
-    RepFile1 << "year zb   ss    obs    prd    res    zscr    nll  "<< endl;
-    for (int n=1; n<=mmodNumObs;n++){
-      RepFile1 << likeSumSrvMMOs(n,1) << " "; // year
-      RepFile1 << likeSumSrvMMOs(n,2) << " "; // size bin
-      RepFile1 << likeSumSrvMMOs(n,3) << " "; // sample size
-      RepFile1 << likeSumSrvMMOs(n,4) << " "; // observed proportion
-      RepFile1 << likeSumSrvMMOs(n,5) << " "; // predicted proportion
-      RepFile1 << likeSumSrvMMOs(n,6) << " "; // residual
-      RepFile1 << likeSumSrvMMOs(n,7) << " "; // zscore
-      RepFile1 << likeSumSrvMMOs(n,8) << endl;// nll
+  if (hasMMOD){
+    RepFile1 << "likeSuumaryMMOsP: dataframe" << endl;
+    {
+      dvector mmodZBs(1,mmodNumZBs); 
+      for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
+      RepFile1 << "year zb   ss    obs    prd    res    zscr    nll  "<< endl;
+      for (int n=1; n<=mmodNumObs;n++){
+        RepFile1 << likeSumSrvMMOs(n,1) << " "; // year
+        RepFile1 << likeSumSrvMMOs(n,2) << " "; // size bin
+        RepFile1 << likeSumSrvMMOs(n,3) << " "; // sample size
+        RepFile1 << likeSumSrvMMOs(n,4) << " "; // observed proportion
+        RepFile1 << likeSumSrvMMOs(n,5) << " "; // predicted proportion
+        RepFile1 << likeSumSrvMMOs(n,6) << " "; // residual
+        RepFile1 << likeSumSrvMMOs(n,7) << " "; // zscore
+        RepFile1 << likeSumSrvMMOs(n,8) << endl;// nll
+      }
     }
-   }
-  RepFile1 << ">EOD<" << endl;
+    RepFile1 << ">EOD<" << endl;
+  } else {
+    RepFile1 << "# no MMO data" << endl << 
+                "#--------------------------------------------------------------------------------------------" << endl;
+  }
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "zbRemapper: dataframe" << endl;
-  {
-    dvector mmodZBs(1,mmodNumZBs); 
-    for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
-    RepFile1 << "mdlZB  obsZB  val  " << endl;
-    for (int izm=1;izm<=nclass;izm++)
-      for (int izo=1;izo<=mmodNumZBs;izo++)
-        RepFile1 << mid_points(izm) << " " << mmodZBs(izo) << " " << zbRemapper(izo,izm) << endl;
+  if (hasMMOD){
+    RepFile1 << "zbRemapper: dataframe" << endl;
+    {
+      dvector mmodZBs(1,mmodNumZBs); 
+      for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
+      RepFile1 << "mdlZB  obsZB  val  " << endl;
+      for (int izm=1;izm<=nclass;izm++)
+        for (int izo=1;izo<=mmodNumZBs;izo++)
+          RepFile1 << mid_points(izm) << " " << mmodZBs(izo) << " " << zbRemapper(izo,izm) << endl;
+    }
+    RepFile1 << ">EOD<" << endl;
+  }   else {
+    RepFile1 << "# no MMO data" << endl << 
+                "#--------------------------------------------------------------------------------------------" << endl;
   }
-  RepFile1 << ">EOD<" << endl;
 
 //=========================================================================================================================
    
@@ -14804,7 +14825,7 @@ FUNCTION CreateOutput
   
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Size_fit_summary: dataframe" << endl;
-  RepFile1 << "origID aggID origRw  aggRw  year season fleet comp_type sex maturity shell size inpSS inpN effN aggObs aggPrd aggRes" << endl;
+  RepFile1 << "origID aggID origRw  aggRw  origCol  aggCol  year season fleet comp_type sex maturity shell size inpSS inpN effN aggObs aggPrd aggRes" << endl;
   for (int idx=1;idx<=nMapInpToAggSizeComps;idx++){
     int kk = mapInpToAggSizeComps(idx)(1);//--input size comp df index
     int ii = mapInpToAggSizeComps(idx)(2);//--input size comp df row
@@ -14821,7 +14842,7 @@ FUNCTION CreateOutput
     int mat = d3_SizeComps_in(kk,ii,-1);  //--maturity state
     double inN = d3_SizeComps_in(kk,ii, 0);  //--input sample size <--TODO (20260502): need the AGGREGATED/EXTENDED sample sizes also
     dvector effN = value(mfexp(log_vn(k)) * size_comp_sample_size(k));
-    RepFile1 << kk << " " << k << " " << ii  <<  " " << i  << " " << yr << " " << ssn << " " 
+    RepFile1 << kk << " " << k << " " << ii  <<  " " << i  << " " << jj << " " << j << " " << yr << " " << ssn << " " 
              << fleetname(flt) << " " << catchtypes(typ) << " " 
              << sexes(sex) << " " << maturestate(mat) << " " << shellstate(shl) << " "
              << mid_points(jj) << " "               //--size
@@ -17549,6 +17570,8 @@ FINAL_SECTION
 //                    Fixed calculation of predicted fishery size comps in calc_predicted_composition by including fully-selected F's (ft(k,h,i,j)) in the calculations.
 //                    Calculation of predicted survey size comps in calc_predicted_composition *should* be correct because the calculations apply appropriate q's to the 
 //                    predicted comps. Reformatted some sections of code for better(?) readability.
+// 2026-05-06 ** WTS. Added checks on `hasMMOD` for calculations and output wrto male maturity ogive data. Fixed error when trying to normalize 
+//                    a predicted size comp with all 0's.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
