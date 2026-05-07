@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.37; ** WTS **; Compiled 2026-05-05");
+ !! TheHeader = adstring("## GMACS Version 2.20.37; ** WTS **; Compiled 2026-05-07");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -14307,7 +14307,7 @@ FUNCTION CreateOutput
   OutFile1 << "--Derived quatities: dataframe"<<endl;
   OutFile1 << "Parameter_name Estimate Standard_error Estimated_quantity_count" << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "Derived_quatities: dataframe"<<endl;
+  RepFile1 << "Derived_quantities: dataframe"<<endl;
   RepFile1 << "param est se qty_cnt" << endl;
   if (OutRefPars==YES)
    {
@@ -17571,7 +17571,8 @@ FINAL_SECTION
 //                    Calculation of predicted survey size comps in calc_predicted_composition *should* be correct because the calculations apply appropriate q's to the 
 //                    predicted comps. Reformatted some sections of code for better(?) readability.
 // 2026-05-06 ** WTS. Added checks on `hasMMOD` for calculations and output wrto male maturity ogive data. Fixed error when trying to normalize 
-//                    a predicted size comp with all 0's.
+//                    a predicted size comp with all 0's. Added origCol and aggCol to Size_fit_summary dataframe in gmacs.rep1. 
+// 2026-05-07 ** WTS. Changed "Derived_quatities" to "Derived_quantities" in gmacs.rep1. Updated compile date.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
