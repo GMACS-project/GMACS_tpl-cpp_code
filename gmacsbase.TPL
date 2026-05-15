@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.37a; ** WTS **; Compiled 2026-05-14");
+ !! TheHeader = adstring("## GMACS Version 2.20.37b; ** WTS **; Compiled 2026-05-15");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -13630,6 +13630,25 @@ FUNCTION writeRepPar
 
 // =====================================================================================================================================
 
+FUNCTION writeJitterResults
+  ofstream JitFile("jitter.csv");
+  double MaxGrad = 0;
+  for (int i=1;i<=NEstPars;i++) if (fabs(gradientOut(i)) > fabs(MaxGrad)) MaxGrad = value(gradientOut(i));
+
+  JitFile << "rseed, objFun, maxGrad, OFL, currMMB, Bmsy, B/Bmsy, likeCatch, likeIndex, likeSizeComps, likeStockRec, likeTagging, LikeGrowth, likeMMOD" << endl;
+  JitFile << rseed << ", " << objfun << ", " << MaxGrad << ", " << spr_cofl << ", " << Bmsy*spr_depl << ", " << Bmsy << ", " << spr_depl << ", ";
+  JitFile << sum(elem_prod(nloglike(1),catch_emphasis)) << ", "; //--catch like
+  JitFile << sum(elem_prod(nloglike(2),cpue_emphasis)) << ", ";  //--index like
+  JitFile << sum(elem_prod(nloglike(3),lf_emphasis)) << ", ";    //--size comps like
+  JitFile << sum(nloglike(4)) << ", ";                           //--SR like
+  JitFile << sum(nloglike(5))*tag_emphasis << ", ";              //--tagging
+  JitFile << sum(nloglike(6)) << ", ";                           //--growth
+  JitFile << sum(nloglike(7)) << ", ";                             //--MMOD
+  JitFile << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << ", "; //--penalties
+  JitFile << sum(priorDensity) << endl;                            //--priors
+  JitFile.close();
+
+// =====================================================================================================================================
 // Label 600: CreateOutput
 FUNCTION CreateOutput
   if ((verbose>3)&&(NfunCall<2)) cout<<"Starting CreateOutput"<<endl;
@@ -15668,6 +15687,11 @@ REPORT_SECTION
     if (last_phase()) for (int i=1;i<=NEstPars;i++) gradientOut(i) = gradients(i);
     
     cout<<"Finished REPORT_SECTION"<<endl;
+  } else {
+    if (last_phase()) {
+      for (int i=1;i<=NEstPars;i++) gradientOut(i) = gradients(i);
+      writeJitterResults();
+    }
   }
 
 // =====================================================================================================================================
@@ -17599,6 +17623,7 @@ FINAL_SECTION
 //                    a predicted size comp with all 0's. Added origCol and aggCol to Size_fit_summary dataframe in gmacs.rep1. 
 // 2026-05-07 ** WTS. Changed "Derived_quatities" to "Derived_quantities" in gmacs.rep1. Updated compile date.
 // 2026-05-14 ** WTS. Added IsJittered checks to prevent writing out extraneous information during jitter runs. Incremented version to 2.20.37a.
+// 2026-05-15 ** WTS. Added individual run jittering information to "jitter.csv". Incremented version to 2.20.37b.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
