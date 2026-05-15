@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.37; ** WTS **; Compiled 2026-05-07");
+ !! TheHeader = adstring("## GMACS Version 2.20.37a; ** WTS **; Compiled 2026-05-14");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -250,6 +250,23 @@ DATA_SECTION
   {
     jitflag = 1;
     rseed = atoi(ad_comm::argv[on+1]);//set rseed to 0 to use start time
+  } else {
+  // These ones for compatibility with ADMB (# comment included)
+    gmacs_files.open("gmacs_files_in.dat");
+    gmacs_data.open("gmacs_in.dat");
+    gmacs_ctl.open("gmacs_in.ctl");
+    gmacs_prj.open("gmacs_in.prj");
+  }
+
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-mcmc",opt))>-1 )
+  {
+    mcout.open("mcout.rep");
+    mcoutSSB.open("mcoutSSB.rep");
+    mcoutREC.open("mcoutREC.rep");
+    mcoutREF.open("mcoutREF.rep");
+    mcoutPROJSSB.open("mcoutPROJSSB.rep");
+    mcoutPROJCAT.open("mcoutPROJCAT.rep");
+    mcoutDIAG.open("mcoutDIAG.rep");
   }
 
 
@@ -347,6 +364,8 @@ DATA_SECTION
   init_int CalcRefPoints;                                   ///> Set this to zero not to compute reference points
   init_int usepinfile                                       ///> Read in a special file (0=normal;1=pin file)
   init_int verbose;                                         ///> Flag to print to screen
+  !! if (IsJittered==1) verbose = 0;//--turn off diagnostic output
+
 
   //check for commandline overide of pinfile use (if set, overrides value from gmacs.dat)
  LOCAL_CALCS
@@ -5565,8 +5584,10 @@ PROCEDURE_SECTION
   }
 
   // Initialize model parameters
-  popprog.open("gmacs_popprog.csv", ios::trunc); popprog.width(15); popprog.precision(12);
-  popprog<<"y,  ssn,  x,   m,   s"; for (int l=1;l<=nclass;l++) {popprog<<", "<<mid_points(l);} popprog<<endl;
+  if (!IsJittered){
+    popprog.open("gmacs_popprog.csv", ios::trunc); popprog.width(15); popprog.precision(12);
+    popprog<<"y,  ssn,  x,   m,   s"; for (int l=1;l<=nclass;l++) {popprog<<", "<<mid_points(l);} popprog<<endl;
+  }
   initialize_model_parameters();                            if ( verbose >= 3 ) cout << "Ok after initialize_model_parameters ..." << endl;
 
   // Fishing fleet dynamics ...
@@ -5593,7 +5614,7 @@ PROCEDURE_SECTION
   calc_recruitment_size_distribution();                    if ( verbose >= 3 ) cout << "Ok after calc_recruitment_size_distribution ..." << endl;
   calc_initial_numbers_at_length();                        if ( verbose >= 3 ) cout << "Ok after calc_initial_numbers_at_length ..." << endl;
   update_population_numbers_at_length();                   if ( verbose >= 3 ) cout << "Ok after update_population_numbers_at_length ..." << endl;
-  popprog.close();
+  if (!IsJittered) popprog.close();
   if (Term_molt == 0){
     calc_stock_recruitment_relationship();                 if ( verbose >= 3 ) cout << "Ok after calc_stock_recruitment_relationship ..." << endl;
   } else {
@@ -8121,7 +8142,7 @@ FUNCTION calc_initial_numbers_at_length
       }
     }
   }
-  writeToPopProg(popprog,syr,1,d2_N_gz); //--pop abundance at START of start year, season 1
+  if (!IsJittered) writeToPopProg(popprog,syr,1,d2_N_gz); //--pop abundance at START of start year, season 1
 
 // --------------------------------------------------------------------------------------------------------------------------------------
   /**
@@ -8201,7 +8222,7 @@ FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, 
     }
   }
 
-  if (Case==1){
+  if ((Case==1)&&(!IsJittered)){
     if (j==nseason){
       writeToPopProg(popprog,i+1,1,next); //--pop abundance at START of year i+1, season 1
     } else {
@@ -11631,7 +11652,7 @@ FUNCTION calc_objective_function
     cout << "6. growth data     : " << sum(nloglike(6)) << " : " << nloglike(6) << endl;
     cout << "7. male mat. og.s  : " << sum(nloglike(7)) << " : " << nloglike(7) << endl;
     cout << "8. effort expansion: " << sum(nloglike(8)) << " : " << nloglike(8) << endl;
-    writeRepPar();
+    if (!IsJittered) writeRepPar();
   }
 
 // ==================================================================================================================================================
@@ -13444,7 +13465,7 @@ FUNCTION writeRepPar
     }//--Ipar loop
   }
 
-  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  ParFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
   for (Ipar=1;Ipar<=nfleet;Ipar++){
     Npar +=1;
     anystring = "Log_foff_"+fleetname(Ipar);
@@ -13458,7 +13479,7 @@ FUNCTION writeRepPar
     }
   }
 
-  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  ParFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
   if (doTCSAM02EffExp){ 
     int Kpar =  0;
     for (Ipar=1;Ipar<=nfleet;Ipar++){
@@ -13528,7 +13549,7 @@ FUNCTION writeRepPar
   //   ParFile1 <<"# Adjusted Npr = " << Npar << endl;
   // }
 
-  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  ParFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
   for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++){
     Npar +=1;
     ParFile1 << rec_dev_est(Ipar) << " \t# " << Npar << "\t" << " Rec_dev_est_" << Ipar << "\t";
@@ -13541,7 +13562,7 @@ FUNCTION writeRepPar
      }
   }
 
-  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  ParFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
   for (Ipar=rdv_syr;Ipar<=rdv_eyr;Ipar++){
     Npar +=1;
     ParFile1 << logit_rec_prop_est(Ipar) << " \t# " << Npar << "\t" << " Logit_rec_prop_est_" << Ipar << "\t";
@@ -13554,7 +13575,7 @@ FUNCTION writeRepPar
      }
   }
 
-  RepFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
+  ParFile1 << "#par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
   for (Ipar=1;Ipar<=nSizeComps;Ipar++){
     Npar +=1;
     anystring = "Log_vn_size_comp_"+str(Ipar);
@@ -15630,7 +15651,7 @@ FUNCTION CreateOutput
   OutFile2 << endl;
 
   if ((verbose>3)&&(NfunCall<2)) cout<<"CreateOutput: almost finished"<<endl;
-  WriteFiles();
+  if (!IsJittered) WriteFiles();
   if ((verbose>3)&&(NfunCall<2)) cout<<"CreateOutput: finished"<<endl;
    
 // =====================================================================================================================================
@@ -15638,14 +15659,16 @@ FUNCTION CreateOutput
 // Andre done from here
 
 REPORT_SECTION
-  cout<<"Starting REPORT_SECTION"<<endl;
-  CreateOutput();
-  cout<<"REPORT_SECTION: finished CreateOutput"<<endl;
-  save_gradients(gradients);
-  cout<<"REPORT_SECTION: finished save_gradients"<<endl;
-  if (last_phase()) for (int i=1;i<=NEstPars;i++) gradientOut(i) = gradients(i);
-  
-  cout<<"Finished REPORT_SECTION"<<endl;
+  if (!IsJittered) {
+    cout<<"Starting REPORT_SECTION"<<endl;
+    CreateOutput();
+    cout<<"REPORT_SECTION: finished CreateOutput"<<endl;
+    save_gradients(gradients);
+    cout<<"REPORT_SECTION: finished save_gradients"<<endl;
+    if (last_phase()) for (int i=1;i<=NEstPars;i++) gradientOut(i) = gradients(i);
+    
+    cout<<"Finished REPORT_SECTION"<<endl;
+  }
 
 // =====================================================================================================================================
 
@@ -16463,7 +16486,7 @@ FUNCTION WriteFiles
   OutInpFile1 << "##   1 - as fishery catch data, scale extended comps by sample sizes                    ##" << endl;
   OutInpFile1 << "##   2 - as survey data                                                                 ##" << endl;
   OutInpFile1 << "##  -1 - as fishery catch data, do not scale comps by sample sizes                      ##" << endl;
-  OutInpFile1 << "##  -2 - as surveyh data, do not scale comps by sample sizes                            ##" << endl;
+  OutInpFile1 << "##  -2 - as survey data, do not scale comps by sample sizes                             ##" << endl;
   OutInpFile1 << "## NOTE: when fitting 'extended' size comps                                             ##" << endl;
   OutInpFile1 << "##   for fishery comps, 1 is appropriate for normalized input comps                     ##" << endl;
   OutInpFile1 << "##                      3 ia appropriate for inputs comps scaled to catch abundance     ##" << endl;
@@ -16595,6 +16618,23 @@ GLOBALS_SECTION
   ofstream ParFile1;
   ofstream OutInpFile1; 
   ofstream popprog;
+
+  // Open output files using ofstream
+  // This one for easy reading all input to R
+  ofstream mcout;
+  ofstream mcoutSSB;
+  ofstream mcoutREC;
+  ofstream mcoutREF;
+  ofstream mcoutPROJSSB;
+  ofstream mcoutPROJCAT;
+  ofstream mcoutDIAG;
+  ofstream echoinput;
+
+  // These ones for compatibility with ADMB (# comment included)
+  ofstream gmacs_files;
+  ofstream gmacs_data;
+  ofstream gmacs_ctl;
+  ofstream gmacs_prj;
 
   int writeToRepFile1 = 1;//--flag to write to RepFile1 (gmacs.rep1): used in CheckBounds
 
@@ -16999,23 +17039,6 @@ GLOBALS_SECTION
   adstring TheHeader;
   adstring mmodLkType; //--likelihood type for MMO data
   
-  // Open output files using ofstream
-  // This one for easy reading all input to R
-  ofstream mcout("mcout.rep");
-  ofstream mcoutSSB("mcoutSSB.rep");
-  ofstream mcoutREC("mcoutREC.rep");
-  ofstream mcoutREF("mcoutREF.rep");
-  ofstream mcoutPROJSSB("mcoutPROJSSB.rep");
-  ofstream mcoutPROJCAT("mcoutPROJCAT.rep");
-  ofstream mcoutDIAG("mcoutDIAG.rep");
-  ofstream echoinput("checkfile.rep");
-
-  // These ones for compatibility with ADMB (# comment included)
-  ofstream gmacs_files("gmacs_files_in.dat");
-  ofstream gmacs_data("gmacs_in.dat");
-  ofstream gmacs_ctl("gmacs_in.ctl");
-  ofstream gmacs_prj("gmacs_in.prj");
-
   // Specify random number generation
   random_number_generator rng(666);
   
@@ -17195,9 +17218,11 @@ TOP_OF_MAIN_SECTION
 // ===============================================================================================
 
 FINAL_SECTION
-  cout<<"Starting FINAL_SECTION"<<endl;
-  CreateOutput();
-  cout<<"Finished CreateOutput"<<endl;
+  if (!IsJittered){
+    cout<<"Starting FINAL_SECTION"<<endl;
+    CreateOutput();
+    cout<<"Finished CreateOutput"<<endl;
+  }
 
   if (ppSLX) {
       //clean up pointer array--probably unnecessary
@@ -17478,7 +17503,7 @@ FINAL_SECTION
 // 2026-01-14 ** TJ.  Allowed for spr_lambda to be equal to 1 for full contribution of both sexes when ctl input is negative. Incremented version to 2.20.32b.
 // 2026-01-14 ** AEP. Added the IsTyler flag as model_controls(19) which forces female growth to match that for males
 // 2026-01-15 ** WTS. Updated version to 2.20.33.
-// 2026-01-15 ** WTS. Added output for isTyler/model_controls(19) to gmacs_stl, echoinput, and OutInpFile1. 
+// 2026-01-15 ** WTS. Added output for isTyler/model_controls(19) to gmacs_ctl, echoinput, and OutInpFile1. 
 //                    Incremented version to 2.20.33a.
 // 2026-01-15 ** AEP. Correct selectivity deviance parameter pointer. Revised the jitter function so that the jittered value is centered from a value from a PIN file.
 //                    Incremented version to 2.20.34.
@@ -17573,6 +17598,7 @@ FINAL_SECTION
 // 2026-05-06 ** WTS. Added checks on `hasMMOD` for calculations and output wrto male maturity ogive data. Fixed error when trying to normalize 
 //                    a predicted size comp with all 0's. Added origCol and aggCol to Size_fit_summary dataframe in gmacs.rep1. 
 // 2026-05-07 ** WTS. Changed "Derived_quatities" to "Derived_quantities" in gmacs.rep1. Updated compile date.
+// 2026-05-14 ** WTS. Added IsJittered checks to prevent writing out extraneous information during jitter runs. Incremented version to 2.20.37a.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
