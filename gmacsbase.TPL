@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.37b; ** WTS **; Compiled 2026-05-15");
+ !! TheHeader = adstring("## GMACS Version 2.20.37c; ** WTS **; Compiled 2026-05-15");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -13635,7 +13635,9 @@ FUNCTION writeJitterResults
   double MaxGrad = 0;
   for (int i=1;i<=NEstPars;i++) if (fabs(gradientOut(i)) > fabs(MaxGrad)) MaxGrad = value(gradientOut(i));
 
-  JitFile << "rseed, objFun, maxGrad, OFL, currMMB, Bmsy, B/Bmsy, likeCatch, likeIndex, likeSizeComps, likeStockRec, likeTagging, LikeGrowth, likeMMOD" << endl;
+  calc_spr_reference_points2(1);
+
+  JitFile << "rseed, objFun, maxGrad, OFL, currMMB, Bmsy, B/Bmsy, likeCatch, likeIndex, likeSizeComps, likeStockRec, likeTagging, LikeGrowth, likeMMOD, penalties, priors" << endl;
   JitFile << rseed << ", " << objfun << ", " << MaxGrad << ", " << spr_cofl << ", " << Bmsy*spr_depl << ", " << Bmsy << ", " << spr_depl << ", ";
   JitFile << sum(elem_prod(nloglike(1),catch_emphasis)) << ", "; //--catch like
   JitFile << sum(elem_prod(nloglike(2),cpue_emphasis)) << ", ";  //--index like
@@ -17623,7 +17625,7 @@ FINAL_SECTION
 //                    a predicted size comp with all 0's. Added origCol and aggCol to Size_fit_summary dataframe in gmacs.rep1. 
 // 2026-05-07 ** WTS. Changed "Derived_quatities" to "Derived_quantities" in gmacs.rep1. Updated compile date.
 // 2026-05-14 ** WTS. Added IsJittered checks to prevent writing out extraneous information during jitter runs. Incremented version to 2.20.37a.
-// 2026-05-15 ** WTS. Added individual run jittering information to "jitter.csv". Incremented version to 2.20.37b.
+// 2026-05-15 ** WTS. Added individual run jittering information to "jitter.csv" in function "writeJitterResults". Incremented version to 2.20.37c.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
