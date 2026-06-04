@@ -1,8 +1,9 @@
 #--to "make" the model:
 ## 1. run 'cmake -S . -B _build -G "Unix Makefiles"' from the command line in the folder with this file (no single quotes)
 ## 2. run 'cmake --build _build' to create the executable in the _build folder
-## After editing the tpl or ther files, re-run step 2 to compile a new executable.
-## Note: After an SDK change, you may need to delete the _build folder and re-run steps 1 and 2.
+## After editing the tpl or ther files, re-run step 2 to compile a new executable (recompiles everything).
+## Alternatively, in the terminal window: cd to _build, run "rm macs.tpl; make;" (no quotes, of course).
+## Note: After an SDK change, you will need to delete the _build folder and re-run steps 1 and 2.
 
 #--set minimum required cmake version
 cmake_minimum_required(VERSION 3.24)
@@ -15,6 +16,7 @@ project(
 )
 
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 message(" Using CMAKE version ${CMAKE_VERSION}")
 
