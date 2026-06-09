@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.38; ** WTS **; Compiled 2026-06-04");
+ !! TheHeader = adstring("## GMACS Version 2.20.38; ** WTS **; Compiled 2026-06-08");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -17467,11 +17467,11 @@ FINAL_SECTION
 //                    The following functions were modified to accommodate the new option: project_biomass_OFL, calc_predicted_project, project_one_year, 
 //                    and calc_brute_equilibrium. Also added a lot of "|| season_type==TCSAM02" branches to "if" statements of the form 
 //                    "if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)" or "if(season_type(j)==CONTINUOUS_F)" in non-projection-related contexts.
-//                    
+// 2026-06-08 ** WTS. Updated version to 2.20.38.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
-// 2 - LOTS of redundant code in projection-related functions (e.g., re-averaging selectivity and retention functions). This redundancy should be 
+// 2 - WTS: 2026-06-08: LOTS of redundant code in projection-related functions (e.g., re-averaging selectivity and retention functions). This redundancy should be 
 //     eliminated (by doing the averaging once or centralizing the process in one function that can be called from 
 //     multiple contexts).
 //
