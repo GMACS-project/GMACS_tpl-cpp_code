@@ -118,7 +118,7 @@ const dvariable acl::dirichlet_alt::ddirichlet_alt(const dmatrix& o, const dvar_
       nll -= sum(gammln(n*obsp+thn*modp) - gammln(thn*modp));
       // cout << "gammln(n*obsp+thn*modp) = " << gammln(n*obsp+thn*modp) << endl;
       // cout << "gammln(thn*modp)        = " << gammln(thn*modp) << endl;
-      if (isnan(value(nll))){
+      if (std::isnan(value(nll))){
         cout<<"In dirichlet_alt::ddirichlet_alt"<<endl;
         cout<<"theta = "<<theta<<endl;
         cout<<"row "<<r<<" n = "<<n<<" thn = "<<thn<<endl;

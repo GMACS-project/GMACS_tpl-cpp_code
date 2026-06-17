@@ -17487,6 +17487,7 @@ FINAL_SECTION
 //                    "if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)" or "if(season_type(j)==CONTINUOUS_F)" in non-projection-related contexts.
 // 2026-06-08 ** WTS. Updated version to 2.20.38.
 // 2026-06-10 ** WTS. Added NfunCall, timing info, and M to gmacs.rep1 output.
+// 2026-06-17 ** WTS. Added "std::" to "isnan" call in acl::dirichlet_alt::ddirichlet_alt to address Windows include issue.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
