@@ -13526,13 +13526,19 @@ FUNCTION CreateOutput
   
   // The header material
   OutFile1 << TheHeader << endl << endl;;
-  RepFile1 << TheHeader << endl << endl;;
   OutFile1 << "#--Start time: " << ctime(&start) << endl;
   OutFile1 << "#--Finish time: " << ctime(&finish) << endl;
   OutFile1 << "#--Runtime: ";
   OutFile1 << hour << " hours, " << minute << " minutes, " << second << " seconds" << endl;
   OutFile1 << "#--Number of function evaluations: " << NfunCall << endl;
   OutFile1 << "#*******************************************" << endl;
+  RepFile1 << TheHeader << endl << endl;;
+  RepFile1 << "#--Start time: " << ctime(&start) << endl;
+  RepFile1 << "#--Finish time: " << ctime(&finish) << endl;
+  RepFile1 << "#--Runtime: ";
+  RepFile1 << hour << " hours, " << minute << " minutes, " << second << " seconds" << endl;
+  RepFile1 << "Number_of_function_evaluations: " << NfunCall << endl;
+  RepFile1 << "#*******************************************" << endl;
  
   OutFile1 <<  setw(12) << setprecision(8)  << setfixed() << endl;
   RepFile1 <<  setw(15) << setprecision(12) << setfixed() << endl;
@@ -13647,30 +13653,30 @@ FUNCTION CreateOutput
  
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Likelihood_summary: dataframe" << endl;
-  RepFile1 << "term                     type           year     fleet     units   sex     maturity           nll                      emphasis         objfun_value" << endl;
-  RepFile1 << "Catch_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(1)) << " " << catch_emphasis            << " "  << sum(elem_prod(nloglike(1),catch_emphasis))   << endl;
-  RepFile1 << "Catch_data_alt         " << " summary    NA        NA        NA    NA        NA      " << sum(nll_catch)   << " " << catch_emphasis            << " "  << sum(nll_catch)                               << endl;
-  RepFile1 << "Index_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(2)) << " " << cpue_emphasis             << " "  << sum(elem_prod(nloglike(2),cpue_emphasis))    << endl;
-  RepFile1 << "Size_data              " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(3)) << " " << lf_emphasis               << " "  << sum(elem_prod(nloglike(3),lf_emphasis))      << endl;
-  RepFile1 << "Stock_recruitment      " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(4)) << " " << 1            << " "  << sum(nloglike(4))                             << endl;
-  RepFile1 << "Tagging_data           " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(5)) << " " << tag_emphasis << " "  << sum(nloglike(5))*tag_emphasis                << endl;
-  RepFile1 << "Growth_data            " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(6)) << " " << 1            << " "  << sum(nloglike(6))                             << endl;
-  RepFile1 << "MMO_data               " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(7)) << " " << mmodLkWgt    << " "  << mmodLkWgt*sum(nloglike(7))                   << endl;
-  RepFile1 << "Penalties              " << " summary    NA        NA        NA    NA        NA      " << sum(nlogPenalty) << " " << 1            << " "  << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
-  RepFile1 << "Priors                 " << " summary    NA        NA        NA    NA        NA      " << sum(priorDensity)<< " " << 1            << " "  << sum(priorDensity)                            << endl;
-  RepFile1 << "Initial_size_structure " << " summary    NA        NA        NA    NA        NA      " << TempSS           << " " << 1            << " "  << TempSS      << endl;
-  RepFile1 << "Positive_growth_penalty" << " summary    NA        NA        NA    NA        NA      " << grwthPosFun      << " " << 1            << " "  << grwthPosFun << endl;
-  RepFile1 << "Total                  " << " summary    NA        NA        NA    NA        NA      " << objfun           << " " << 1            << " "  << objfun      << endl;
-  RepFile1 << "Mean_Fbar=0            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(1)   << " " << Penalty_emphasis(1)  << " " << nlogPenalty(1)*Penalty_emphasis(1) << endl;
-  RepFile1 << "Mean_Fdev              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(2)   << " " << Penalty_emphasis(2)  << " " << nlogPenalty(2)*Penalty_emphasis(2) << endl;
-  RepFile1 << "Rec_dev                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(6)   << " " << Penalty_emphasis(6)  << " " << nlogPenalty(6)*Penalty_emphasis(6) << endl;
-  RepFile1 << "Sex_ratio              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(7)   << " " << Penalty_emphasis(7)  << " " << nlogPenalty(7)*Penalty_emphasis(7) << endl;
-  RepFile1 << "Molt_prob              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(8)   << " " << Penalty_emphasis(8)  << " " << nlogPenalty(8)*Penalty_emphasis(8) << endl;
-  RepFile1 << "Smooth_select          " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(9)   << " " << Penalty_emphasis(9)  << " " << nlogPenalty(9)*Penalty_emphasis(9) << endl;
-  RepFile1 << "Init_numbers           " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(10)  << " " << Penalty_emphasis(10) << " " << nlogPenalty(10)*Penalty_emphasis(10) << endl;
-  RepFile1 << "Fdevs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(11)  << " " << Penalty_emphasis(11) << " " << nlogPenalty(11)*Penalty_emphasis(11) << endl;
-  RepFile1 << "Fdovs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(12)  << " " << Penalty_emphasis(12) << " " << nlogPenalty(12)*Penalty_emphasis(12) << endl;
-  RepFile1 << "SelDevs                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(13)  << " " << Penalty_emphasis(13) << " " << nlogPenalty(13)*Penalty_emphasis(13) << endl;
+  RepFile1 << "term                     type           year     fleet     units   sex     maturity           nll          objfun_value" << endl;
+  RepFile1 << "Catch_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(1)) << " "  << sum(elem_prod(nloglike(1),catch_emphasis))   << endl;
+  RepFile1 << "Catch_data_alt         " << " summary    NA        NA        NA    NA        NA      " << sum(nll_catch)   << " "  << sum(nll_catch)                               << endl;
+  RepFile1 << "Index_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(2)) << " "  << sum(elem_prod(nloglike(2),cpue_emphasis))    << endl;
+  RepFile1 << "Size_data              " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(3)) << " "  << sum(elem_prod(nloglike(3),lf_emphasis))      << endl;
+  RepFile1 << "Stock_recruitment      " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(4)) << " "  << sum(nloglike(4))                             << endl;
+  RepFile1 << "Tagging_data           " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(5)) << " "  << sum(nloglike(5))*tag_emphasis                << endl;
+  RepFile1 << "Growth_data            " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(6)) << " "  << sum(nloglike(6))                             << endl;
+  RepFile1 << "MMO_data               " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(7)) << " "  << mmodLkWgt*sum(nloglike(7))                   << endl;
+  RepFile1 << "Penalties              " << " summary    NA        NA        NA    NA        NA      " << sum(nlogPenalty) << " "  << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
+  RepFile1 << "Priors                 " << " summary    NA        NA        NA    NA        NA      " << sum(priorDensity)<< " "  << sum(priorDensity)                            << endl;
+  RepFile1 << "Initial_size_structure " << " summary    NA        NA        NA    NA        NA      " << TempSS           << " "  << TempSS      << endl;
+  RepFile1 << "Positive_growth_penalty" << " summary    NA        NA        NA    NA        NA      " << grwthPosFun      << " "  << grwthPosFun << endl;
+  RepFile1 << "Total                  " << " summary    NA        NA        NA    NA        NA      " << objfun           << " "  << objfun      << endl;
+  RepFile1 << "Mean_Fbar=0            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(1)   << " " << nlogPenalty(1)*Penalty_emphasis(1) << endl;
+  RepFile1 << "Mean_Fdev              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(2)   << " " << nlogPenalty(2)*Penalty_emphasis(2) << endl;
+  RepFile1 << "Rec_dev                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(6)   << " " << nlogPenalty(6)*Penalty_emphasis(6) << endl;
+  RepFile1 << "Sex_ratio              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(7)   << " " << nlogPenalty(7)*Penalty_emphasis(7) << endl;
+  RepFile1 << "Molt_prob              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(8)   << " " << nlogPenalty(8)*Penalty_emphasis(8) << endl;
+  RepFile1 << "Smooth_select          " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(9)   << " " << nlogPenalty(9)*Penalty_emphasis(9) << endl;
+  RepFile1 << "Init_numbers           " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(10)  << " " << nlogPenalty(10)*Penalty_emphasis(10) << endl;
+  RepFile1 << "Fdevs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(11)  << " " << nlogPenalty(11)*Penalty_emphasis(11) << endl;
+  RepFile1 << "Fdovs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(12)  << " " << nlogPenalty(12)*Penalty_emphasis(12) << endl;
+  RepFile1 << "SelDevs                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(13)  << " " << nlogPenalty(13)*Penalty_emphasis(13) << endl;
   for (int id=1; id<=nloglike(1).size();id++){
     dvector dc = dCatchData(id,1);
     RepFile1 << "Catch_data              " << catchtypes(dc(7)) << " NA      " << fleetname(dc(3)) << " " << unitstypes(dc(8)) << " " << sexes(dc(4)) << " " << "NA" << " " <<  
@@ -15369,8 +15375,20 @@ FUNCTION CreateOutput
     OutFile1 << ">EOD<" << endl;
     RepFile1 << ">EOD<" << endl;
    }
+  
+   // Natural mortality
+  RepFile1 << "M: dataframe" << endl;
+  RepFile1 << "year sex  maturity  M  "; for (int j=1;j<=nseason;j++) {RepFile1 << "ssn" << j << " ";} RepFile1 << endl; 
+  for (int i=syr;i<=nyrRetro;i++){
+    for (int h=1; h<=nsex; h++){
+      for (int m=1; m<=nmature; m++){
+        RepFile1 << i << " " << sexes(h) << " " << maturestate(m) << " " << M(h,m,i)(nclass) << " ";
+        for (int j=1;j<=nseason;j++) {RepFile1 << m_prop(i,j)*M(h,m,i)(nclass) << " ";} 
+        RepFile1 << endl; 
+      }
+    }
+  }
 
-	
 // Special output
   if (verbose > 3) cout<<"writing MyOutput"<<endl;
   MyOutput();
@@ -15492,7 +15510,7 @@ FUNCTION CreateOutput
   if ((verbose>3)&&(NfunCall<2)) cout<<"CreateOutput: almost finished"<<endl;
   if (!IsJittered) WriteFiles();
   if ((verbose>3)&&(NfunCall<2)) cout<<"CreateOutput: finished"<<endl;
-//--createOutput
+//--CreateOutput
 // -----------------------------------------------------------------------------------------------------------------------------------
    
 // =====================================================================================================================================
@@ -17468,6 +17486,7 @@ FINAL_SECTION
 //                    and calc_brute_equilibrium. Also added a lot of "|| season_type==TCSAM02" branches to "if" statements of the form 
 //                    "if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)" or "if(season_type(j)==CONTINUOUS_F)" in non-projection-related contexts.
 // 2026-06-08 ** WTS. Updated version to 2.20.38.
+// 2026-06-10 ** WTS. Added NfunCall, timing info, and M to gmacs.rep1 output.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
