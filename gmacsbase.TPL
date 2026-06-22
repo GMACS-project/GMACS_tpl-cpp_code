@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.38; ** WTS **; Compiled 2026-06-18");
+ !! TheHeader = adstring("## GMACS Version 2.20.39; ** AEP **; Compiled 2026-06-22");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -245,6 +245,7 @@ DATA_SECTION
   /**
   * @brief command line option for jittering parameter values (overrides gmacs.dat setting).
   **/
+  echoinput.open("Checkfile.rep");
   if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-jitter",opt))>-1 )
   {
     jitflag = 1;
@@ -257,7 +258,7 @@ DATA_SECTION
     gmacs_prj.open("gmacs_in.prj");
   }
 
-  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-mcmc",opt))>-1 )
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-mcmc",opt))>-1 || (on=option_match(ad_comm::argc,ad_comm::argv,"-mceval",opt))>-1 )
   {
     mcout.open("mcout.rep");
     mcoutSSB.open("mcoutSSB.rep");
@@ -468,6 +469,7 @@ DATA_SECTION
   !! Nyears =(nyrRetro-syr+1);
   int Nyears2;
   !! Nyears2 =(nyrRetro+1-syr+1);
+  int Nyears4;
 
  LOC_CALCS
   n_grp = nsex * nshell * nmature;
@@ -1496,7 +1498,7 @@ DATA_SECTION
   adstring_array strEIs;
   int NenvData;
   matrix EnvDataInp; 
-  matrix EnvData(syr,nyr,1,NenvIndics);
+  matrix EnvData(syr,nyr+100,1,NenvIndics);
  LOCAL_CALCS
   if (NenvIndics>0) {
     strEIs.allocate(1,NenvIndics);
@@ -1560,7 +1562,278 @@ DATA_SECTION
   // Integer pass variables
   ivector isizeTrans_pass(1,nsex);
 
+ 
+// ================================================================================================
+// ================================================================================================
 
+  // Label 130: Projection inputs
+  !! ad_comm::change_datafile_name(projectfile);
+  !! cout << "+-------------------------+" << endl;
+  !! cout << "| Reading projection file |" << endl;
+  !! cout << "+-------------------------+" << endl;
+  !! ECHOSTR("+-------------------------+");
+  !! ECHOSTR("| Reading projection file |");
+  !! ECHOSTR("+-------------------------+");
+  !! WRITEPRJ(TheHeader);
+  init_int Calc_MSY;
+  !! WRITEPRJ(Calc_MSY);
+  !! if (Calc_MSY != NO && Calc_MSY != YES)  { cout << "Calc_MSY = "<<Calc_MSY<<". Indicate 1=Yes or 0=No for whether MSY should be computed. STOPPING" << endl; exit(1); }
+  init_ivector Ffixed(1,nfleet);
+  !! ECHO(Ffixed);
+  !! for (int k=1;k<=nfleet;k++) gmacs_prj << Ffixed(k) << " #--"<<fleetname(k)<<endl;
+  !! for (int k=1;k<=nfleet;k++)
+  !!  if (Ffixed(k) != NO && Ffixed(k) != YES) { cout << "Future F indicator = "<< Ffixed(k) <<" for "<<fleetname(k)<<". Must be 0 or 1" << endl; exit(1); }
+
+  init_int spr_syr;
+  !! if (spr_syr==0) spr_syr = syr;
+  !! if (spr_syr==-1) spr_syr = syr+1;
+  !! WRITEPRJ(spr_syr);
+  !! if (spr_syr < syr) { cout << "First year for computing Rbar must be syr or later: STOPPING. spr_syr = " << spr_syr << " syr = " << syr << endl; exit(1); }
+  init_int spr_nyr;
+  !! if (spr_nyr==0) spr_nyr = nyr;
+  !! WRITEPRJ(spr_nyr);
+  !! if (spr_nyr > nyr) { cout << "Last year for computing Rbar must be nyr or earlier: STOPPING. spr_nyr = " << spr_nyr << "nyr = " << nyr << endl; exit(1); }
+  !! if( spr_nyr < spr_syr)  { cout << "Last year for computing Rbar must be later than the first year: STOPPING. spr_syr = " << spr_syr << "spr_nyr = " << spr_nyr << endl; exit(1); }
+  !! spr_nyr = spr_nyr - nyrRetroNo;
+  !! if (spr_syr > spr_nyr) spr_syr = spr_nyr;
+
+  init_int spr_SexR_syr;
+  !! if (spr_SexR_syr==0) spr_SexR_syr = syr;
+  !! WRITEPRJ(spr_SexR_syr);
+  !! if (spr_SexR_syr < syr) { cout << "First year for computing sex ratio ("<<spr_SexR_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
+  init_int spr_SexR_nyr;
+  !! if (spr_SexR_nyr==0) spr_SexR_nyr = nyr;
+  !! WRITEPRJ(spr_SexR_nyr);
+  !! if (spr_SexR_nyr > nyr) { cout << "Last year for computing sex ratio ("<<spr_SexR_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
+  !! if( spr_SexR_nyr < spr_SexR_syr)  { cout << "Last year for computing sex ratio ("<<spr_SexR_nyr<<") must be later than the first year ("<<spr_SexR_syr<<") " << endl; exit(1); }
+  !! spr_SexR_nyr = spr_SexR_nyr - nyrRetroNo;
+  !! if (spr_SexR_syr > spr_SexR_nyr) spr_SexR_syr = spr_SexR_nyr;
+
+  init_int spr_aveF_syr;
+  !! if (spr_aveF_syr==0) spr_aveF_syr = syr;
+  !! WRITEPRJ(spr_aveF_syr);
+  !! if (spr_aveF_syr < syr) { cout << "First year for computing AveF  (spr_AveF_syr = "<<spr_aveF_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
+  init_int spr_aveF_nyr;
+  !! if (spr_aveF_nyr==0) spr_aveF_nyr = nyr;
+  !! WRITEPRJ(spr_aveF_nyr);
+  !! if (spr_aveF_nyr > nyr) { cout << "Last year for computing AveF  (spr_Ave_nyr = "<<spr_aveF_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
+  !! if( spr_aveF_nyr < spr_aveF_syr)  { cout << "Last year for computing AveF ("<<spr_aveF_nyr<<")  must be later than the first year ("<<spr_aveF_syr<<") " << endl; exit(1); }
+  !! spr_aveF_nyr = spr_aveF_nyr - nyrRetroNo;
+  !! if (spr_aveF_syr > spr_aveF_nyr) spr_aveF_syr = spr_aveF_nyr;
+
+  init_int spr_M_syr;
+  !! if (spr_M_syr==0) spr_M_syr = nyr;
+  !! WRITEPRJ(spr_M_syr);
+  !! if (spr_M_syr < syr) { cout << "First year for computing M  (spr_M_syr = "<<spr_M_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
+  init_int spr_M_nyr;
+  !! if (spr_M_nyr==0) spr_M_nyr = nyr;
+  !! WRITEPRJ(spr_M_nyr);
+  !! if (spr_M_nyr > nyr) { cout << "Last year for computing M  (spr_M_nyr = "<<spr_M_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
+  !! if( spr_M_nyr < spr_M_syr)  { cout << "Last year for computing M (spr_M_nyr = "<<spr_M_nyr<<") must be later than the first year (spr_M_syr = "<<spr_M_syr<<") " << endl; exit(1); }
+  !! spr_M_nyr = spr_M_nyr - nyrRetroNo;
+  !! if (spr_M_syr > spr_M_nyr) spr_M_syr = spr_M_nyr;
+
+  init_int spr_Prop_syr;
+  !! if (spr_Prop_syr==0) spr_Prop_syr = nyr;
+  !! WRITEPRJ(spr_Prop_syr);
+  !! if (spr_Prop_syr < syr) { cout << "First year for computing season lengths (spr_Prop_syr = "<<spr_Prop_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
+  init_int spr_Prop_nyr;
+  !! if (spr_Prop_nyr==0) spr_Prop_nyr = nyr;
+  !! WRITEPRJ(spr_Prop_nyr);
+  !! if (spr_Prop_nyr > nyr) { cout << "Last year for computing season lengths (spr_Prop_nyr = "<<spr_Prop_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
+  !! if( spr_Prop_nyr < spr_Prop_syr)  { cout << "Last year for computing season lengths (spr_Prop_nyr = "<<spr_Prop_nyr<<") must be later than the first year (spr_Prop_syr = "<<spr_Prop_syr<<") " << endl; exit(1); }
+  !! spr_Prop_nyr = spr_Prop_nyr - nyrRetroNo;
+  !! if (spr_Prop_syr > spr_Prop_nyr) spr_Prop_syr = spr_Prop_nyr;
+
+  init_int spr_grow_yr;
+  !! if (spr_grow_yr==0) spr_grow_yr = nyr;
+  !! if (spr_grow_yr < syr) { cout << "Year for computing growth (spr_grow_yr = "<<spr_grow_yr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
+  !! if (spr_grow_yr > nyr) { cout << "Year for computing growth (spr_grow_yr = "<<spr_grow_yr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
+  !! WRITEPRJ(spr_grow_yr);
+  !! spr_grow_yr = spr_grow_yr - nyrRetroNo;
+
+  init_int spr_sel_syr;
+  !! if (spr_sel_syr==0) spr_sel_syr = nyr;
+  !! WRITEPRJ(spr_sel_syr);
+  !! if (spr_sel_syr < syr) { cout << "First year for computing selex (spr_sel_syr = "<<spr_sel_syr<<") must be syr ("<<syr<<")  or later: STOPPING" << endl; exit(1); }
+  init_int spr_sel_nyr;
+  !! if (spr_sel_nyr==0) spr_sel_nyr = nyr;
+  !! WRITEPRJ(spr_sel_nyr);
+  !! if (spr_sel_nyr > nyr) { cout << "Last year for computing selex  (spr_sel_nyr = "<<spr_sel_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
+  !! if( spr_sel_nyr < spr_sel_syr)  { cout << "Last year for computing selex ("<<spr_sel_nyr<<") must be later than the first year ("<<spr_sel_syr<<") " << endl; exit(1); }
+  !! spr_sel_nyr = spr_sel_nyr - nyrRetroNo;
+  !! if (spr_sel_syr > spr_sel_nyr) spr_sel_syr = spr_sel_nyr;
+ 
+  init_number spr_target;
+  !! WRITEPRJ(spr_target);
+  init_int OFLTier;
+  !! WRITEPRJ(OFLTier);
+  init_number OFLalpha;
+  !! WRITEPRJ(OFLalpha);
+  init_number OFLbeta;
+  !! WRITEPRJ(OFLbeta);
+  init_number OFLgamma;
+  !! WRITEPRJ(OFLgamma);
+  init_number ABCBuffer;
+  !! WRITEPRJ(ABCBuffer);
+  init_int Compute_yield_prj;
+  !! if (Compute_yield_prj != NO && Compute_yield_prj != YES)  { cout << "Compute_yield_prj = "<<Compute_yield_prj<<". Must indicate 1=Yes or 0=No for whether the yield function should be reported" << endl; exit(1); }
+  !! if (Calc_MSY==NO) Compute_yield_prj = NO;
+  !! WRITEPRJ(Compute_yield_prj);
+
+  int Eqn_basis;                                           ///> Option for recruitment (0=Constant; 1+ is SRR)
+
+  int nproj;                                               ///> number of projection years
+  int nprojUse;                                            ///> Variable to speed to calculations during estimation
+  init_int pyr;                                            ///> terminal projection year
+  !! WRITEPRJ(pyr);
+  !!  nproj = pyr - nyr;
+  !! if (nproj < 0) { cout << "Terminal year for projections (pyr="<<pyr<<") must be later tha nyr ("<<nyr<<") : STOPPING" << endl; exit(1); }
+  !! Nyears4 =(nyrRetro+nproj+1-syr+1);
+   int nprojVec;
+  !! nprojVec = nproj+1; if (nprojVec<2) nprojVec = 2;
+  init_int Project_type;                                   ///> Projection type (1=Fixed F; 2=Proportion of current F)
+  !! WRITEPRJ(Project_type);
+  init_int prj_Nstrat;                                     ///> Account for state strategy
+  !! WRITEPRJ(prj_Nstrat);
+  init_vector Proj_Levels(1,prj_Nstrat);                   ///> Levels for projections
+  !! WRITEPRJ(Proj_Levels);
+    
+  init_int prj_bycatch_on;                                 ///> Allow for bycatch fleets to have non-zero mortality
+  !! WRITEPRJ(prj_bycatch_on);
+  init_int prj_replicates;                                 ///> How many times each MCMC draw is run
+  !! WRITEPRJ(prj_replicates);
+  init_number Fixed_prj_Bmsy;                              ///> Should Bmsy be fixed (negative numbers)
+  !! WRITEPRJ(Fixed_prj_Bmsy);
+  
+  init_int proj_syr;
+  !! if (proj_syr==0) proj_syr = syr;
+  !! WRITEPRJ(proj_syr);
+  !! if (proj_syr < syr) { cout << "First year for Rbar calc (proj_syr = "<<proj_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
+  init_int proj_nyr;
+  !! if (proj_nyr==0) proj_nyr = nyr;
+  !! WRITEPRJ(proj_nyr);
+  !! if (proj_nyr > nyr) { cout << "Last year for Rbar calc (proj_nyr = "<<proj_nyr<<") nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
+  !! if( proj_nyr < proj_syr)  { cout << "Last year for Rbar calc (proj_nyr = "<<proj_nyr<<") must be later than the first year (proj_syr = "<<proj_syr<<") "<< endl; exit(1); }
+  !! proj_nyr = proj_nyr - nyrRetroNo;
+
+  init_int proj_SexR_syr;
+  !! if (proj_SexR_syr==0) proj_SexR_syr = syr;
+  !! WRITEPRJ(proj_SexR_syr);
+  !! if (proj_SexR_syr < syr) { cout << "First year for computing sex ratio (proj_SexR_syr="<<proj_SexR_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
+  init_int proj_SexR_nyr;
+  !! if (proj_SexR_nyr==0) proj_SexR_nyr = nyr;
+  !! WRITEPRJ(proj_SexR_nyr);
+  !! if (proj_SexR_nyr > nyr) { cout << "Last year for computing sex ratio (proj_SexR_nyr="<<proj_SexR_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
+  !! if( proj_SexR_nyr < proj_SexR_syr)  { cout << "Last year for computing sex ratio (proj_SexR_nyr="<<proj_SexR_nyr<<") must be later than the first year (proj_SexR_syr="<<proj_SexR_syr<<") " << endl; exit(1); }
+  !! proj_SexR_nyr = proj_SexR_nyr - nyrRetroNo;
+  !! if (proj_SexR_syr > proj_SexR_nyr) proj_SexR_syr = proj_SexR_nyr;
+
+  init_int proj_aveF_syr;
+  !! if (proj_aveF_syr==0) proj_aveF_syr = syr;
+  !! WRITEPRJ(proj_aveF_syr);
+  !! if (proj_aveF_syr < syr) { cout << "First year for computing AveF (proj_aveF_syr="<<proj_aveF_syr<<") must be syr ("<<syr<<")or later: STOPPING" << endl; exit(1); }
+  init_int proj_aveF_nyr;
+  !! if (proj_aveF_nyr==0) proj_aveF_nyr = nyr;
+  !! WRITEPRJ(proj_aveF_nyr);
+  !! if (proj_aveF_nyr > nyr) { cout << "Last year for computing AveF (proj_aveF_syr="<<proj_aveF_nyr<<")must be nyr or earlier: STOPPING" << endl; exit(1); }
+  !! if( proj_aveF_nyr < proj_aveF_syr)  { cout << "Last year for computing AveF  (proj_aveF_nyr="<<proj_aveF_nyr<<") must be later than the first year (proj_aveF_syr="<<proj_aveF_syr<<")" << endl; exit(1); }
+  !! proj_aveF_nyr = proj_aveF_nyr - nyrRetroNo;
+  !! if (proj_aveF_syr > proj_aveF_nyr) proj_aveF_syr = proj_aveF_nyr;
+
+  init_int proj_M_syr;
+  !! if (proj_M_syr==0) proj_M_syr = syr;
+  !! WRITEPRJ(proj_M_syr);
+  !! if (abs(proj_M_syr) < syr) { cout << "First year for computing M (proj_M_syr="<<proj_M_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
+  init_int proj_M_nyr;
+  !! if (proj_M_nyr==0) proj_M_nyr = nyr;
+  !! WRITEPRJ(proj_M_nyr);
+  !! if (proj_M_nyr > nyr) { cout << "Last year for computing M (proj_SexR_nyr="<<proj_SexR_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
+  !! if( proj_M_nyr < proj_M_syr)  { cout << "Last year for computing M (proj_SexR_nyr="<<proj_SexR_nyr<<") must be later than the first year (proj_SexR_syr="<<proj_SexR_syr<<") " << endl; exit(1); }
+  !! proj_M_nyr = proj_M_nyr - nyrRetroNo;
+  !! if (proj_M_syr > proj_M_nyr) proj_M_syr = proj_M_nyr;
+
+  init_int proj_Prop_syr;
+  !! if (proj_Prop_syr==0) proj_Prop_syr = syr;
+  !! WRITEPRJ(proj_Prop_syr);
+  !! if (proj_Prop_syr < syr) { cout << "First year for computing season lengths (proj_Prop_syr="<<proj_Prop_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
+  init_int proj_Prop_nyr;
+  !! if (proj_Prop_nyr==0) proj_Prop_nyr = nyr;
+  !! WRITEPRJ(proj_Prop_nyr);
+  !! if (proj_Prop_nyr > nyr) { cout << "Last year for computing season lengths (proj_Prop_nyr="<<proj_Prop_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
+  !! if( proj_Prop_nyr < proj_Prop_syr)  { cout << "Last year for computing season lengths (proj_Prop_nyr="<<proj_Prop_nyr<<") must be later than the first year (proj_Prop_syr="<<proj_Prop_syr<<") " << endl; exit(1); }
+  !! proj_Prop_nyr = proj_Prop_nyr - nyrRetroNo;
+  !! if (proj_Prop_syr > proj_Prop_nyr) proj_Prop_syr = proj_Prop_nyr;
+
+  init_int proj_grow_yr;
+  !! if (proj_grow_yr==0) proj_grow_yr = nyr;
+  !! WRITEPRJ(proj_grow_yr);
+  !! if (abs(proj_grow_yr) < syr) { cout << "Year for computing growth (proj_grow_yr="<<proj_grow_yr<<") must be syr or later: STOPPING" << endl; exit(1); }
+  !! if (proj_grow_yr > nyr) { cout << "Year for computing growth (proj_grow_yr="<<proj_grow_yr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
+  !! proj_grow_yr = proj_grow_yr - nyrRetroNo;
+
+  init_int proj_sel_syr;
+  !! if (proj_sel_syr==0) proj_sel_syr = syr;
+  !! WRITEPRJ(proj_sel_syr);
+  !! if (abs(proj_sel_syr) < syr) { cout << "First year for computing selex (proj_sel_syr="<<proj_sel_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
+  init_int proj_sel_nyr;
+  !! if (proj_sel_nyr==0) proj_sel_nyr = nyr;
+  !! WRITEPRJ(proj_sel_nyr);
+  !! if (proj_sel_nyr > nyr) { cout << "Last year for computing selex (proj_sel_nyr="<<proj_sel_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
+  !! if( proj_sel_nyr < proj_sel_syr)  { cout << "Last year for computing selex (proj_sel_nyr="<<proj_sel_nyr<<") must be later than the first year (proj_sel_syr="<<proj_sel_syr<<") " << endl; exit(1); }
+  !! proj_sel_nyr = proj_sel_nyr - nyrRetroNo;
+  !! if (proj_sel_syr > proj_sel_nyr) proj_sel_syr = proj_sel_nyr;
+
+  init_int Stock_rec_prj;                                  ///> Stock-recruitment relationship
+  !! gmacs_prj << "# Options for the stock-recruitment relationship" << endl;
+  !! gmacs_prj << "#    1: Sample recruitments from those for a pre-specified range of years"<< endl;
+  !! gmacs_prj << "#    2: Ricker stock-recruitment relationship"<< endl;
+  !! gmacs_prj << "#    3: Beverton-Holt stock-recruitment relationship"<< endl;
+  !! gmacs_prj << "#    4: Pre-specified (constant) future recruitment "<< endl;
+  !! gmacs_prj << Stock_rec_prj << endl;
+  init_int Age_at_rec_prj;                                 ///> Age-at-recruitment
+  !! WRITEPRJ(Age_at_rec_prj);
+  init_int prj_futRec_syr;
+  !! WRITEPRJ(prj_futRec_syr);
+  !! if (prj_futRec_syr < syr) { cout << "First year for generating recruitment must be syr or later: STOPPING" << endl; exit(1); }
+  init_int prj_futRec_nyr;
+  !! WRITEPRJ(prj_futRec_nyr);
+  !! if (prj_futRec_nyr > nyrRetro) prj_futRec_nyr = nyrRetro;
+  !! if (prj_futRec_nyr > nyrRetro){ cout << "Last year for generating recruitment must be nyr or earlier: STOPPING" << endl; exit(1); }
+  !! if(prj_futRec_nyr < prj_futRec_syr)  { cout << "Last year for generating recruitment must be later than the first year" << endl; exit(1); }
+  init_number mean_rec_prj;
+  !! WRITEPRJ(mean_rec_prj);
+  init_number SigmaR_prj                                   ///> Sigma(R)
+  !! WRITEPRJ(SigmaR_prj);
+  init_number Prow_prj                                     ///> Prow(R)
+  !! WRITEPRJ(Prow_prj);
+  init_number Initial_eps                                  ///> First rec_dev(R)
+  !! WRITEPRJ(Initial_eps);
+
+  init_int Apply_HCR_prj;                                  ///> Use a HCR
+  !!if (Project_type==2) Apply_HCR_prj = 0;
+  !! WRITEPRJ(Apply_HCR_prj);
+  init_int Apply_StateHCR_prj;                             ///> Use a State HCR
+  !! WRITEPRJ(Apply_StateHCR_prj);
+  init_int NHCRpars;
+  !! WRITEPRJ(NHCRpars);
+  init_vector HCRpars(1,NHCRpars);
+  !! WRITEPRJ(HCRpars); 
+
+  init_int max_prj;
+  !! WRITEPRJ(max_prj);
+  
+  init_int full_prj_diag
+  !! WRITEPRJ(full_prj_diag);
+
+
+  init_int eof_prj;
+  !! WRITEPRJ(eof_prj);
+  !! if ( eof_prj != 9999 ){cout << "Error reading projection file: " << eof_prj << endl; exit(1);}
+  !! cout << "end of projection section" << endl;
+
+  int IsProject;                                           ///> Are we in projection mode
+  
 // ================================================================================================
 // ================================================================================================
   //--read control file
@@ -1609,8 +1882,8 @@ DATA_SECTION
   !!   for (int j=1;j<=blocks(ii);j++)
   !!    {
   !!     *(ad_comm::global_datafile) >> blocklimits(ii,j,1) ;
-  !!     *(ad_comm::global_datafile) >> blocklimits(ii,j,2); if (blocklimits(ii,j,2)==0) blocklimits(ii,j,2) = nyrRetro; 
-  !!     if (blocklimits(ii,j,2)> nyrRetro) cout << "Warning - the end of block " << ii << " exceeds nyrRetro" << endl;
+  !!     *(ad_comm::global_datafile) >> blocklimits(ii,j,2); if (blocklimits(ii,j,2)==0) blocklimits(ii,j,2) = nyrRetro+nproj; 
+  !!     if (blocklimits(ii,j,2)> nyrRetro+nproj) cout << "Warning - the end of block " << ii << " exceeds nyrRetro+nproj" << endl;
   !!     echoinput << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << " # block_group_"<< ii << "_block_" << j << endl;
   !!     gmacs_ctl << blocklimits(ii,j,1) << " " << blocklimits(ii,j,2) << " # block_group_"<< ii << "_block_" << j << endl;
   !!    }
@@ -1648,12 +1921,12 @@ DATA_SECTION
   !! max_env_vars = max(Env_link_nums);
   !! Num_env_vars = sum(Env_link_nums);
   3darray Env_specs(1,n_env_treat+1,1,max_env_vars+1,1,5);
-  matrix Env_vars_used(syr,nyr,1,Num_env_vars+1);
+  matrix Env_vars_used(syr,nyr+nproj,1,Num_env_vars+1);
   int Env_point;
   number ave_env_scale;
   number sd_env_scale;
   number num_env_scale;
-  ivector N_env_par(1,n_env_treat)
+  ivector N_env_par(1,n_env_treat);
   
   int Env_index;
   !! Env_point = 1;
@@ -1675,18 +1948,23 @@ DATA_SECTION
   !!     Env_index = Env_specs(ii,jj,1);
   !!     if (Env_specs(ii,jj,1) <=0 || Env_specs(ii,jj,1) > NenvIndics) { cout << "env variable out of bounds" << endl; exit(1); }
   !!     N_env_par(ii) += int(Env_specs(ii,jj,2));
-  !!     ave_env_scale = 0; num_env_scale = 0; sd_env_scale = 0; 
-  !!     for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
-  !!      { ave_env_scale += EnvData(iy,Env_index); num_env_scale += 1; }
-  !!     ave_env_scale /= num_env_scale;
-  !!     for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
-  !!      { sd_env_scale += square(EnvData(iy,Env_index)-ave_env_scale); }
-  !!     sd_env_scale = sqrt(sd_env_scale/num_env_scale);
-  !!     for (int iy=syr;iy<=nyr;iy++) Env_vars_used(iy,Env_point) = (EnvData(iy,Env_index) - ave_env_scale)/sd_env_scale; 
+  !!     if (int(Env_specs(ii,jj,3)) != int(Env_specs(ii,jj,4)))
+  !!      {
+  !!       ave_env_scale = 0; num_env_scale = 0; sd_env_scale = 0; 
+  !!       for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
+  !!        { ave_env_scale += EnvData(iy,Env_index); num_env_scale += 1; }
+  !!       ave_env_scale /= num_env_scale;
+  !!       for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
+  !!        { sd_env_scale += square(EnvData(iy,Env_index)-ave_env_scale); }
+  !!       sd_env_scale = sqrt(sd_env_scale/num_env_scale);
+  !!      }
+  !!     else
+  !!      {ave_env_scale= 0; sd_env_scale= 1; }
+  !!     for (int iy=syr;iy<=nyr+nproj;iy++) Env_vars_used(iy,Env_point) = (EnvData(iy,Env_index) - ave_env_scale)/sd_env_scale; 
   !!     Env_point += 1;
   !!    }
   !!  }
- 
+
   // |---------------------------------------------------------|
   // | GENERAL CTL DECLARATION                                 |
   // |---------------------------------------------------------|
@@ -1937,7 +2215,7 @@ DATA_SECTION
  END_CALCS
  
   // Storage by year
-  imatrix ThetaPnt(1,ntheta*Nyears2,1,2*nclass+7+1);
+  imatrix ThetaPnt(1,ntheta*Nyears4,1,2*nclass+7+1);
 
   // Storage by year
   matrix Tpar_control(1,1000,1,15);
@@ -1966,8 +2244,8 @@ DATA_SECTION
     echoinput << endl;
     gmacs_ctl << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
     for (int ig = 1;ig<=ntheta;ig++){
-      int ipnt3 = Nyears2*(ig-1);
-      for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+      int ipnt3 = Nyears4*(ig-1);
+      for (int iyr=syr;iyr<=nyrRetro+nproj+1;iyr++){
         //--ipnt3 is index into ig
         ThetaPnt(ipnt3+iyr-syr+1,nclass+2) = ig; //--ig
         ThetaPnt(ipnt3+iyr-syr+1,nclass+3) = 0;  //--sex
@@ -2006,12 +2284,12 @@ DATA_SECTION
     } else {
       gmacs_ctl << "# NO EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
     }
-    //for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+    //for (int iyr=syr;iyr<=nyrRetro+nproj+1;iyr++){
     //  for (int ipar=1; ipar<=ntheta;ipar++)  { ThetaPnt(ipnt3+iyr-syr+1,ipar) = n_Tpar2+ipar; ThetaPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Tpar2+ipar; }
     // }
     for (int ig = 1;ig<=ntheta;ig++) {
      // Are there blocks
-     int ipnt3 = Nyears2*(ig-1);
+     int ipnt3 = Nyears4*(ig-1);
      ECHO(ig)
      int jpar = n_Tpar2+ig;  //NOTE: n_Tpar2 is always 0 (2026-03-09)
      int IgBlock      = int(Tpar_control(jpar, 8));
@@ -2057,7 +2335,7 @@ DATA_SECTION
      if (IgEnvLink !=0) 
       {
        if (IgEnvLink != 1 && IgEnvLink != 2 && IgEnvLink != 3) { cout << "Error: Environmental links can only be 1, 2 or 3 - parameter " << ig << endl; exit(1); } 
-       if (IgEnvLinkVar <= 0 || IgEnvLinkVar > NenvIndics) { cout << "Error: Environmental variable outside range - parameter " << ig << endl; exit(1); } 
+       if (IgEnvLinkVar <= 0 || IgEnvLinkVar > n_env_treat) { cout << "Error: Environmental variable outside range - parameter " << ig << endl; exit(1); } 
        if (IgRWBlock <=0) { cout << "Error: There needs to a block for environment variables - parameter " << ig << endl; exit(1); }
        anystring = "Env_link_"+parname1(ig);
 
@@ -2124,7 +2402,7 @@ DATA_SECTION
   }
  END_CALCS
 
-  imatrix iYrsThetaChanges(1,ntheta,syr,nyrRetro+1);
+  imatrix iYrsThetaChanges(1,ntheta,syr,nyrRetro+nproj+1);
   int ntheta_use;
   ivector Theta_patterns(1,1000);
   ivector Theta_patterns2(1,1000);
@@ -2139,11 +2417,11 @@ DATA_SECTION
     nThetaVaries.initialize();
     for (int ig=1;ig<=ntheta;ig++){
      inew = 1;
-     int ipnt3 = (ig-1)*Nyears2;
+     int ipnt3 = (ig-1)*Nyears4;
      ThetaPnt(ipnt3+1,nclass+6) = 1;
      iYrsThetaChanges(ig,syr) = 1;
      nTheta_patterns += 1; Theta_patterns(nTheta_patterns) = ipnt3+1;
-     for (int iyr=syr+1;iyr<=nyrRetro+1;iyr++){
+     for (int iyr=syr+1;iyr<=nyrRetro+nproj+1;iyr++){
       int OK = 1; int Match=-1;
       for (int iyr2=syr;iyr2<iyr;iyr2++){
        int OK2 = 0;
@@ -2174,7 +2452,7 @@ DATA_SECTION
   }
  END_CALCS
 
-  // Set up the specifications for the selectivity parameters
+  // Set up the specifications for the theta parameters
   vector T_ival(1,n_Tpar);
   vector T_lb(1,n_Tpar);
   vector T_ub(1,n_Tpar);
@@ -2273,16 +2551,16 @@ DATA_SECTION
   int lw_dim2;
  LOC_CALCS
   lw_dim = nsex*nmature;
-  if ( lw_type == LW_MATRIX ) lw_dim = nsex*nmature * (nyr+1 - syr + 1);
+  if ( lw_type == LW_MATRIX ) lw_dim = nsex*nmature * (nyrRetro+nproj+1 - syr + 1);
   ECHO(lw_dim);
   lw_dim2 = nsex*nmature;
-  if ( lw_type == LW_MATRIX ) lw_dim2 = nsex*nmature * (nyrRetro+1 - syr + 1);
+  if ( lw_type == LW_MATRIX ) lw_dim2 = nsex*nmature * (nyrRetro+nproj+1 - syr + 1);
   ECHO(lw_dim2);
  END_CALCS
   matrix lw_alfa(1,nsex,1,nmature);
   matrix lw_beta(1,nsex,1,nmature);
   matrix mean_wt_in(1,lw_dim,1,nclass);
-  4darray mean_wt(1,nsex,1,nmature,syr,nyrRetro+1,1,nclass);         ///> Ultimate array for this
+  4darray mean_wt(1,nsex,1,nmature,syr,nyrRetro+nproj+1,1,nclass);         ///> Ultimate array for this
 
  LOC_CALCS
   if (lw_type==LW_RELATIONSHIP)
@@ -2318,7 +2596,7 @@ DATA_SECTION
     case LW_RELATIONSHIP:
      for ( int h = 1; h <= nsex; h++ )
       for ( int m = 1; m <= nmature; m++)
-       for ( int i = syr; i <= nyrRetro+1; i++ )
+       for ( int i = syr; i <= nyrRetro+nproj+1; i++ )
         mean_wt(h,m,i) = lw_alfa(h,m) * pow(mid_points, lw_beta(h,m));
      break;
     // vector by sex
@@ -2328,7 +2606,7 @@ DATA_SECTION
       for ( int m = 1; m <= nmature; m++)
        {
         ctr++;
-        for ( int i = syr; i <= nyrRetro+1; i++ )
+        for ( int i = syr; i <= nyrRetro+nproj+1; i++ )
          for ( int l = 1; l <= nclass; l++ )  mean_wt(h,m,i,l) = mean_wt_in(ctr,l);
        } // --h and m
      break;
@@ -2338,7 +2616,7 @@ DATA_SECTION
      ctr = 0;
      for ( int h = 1; h <= nsex; h++ )
       for ( int m = 1; m <= nmature; m++)
-       for ( int i = syr; i <= nyrRetro+1; i++ ){
+       for ( int i = syr; i <= nyrRetro+nproj+1; i++ ){
         ctr++;
         for ( int l = 1; l <= nclass; l++ )
          mean_wt(h,m,i,l) = mean_wt_in(ctr,l);
@@ -2527,7 +2805,7 @@ DATA_SECTION
  END_CALCS
  
   // Storage by year
-  imatrix GrowPnt(1,3*nsex*Nyears,1,2*nclass+5+1);
+  imatrix GrowPnt(1,3*nsex*Nyears4,1,2*nclass+5+1);
 
   matrix Gpar_control(1,1000,1,15);
   imatrix GtoIG(1,1000,1,4);
@@ -2575,9 +2853,9 @@ DATA_SECTION
       if (nsex==1) h = 1;
       if (nsex==2 && (ig==1 || ig==3 || ig==5)) h = 1;
       if (nsex==2 && (ig==2 || ig==4 || ig==6)) h = 2;
-      for (int iyr=syr;iyr<=nyrRetro;iyr++){
-        GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+2) = ig;
-        GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+3) = iyr;
+      for (int iyr=syr;iyr<=nyrRetro+nproj;iyr++){
+        GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+2) = ig;
+        GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+3) = iyr;
       }
       for (int ipar=1; ipar<=nparGs(ig);ipar++){
         n_Gpar += 1;
@@ -2645,8 +2923,8 @@ DATA_SECTION
       }
 
       gmacs_ctl << "# EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1      Prior_2  Phase     Reltve " << endl;
-      for (int iyr=syr;iyr<=nyrRetro;iyr++){
-        for (int ipar=1; ipar<=nparGs(ig);ipar++)  { GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar2+ipar; GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
+      for (int iyr=syr;iyr<=nyrRetro+nproj;iyr++){
+        for (int ipar=1; ipar<=nparGs(ig);ipar++)  { GrowPnt((ig-1)*Nyears4+iyr-syr+1,ipar) = n_Gpar2+ipar; GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
       }
       for (int ipar=1; ipar<=nparGs(ig);ipar++){
         // Are there blocks
@@ -2677,7 +2955,7 @@ DATA_SECTION
             GtoIG(n_Gpar,3) = 0;
             for (int ii=1;ii<=7;ii++) *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,ii); *(ad_comm::global_datafile) >> Gpar_control(n_Gpar,15);
             for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
-              { GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = n_Gpar;  GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+5+ipar) = n_Gpar; }
+              { GrowPnt((ig-1)*Nyears4+iyr-syr+1,ipar) = n_Gpar;  GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+5+ipar) = n_Gpar; }
   
             if (ig <= nsex){
               if (bUseGrowthIncrementModel2(ig)==LINEAR_GROWTHMODEL && ipar==1) anystring = "Alpha_"+sexes(h);
@@ -2756,8 +3034,8 @@ DATA_SECTION
            } //-- kpar
           for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++){
            for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
-            { GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = iyr*1000000.0+(n_Gpar+1)*10000+IgEnvLink*100+IgEnvLinkVar;
-              GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
+            { GrowPnt((ig-1)*Nyears4+iyr-syr+1,ipar) = iyr*1000000.0+(n_Gpar+1)*10000+IgEnvLink*100+IgEnvLinkVar;
+              GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
   	   }
           n_Gpar += N_env_par(IgEnvLinkVar); 
          } //--Env link
@@ -2771,8 +3049,8 @@ DATA_SECTION
           for (int kpar=1;kpar<=blocks(IgRWBlock);kpar++){
             for (int iyr=blocklimits(IgRWBlock,kpar,1);iyr<=blocklimits(IgRWBlock,kpar,2);iyr++)
              {
-              GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
-              GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
+              GrowPnt((ig-1)*Nyears4+iyr-syr+1,ipar) = -10000*IgRWBlock-(n_deviations+iyr-blocklimits(IgRWBlock,kpar,1)+1);
+              GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+5+ipar) =n_Gpar2+ipar; }
           }
           for (int iblk=1;iblk<=blocks(IgRWBlock);iblk++){
             n_deviations += (blocklimits(IgRWBlock,iblk,2)-blocklimits(IgRWBlock,iblk,1)+1);
@@ -2797,9 +3075,9 @@ DATA_SECTION
     
  END_CALCS
 
-  imatrix iYrsIncChanges(1,nsex,syr,nyrRetro);
-  imatrix iYrsMoltChanges(1,nsex,syr,nyrRetro);
-  imatrix iYrsMatureChanges(1,nsex,syr,nyrRetro);
+  imatrix iYrsIncChanges(1,nsex,syr,nyrRetro+nproj);
+  imatrix iYrsMoltChanges(1,nsex,syr,nyrRetro+nproj);
+  imatrix iYrsMatureChanges(1,nsex,syr,nyrRetro+nproj);
   ivector nSizeIncVaries(1,nsex);
   int maxSizeIncVaries;
   ivector nMoltVaries(1,nsex);
@@ -2815,26 +3093,26 @@ DATA_SECTION
   for (int ig=1;ig<=3*nsex;ig++)
    {
     inew = 1;
-    GrowPnt((ig-1)*Nyears+1,nclass+4) = 1;
+    GrowPnt((ig-1)*Nyears4+1,nclass+4) = 1;
     if (ig <=nsex) iYrsIncChanges(ig,syr) = 1;
     if (ig > nsex && ig <=2*nsex) iYrsMoltChanges(ig-nsex,syr) = 1;
     if (ig > 2*nsex && ig <=3*nsex) iYrsMatureChanges(ig-2*nsex,syr) = 1;
-    for (int iyr=syr+1;iyr<=nyrRetro;iyr++)
+    for (int iyr=syr+1;iyr<=nyrRetro+nproj;iyr++)
      {
       int OK = 1; int Match=-1;
       for (int iyr2=syr;iyr2<iyr;iyr2++)
        {
         int OK2 = 0;
         for (int ipar=1;ipar<=nclass+1;ipar++)
-         if (GrowPnt((ig-1)*Nyears+iyr-syr+1,ipar)!=GrowPnt((ig-1)*Nyears+iyr2-syr+1,ipar)) OK2 = 1;
+         if (GrowPnt((ig-1)*Nyears4+iyr-syr+1,ipar)!=GrowPnt((ig-1)*Nyears4+iyr2-syr+1,ipar)) OK2 = 1;
         if (OK2 == 0 && Match < 0) Match = iyr2;
         if (OK2==0) OK = 0; 
        }
-      if (OK==1) { inew += 1; GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4) = inew; }
-      if (OK==0) { GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4) = GrowPnt((ig-1)*Nyears+Match-syr+1,nclass+4); }
-      if (ig <=nsex) iYrsIncChanges(ig,iyr) = GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4);
-      if ((ig > nsex)   && (ig <=2*nsex)) iYrsMoltChanges(ig-nsex,iyr)     = GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4);
-      if ((ig > 2*nsex) && (ig <=3*nsex)) iYrsMatureChanges(ig-2*nsex,iyr) = GrowPnt((ig-1)*Nyears+iyr-syr+1,nclass+4);
+      if (OK==1) { inew += 1; GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+4) = inew; }
+      if (OK==0) { GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+4) = GrowPnt((ig-1)*Nyears4+Match-syr+1,nclass+4); }
+      if (ig <=nsex) iYrsIncChanges(ig,iyr) = GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+4);
+      if ((ig > nsex)   && (ig <=2*nsex)) iYrsMoltChanges(ig-nsex,iyr)     = GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+4);
+      if ((ig > 2*nsex) && (ig <=3*nsex)) iYrsMatureChanges(ig-2*nsex,iyr) = GrowPnt((ig-1)*Nyears4+iyr-syr+1,nclass+4);
      } //--iyr
      if (ig <=nsex) nSizeIncVaries(ig) = inew;
      if (ig > nsex && ig <=2*nsex) nMoltVaries(ig-nsex) = inew;
@@ -2874,8 +3152,8 @@ DATA_SECTION
   // Special situation when growth, molt increment or maturity are pre-specified
  LOC_CALCS
   int OK; int IgBlock; 
-  ivector ipointer(syr,nyr+1);
-  ivector ipointer2(syr,nyr+1);
+  ivector ipointer(syr,nyrRetro+nproj+1);
+  ivector ipointer2(syr,nyrRetro+nproj+1);
   for (int ig=1;ig<=3*nsex;ig++)
    {
     cout << ig << endl;
@@ -2890,13 +3168,13 @@ DATA_SECTION
     if (OK==1)
      {
       IgBlock = G_block(ig); inew = 1;
-      for (int iyr=syr;iyr<=nyr+1;iyr++) ipointer(iyr) = 1;
+      for (int iyr=syr;iyr<=nyrRetro+nproj+1;iyr++) ipointer(iyr) = 1;
       if (IgBlock > 0)
        for (int kpar=1;kpar<=blocks(IgBlock);kpar++)
         for (int iyr=blocklimits(IgBlock,kpar,1);iyr<=blocklimits(IgBlock,kpar,2);iyr++)
          ipointer(iyr) = kpar+1;
       ipointer2(syr) = 1;
-      for (int iyr=syr+1;iyr<=nyr+1;iyr++)
+      for (int iyr=syr+1;iyr<=nyrRetro+nproj+1;iyr++)
        {
         int OK2 = 1; int Match=-1;
         for (int iyr2=syr;iyr2<iyr;iyr2++)
@@ -2913,13 +3191,13 @@ DATA_SECTION
       if (ig > nsex && ig <=2*nsex) nMoltVaries(ig-nsex) = inew;
       if (ig > 2*nsex && ig <=3*nsex) nMatureVaries(ig-2*nsex) = inew;
       if (ig <= nsex) 
-       for (int iyr=syr;iyr<=nyrRetro;iyr++)
+       for (int iyr=syr;iyr<=nyrRetro+nproj;iyr++)
         iYrsIncChanges(ig,iyr) = ipointer2(iyr);
       if (ig > nsex && ig <= 2*nsex) 
-       for (int iyr=syr;iyr<=nyrRetro;iyr++)
+       for (int iyr=syr;iyr<=nyrRetro+nproj;iyr++)
         iYrsMoltChanges(ig=nsex,iyr) = ipointer2(iyr);
       if (ig > 2*nsex && ig <= 3*nsex) 
-       for (int iyr=syr;iyr<=nyrRetro;iyr++)
+       for (int iyr=syr;iyr<=nyrRetro+nproj;iyr++)
         iYrsMatureChanges(ig-2*nsex,iyr) = ipointer2(iyr);
      } //-- ig
    
@@ -3346,7 +3624,7 @@ DATA_SECTION
  END_CALCS;
 
   // Storage by year
-  imatrix SelPnt(1,2*nsex*nfleet*Nyears2,1,2*nclass+7+1);
+  imatrix SelPnt(1,2*nsex*nfleet*Nyears4,1,2*nclass+7+1);
 
   matrix Spar_control(1,1000,1,15);
   imatrix StoIG(1,1000,1,4);
@@ -3383,12 +3661,12 @@ DATA_SECTION
           if ( nparSs(it,(h-1)*nfleet+k) > 0){
             int ipnt1 = (h-1)*nfleet+k;                                               //--index into sex,fleet
             int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;                            //--index into sel/ret,sex,fleet
-            int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;//--index into sel/ret,sex,fleet w/ step by Nyears2
+            int ipnt3 = (it-1)*nsex*nfleet*Nyears4+(h-1)*nfleet*Nyears4+(k-1)*Nyears4;//--index into sel/ret,sex,fleet w/ step by Nyears4
             int ipnt4 = (it-1)*nsex+h;                                                //--index into sel/ret, sex
             if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# Inputs for type*sex*fleet: " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl;
             if (nparSs(it,ipnt1) > 0) gmacs_ctl << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
             n_Spar2 = n_Spar;
-            for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+            for (int iyr=syr;iyr<=nyrRetro+nproj+1;iyr++){
               //--ipnt3 is index into sel/ret,sex,fleet,year
               SelPnt(ipnt3+iyr-syr+1,nclass+2) = it; //--sel/ret flag
               SelPnt(ipnt3+iyr-syr+1,nclass+3) = h;  //--sex
@@ -3456,7 +3734,7 @@ DATA_SECTION
             } else {
               gmacs_ctl << "# NO EXTRA PARS: Initial  Lower_bound  Upper_bound Prior_type      Prior_1     Prior_2  Phase    Reltve " << endl;
             }
-            for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+            for (int iyr=syr;iyr<=nyrRetro+nproj+1;iyr++){
               for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++)  { SelPnt(ipnt3+iyr-syr+1,ipar) = n_Spar2+ipar; SelPnt(ipnt3+iyr-syr+1,nclass+7+ipar) = n_Spar2+ipar; }
             }
             for (int ipar=1; ipar<=nparSs(it,ipnt1);ipar++){
@@ -3637,8 +3915,8 @@ DATA_SECTION
             gmacs_ctl << endl;
           } else {
             //--nparSs(it,(h-1)*nfleet+k) == 0
-            int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
-            for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+            int ipnt3 = (it-1)*nsex*nfleet*Nyears4+(h-1)*nfleet*Nyears4+(k-1)*Nyears4;
+            for (int iyr=syr;iyr<=nyrRetro+nproj+1;iyr++){
               SelPnt(ipnt3+iyr-syr+1,nclass+2) = it;
               SelPnt(ipnt3+iyr-syr+1,nclass+3) = h;
               SelPnt(ipnt3+iyr-syr+1,nclass+4) = k;
@@ -3653,7 +3931,7 @@ DATA_SECTION
   }
  END_CALCS
 
-  imatrix iYrsSelChanges(1,2*nsex*nfleet,syr,nyrRetro+1);
+  imatrix iYrsSelChanges(1,2*nsex*nfleet,syr,nyrRetro+nproj+1);
   int nsel_use;
   ivector sel_patterns(1,1000);
   ivector sel_patterns2(1,1000);
@@ -3672,11 +3950,11 @@ DATA_SECTION
           inew = 1;
           int ipnt1 = (h-1)*nfleet+k;
           int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-          int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
+          int ipnt3 = (it-1)*nsex*nfleet*Nyears4+(h-1)*nfleet*Nyears4+(k-1)*Nyears4;
           SelPnt(ipnt3+1,nclass+6) = 1;
           iYrsSelChanges(ipnt2,syr) = 1;
           nsel_patterns += 1; sel_patterns(nsel_patterns) = ipnt3+1;
-          for (int iyr=syr+1;iyr<=nyrRetro+1;iyr++){
+          for (int iyr=syr+1;iyr<=nyrRetro+nproj+1;iyr++){
             int OK = 1; int Match=-1;
             for (int iyr2=syr;iyr2<iyr;iyr2++){
               int OK2 = 0;
@@ -4692,273 +4970,6 @@ DATA_SECTION
 
 // ================================================================================================
 
-  // Label 130: Projection inputs
-  !! ad_comm::change_datafile_name(projectfile);
-  !! cout << "+-------------------------+" << endl;
-  !! cout << "| Reading projection file |" << endl;
-  !! cout << "+-------------------------+" << endl;
-  !! ECHOSTR("+-------------------------+");
-  !! ECHOSTR("| Reading projection file |");
-  !! ECHOSTR("+-------------------------+");
-  !! WRITEPRJ(TheHeader);
-  init_int Calc_MSY;
-  !! WRITEPRJ(Calc_MSY);
-  !! if (Calc_MSY != NO && Calc_MSY != YES)  { cout << "Calc_MSY = "<<Calc_MSY<<". Indicate 1=Yes or 0=No for whether MSY should be computed. STOPPING" << endl; exit(1); }
-  init_ivector Ffixed(1,nfleet);
-  !! ECHO(Ffixed);
-  !! for (int k=1;k<=nfleet;k++) gmacs_prj << Ffixed(k) << " #--"<<fleetname(k)<<endl;
-  !! for (int k=1;k<=nfleet;k++)
-  !!  if (Ffixed(k) != NO && Ffixed(k) != YES) { cout << "Future F indicator = "<< Ffixed(k) <<" for "<<fleetname(k)<<". Must be 0 or 1" << endl; exit(1); }
-
-  init_int spr_syr;
-  !! if (spr_syr==0) spr_syr = syr;
-  !! if (spr_syr==-1) spr_syr = syr+1;
-  !! WRITEPRJ(spr_syr);
-  !! if (spr_syr < syr) { cout << "First year for computing Rbar must be syr or later: STOPPING. spr_syr = " << spr_syr << " syr = " << syr << endl; exit(1); }
-  init_int spr_nyr;
-  !! if (spr_nyr==0) spr_nyr = nyr;
-  !! WRITEPRJ(spr_nyr);
-  !! if (spr_nyr > nyr) { cout << "Last year for computing Rbar must be nyr or earlier: STOPPING. spr_nyr = " << spr_nyr << "nyr = " << nyr << endl; exit(1); }
-  !! if( spr_nyr < spr_syr)  { cout << "Last year for computing Rbar must be later than the first year: STOPPING. spr_syr = " << spr_syr << "spr_nyr = " << spr_nyr << endl; exit(1); }
-  !! spr_nyr = spr_nyr - nyrRetroNo;
-  !! if (spr_syr > spr_nyr) spr_syr = spr_nyr;
-
-  init_int spr_SexR_syr;
-  !! if (spr_SexR_syr==0) spr_SexR_syr = syr;
-  !! WRITEPRJ(spr_SexR_syr);
-  !! if (spr_SexR_syr < syr) { cout << "First year for computing sex ratio ("<<spr_SexR_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
-  init_int spr_SexR_nyr;
-  !! if (spr_SexR_nyr==0) spr_SexR_nyr = nyr;
-  !! WRITEPRJ(spr_SexR_nyr);
-  !! if (spr_SexR_nyr > nyr) { cout << "Last year for computing sex ratio ("<<spr_SexR_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
-  !! if( spr_SexR_nyr < spr_SexR_syr)  { cout << "Last year for computing sex ratio ("<<spr_SexR_nyr<<") must be later than the first year ("<<spr_SexR_syr<<") " << endl; exit(1); }
-  !! spr_SexR_nyr = spr_SexR_nyr - nyrRetroNo;
-  !! if (spr_SexR_syr > spr_SexR_nyr) spr_SexR_syr = spr_SexR_nyr;
-
-  init_int spr_aveF_syr;
-  !! if (spr_aveF_syr==0) spr_aveF_syr = syr;
-  !! WRITEPRJ(spr_aveF_syr);
-  !! if (spr_aveF_syr < syr) { cout << "First year for computing AveF  (spr_AveF_syr = "<<spr_aveF_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
-  init_int spr_aveF_nyr;
-  !! if (spr_aveF_nyr==0) spr_aveF_nyr = nyr;
-  !! WRITEPRJ(spr_aveF_nyr);
-  !! if (spr_aveF_nyr > nyr) { cout << "Last year for computing AveF  (spr_Ave_nyr = "<<spr_aveF_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
-  !! if( spr_aveF_nyr < spr_aveF_syr)  { cout << "Last year for computing AveF ("<<spr_aveF_nyr<<")  must be later than the first year ("<<spr_aveF_syr<<") " << endl; exit(1); }
-  !! spr_aveF_nyr = spr_aveF_nyr - nyrRetroNo;
-  !! if (spr_aveF_syr > spr_aveF_nyr) spr_aveF_syr = spr_aveF_nyr;
-
-  init_int spr_M_syr;
-  !! if (spr_M_syr==0) spr_M_syr = nyr;
-  !! WRITEPRJ(spr_M_syr);
-  !! if (spr_M_syr < syr) { cout << "First year for computing M  (spr_M_syr = "<<spr_M_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
-  init_int spr_M_nyr;
-  !! if (spr_M_nyr==0) spr_M_nyr = nyr;
-  !! WRITEPRJ(spr_M_nyr);
-  !! if (spr_M_nyr > nyr) { cout << "Last year for computing M  (spr_M_nyr = "<<spr_M_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
-  !! if( spr_M_nyr < spr_M_syr)  { cout << "Last year for computing M (spr_M_nyr = "<<spr_M_nyr<<") must be later than the first year (spr_M_syr = "<<spr_M_syr<<") " << endl; exit(1); }
-  !! spr_M_nyr = spr_M_nyr - nyrRetroNo;
-  !! if (spr_M_syr > spr_M_nyr) spr_M_syr = spr_M_nyr;
-
-  init_int spr_Prop_syr;
-  !! if (spr_Prop_syr==0) spr_Prop_syr = nyr;
-  !! WRITEPRJ(spr_Prop_syr);
-  !! if (spr_Prop_syr < syr) { cout << "First year for computing season lengths (spr_Prop_syr = "<<spr_Prop_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
-  init_int spr_Prop_nyr;
-  !! if (spr_Prop_nyr==0) spr_Prop_nyr = nyr;
-  !! WRITEPRJ(spr_Prop_nyr);
-  !! if (spr_Prop_nyr > nyr) { cout << "Last year for computing season lengths (spr_Prop_nyr = "<<spr_Prop_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
-  !! if( spr_Prop_nyr < spr_Prop_syr)  { cout << "Last year for computing season lengths (spr_Prop_nyr = "<<spr_Prop_nyr<<") must be later than the first year (spr_Prop_syr = "<<spr_Prop_syr<<") " << endl; exit(1); }
-  !! spr_Prop_nyr = spr_Prop_nyr - nyrRetroNo;
-  !! if (spr_Prop_syr > spr_Prop_nyr) spr_Prop_syr = spr_Prop_nyr;
-
-  init_int spr_grow_yr;
-  !! if (spr_grow_yr==0) spr_grow_yr = nyr;
-  !! if (spr_grow_yr < syr) { cout << "Year for computing growth (spr_grow_yr = "<<spr_grow_yr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
-  !! if (spr_grow_yr > nyr) { cout << "Year for computing growth (spr_grow_yr = "<<spr_grow_yr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
-  !! WRITEPRJ(spr_grow_yr);
-  !! spr_grow_yr = spr_grow_yr - nyrRetroNo;
-
-  init_int spr_sel_syr;
-  !! if (spr_sel_syr==0) spr_sel_syr = nyr;
-  !! WRITEPRJ(spr_sel_syr);
-  !! if (spr_sel_syr < syr) { cout << "First year for computing selex (spr_sel_syr = "<<spr_sel_syr<<") must be syr ("<<syr<<")  or later: STOPPING" << endl; exit(1); }
-  init_int spr_sel_nyr;
-  !! if (spr_sel_nyr==0) spr_sel_nyr = nyr;
-  !! WRITEPRJ(spr_sel_nyr);
-  !! if (spr_sel_nyr > nyr) { cout << "Last year for computing selex  (spr_sel_nyr = "<<spr_sel_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
-  !! if( spr_sel_nyr < spr_sel_syr)  { cout << "Last year for computing selex ("<<spr_sel_nyr<<") must be later than the first year ("<<spr_sel_syr<<") " << endl; exit(1); }
-  !! spr_sel_nyr = spr_sel_nyr - nyrRetroNo;
-  !! if (spr_sel_syr > spr_sel_nyr) spr_sel_syr = spr_sel_nyr;
- 
-  init_number spr_target;
-  !! WRITEPRJ(spr_target);
-  init_int OFLTier;
-  !! WRITEPRJ(OFLTier);
-  init_number OFLalpha;
-  !! WRITEPRJ(OFLalpha);
-  init_number OFLbeta;
-  !! WRITEPRJ(OFLbeta);
-  init_number OFLgamma;
-  !! WRITEPRJ(OFLgamma);
-  init_number ABCBuffer;
-  !! WRITEPRJ(ABCBuffer);
-  init_int Compute_yield_prj;
-  !! if (Compute_yield_prj != NO && Compute_yield_prj != YES)  { cout << "Compute_yield_prj = "<<Compute_yield_prj<<". Must indicate 1=Yes or 0=No for whether the yield function should be reported" << endl; exit(1); }
-  !! if (Calc_MSY==NO) Compute_yield_prj = NO;
-  !! WRITEPRJ(Compute_yield_prj);
-
-  int Eqn_basis;                                           ///> Option for recruitment (0=Constant; 1+ is SRR)
-
-  int nproj;                                               ///> number of projection years
-  init_int pyr;                                            ///> terminal projection year
-  !! WRITEPRJ(pyr);
-  !!  nproj = pyr - nyr;
-  !! if (nproj < 0) { cout << "Terminal year for projections (pyr="<<pyr<<") must be later tha nyr ("<<nyr<<") : STOPPING" << endl; exit(1); }
-  int nprojVec;
-  !! nprojVec = nproj+1; if (nprojVec<2) nprojVec = 2;
-  init_int Project_type;                                   ///> Projection type (1=Fixed F; 2=Proportion of current F)
-  !! WRITEPRJ(Project_type);
-  init_int prj_Nstrat;                                     ///> Account for state strategy
-  !! WRITEPRJ(prj_Nstrat);
-  init_vector Proj_Levels(1,prj_Nstrat);                   ///> Levels for projections
-  !! WRITEPRJ(Proj_Levels);
-    
-  init_int prj_bycatch_on;                                 ///> Allow for bycatch fleets to have non-zero mortality
-  !! WRITEPRJ(prj_bycatch_on);
-  init_int prj_replicates;                                 ///> How many times each MCMC draw is run
-  !! WRITEPRJ(prj_replicates);
-  init_number Fixed_prj_Bmsy;                              ///> Should Bmsy be fixed (negative numbers)
-  !! WRITEPRJ(Fixed_prj_Bmsy);
-  
-  init_int proj_syr;
-  !! if (proj_syr==0) proj_syr = syr;
-  !! WRITEPRJ(proj_syr);
-  !! if (proj_syr < syr) { cout << "First year for Rbar calc (proj_syr = "<<proj_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
-  init_int proj_nyr;
-  !! if (proj_nyr==0) proj_nyr = nyr;
-  !! WRITEPRJ(proj_nyr);
-  !! if (proj_nyr > nyr) { cout << "Last year for Rbar calc (proj_nyr = "<<proj_nyr<<") nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
-  !! if( proj_nyr < proj_syr)  { cout << "Last year for Rbar calc (proj_nyr = "<<proj_nyr<<") must be later than the first year (proj_syr = "<<proj_syr<<") "<< endl; exit(1); }
-  !! proj_nyr = proj_nyr - nyrRetroNo;
-
-  init_int proj_SexR_syr;
-  !! if (proj_SexR_syr==0) proj_SexR_syr = syr;
-  !! WRITEPRJ(proj_SexR_syr);
-  !! if (proj_SexR_syr < syr) { cout << "First year for computing sex ratio (proj_SexR_syr="<<proj_SexR_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
-  init_int proj_SexR_nyr;
-  !! if (proj_SexR_nyr==0) proj_SexR_nyr = nyr;
-  !! WRITEPRJ(proj_SexR_nyr);
-  !! if (proj_SexR_nyr > nyr) { cout << "Last year for computing sex ratio (proj_SexR_nyr="<<proj_SexR_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! if( proj_SexR_nyr < proj_SexR_syr)  { cout << "Last year for computing sex ratio (proj_SexR_nyr="<<proj_SexR_nyr<<") must be later than the first year (proj_SexR_syr="<<proj_SexR_syr<<") " << endl; exit(1); }
-  !! proj_SexR_nyr = proj_SexR_nyr - nyrRetroNo;
-  !! if (proj_SexR_syr > proj_SexR_nyr) proj_SexR_syr = proj_SexR_nyr;
-
-  init_int proj_aveF_syr;
-  !! if (proj_aveF_syr==0) proj_aveF_syr = syr;
-  !! WRITEPRJ(proj_aveF_syr);
-  !! if (proj_aveF_syr < syr) { cout << "First year for computing AveF (proj_aveF_syr="<<proj_aveF_syr<<") must be syr ("<<syr<<")or later: STOPPING" << endl; exit(1); }
-  init_int proj_aveF_nyr;
-  !! if (proj_aveF_nyr==0) proj_aveF_nyr = nyr;
-  !! WRITEPRJ(proj_aveF_nyr);
-  !! if (proj_aveF_nyr > nyr) { cout << "Last year for computing AveF (proj_aveF_syr="<<proj_aveF_nyr<<")must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! if( proj_aveF_nyr < proj_aveF_syr)  { cout << "Last year for computing AveF  (proj_aveF_nyr="<<proj_aveF_nyr<<") must be later than the first year (proj_aveF_syr="<<proj_aveF_syr<<")" << endl; exit(1); }
-  !! proj_aveF_nyr = proj_aveF_nyr - nyrRetroNo;
-  !! if (proj_aveF_syr > proj_aveF_nyr) proj_aveF_syr = proj_aveF_nyr;
-
-  init_int proj_M_syr;
-  !! if (proj_M_syr==0) proj_M_syr = syr;
-  !! WRITEPRJ(proj_M_syr);
-  !! if (proj_M_syr < syr) { cout << "First year for computing M (proj_M_syr="<<proj_M_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
-  init_int proj_M_nyr;
-  !! if (proj_M_nyr==0) proj_M_nyr = nyr;
-  !! WRITEPRJ(proj_M_nyr);
-  !! if (proj_M_nyr > nyr) { cout << "Last year for computing M (proj_SexR_nyr="<<proj_SexR_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! if( proj_M_nyr < proj_M_syr)  { cout << "Last year for computing M (proj_SexR_nyr="<<proj_SexR_nyr<<") must be later than the first year (proj_SexR_syr="<<proj_SexR_syr<<") " << endl; exit(1); }
-  !! proj_M_nyr = proj_M_nyr - nyrRetroNo;
-  !! if (proj_M_syr > proj_M_nyr) proj_M_syr = proj_M_nyr;
-
-  init_int proj_Prop_syr;
-  !! if (proj_Prop_syr==0) proj_Prop_syr = syr;
-  !! WRITEPRJ(proj_Prop_syr);
-  !! if (proj_Prop_syr < syr) { cout << "First year for computing season lengths (proj_Prop_syr="<<proj_Prop_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
-  init_int proj_Prop_nyr;
-  !! if (proj_Prop_nyr==0) proj_Prop_nyr = nyr;
-  !! WRITEPRJ(proj_Prop_nyr);
-  !! if (proj_Prop_nyr > nyr) { cout << "Last year for computing season lengths (proj_Prop_nyr="<<proj_Prop_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! if( proj_Prop_nyr < proj_Prop_syr)  { cout << "Last year for computing season lengths (proj_Prop_nyr="<<proj_Prop_nyr<<") must be later than the first year (proj_Prop_syr="<<proj_Prop_syr<<") " << endl; exit(1); }
-  !! proj_Prop_nyr = proj_Prop_nyr - nyrRetroNo;
-  !! if (proj_Prop_syr > proj_Prop_nyr) proj_Prop_syr = proj_Prop_nyr;
-
-  init_int proj_grow_yr;
-  !! if (proj_grow_yr==0) proj_grow_yr = nyr;
-  !! WRITEPRJ(proj_grow_yr);
-  !! if (proj_grow_yr < syr) { cout << "Year for computing growth (proj_grow_yr="<<proj_grow_yr<<") must be syr or later: STOPPING" << endl; exit(1); }
-  !! if (proj_grow_yr > nyr) { cout << "Year for computing growth (proj_grow_yr="<<proj_grow_yr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! proj_grow_yr = proj_grow_yr - nyrRetroNo;
-
-  init_int proj_sel_syr;
-  !! if (proj_sel_syr==0) proj_sel_syr = syr;
-  !! WRITEPRJ(proj_sel_syr);
-  !! if (proj_sel_syr < syr) { cout << "First year for computing selex (proj_sel_syr="<<proj_sel_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
-  init_int proj_sel_nyr;
-  !! if (proj_sel_nyr==0) proj_sel_nyr = nyr;
-  !! WRITEPRJ(proj_sel_nyr);
-  !! if (proj_sel_nyr > nyr) { cout << "Last year for computing selex (proj_sel_nyr="<<proj_sel_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! if( proj_sel_nyr < proj_sel_syr)  { cout << "Last year for computing selex (proj_sel_nyr="<<proj_sel_nyr<<") must be later than the first year (proj_sel_syr="<<proj_sel_syr<<") " << endl; exit(1); }
-  !! proj_sel_nyr = proj_sel_nyr - nyrRetroNo;
-  !! if (proj_sel_syr > proj_sel_nyr) proj_sel_syr = proj_sel_nyr;
-
-  init_int Stock_rec_prj;                                  ///> Stock-recruitment relationship
-  !! gmacs_prj << "# Options for the stock-recruitment relationship" << endl;
-  !! gmacs_prj << "#    1: Sample recruitments from those for a pre-specified range of years"<< endl;
-  !! gmacs_prj << "#    2: Ricker stock-recruitment relationship"<< endl;
-  !! gmacs_prj << "#    3: Beverton-Holt stock-recruitment relationship"<< endl;
-  !! gmacs_prj << "#    4: Pre-specified (constant) future recruitment "<< endl;
-  !! gmacs_prj << Stock_rec_prj << endl;
-  init_int Age_at_rec_prj;                                 ///> Age-at-recruitment
-  !! WRITEPRJ(Age_at_rec_prj);
-  init_int prj_futRec_syr;
-  !! WRITEPRJ(prj_futRec_syr);
-  !! if (prj_futRec_syr < syr) { cout << "First year for generating recruitment must be syr or later: STOPPING" << endl; exit(1); }
-  init_int prj_futRec_nyr;
-  !! WRITEPRJ(prj_futRec_nyr);
-  !! if (prj_futRec_nyr > nyr) { cout << "Last year for generating recruitment must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! if(prj_futRec_nyr < prj_futRec_syr)  { cout << "Last year for generating recruitment must be later than the first year" << endl; exit(1); }
-  init_number mean_rec_prj;
-  !! WRITEPRJ(mean_rec_prj);
-  init_number SigmaR_prj                                   ///> Sigma(R)
-  !! WRITEPRJ(SigmaR_prj);
-  init_number Prow_prj                                     ///> Prow(R)
-  !! WRITEPRJ(Prow_prj);
-  init_number Initial_eps                                  ///> First rec_dev(R)
-  !! WRITEPRJ(Initial_eps);
-
-  init_int Apply_HCR_prj;                                  ///> Use a HCR
-  !!if (Project_type==2) Apply_HCR_prj = 0;
-  !! WRITEPRJ(Apply_HCR_prj);
-  init_int Apply_StateHCR_prj;                             ///> Use a State HCR
-  !! WRITEPRJ(Apply_StateHCR_prj);
-  init_int NHCRpars;
-  !! WRITEPRJ(NHCRpars);
-  init_vector HCRpars(1,NHCRpars);
-  !! WRITEPRJ(HCRpars); 
-
-  init_int max_prj;
-  !! WRITEPRJ(max_prj);
-  
-  init_int full_prj_diag
-  !! WRITEPRJ(full_prj_diag);
-
-
-  init_int eof_prj;
-  !! WRITEPRJ(eof_prj);
-  !! if ( eof_prj != 9999 ){cout << "Error reading projection file: " << eof_prj << endl; exit(1);}
-  !! cout << "end of projection section" << endl;
-
-// ================================================================================================
-
-  int IsProject;                                           ///> Are we in projection mode
-
   // special constants (used for guassan quadrature)
   vector xg(1,32)
   vector wg(1,32)
@@ -4982,11 +4993,11 @@ DATA_SECTION
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > TurnOffPhase) f_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > TurnOffPhase)     foff_phz(Ipar)     = -1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foffdevs_phz(Ipar) > TurnOffPhase) foffdevs_phz(Ipar) = -1;
-  if (rdv_phz > TurnOffPhase)      rdv_phz = -1;
+  if (rdv_phz > TurnOffPhase) rdv_phz = -1;
   if (rec_prop_phz > TurnOffPhase) rec_prop_phz = -1;
-  for (Ipar=1;Ipar<=nSizeComps; Ipar++)  if (log_vn_phz(Ipar) > TurnOffPhase) log_vn_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_qpar; Ipar++)      if (q_phz(Ipar) > TurnOffPhase)      q_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase)     cv_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > TurnOffPhase) log_vn_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > TurnOffPhase) q_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase) cv_phz(Ipar) = -1;
 
   for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > 0) NVarPar += 1;
@@ -4996,11 +5007,11 @@ DATA_SECTION
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > 0) NVarPar += nFparams(Ipar);
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > 0)     NVarPar += 1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foffdevs_phz(Ipar) > 0) NVarPar += nYparams(Ipar);
-  if (rdv_phz > 0)      NVarPar += (rdv_eyr-rdv_syr+1);
+  if (rdv_phz > 0) NVarPar += (rdv_eyr-rdv_syr+1);
   if (rec_prop_phz > 0) NVarPar += (rdv_eyr-rdv_syr+1);
-  for (Ipar=1;Ipar<=nSizeComps; Ipar++)       if (log_vn_phz(Ipar) > 0)     NVarPar += 1;
-  for (Ipar=1;Ipar<=n_qpar; Ipar++)           if (q_phz(Ipar) > 0)          NVarPar += 1;
-  for (Ipar=1;Ipar<=n_addcv_par; Ipar++)      if (cv_phz(Ipar) > 0)         NVarPar += 1;
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_deviations_est; Ipar++) if (deviations_phz(Ipar) > 0) NVarPar += 1;
   
   cout << "Number of estimated parameters: " << NVarPar << endl;
@@ -5017,12 +5028,6 @@ DATA_SECTION
   NB0Par = NVarPar+1;
   if (OutDynB0==YES) NVarPar += (nyr-syr+1);
   cout << "Number of std variables: " << NVarPar << endl;
-  cout << "ParOut counters: " << endl;
-  cout << "NRefPars: " << NRefPars << endl;
-  cout << "NRecPar : " << NRecPar  << endl;
-  cout << "NSSBPars: " << NSSBPar  << endl;
-  cout << "NfbarPar: " << NfbarPar << endl;
-  cout << "NB0Par  : " << NB0Par   << endl;
  END_CALCS
 
   int PhaseGrowthPar;
@@ -5222,7 +5227,7 @@ PARAMETER_SECTION
   objective_function_value objfun;
 
   number logR0;                                            ///> logarithm of unfished recruits
-  vector logRbar(syr,nyrRetro+1);                          ///> logarithm of average recruits(syr+1,nyr)
+  vector logRbar(syr,nyrRetro+nproj+1);                    ///> logarithm of average recruits(syr+1,nyr)
   number logRini;                                          ///> logarithm of initial recruitment(syr)
   vector ra(1,nsex);                                       ///> Expected value of recruitment distribution
   vector rbeta(1,nsex);                                    ///> rate parameter for recruitment distribution
@@ -5268,32 +5273,32 @@ PARAMETER_SECTION
 
   3darray molt_increment(1,nsex,1,maxSizeIncVaries,1,nclass);               ///> linear molt increment
   matrix molt_prob_pass(1,nsex,1,nclass);                                   ///> passing into update routine  
-  3darray molt_probability(1,nsex,syr,nyr,1,nclass);                        ///> probability of molting
+  3darray molt_probability(1,nsex,syr,nyrRetro+nproj,1,nclass);             ///> probability of molting
   3darray molt_probability_in(1,nsex,1,maxSizeIncVaries,1,nclass);          ///> input probability of molting for free estimation
   matrix mature_prob_pass(1,nsex,1,nclass);                                 ///> passing into update routine  
-  3darray mature_probability(1,nsex,syr,nyr,1,nclass);                      ///> probability of mature
+  3darray mature_probability(1,nsex,syr,nyrRetro+nproj,1,nclass);           ///> probability of mature
   3darray mature_probability_in(1,nsex,1,maxSizeIncVaries,1,nclass);        ///> input probability of mature for free estimation
   3darray ProbMolt(1,nsex,1,nclass,1,nclass);                               ///> Diagonal matrix of molt probabilities
   4darray growth_transition(1,nsex,1,maxSizeIncVaries,1,nclass,1,nclass);   ///> The time-dependent growth transition matrix
 
-  matrix S_pars(1,100,1,nclass);                                          ///> Extracted selectivity parameters
-  4darray log_slx_capture(1,nfleet,1,nsex,syr,nyrRetro+1,1,nclass);       ///> capture selectivity
-  4darray log_slx_retaind(1,nfleet,1,nsex,syr,nyrRetro+1,1,nclass);       ///> probability of retention
-  4darray log_slx_discard(1,nfleet,1,nsex,syr,nyrRetro+1,1,nclass);       ///> probabilty of disards
-  3darray log_high_grade(1,nfleet,1,nsex,syr,nyrRetro+1);                 ///> high-grading fraction
-  number selex_smooth_pen;                                                ///> Penalty when individual parameters are estimated by year
+  matrix S_pars(1,100,1,nclass);                                            ///> Extracted selectivity parameters
+  4darray log_slx_capture(1,nfleet,1,nsex,syr,nyrRetro+nproj+1,1,nclass);   ///> capture selectivity
+  4darray log_slx_retaind(1,nfleet,1,nsex,syr,nyrRetro+nproj+1,1,nclass);   ///> probability of retention
+  4darray log_slx_discard(1,nfleet,1,nsex,syr,nyrRetro+nproj+1,1,nclass);   ///> probabilty of disards
+  3darray log_high_grade(1,nfleet,1,nsex,syr,nyrRetro+nproj+1);             ///> high-grading fraction
+  number selex_smooth_pen;                                                  ///> Penalty when individual parameters are estimated by year
 
-  4darray M(1,nsex,1,nmature,syr-1,nyr,1,nclass);               ///> Natural mortality
-  vector Mmult(1,nclass);                                       ///> size-class-specific multiplier
-  matrix fout(1,nfleet,syr,nyrRetro);                           ///> Fishing mortality output
-  vector finit(1,nfleet);                                       ///> Initial F
-  4darray ft(1,nfleet,1,nsex,syr,nyrRetro,1,nseason);           ///> Fully-selected fishing mortality by gear
-  4darray F(1,nsex,syr,nyrRetro,1,nseason,1,nclass);            ///> Fishing mortality actual
-  4darray F2(1,nsex,syr,nyrRetro,1,nseason,1,nclass);           ///> Fishing mortality with full selection
-  5darray Z(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass);            ///> Total mortality actual
-  5darray Z2(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass);           ///> Total mortality with full selection
-  6darray S(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass,1,nclass);   ///> Survival Rate (S=exp(-Z))
-  5darray SS_pass(1,nsex,1,nmature,1,nseason,1,nclass,1,nclass);          ///> Survival Rate
+  4darray M(1,nsex,1,nmature,syr-1,nyrRetro+nproj+1,1,nclass);              ///> Natural mortality
+  vector Mmult(1,nclass);                                                   ///> size-class-specific multiplier
+  matrix fout(1,nfleet,syr,nyrRetro);                                       ///> Fishing mortality output
+  vector finit(1,nfleet);                                                   ///> Initial F
+  4darray ft(1,nfleet,1,nsex,syr,nyrRetro,1,nseason);                       ///> Fully-selected fishing mortality by gear
+  4darray F(1,nsex,syr,nyrRetro,1,nseason,1,nclass);                        ///> Fishing mortality actual
+  4darray F2(1,nsex,syr,nyrRetro,1,nseason,1,nclass);                       ///> Fishing mortality with full selection
+  5darray Z(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass);              ///> Total mortality actual
+  5darray Z2(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass);             ///> Total mortality with full selection
+  6darray S(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass,1,nclass);     ///> Survival Rate (S=exp(-Z))
+  5darray SS_pass(1,nsex,1,nmature,1,nseason,1,nclass,1,nclass);            ///> Survival Rate
   
   4darray d4_N(1,n_grp,syr,nyrRetro+1,1,nseason,1,nclass);          ///> Numbers-at-sex/mature/shell/year/season/length.
   4darray d4_N_init(1,n_grp,1,NyrEquil,1,nseason,1,nclass);         ///> N matrix for equilibrium calculations
@@ -5352,7 +5357,7 @@ PARAMETER_SECTION
   number spr_bmsy;                                         ///> MMB corresponding to FMSY
   number spr_depl;                                         ///> MMB relative to BMSY for the OFL
   number spr_cofl;                                         ///> OFL
-  number spr_cofl_ret;									                   ///> retained portion of the OFL
+  number spr_cofl_ret;				           ///> retained portion of the OFL
   number spr_fofl;                                         ///> F relative to FMSY for the OFL
   number Bmsy;                                             ///> Also MMB corresponding to FMSY
   matrix equilibrium_numbers_F0(1,n_grp,1,nclass);         ///> equilibrium numbers-at-size in season_ssb at F=0
@@ -5417,6 +5422,8 @@ PRELIMINARY_CALCS_SECTION
   cout << "| Preliminary section  |" << endl;
   cout << "+----------------------+" << endl;
 
+  nprojUse = nproj; 
+ 
   zbRemapper = getRebinMatrix(size_breaks,mmodZCs);//--matrix to "remap" vectors with model size bins to vectors with MMOD size bins
   cout << "zbRemapper = " << endl << zbRemapper << endl;
   
@@ -5586,6 +5593,9 @@ BETWEEN_PHASES_SECTION
 PROCEDURE_SECTION
   int Ipnt,ii,jj;
 
+  nprojUse = 0; 
+  if ( mceval_phase() ) nprojUse = nproj; 
+
   // Update function calls
   NfunCall += 1;
   if ( verbose >= 3 ) {
@@ -5650,12 +5660,11 @@ PROCEDURE_SECTION
 
   // sd_report variables
   if ( sd_phase() || NfunCall==StopAfterFnCall){
-    //if ( verbose >= 3 ) 
-      cout<<"Starting sd_phase. objective function = "<<*objective_function_value::pobjfun<<endl;
+    if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
     // Save the estimates parameters to ParsOut (used for variance estimation)
     ParsOut.initialize();
     Ipnt = 0;
-    for (ii=1;ii<=n_Tpar; ii++) if (T_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = T_pars_est(ii); }
+    for (ii=1;ii<=n_Tpar;ii++)  if (T_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = T_pars_est(ii); }
     for (ii=1;ii<=n_Gpar; ii++) if (G_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = G_pars_est(ii); }
     for (ii=1;ii<=n_Mpar; ii++) if (M_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = M_pars_est(ii); }
     for (ii=1;ii<=n_Spar; ii++) if (S_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = S_pars_est(ii); }
@@ -5681,8 +5690,7 @@ PROCEDURE_SECTION
     if (CalcRefPoints!=0 && nyrRetroNo==0) calc_spr_reference_points2(1);
     if ( verbose >= 3 ) cout << "Ok after calc_spr_reference_points ..." << endl;
     calc_sdreport();
-    //if ( verbose >= 3 ) 
-      cout << "Ok after calc_sdreport. objective function = "<<*objective_function_value::pobjfun<<endl;
+    if ( verbose >= 3 ) cout << "Ok after calc_sdreport ..." << endl;
   }
 
   // General outputs
@@ -5729,9 +5737,9 @@ FUNCTION initialize_model_parameters
    int ipar = 1;
    int OK; int irow; int irefrow; int iyr;
    OK = 0; irow = 0;
-   int ipnt3 = (ig-1)*Nyears2;
+   int ipnt3 = (ig-1)*Nyears4;
   
-   for (int ivec=1;ivec<=nyrRetro+1-syr+1;ivec++)
+   for (int ivec=1;ivec<=nyrRetro+nproj+1-syr+1;ivec++)
     if (ThetaPnt(ipnt3+ivec,nclass+6)==itheta && OK==0) { OK=1; irow=ipnt3+ivec; }
    iyr = ThetaPnt(irow,nclass+5);
    if (itheta==1) irefrow = irow;
@@ -5805,7 +5813,7 @@ FUNCTION initialize_model_parameters
   logRini   = T_pars_est(Jpnt+1);
   logRbar   = T_pars_est(Jpnt+2);
   Ipnt = Jpnt+2;
-  logRbar = timevarparV2(6,Ipnt, nyrRetro+1,  T_relative(Ipnt),T_block(Ipnt), T_block_fn(Ipnt),T_env_link(Ipnt), T_env_var(Ipnt), 
+  logRbar = timevarparV2(6,Ipnt, nyrRetro+nproj+1,  T_relative(Ipnt),T_block(Ipnt), T_block_fn(Ipnt),T_env_link(Ipnt), T_env_var(Ipnt), 
                                  T_RW(Ipnt), T_RW_blk(Ipnt), ntheta_use, TtoIG, T_pars_est); 
   if (verbose>3){
     cout<<"--setting logRbar"<<endl;
@@ -5909,8 +5917,8 @@ FUNCTION initialize_model_parameters
     {
      int OK; int irow; int irefrow; int iyr;
      OK = 0; irow = 0;
-     for (int ivec=1;ivec<=nyrRetro-syr+1;ivec++)
-      if (GrowPnt((h-1)*Nyears+ivec,nclass+4)==igrow && OK==0) { OK=1; irow=(h-1)*Nyears+ivec; }
+     for (int ivec=1;ivec<=nyrRetro+nproj-syr+1;ivec++)
+      if (GrowPnt((h-1)*Nyears4+ivec,nclass+4)==igrow && OK==0) { OK=1; irow=(h-1)*Nyears4+ivec; }
      iyr = GrowPnt(irow,nclass+3);
      if (igrow==1) irefrow = irow;
      
@@ -6017,8 +6025,8 @@ FUNCTION initialize_model_parameters
      {
       int OK; int irow; int irefrow; int iyr;
       OK = 0; irow = 0;
-      for (int ivec=1;ivec<=nyrRetro-syr+1;ivec++)
-       if (GrowPnt(nsex*Nyears+(h-1)*Nyears+ivec,nclass+4)==igrow && OK==0) { OK=1; irow=nsex*Nyears+(h-1)*Nyears+ivec; }
+      for (int ivec=1;ivec<=nyrRetro+nproj-syr+1;ivec++)
+       if (GrowPnt(nsex*Nyears4+(h-1)*Nyears4+ivec,nclass+4)==igrow && OK==0) { OK=1; irow=nsex*Nyears4+(h-1)*Nyears4+ivec; }
       iyr = GrowPnt(irow,nclass+3);
       if (igrow==1) irefrow = irow;
      
@@ -6088,8 +6096,8 @@ FUNCTION initialize_model_parameters
       { 
        int OK; int irow; int irefrow; int iyr;
        OK = 0; irow = 0;
-       for (int ivec=1;ivec<=nyrRetro-syr+1;ivec++)
-        if (GrowPnt(2*nsex*Nyears+(h-1)*Nyears+ivec,nclass+4)==igrow && OK==0) { OK=1; irow=2*nsex*Nyears+(h-1)*Nyears+ivec; }
+       for (int ivec=1;ivec<=nyrRetro+nproj-syr+1;ivec++)
+        if (GrowPnt(2*nsex*Nyears4+(h-1)*Nyears4+ivec,nclass+4)==igrow && OK==0) { OK=1; irow=2*nsex*Nyears4+(h-1)*Nyears4+ivec; }
        iyr = GrowPnt(irow,nclass+3);
        if (igrow==1) irefrow = irow;
      
@@ -6168,9 +6176,9 @@ FUNCTION initialize_model_parameters
             nsel_use += 1;
             int OK; int irow; int irefrow; int iyr;
             OK = 0; irow = 0;
-            int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
+            int ipnt3 = (it-1)*nsex*nfleet*Nyears4+(h-1)*nfleet*Nyears4+(k-1)*Nyears4;
 
-            for (int ivec=1;ivec<=nyrRetro+1-syr+1;ivec++)
+            for (int ivec=1;ivec<=nyrRetro+nproj-syr+1;ivec++)
               if (SelPnt(ipnt3+ivec,nclass+6)==isel && OK==0) { OK=1; irow=ipnt3+ivec; }
             iyr = SelPnt(irow,nclass+5);
             if (isel==1) irefrow = irow;
@@ -6239,7 +6247,7 @@ FUNCTION initialize_model_parameters
     for (int m=1;m<=nmature;m++){
       int ig = (h-1)*nmature + m;
       if (M_mirror(ig)==0){
-        M(h,m) = timevarparM(3,ig, nyr, M_relative(ig), M_type(ig), 
+        M(h,m) = timevarparM(3,ig, nyrRetro+nproj+1, M_relative(ig), M_type(ig), 
                               M_size_breakpnts(ig), M_block(ig), M_block_fn(ig), 
                               M_env_link(ig), M_env_var(ig), 
                               M_extra(ig),M_RW(ig), M_RW_blk(ig), n_Mpar, MToIg, M_pars_est); 
@@ -6326,7 +6334,7 @@ FUNCTION dvar_vector timevarparV(const int itype, const int ipar, const int lyea
     {
      OK = 0;
      for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt)==ipar) { jpnt = kpnt; OK = 1; }
-     for (int i=blocklimits(blk,iblk,1);i<=blocklimits(blk,iblk,2);i++) tpar(i) = pars(jpnt);
+     for (int i=blocklimits(blk,iblk,1);i<=min(lyear,int(blocklimits(blk,iblk,2)));i++) tpar(i) = pars(jpnt);
     }
    
    // Handle environmental link parameters 
@@ -6337,7 +6345,7 @@ FUNCTION dvar_vector timevarparV(const int itype, const int ipar, const int lyea
      int jjpnt = jpnt;
      int ienv_par2;
      for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
+      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++)
        {
         envpar = 0;
         for (int ienv_par=1;ienv_par<=Env_link_nums(env_var);ienv_par++)
@@ -6366,7 +6374,7 @@ FUNCTION dvar_vector timevarparV(const int itype, const int ipar, const int lyea
      // Find the deviations and implement
      devpnt = devpoints(jpnt,3);
      for (int iblk=1;iblk<=blocks(RW_blk);iblk++)
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
+      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++)
        {
         // annual or random walk
         if (i==blocklimits(RW_blk,iblk,1))
@@ -6415,7 +6423,7 @@ FUNCTION dvar_vector timevarparV2(const int itype, const int ipar, const int lye
     {
      OK = 0;
      for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
-     for (int i=blocklimits(blk,iblk,1);i<=blocklimits(blk,iblk,2);i++) {
+     for (int i=blocklimits(blk,iblk,1);i<=min(lyear,int(blocklimits(blk,iblk,2)));i++) {
        if (block_fn==0) tpar(i) = pars(jpnt);
        if (block_fn==1) tpar(i) *= exp(pars(jpnt));
       }//--i loop 
@@ -6429,7 +6437,7 @@ FUNCTION dvar_vector timevarparV2(const int itype, const int ipar, const int lye
       int jjpnt = jpnt;
      int ienv_par2;
      for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
+      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++)
        {
         envpar = 0;
         for (int ienv_par=1;ienv_par<=Env_link_nums(env_var);ienv_par++)
@@ -6458,7 +6466,7 @@ FUNCTION dvar_vector timevarparV2(const int itype, const int ipar, const int lye
      // Find the deviations and implement
      devpnt = devpoints(jpnt,3);
      for (int iblk=1;iblk<=blocks(RW_blk);iblk++)
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
+      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++)
        {
         // annual or random walk
         if (i==blocklimits(RW_blk,iblk,1)) {
@@ -6539,7 +6547,7 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
     for (int iblk=1;iblk<=blocks(blk);iblk++){
       OK = 0;
       for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt)==ipar) { jpnt = kpnt; OK = 1; }
-      for (int i=blocklimits(blk,iblk,1);i<=blocklimits(blk,iblk,2);i++) {
+      for (int i=blocklimits(blk,iblk,1);i<=min(lyear,int(blocklimits(blk,iblk,2)));i++) {
           if (block_fn==0) tpar(i) = pars(jpnt);
           if (block_fn==1) tpar(i) *= exp(pars(jpnt));
       }//--i loop 
@@ -6553,7 +6561,7 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
     int jjpnt = jpnt;
     int ienv_par2;
     for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++)
+      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++)
        {
         envpar = 0;
         for (int ienv_par=1;ienv_par<=Env_link_nums(env_var);ienv_par++)
@@ -6563,7 +6571,7 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
            envpar += pars(jpnt)*pow(Env_vars_used(i,ienv_par2),float(jenv_par));
            jpnt += 1;
           }
-          if (env_link==1) tpar(i) += envpar;
+         if (env_link==1) tpar(i) += envpar;
          if (env_link==2) tpar(i) *= envpar;
          if (env_link==3) tpar(i) *= exp(envpar);
          jpnt = jjpnt;
@@ -6581,7 +6589,7 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
     // Find the deviations and implement
     devpnt = devpoints(jpnt,3);
     for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
-      for (int i=blocklimits(RW_blk,iblk,1);i<=blocklimits(RW_blk,iblk,2);i++){
+      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++){
         // annual or random walk
         if (i==blocklimits(RW_blk,iblk,1)){
           dev = par_devs(devpnt); 
@@ -6690,9 +6698,9 @@ FUNCTION init_selectivities
          p2 = mfexp(S_pars(is,2));
          p3 = mfexp(S_pars(is,3));
          pSLX = new class gsm::DoubleNormal<dvar_vector,dvariable>(p1,p2,p3);
-         echoinput << "SELEX_DOUBLENORM for " << is << ": " << p1 << " " << p2 << " " << p3 << endl;
-         echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
-         echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+         //echoinput << "SELEX_DOUBLENORM for " << is << ": " << p1 << " " << p2 << " " << p3 << endl;
+         //echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+         //echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
         break;
         case SELEX_DOUBLENORM4:                               ///> double normal4
          p1 = mfexp(S_pars(is,1));
@@ -6700,9 +6708,9 @@ FUNCTION init_selectivities
          p3 = mfexp(S_pars(is,3));
          p4 = mfexp(S_pars(is,4));
          pSLX = new class gsm::DoubleNormal4<dvar_vector,dvariable>(p1,p2,p3,p4);
-         echoinput << "SELEX_DOUBLENORM4 for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << endl;
-         echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
-         echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+         //echoinput << "SELEX_DOUBLENORM4 for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << endl;
+         //echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+         //echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
         break;
         case SELEX_DOUBLENORM4a:                               ///> double normal4
          p1 = mfexp(S_pars(is,1));
@@ -6711,9 +6719,9 @@ FUNCTION init_selectivities
          p4 = S_pars(is,4);        //--NOTE: no exponentiation
          p5 = S_pars(is,5);        //--NOTE: no exponentiation, relevant parameter should not be estimated (i.e., it should be fixed)
          pSLX = new class gsm::DoubleNormal4a<dvar_vector,dvariable,dvariable>(p1,p2,p3,p4,p5);
-         echoinput << "SELEX_DOUBLENORM4a for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << " " << p5 << endl;
-         echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
-         echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+         //echoinput << "SELEX_DOUBLENORM4a for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << " " << p5 << endl;
+         //echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+         //echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
         break;
         case SELEX_STACKED_LOGISTIC:                          ///> Cody's stacked logistic
          p1 = mfexp(S_pars(is,1));
@@ -6842,11 +6850,11 @@ FUNCTION calc_selectivities
          p2 = mfexp(S_pars(is,2));
          ((gsm::AscNormal<dvar_vector,dvariable>*) ppSLX[is-1])->SetParams(p1,p2);
          pSLX = ppSLX[is-1];
-        //  if (verbose>4){
-        //    echoinput << "SELEX_ASCNORM for " << is << ": " << p1 << " " << p2 << endl;
-        //    echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
-        //    echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
-        //  }
+         if (verbose>4){
+           echoinput << "SELEX_ASCNORM for " << is << ": " << p1 << " " << p2 << endl;
+           echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
+           echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
+         }
          break;
         case SELEX_DOUBLENORM:                               ///> double normal
          p1 = mfexp(S_pars(is,1));
@@ -6952,21 +6960,21 @@ FUNCTION calc_selectivities
         switch ( slx_type_in(ipnt2,k) )
         {
          case SELEX_UNIFORM1:                                  ///> uniform 1
-          for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
+          for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++)
            {
             if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = log(1.0-TINY);}
             if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(1.0-TINY); log_slx_discard(k,h,iyr,i) = log(TINY); }
            }
           break;
          case SELEX_UNIFORM0:                                  ///> uniform 0
-          for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
+          for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++)
            {
             if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = -100;}
             if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = -100; log_slx_discard(k,h,iyr,i) = log(1-TINY); }
            }
           break;
          case SELEX_PRESPECIFIED:
-          for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
+          for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++)
            {
             int offset = (it-1)*nfleet*nsex*(nyr+1-syr+1)+nfleet*(nyr+1-syr+1)*(h-1)+(nyr+1-syr+1)*(k-1)+iyr-syr+1;
             if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = log(CustomSelex(offset,i));}
@@ -6976,7 +6984,7 @@ FUNCTION calc_selectivities
          default:
           if (slx_type_in(ipnt2,k) < 0){
             // Mirror case
-            for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+            for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
               if (it==1) { log_slx_capture(k,h,iyr) = log_slx_capture(-slx_type_in(ipnt2,k),h,iyr);}
               if (it==2) { log_slx_retaind(k,h,iyr) = log_slx_retaind(-slx_type_in(ipnt2,k),h,iyr); 
                            log_slx_discard(k,h,iyr) = log_slx_discard(-slx_type_in(ipnt2,k),h,iyr); }
@@ -6986,7 +6994,7 @@ FUNCTION calc_selectivities
             int ipnt1 = (it-1)*nsex+h;
             int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
             if (h==1 || slx_bsex_in(it,k)==1){
-              for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+              for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
                 int isel_vec = nsel_pnt+iYrsSelChanges(ipnt2,iyr);
                 selx = sel_store(isel_vec);
                 if (it==1) { log_slx_capture(k,h,iyr) = selx;}
@@ -6994,7 +7002,7 @@ FUNCTION calc_selectivities
               }
               nsel_pnt += nSelVaries(ipnt2);
             } else {
-              for (int iyr=syr;iyr<=nyrRetro+1;iyr++){
+              for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
                 if (it==1) selx = log_slx_capture(k,1,iyr);
                 if (it==2) selx = log_slx_retaind(k,1,iyr);
                 if (it==1) log_slx_capture(k,h,iyr) = selx;
@@ -7010,7 +7018,7 @@ FUNCTION calc_selectivities
     for (int h=1;h<=nsex;h++){
       for (int k=1;k<=nfleet;k++){
         if (slx_include_in(1,k) > 0){
-          for (int iyr=syr;iyr<=nyrRetro+1;iyr++)
+          for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++)
             log_slx_capture(k,h,iyr) += log_slx_capture(slx_include_in(1,k),h,iyr);
         }
       }
@@ -7078,7 +7086,6 @@ FUNCTION calc_fishing_mortality
               // doing TCSAM02 approach to effort expansion
               log_ftmp    = log_fbar(k);
               if (cfhit(i,j,k)) { //--catch present
-                // log_ftmp    = log_fbar(k) + log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
                 log_ftmp    += log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
               }
               fout(k,i)   = exp(log_ftmp);                     ///> Report of male F
@@ -7086,7 +7093,6 @@ FUNCTION calc_fishing_mortality
                 log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
                 if (cyhit(i,j,k)) { //--female catch present
                   if (yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++); ///> annual female F dev
-                  // ft(k,h,i,j) = mfexp(log_ftmp);
                 }
               }
               ft(k,h,i,j) = mfexp(log_ftmp);
@@ -7168,29 +7174,14 @@ FUNCTION calc_fishing_mortality
       ik = 1; yk = 1;
       for ( int i = syr; i <= nyrRetro; i++ ){
         for ( int j = 1; j <= nseason; j++ ){
-          // if ( fhit(i,j,k)>0 ){  //--does not depend on sex
-          //   //cout<< "k, h, i, j = " << k << " " << h << " " << i << " " << j << " fhit(i,j,k) = " << fhit(i,j,k) << " ";
-          //   log_ftmp = log_fbar(k) + log_fdev(k,ik++);                 ///> Male F is the reference plus the annual deviation
-          //   fout(k,i) = exp(log_ftmp);                                 ///> Report of male F
-          //   if (h==2) log_ftmp += log_foff(k);                         ///> Female F is an offset from male F
-          //   if (h==2 && yhit(i,j,k)>0) log_ftmp += log_fdov(k,yk++);    ///> annual female F dev
-          //   ft(k,h,i,j) = mfexp(log_ftmp);  //--fully-selected fleet/sex/year-specific capture rate
-            //cout << "ft(k,h,i,j) = " << ft(k,h,i,j) << endl;
             xi  = dmr(i,k);                                            ///> Fleet/year-specific discard mortality rate
             sel = mfexp(log_slx_capture(k,h,i))+1.0e-10;               ///> Fleet/sex/year/size-specific capture selectivity
             ret = mfexp(log_slx_retaind(k,h,i)) * slx_nret(nsex+h,k);  ///> Fleet/sex/year/size-specific retention
             vul = elem_prod(sel, ret + (1.0 - ret) * xi);              ///> Fleet/sex/year/size-specific vulnerability (includes discard mortality "rate")
             F(h,i,j)  += ft(k,h,i,j) * vul;                            ///> Sex/year/season/size-specific fishing mortality rate (summed over fleet)
             F2(h,i,j) += ft(k,h,i,j) * sel;                            ///> Sex/year/season/size-specific capture rate (not "mortality") (summed over fleet)
-          // } // fhit(i,j,k)>0
         } // j loop: seasons
       } // i loop: years
-      //cout << "k (fleet): " << k << " h (sex): " << h <<endl;
-      // for ( int i = syr; i <= nyrRetro; i++ ) {
-      //   //cout << "i (year): " << i <<" ft(k,h,i) = " << ft(k,h,i) << " ";
-      //   //for (int j = 1; j <= nseason; j++) cout << " j = " << j << " fhit(i,j,k)  = " << fhit(i,j,k) << " ";
-      //   //cout << endl;
-      // }
     } // h loop: sex
   } // k loop: fleets
   if (verbose>3) cout << "Finished calc_fishing_mortality" << endl << endl;
@@ -7257,7 +7248,7 @@ FUNCTION calc_molting_probability
   double tiny = 0.000;
 
   molt_probability.initialize();
-  for ( int i = syr; i <= nyrRetro; i++ ){
+  for ( int i = syr; i <= nyrRetro+nprojUse; i++ ){
     for ( int h = 1; h <= nsex; h++ ){
       int igrow  = iYrsMoltChanges(h,i);
      
@@ -7266,7 +7257,7 @@ FUNCTION calc_molting_probability
         molt_probability(h)(i) = CustomMoltProbabilityMatrix(h,igrow);
       // Uniform probability of maturing
       if (bUseCustomMoltProbability2(h) == CONSTANT_PROB_MOLT){
-        for ( int i = syr; i <= nyrRetro; i++ )
+        for ( int i = syr; i <= nyrRetro+nprojUse; i++ )
           for ( int l = 1; l <= nclass; l++ )
             molt_probability(h,i,l) = 1.0;
       }
@@ -7377,7 +7368,7 @@ FUNCTION dvar_vector calc_like_gamma_linear_growth(const dvector dMoltInc, const
    * and an assumed gamma distribution for the observed molt increment. 
    *
    * Individual predicted postmolt sizes are given in "prdPstMltSizes" vector.
-   * Associated individual negative log-likelihood scores are given in "nllGrowth" vector.
+   * Associated inidivudal negative log-likelihood scores are given in "nllGrowth" vector.
    * 
    * @param dMoltInc is a vector of observed molt increments
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
@@ -7388,9 +7379,9 @@ FUNCTION dvar_vector calc_like_gamma_linear_growth(const dvector dMoltInc, const
   **/
 
 FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
-  RETURN_ARRAYS_INCREMENT();
   if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
+  RETURN_ARRAYS_INCREMENT();
     dvariable mnMltInc, r, mu;
     dvar_vector nll(1,nsex);
     int h,i;
@@ -7417,7 +7408,7 @@ FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const
    * and an assumed gamma distribution about the mean. 
    * 
    * Individual predicted postmolt sizes are given in "prdPstMltSizes" vector.
-   * Associated individual negative log-likelihood scores are given in "nllGrowth" vector.
+   * Associated inidivudal negative log-likelihood scores are given in "nllGrowth" vector.
    *
    * @param dMoltInc is a vector of observed molt increments
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
@@ -7428,9 +7419,9 @@ FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const
   **/
 
 FUNCTION dvar_vector calc_like_gamma_pwrlawalt_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
-  RETURN_ARRAYS_INCREMENT();
   if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
+  RETURN_ARRAYS_INCREMENT();
     dvariable mnPMZ, mnMltInc, r, mu;
     dvar_vector nll(1,nsex);
     int h,i;
@@ -7889,7 +7880,7 @@ FUNCTION calc_mature_probability
   double tiny = 0.000;
 
   mature_probability.initialize();
-  for ( int i = syr; i <= nyrRetro; i++ ){
+  for ( int i = syr; i <= nyrRetro+nprojUse; i++ ){
     for ( int h = 1; h <= nsex; h++ ){
       int igrow  = iYrsMatureChanges(h,i);
      
@@ -8384,8 +8375,8 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
       }
       // Recruitment
       if ((j==season_recruitment) && (Case!=5) && (Case!=6)) {
-        cout<<"rec_sdd(h)  = "<<rec_sdd(h)<<endl;
-        cout<<"rec_pass(h) = "<<rec_pass(h)<<endl;
+        //cout<<"rec_sdd(h)  = "<<rec_sdd(h)<<endl;
+        //cout<<"rec_pass(h) = "<<rec_pass(h)<<endl;
         nn_imm += rec_pass(h);//recruitment only to immatures
       }
       next(ig_imm) = nn_imm;
@@ -8540,21 +8531,6 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
   dvar_vector  z(1,nclass);
   dvar_matrix next(1,n_grp,1,nclass);
 
-  // Loop over groups to indicate order of traversal
-  // if ((verbose>3)&&(NfunCall<2)) {
-  //   cout <<"Group sequence:"<<endl;
-  //   for (int ig = 1; ig <= n_grp; ig++){
-  //     // Extract group
-  //     h = isex(ig);
-  //     isizeTrans  = isizeTrans_pass(h);
-  //     m = imature(ig);
-  //     o = ishell(ig);
-  //     cout <<"ig sex mature shell (h,m,o) = "<<ig<<" "<<sexes(h)<<" "<<maturestate(m)<<" "<<shellstate(o)<<endl;
-  //   }
-  // }
-
-  //dvar_vector  (1,nclass);
-
   // initialize all
   r.initialize();
   x.initialize();
@@ -8568,6 +8544,7 @@ FUNCTION void update_population_numbers_at_length_season(const int i, const int 
    
     // Extract group
     h = isex(ig);
+    isizeTrans  = isizeTrans_pass(h);
     m = imature(ig);
     o = ishell(ig);
     isizeTrans  = isizeTrans_pass(h);
@@ -10858,8 +10835,6 @@ FUNCTION calc_prior_densities
 // Label 401: catch_likelihood
 FUNCTION catch_likelihood
  dvariable effort;
-// dvariable pi;
-//  pi = 3.14159265359;
 
   // 1) Likelihood of the catch data.
   res_catch.initialize();
@@ -10873,16 +10848,15 @@ FUNCTION catch_likelihood
         // In second case, when effort > 0 then the residual is the pred catch using Fs - pred catch using q
         if ( obs_catch(k,jj) > 0.0 ){
           res_catch(k,jj) = log(obs_catch(k,jj)) - log(pre_catch(k,jj));
-          nloglike(1,k)  += dnorm(res_catch(k,jj), catch_sd(jj));//--WTS: note that this includes residuals (0's) from years outside model time frame
+          nloglike(1,k)  += dnorm(res_catch(k,jj), catch_sd(jj));                                                     //--WTS: note that this includes residuals (0's) from years outside model time frame
         } else
         if (effort > 0.0) {
           res_catch(k,jj) = log(obs_catch_effort(k,jj)) - log(pre_catch(k,jj));
-          if (!doTCSAM02EffExp) nloglike(1,k) += dnorm(res_catch(k,jj), catch_sd(jj));//--WTS: these residuals should NOT be included in the likelihood if using the TCSAM02 effort expansion
+          if (!doTCSAM02EffExp) nloglike(1,k) += dnorm(res_catch(k,jj), catch_sd(jj));                                //--WTS: these residuals should NOT be included in the likelihood if using the TCSAM02 effort expansion
         }
-        nll_catch(k,jj) = dnorm(res_catch(k,jj), catch_sd(jj));//--for output (unlike nloglike(1,k), includes no extra constants from years outside model time frame)
+        nll_catch(k,jj) = dnorm(res_catch(k,jj), catch_sd(jj));                                                       //--for output (unlike nloglike(1,k), includes no extra constants from years outside model time frame)
       } //--catch data in model time frame
     } //--jj loop
-    //nloglike(1,k) += dnorm(res_catch(k), catch_sd);//-WTS: note that this includes residuals (0's) from years outside model time frame: doesn't affect convergence but does add constants 
   }
   if ( verbose >= 3 ) cout << "Ok after catch likelihood ..." << endl;
 
@@ -11092,8 +11066,8 @@ FUNCTION growth_likelihood
   if ( verbose >= 3 ) cout << "Ok after tagging-related increment likelihood ..." << endl;
 
   // 6) Likelihood for non-tagging growth increment data
-  nloglike(6).initialize(); grwthPosFun.initialize();
   if (GrowthObsType==GROWTHINC_DATA_NORMAL){  
+    nloglike(6).initialize(); grwthPosFun.initialize();
     if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
       // normal-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
       dvar_vector MoltIncPred = calc_growth_increments_linear(dPreMoltSize, iMoltIncSex,1);
@@ -11101,6 +11075,7 @@ FUNCTION growth_likelihood
         nloglike(6,iMoltIncSex(i)) += dnorm(log(dMoltInc(i)) - log(MoltIncPred(i)), dMoltIncCV(i));//negative log likelihood
     } 
   } else if (GrowthObsType==GROWTHINC_DATA_GAMMA){
+    nloglike(6).initialize();
     if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
       // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
       nloglike(6) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
@@ -11270,7 +11245,7 @@ FUNCTION calc_objective_function
     cout << "Likelihoods        : " << endl;
     cout << "1. fishery catch   : " << sum(nloglike(1)) << " : " << nloglike(1) << endl;
     cout << "2. index catch     : " << sum(nloglike(2)) << " : " << nloglike(2) << endl;
-    cout << "3. size comps      : " << sum(nloglike(3)) << " : " << nloglike(3) << endl;
+    cout << "3. sise comps      : " << sum(nloglike(3)) << " : " << nloglike(3) << endl;
     cout << "4. recruitment     : " << sum(nloglike(4)) << " : " << nloglike(4) << endl;
     cout << "5. tagging growth  : " << sum(nloglike(5)) << " : " << nloglike(5) << endl;
     cout << "6. growth data     : " << sum(nloglike(6)) << " : " << nloglike(6) << endl;
@@ -11683,15 +11658,15 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
       double lam;
       h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
       if (nmature ==1)
-        ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
+        ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m,abs(YrRefGrow)), maturity(h));
       if(nmature ==2 && use_func_mat==0){
         if (m==1){
-          ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * mean_wt(h,m,YrRef);
+          ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * mean_wt(h,m,abs(YrRefGrow));
         }
       }
       if (nmature ==2 && use_func_mat==1){
         if(m==1){
-          ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
+          ssb_prj(nyrRetro+i) += lam * d4_N_init(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m,abs(YrRefGrow)), maturity(h));
         }
       }
     } //--ig loop
@@ -11719,7 +11694,6 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
 // Label 504: project_biomass
   /**
   *   @brief Project stock to calculate biomass.
-  *   @param YrRef2 
   *   @param YrRefGrow 
   *   @param YrRefM1 
   *   @param YrRefM2 
@@ -11733,7 +11707,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
   *   @param iproj 
   *   @return ssb_prj - projected ssb
   */
-FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, const int YrRefM1, const int YrRefM2, 
+FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, const int YrRefM2, 
                                      const int YrRefSea1, const int YrRefSea2, const int YrRefSexR1, const int YrRefSexR2, 
                                      const int YrRefSel1, const int YrRefSel2, dvar_vector Rbar, const int iproj)
   RETURN_ARRAYS_INCREMENT();
@@ -11744,7 +11718,7 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
   dvar_vector FederalStuff(1,4);                                          ///> OFLs, ABCs etc
   dvar_matrix rtt(1,nsex,1,nclass);                                       ///> Constant recuitment
   dvar_vector ssb_prj(syr,nyr+iproj);                                     ///> projected spawning biomass
-  dvar_vector hist_ssb(syr,nyr);                                          ///> Historical SSB
+  dvar_vector hist_ssb(syr,nyrRetro);                                     ///> Historical SSB
   dvar_vector Rec_use(1,nsex);                                            ///> Recruitment
   dvar_matrix d4_Pass(1,n_grp,1,nclass);                                  ///> Numbers-at-sex/mature/shell/length.
   dvariable TotalSex1,TotalAll,SexRatio;                                  ///> used to compute the sex ratio for future recruitment
@@ -11775,14 +11749,14 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
     SexRatio = TotalSex1/TotalAll;
   }
    
-  // Now project forward
+  // Now project forward (Rbar is adusted by the expected Rbar by year)
   for ( int i = 1; i <= iproj; i++ ){
     if (Stock_rec_prj==1) {                          // Constant recruitment
-      for (int h=1; h<=nsex;h++) Rec_use(h) = fut_recruits(h,i);
+      for (int h=1; h<=nsex;h++) Rec_use(h) = fut_recruits(h,i)*exp(logRbar(nyrRetro+i));
     }
     if (Stock_rec_prj==RICKER){                      // Ricker
       ssb_use = ssb_prj(nyrRetro+i-Age_at_rec_prj);
-      TotalRec = SR_alpha_prj*ssb_use*exp(-1*SR_beta_prj*ssb_use)*fut_recruits(1,i);
+      TotalRec = SR_alpha_prj*ssb_use*exp(-1*SR_beta_prj*ssb_use)*fut_recruits(1,i)*exp(logRbar(nyrRetro+i));
       if (nsex>1){
         Rec_use(1) = TotalRec * SexRatio;
         Rec_use(2) = TotalRec * (1 - SexRatio);
@@ -11792,7 +11766,7 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
     }
     if (Stock_rec_prj==BEVHOLT){                      // Beveton-Holt
       ssb_use = ssb_prj(nyr+i-Age_at_rec_prj);
-      TotalRec = SR_alpha_prj*ssb_use/(SR_beta_prj+ssb_use)*fut_recruits(1,i);
+      TotalRec = SR_alpha_prj*ssb_use/(SR_beta_prj+ssb_use)*fut_recruits(1,i)*exp(logRbar(nyrRetro+i));
       if (nsex>1){
         Rec_use(1) = TotalRec * SexRatio;
         Rec_use(2) = TotalRec * (1 - SexRatio);
@@ -11815,8 +11789,7 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
     for ( int ig = 1; ig <= n_grp; ig++ )  d4_Pass(ig) = numbers_proj_gytl(ig,i,1);
 
     // Compute the ABC and OFL
-    // WTS 2026-06-02: "nyr+i" is wrong! should use "YrRef2+i" here
-    FederalStuff = compute_OFL_and_ABC(nyr+i, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, Rbar, d4_Pass);
+    FederalStuff = compute_OFL_and_ABC(nyrRetro+i, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, Rbar, d4_Pass);
     
     // Should the project consuder the state TAC
     if (Apply_StateHCR_prj==1)
@@ -11830,25 +11803,41 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
        { TACType = 1; TargetC = FederalStuff(2); }                    /// > Hit the total catch OFL
       else
        { TACType = 2; TargetC = StateTAC; }                           /// > Hit the retained catc OFL
-      mcoutDIAG << nyr+i << " OFL " << FederalStuff(1) << " Total ABC " << FederalStuff(2) << " Retained ABC " << FederalStuff(3) << " StateTAC " << StateTAC << " Final Decision: " << TACType << " " << TargetC << endl;
+      mcoutDIAG << nyrRetro+i << " OFL " << FederalStuff(1) << " Total ABC " << FederalStuff(2) << " Retained ABC " << FederalStuff(3) << " StateTAC " << StateTAC << " Final Decision: " << TACType << " " << TargetC << endl;
      }
      else
       {
        TACType= 1; TargetC = FederalStuff(2);
-       mcoutDIAG << nyr+i << " OFL " << FederalStuff(1) << " Total ABC " << FederalStuff(2) << " Retained ABC " << FederalStuff(3) << " Final Decision: " << TACType << " " << TargetC << endl;
+       mcoutDIAG << nyrRetro+i << " OFL " << FederalStuff(1) << " Total ABC " << FederalStuff(2) << " Retained ABC " << FederalStuff(3) << " Final Decision: " << TACType << " " << TargetC << endl;
       }
 
      // DO a projection for the current F
      log_fimpbarPass = log_fimpbar;
-     mcoutDIAG << nyr+i << " Default F " << exp(log_fimpbarPass) << endl;
-     project_one_year(i, iproj, YrRef2, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, rtt, rec_sdd, Rec_use, d4_Pass);
-     mcoutDIAG << nyr+i << " Default C (ret, total, by fleet) " << catch_pass << endl;
+     mcoutDIAG << nyrRetro+i << " Default F " << exp(log_fimpbarPass) << endl;
+     project_one_year(i, iproj, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, rtt, rec_sdd, Rec_use, d4_Pass);
+     mcoutDIAG << nyrRetro+i << " Default C (ret, total, by fleet) " << catch_pass << endl;
 	
      int NeedToTune;
      if (Apply_HCR_prj==1) NeedToTune = YES;
      if (Apply_HCR_prj==0) NeedToTune = NO;
      if (TACType==1 && catch_pass(2)-1.0e-5 < TargetC) NeedToTune = NO;
      if (TACType==2 && catch_pass(1)-1.0e-5 < TargetC) NeedToTune = NO;
+
+     ofstream manage_strat1("quota.inp");
+     manage_strat1 << catch_pass << endl;
+     manage_strat1 << "Here" << endl;
+     manage_strat1 << catch_pass << endl;
+     manage_strat1 << i << endl;
+     manage_strat1.close();
+     
+     // Call the management startegy
+     //int xx = system("dir");
+     //cout << xx << endl;
+     ifstream manage_strat2("quota.inp");
+     float TAC_used;
+     manage_strat2 >> TAC_used;
+     cout << TAC_used << endl;
+     manage_strat2.close();
 
      // Apply bisection to find the target F for the directed fishery
      if (NeedToTune==YES)
@@ -11859,7 +11848,7 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
          Fmult = (Fmin+Fmax)/2.0;
          for (int k=1;k<=nfleet;k++)
           if (Ffixed(k) != 1) log_fimpbarPass(k) = log(mfexp(log_fimpbar(k))*Fmult);
-         project_one_year(i, iproj, YrRef2, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, rtt, rec_sdd, Rec_use, d4_Pass);
+         project_one_year(i, iproj, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, rtt, rec_sdd, Rec_use, d4_Pass);
          if (TACType == 1)
           {
            if (catch_pass(2) > TargetC) Fmax = Fmult; else Fmin = Fmult;
@@ -11869,9 +11858,9 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
            if (catch_pass(1) > TargetC) Fmax = Fmult; else Fmin = Fmult;
           }
         }
-       mcoutDIAG << nyr+i << "CTUNE " << Fmult << " " << TargetC << " " << catch_pass << exp(log_fimpbarPass) << endl;
-       mcoutDIAG << nyr+i << "Final F " << exp(log_fimpbarPass) << endl;
-       mcoutDIAG << nyr+i << "Final C (ret, total, by fleet) " << catch_pass << endl;
+       mcoutDIAG << nyrRetro+i << "CTUNE " << Fmult << " " << TargetC << " " << catch_pass << exp(log_fimpbarPass) << endl;
+       mcoutDIAG << nyrRetro+i << "Final F " << exp(log_fimpbarPass) << endl;
+       mcoutDIAG << nyrRetro+i << "Final C (ret, total, by fleet) " << catch_pass << endl;
       }
 	  
      // Store catches during the projection
@@ -11879,12 +11868,12 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
      catch_summary(nfleet+3,i) = FederalStuff(1);
      catch_summary(nfleet+4,i) = FederalStuff(2);
      catch_summary(nfleet+5,i) = StateTAC;
-     ssb_prj(nyr+i) = ssb_pass;
+     ssb_prj(nyrRetro+i) = ssb_pass;
 
     } // i
 
   // return
-  ssb_pass = ssb_prj(nyr+iproj);
+  ssb_pass = ssb_prj(nyrRetro+iproj);
 
   RETURN_ARRAYS_DECREMENT();
   return(ssb_prj);
@@ -11893,13 +11882,17 @@ FUNCTION dvar_vector project_biomass(const int YrRef2, const int YrRefGrow, cons
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // Label 506: project_one_year
-FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, const int YrRefGrow, const int YrRefM1,
+FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow, const int YrRefM1,
 									  const int YrRefM2, const int YrRefSea1, const int YrRefSea2, const int YrRefSel1,
 									  const int YrRefSel2, dvar_matrix rtt, dvar_matrix  rec_sdd, 
 									  dvar_vector Rec_use, dvar_matrix d4_Pass)
   int isizeTrans;
-  double xi1;                                                              ///> discard mortality rate
-  double _xi;                                                              ///> averaged] discard mortality rate
+  int YrRefSel1Use, YrRefSel2Use;                                          ///> Years for selex
+  int YrRefM1Use, YrRefM2Use;                                              ///> Years for M
+  int YrRefGrowUse;                                                        ///> Year for growth
+  
+  double xi1;                                                               ///> discard mortality rate
+  double _xi;                                                              ///> averaged discard mortality rate
   dvariable log_ftmp;
   dvar_vector x(1,nclass);                                                 ///> Temp vector for numbers
   dvar_vector y(1,nclass);                                                 ///> Temp vector for numbers
@@ -11922,6 +11915,17 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
   dvar_vector Mbar(1,nclass);                                              ///> Natural mortality
   dvariable Mprop;                                                         ///> time before  catch
 
+  // Projection could be average or year-specific
+  if (YrRefSel1 < 0)
+   { YrRefSel1Use = nyrRetro+i; YrRefSel2Use = nyrRetro+i; }
+  else
+   { YrRefSel1Use = YrRefSel1; YrRefSel2Use = YrRefSel2; }
+  if (YrRefM1 < 0)
+   { YrRefM1Use = nyrRetro+i; YrRefM2Use = nyrRetro+i; }
+  else
+   { YrRefM1Use = YrRefM1; YrRefM2Use = YrRefM2; }
+  if (YrRefGrow < 0) YrRefGrowUse = nyrRetro+i; else YrRefGrowUse = YrRefGrow;
+  
   // Initialize the Fs
   _F1.initialize();
   for ( int h = 1; h <= nsex; h++ )
@@ -11939,26 +11943,26 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
        if (h==2) log_ftmp += log_foff(k);
        _ft(k,h,j) = mfexp(log_ftmp);
         sel.initialize(); ret.initialize(); vul.initialize();_xi=0;
-       for (int iy=YrRefSel1; iy<=YrRefSel2;iy++)
+       for (int iy=YrRefSel1Use; iy<=YrRefSel2Use;iy++)
         {
          sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
          ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
-         xi1  = dmr(iy,k);                                                       // discard mortality rate
+         if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
          sel += sel1;                                                            // will be averaged selectivity
          ret += ret1;                                                            // will be averaged retention
          vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // will be averaged vulnerability
          _xi += xi1;                                                             // will be averaged discard mortality rate
         }
-       sel /= float(YrRefSel2-YrRefSel1+1);
-       ret /= float(YrRefSel2-YrRefSel1+1);
-       vul /= float(YrRefSel2-YrRefSel1+1);
-       _xi /= float(YrRefSel2-YrRefSel1+1);
+       sel /= float(YrRefSel2Use-YrRefSel1Use+1);
+       ret /= float(YrRefSel2Use-YrRefSel1Use+1);
+       vul /= float(YrRefSel2Use-YrRefSel1Use+1);
+       _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
        _F1(h,j) += _ft(k,h,j) * vul;
        _F2(h,j) += _ft(k,h,j) * sel;
        _F3(h,j) += _ft(k,h,j) * elem_prod(sel, ret + (1.0 - ret) * _xi);
-       if (full_prj_diag==1) mcoutDIAG << nyr+i << " " << k << " " << h << " " << j << " " << "Sel " << sel << endl;  
-       if (full_prj_diag==1) mcoutDIAG << nyr+i << " " << k << " " << h << " " << j << " " << "Ret " << ret << endl;  
-       if (full_prj_diag==1) mcoutDIAG << nyr+i << " " << k << " " << h << " " << j << " " << "Vul " << vul << endl;  
+       if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Sel " << sel << endl;  
+       if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Ret " << ret << endl;  
+       if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Vul " << vul << endl;  
      }
 	 
   // computer the total mortality
@@ -11967,12 +11971,12 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
     for ( int h = 1; h <= nsex; h++ ){
       for ( int j = 1; j <= nseason; j++ ){
         Mbar.initialize();
-        for (int iy=YrRefM1; iy<=YrRefM2;iy++) Mbar += M(h,m,iy);
-        Mbar /= float(YrRefM2-YrRefM1+1);
+        for (int iy=YrRefM1Use; iy<=YrRefM2Use;iy++) Mbar += M(h,m,iy);
+        Mbar /= float(YrRefM2Use-YrRefM1Use+1);
         Mprop = 0;
         for (int iy=YrRefSea1; iy<=YrRefSea2;iy++) Mprop += m_prop(iy,j);
         Mprop /= float(YrRefSea2-YrRefSea1+1);
-        if (full_prj_diag==1) mcoutDIAG << nyr+i << " " << h << " " << j << " " << "Mprop/Bar" << " " << Mprop << " " << Mbar << endl;
+        if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << h << " " << j << " " << "Mprop/Bar" << " " << Mprop << " " << Mbar << endl;
         _Z1(h,m,j) = Mprop * Mbar + _F1(h,j);
         _Z2(h,m,j) = Mprop * Mbar + _F2(h,j);
         _Z3(h,m,j) = Mprop * Mbar + _F3(h,j);
@@ -11985,11 +11989,11 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
  	
   // Update the dynamics
   for (int h=1;h<=nsex;h++){
-    isizeTrans_pass(h) = iYrsIncChanges(h,YrRefGrow);
+    isizeTrans_pass(h) = iYrsIncChanges(h,YrRefGrowUse);
     if (IsProject==NOPROJECT) rec_pass(h) = rtt(h);                                   ///> recruitment as a function of class 
     if (IsProject==PROJECT)   rec_pass(h) = Rec_use(h)*rec_sdd(h);                    ///> recruitment as a function of class 
-    molt_prob_pass(h)   = molt_probability(h,YrRefGrow);                              ///> probability of molting
-    mature_prob_pass(h) = mature_probability(h,YrRefGrow);                            ///> probability of maturity
+    molt_prob_pass(h)   = molt_probability(h,YrRefGrowUse);                           ///> probability of molting
+    mature_prob_pass(h) = mature_probability(h,YrRefGrowUse);                         ///> probability of maturity
   } //-- h 
   // Now for the year-update
   if (Term_molt==0)
@@ -12006,20 +12010,20 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
     double lam;
     h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
     if(nmature==1)
-      ssb_pass += lam * numbers_proj_gytl(ig,i,season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
+     ssb_pass += lam * numbers_proj_gytl(ig,i,season_ssb) * elem_prod(mean_wt(h,m,abs(YrRefGrow)), maturity(h));
     if(nmature==2 && use_func_mat==0)
-      if(m==MATURE)
-        ssb_pass += lam * numbers_proj_gytl(ig,i,season_ssb) * mean_wt(h,m,YrRefGrow);
+     if(m==MATURE)
+      ssb_pass += lam * numbers_proj_gytl(ig,i,season_ssb) * mean_wt(h,m,abs(YrRefGrow));
     if(nmature==2 && use_func_mat==1)
-      if(m==MATURE)
-        ssb_pass += lam * numbers_proj_gytl(ig,i,season_ssb) * elem_prod(mean_wt(h,m,YrRefGrow), maturity(h));
+     if(m==MATURE)
+      ssb_pass += lam * numbers_proj_gytl(ig,i,season_ssb) * elem_prod(mean_wt(h,m,abs(YrRefGrow)), maturity(h));
   } //--ig loop
 
   // Calculate the catch
   for ( int j = 1; j <= nseason; j++ )
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass(ig,j) = numbers_proj_gytl(ig,i,j);
-  catch_pass = calc_predicted_project(nyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass, _ft, _Z1, _Z2, _Z3);
+  catch_pass = calc_predicted_project(i, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass, _ft, _Z1, _Z2, _Z3);
 //--project_one_year
 // -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -12040,28 +12044,36 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRef2, c
   * @param _Z3 4D array of total mortality for TCSAM02-like fisheries.
   * @return dvar_vector A vector of projected fishery mortality as biomass for the projection.
   */
-FUNCTION dvar_vector calc_predicted_project(const int YrRef2, const int YrRefGrow, 
-                                            const int YrRefSel1, const int YrRefSel2,
-                                            dvar3_array d4_Npass, dvar3_array _ft, 
-                                            dvar4_array _Z1, dvar4_array _Z2, dvar4_array _Z3)
+FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, const int YrRefSel1, const int YrRefSel2,
+                                            dvar3_array d4_Npass, dvar3_array _ft, dvar4_array _Z1, dvar4_array _Z2, dvar4_array _Z3)
   RETURN_ARRAYS_INCREMENT();
-  //int h,i,j,k,ig,type,unit;
-  double xi1;                        ///> Discard rate
-  double _xi;                        ///> Averaged discard rate
-  dvar_vector out(1,2+nfleet);       ///> Output
-  dvariable tmp_ft,out2;             ///> Temp
-  dvar_vector sel(1,nclass);         ///> Averaged capture selectivity
-  dvar_vector sel1(1,nclass);        ///> Capture selectivity
-  dvar_vector selret(1,nclass);      ///> Selectivity x retained
-  dvar_vector ret(1,nclass);         ///> Averaged retained probability
-  dvar_vector ret1(1,nclass);        ///> Retained probability
-  dvar_vector vul(1,nclass);         ///> Averaged vulnerability
-  dvar_vector nal(1,nclass);         ///> Numbers-at-length (WTS: BIOMASS-at-length!!)
-  dvar_vector tempZ1(1,nclass);      ///> total mortality
+  
+  int YrRefSel1Use, YrRefSel2Use;                                          ///> Years for selex
+  int YrRefGrowUse;                                                        ///> Year for growth
+  
+  double xi1;                                                              ///> discard mortality rate
+  double _xi;                                                              ///> averaged discard mortality rate
+  dvar_vector out(1,2+nfleet);                                             ///> Output
+  dvariable tmp_ft,out2;                                                   ///> Temp
+  dvar_vector sel(1,nclass);                                               ///> Capture selectivity
+  dvar_vector sel1(1,nclass);                                              ///> Capture selectivity
+  dvar_vector selret(1,nclass);                                            ///> Selectivity x retained
+  dvar_vector ret(1,nclass);                                               ///> Retained probability
+  dvar_vector ret1(1,nclass);                                              ///> Retained probability
+  dvar_vector vul(1,nclass);                                               ///> Total vulnerability
+  dvar_vector nal(1,nclass);                                               ///> Numbers-at-length
+  dvar_vector tempZ1(1,nclass);                                            ///> total mortality
 
   // out(1): retained catch biomass
   // out(2): total fishing mortality as biomass
   // out(2+k): fishing mortality as biomass by feet
+
+  // Projection could be average or year-specific
+  if (YrRefSel1 < 0)
+   { YrRefSel1Use = nyrRetro+i; YrRefSel2Use = nyrRetro+i; }
+  else
+   { YrRefSel1Use = YrRefSel1; YrRefSel2Use = YrRefSel2; }
+  if (YrRefGrow < 0) YrRefGrowUse = nyrRetro+i; else YrRefGrowUse = YrRefGrow;
 
   out.initialize();
   for ( int m = 1; m <= nmature; m++ ){
@@ -12070,22 +12082,22 @@ FUNCTION dvar_vector calc_predicted_project(const int YrRef2, const int YrRefGro
         nal.initialize();
         
         for ( int o = 1; o <= nshell; o++ ){ int ig = pntr_hmo(h,m,o); nal += d4_Npass(ig)(j); }
-        nal = elem_prod(nal, mean_wt(h,m)(YrRefGrow)); //--biomass!!
+        nal = elem_prod(nal, mean_wt(h,m)(abs(YrRefGrow))); //--biomass!!
         for ( int k = 1; k <= nfleet; k++ ){
           sel.initialize(); ret.initialize(); vul.initialize(); _xi=0;
-          for (int iy=YrRefSel1; iy<=YrRefSel2;iy++){
+          for (int iy=YrRefSel1Use; iy<=YrRefSel2Use;iy++){
             sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
             ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
-            xi1  = dmr(iy,k);                                                       // discard mortality
+            if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
             sel += sel1;                                                            // Selectivity
             ret += ret1;                                                            // Retention
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // Vulnerability
             _xi += xi1;                                                             // discard mortality
           }
-          sel /= float(YrRefSel2-YrRefSel1+1);
-          ret /= float(YrRefSel2-YrRefSel1+1);
-          vul /= float(YrRefSel2-YrRefSel1+1);
-          _xi /= float(YrRefSel2-YrRefSel1+1);
+          sel /= float(YrRefSel2Use-YrRefSel1Use+1);
+          ret /= float(YrRefSel2Use-YrRefSel1Use+1);
+          vul /= float(YrRefSel2Use-YrRefSel1Use+1);
+          _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
           selret = elem_prod(sel,ret);
 
           if (season_type(j)==INSTANT_F)    tempZ1 = _Z1(h,m,j); 
@@ -12152,9 +12164,9 @@ FUNCTION dvar_vector calc_predicted_project(const int YrRef2, const int YrRefGro
   */
 FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow, 
                                          const int YrRefM1, const int YrRefM2,
-										                     const int YrRefSea1, const int YrRefSea2,
+					 const int YrRefSea1, const int YrRefSea2,
                                          const int YrRefSel1, const int YrRefSel2,
-										                     dvar_vector Rbar, dvar_matrix d4_Npass)
+					 dvar_vector Rbar, dvar_matrix d4_Npass)
   RETURN_ARRAYS_INCREMENT();
   int IsProjectSave;                                                 ///> Variable to save the projection pointer
   dvariable Bproj;                                                   ///> Projected biomass (one year)
@@ -12169,7 +12181,7 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
 
   // Set F to Fmsy (by fleet)
   log_fimpbarOFL = log(sd_fmsy);
-  Bproj = project_biomass_OFL(iyr-nyr,nyr, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, Rbar, 1,d4_Npass);
+  Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, Rbar, 1,d4_Npass);
   
   if (ssb_pass > Bmsy){
     FF = 1.0;  //--WTS CODING: why bother seting this--it's never used
@@ -12177,7 +12189,7 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
     // It is not above Bmsy so check if F=0 leads to a stock above Beta*Bmsy
     FF = 1.0e-10;
     for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
-    Bproj = project_biomass_OFL(iyr-nyr,nyr,YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2,spr_rbar,1,d4_Npass);
+    Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2,spr_rbar,1,d4_Npass);
     if ( ssb_pass <= OFLbeta * Bmsy){
       FF = 1.0e-10;  //--WTS CODING: why bother seting this--it's never used
     } else {
@@ -12190,7 +12202,7 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
           FF = Fmult2;
         if (FF < 0.00001) FF = 0.00001;
         for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
-        Bproj = project_biomass_OFL(iyr-nyr,nyr,YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2,spr_rbar,1, d4_Npass);
+        Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2,spr_rbar,1, d4_Npass);
       } //--iloop
     } //--ssb_pass > OFLbeta * Bmsy
   } //--ssb_pass <= Bmsy
@@ -12238,7 +12250,6 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
   *      calc_predicted_project
   * 
   * @param iyr The current year for projection.
-  * @param YrRef2 Reference year for recruitment.
   * @param YrRefGrow Reference year for growth.
   * @param YrRefM1 Start reference year for natural mortality.
   * @param YrRefM2 End reference year for natural mortality.
@@ -12251,14 +12262,19 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
   * @param d4_Npass Matrix of numbers-at-size to be updated.
   * @return dvariable The projected biomass.
   **/
-FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const int YrRefGrow, 
+FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow, 
         const int YrRefM1, const int YrRefM2, const int YrRefSea1, const int YrRefSea2, 
         const int YrRefSel1, const int YrRefSel2, dvar_vector Rbar, const int iproj, dvar_matrix d4_Npass)
   RETURN_ARRAYS_INCREMENT();
   int isizeTrans;                                                          ///> Size-transition matrix
   dvariable log_ftmp;                                                      ///> Temp
-  double xi1;                                                              ///> Discard mortality
-  double _xi;                                                              ///> Averaged discard mortality
+  
+  int YrRefSel1Use, YrRefSel2Use;                                          ///> Years for selex
+  int YrRefM1Use, YrRefM2Use;                                              ///> Years for M
+  int YrRefGrowUse;                                                        ///> Year for growth
+  
+  double xi1;                                                              ///> discard mortality rate
+  double _xi;                                                              ///> averaged discard mortality rate
   dvar_matrix rtt(1,nsex,1,nclass);                                        ///> Constant recruitment
   dvar_vector x(1,nclass);                                                 ///> Temp vector for numbers
   dvar_vector y(1,nclass);                                                 ///> Temp vector for numbers
@@ -12281,6 +12297,17 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
   dvar_vector nal(1,nclass);                                               ///> Numbers-at-length
   dvar_vector out(1,2+nfleet);                                             ///> Output
 
+  // Projection could be average or year-specific
+  if (YrRefSel1 < 0)
+   { YrRefSel1Use = nyrRetro+iyr; YrRefSel2Use = nyrRetro+iyr; }
+  else
+   { YrRefSel1Use = YrRefSel1; YrRefSel2Use = YrRefSel2; }
+  if (YrRefM1 < 0)
+   { YrRefM1Use = nyrRetro+iyr; YrRefM2Use = nyrRetro+iyr; }
+  else
+   { YrRefM1Use = YrRefM1; YrRefM2Use = YrRefM2; }
+  if (YrRefGrow < 0) YrRefGrowUse = nyrRetro+iyr; else YrRefGrowUse = YrRefGrow;
+ 
   // Copy N from the end of the assessment into the first projection year
   numbers_proj_gytl.initialize();
   for ( int ig = 1; ig <= n_grp; ig++ ) numbers_proj_gytl(ig)(iyr)(1) = d4_Npass(ig);
@@ -12311,19 +12338,19 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
           if (h==2) log_ftmp += log_foff(k);
           _ft(k,h,j) = mfexp(log_ftmp);
           sel.initialize(); ret.initialize(); vul.initialize(); _xi = 0;
-          for (int iy=YrRefSel1; iy<=YrRefSel2;iy++){
+          for (int iy=YrRefSel1Use; iy<=YrRefSel2Use;iy++){
             sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                // selectivity
             ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);   // retention
-            xi1  = dmr(iy,k);                                             // discard mortality
+            if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
             sel += sel1;                                                  // will be average selectivity
             ret += ret1;                                                  // will be average retention
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);            // will be average vulnerability
             _xi += xi1;                                                   // will be average discard mortality
           }
-          sel /= float(YrRefSel2-YrRefSel1+1);
-          ret /= float(YrRefSel2-YrRefSel1+1);
-          vul /= float(YrRefSel2-YrRefSel1+1);
-          _xi /= float(YrRefSel2-YrRefSel1+1);
+          sel /= float(YrRefSel2Use-YrRefSel1Use+1);
+          ret /= float(YrRefSel2Use-YrRefSel1Use+1);
+          vul /= float(YrRefSel2Use-YrRefSel1Use+1);
+          _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
           _F1(h,j) += _ft(k,h,j) * vul;
           _F2(h,j) += _ft(k,h,j) * sel;
           _F3(h,j) += _ft(k,h,j) * elem_prod(sel, ret + (1.0 - ret) * _xi); //like TCSAM02 
@@ -12338,8 +12365,8 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
     for ( int h = 1; h <= nsex; h++ ){
       for ( int j = 1; j <= nseason; j++ ){
         Mbar.initialize();
-        for (int iy=YrRefM1; iy<=YrRefM2;iy++) Mbar += M(h,m,iy);
-        Mbar /= float(YrRefM2-YrRefM1+1);
+        for (int iy=YrRefM1Use; iy<=YrRefM2Use;iy++) Mbar += M(h,m,iy);
+        Mbar /= float(YrRefM2Use-YrRefM1Use+1);
         Mprop = 0;
         for (int iy=YrRefSea1; iy<=YrRefSea2;iy++) Mprop += m_prop(iy,j);
         Mprop /= float(YrRefSea2-YrRefSea1+1);
@@ -12360,11 +12387,11 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
   for (int i = iyr; i <= iyr+iproj-1; i++){
     // Pass the molt probabilities
     for (int h=1;h<=nsex;h++){
-      isizeTrans_pass(h) = iYrsIncChanges(h,YrRefGrow);
+      isizeTrans_pass(h) = iYrsIncChanges(h,YrRefGrowUse);
       for (int l=1;l<=nclass;l++){
         rec_pass(h,l) = rtt(h,l);                                                           ///> recruitment as a function of class 
-        molt_prob_pass(h,l) = molt_probability(h,YrRefGrow,l);                              ///> probability of molting
-        if (nmature==2) mature_prob_pass(h,l) = mature_probability(h,YrRefGrow,l);           ///> probability of maturity
+        molt_prob_pass(h,l) = molt_probability(h,YrRefGrowUse,l);                           ///> probability of molting
+        if (nmature==2) mature_prob_pass(h,l) = mature_probability(h,YrRefGrowUse,l);       ///> probability of maturity
       }
     } //-- h 
 
@@ -12381,15 +12408,15 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
       double lam;
       h <= 1 ? lam = spr_lambda: lam = (1.0 - spr_lambda);
       if(nmature==1){
-        ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(YrRefGrow), maturity(h));
+        ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(abs(YrRefGrow)), maturity(h));
       }
       if(nmature==2 && use_func_mat==0){
         if(m == MATURE)
-          ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * mean_wt(h,m)(YrRefGrow); 
+          ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * mean_wt(h,m)(abs(YrRefGrow)); 
       }
       if(nmature==2 && use_func_mat==1){
         if(m == MATURE)
-          ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(YrRefGrow), maturity(h));
+          ssb(i) += lam * numbers_proj_gytl(ig)(i)(season_ssb) * elem_prod(mean_wt(h,m)(abs(YrRefGrow)), maturity(h));
       }
     } //--ig: pop group
   } // i iyr:iyr+iproj-1
@@ -12400,7 +12427,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRef2, const in
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass_2(ig,j) = numbers_proj_gytl(ig)(iyr+iproj-1)(j);
   // calculate 
-  out = calc_predicted_project(nyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
+  out = calc_predicted_project(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
   oflret_pass = out(1); ofltot_pass = out(2);
   OFLoutpass = out;
 
@@ -12504,6 +12531,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       // Set F
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);
+      // AEP:AEP Why 1 and not season_ssb
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV0 = ssb_pass/ssbF0-spr_target;
 
@@ -12521,7 +12549,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       Fmult2 = Fmult - SSBV0/Deriv;
       if (Fmult2 < 0.01) Fmult2 = 0.01;
       if (Fmult2 < 0.1*Fmult){
-       Fmult = 0.1*Fmult;
+        Fmult = 0.1*Fmult;
       } else {
         Fmult = Fmult2;
       }
@@ -12569,7 +12597,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   
   // Check if above Bmsy when F=FOFL 
   log_fimpbarOFL = log(sd_fmsy);
-  Bproj = project_biomass_OFL(1,nyrRetro, spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr, spr_rbar, iproj,d4_Npass);
+  Bproj = project_biomass_OFL(1,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr, spr_rbar, iproj, d4_Npass);
   if (verbose>=3) cout << Bproj << endl;
   if (ssb_pass > Bmsy){
     spr_fofl = 1.0;
@@ -12578,7 +12606,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     // It is not above Bmsy so check if F=0 leads to a stock above Beta*Bmsy
     FF = 1.0e-10;
     for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
-    Bproj = project_biomass_OFL(1,nyrRetro,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar,iproj,d4_Npass);
+    Bproj = project_biomass_OFL(1,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar,iproj,d4_Npass);
     if (verbose>=3) cout << Bproj << endl;
    
     // Even under zero F the OFL is non-zero 
@@ -12595,7 +12623,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
           FF = Fmult2;
          if (FF < 0.00001) FF = 0.00001;
          for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
-	       Bproj = project_biomass_OFL(1,nyrRetro,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar, iproj,d4_Npass);
+	 Bproj = project_biomass_OFL(1,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar, iproj,d4_Npass);
        }
        spr_fofl = FF/Fmsy;
        spr_depl = ssb_pass / Bmsy;
@@ -12628,29 +12656,26 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     for (int ii=1;ii<=30;ii++)
      {
       Steepness = SteepMin+(SteepMax-SteepMin)/29.0*float(ii-1);
-      if (Stock_rec_prj==RICKER)
-       {
+      if (Stock_rec_prj==RICKER){
         SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
         SR_beta_prj = log(5.0*Steepness)/(0.8*ssbF0);
-       }
-      if (Stock_rec_prj==BEVHOLT)
-       {
+      }
+      if (Stock_rec_prj==BEVHOLT){
         SR_alpha_prj = 4.0*Steepness*spr_rbar(1)/(5*Steepness-1.0);
         SR_beta_prj = (1.0-Steepness)*ssbF0/(5*Steepness-1.0);
-       }
+      }
 
       for (int k=1;k<=nfleet;k++)
-      if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
+       if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
-       SSBV1a = oflret_pass;
+      SSBV1a = oflret_pass;
       for (int k=1;k<=nfleet;k++)
        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*0.999);
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1b = oflret_pass;
       Deriv = (SSBV1a-SSBV1b)/0.002;
       //cout << "Solve2 " << ii << " " << Steepness << " " << Deriv << endl;
-      if (Deriv > 0)
-       {
+      if (Deriv > 0){
         SteepMin = Steepness - (SteepMax-SteepMin)/29.0;
         SteepMax = Steepness + (SteepMax-SteepMin)/29.0;
         ii = 40;
@@ -12661,16 +12686,14 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     for (int ii=1;ii<=30;ii++)
      {
       Steepness = (SteepMin+SteepMax)/2.0;
-      if (Stock_rec_prj==RICKER)
-       {
+      if (Stock_rec_prj==RICKER){
         SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
         SR_beta_prj = log(5.0*Steepness)/(0.8*ssbF0);
-       }
-      if (Stock_rec_prj==BEVHOLT)
-       {
+      }
+      if (Stock_rec_prj==BEVHOLT){
         SR_alpha_prj = 4.0*Steepness*spr_rbar(1)/(5*Steepness-1.0);
         SR_beta_prj = (1.0-Steepness)*ssbF0/(5*Steepness-1.0);
-       }
+      }
 
       for (int k=1;k<=nfleet;k++)
       if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
@@ -12685,16 +12708,14 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       if (Deriv < 0) SteepMin = Steepness; else SteepMax = Steepness;
      }
     //cout << Steepness << " " << Deriv << " " << ssbF0 << endl;
-    if (Stock_rec_prj==RICKER)
-     {
+    if (Stock_rec_prj==RICKER){
       SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
       SR_beta_prj = log(5.0*Steepness)/(0.8*ssbF0);
-     }
-    if (Stock_rec_prj==BEVHOLT)
-     {
+    }
+    if (Stock_rec_prj==BEVHOLT){
       SR_alpha_prj = 4.0*Steepness*spr_rbar(1)/(5*Steepness-1.0);
       SR_beta_prj = (1.0-Steepness)*ssbF0/(5*Steepness-1.0);
-     }
+    }
     log_fimpbar = log(sd_fmsy);
     equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
   
@@ -12748,12 +12769,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 // =======================================================================================================================================
-
-  /**
-   * @brief Conduct projections
-  **/
-
-// andre
 // Label 700: write_eval
 FUNCTION write_eval
   int index;                                                         ///> Counters
@@ -12762,8 +12777,14 @@ FUNCTION write_eval
   dvar_vector Fave(1,nfleet);                                        ///> Average F
   dvar_vector log_fimpbarI(1,nfleet);                                ///> Log F by fleet  
 
+  cout << "In MC" << endl;
+
+  cout << NfunCall << endl;
+  
+  
   // Header
   if (NfunCall==1){
+    cout << "writing" << endl;
     mcoutPROJSSB << "Draw Replicate F_val ";
     for (int k=1;k<=nfleet;k++) mcoutPROJSSB << "f_for_fleet_" << k << " ";
     mcoutPROJSSB << "BMSY ";
@@ -12825,11 +12846,11 @@ FUNCTION write_eval
       for (int iproj=1;iproj<=nproj;iproj++){
         if (Stock_rec_prj==UNIFORMSR){
           index = prj_futRec_syr+(int)floor((float(prj_futRec_nyr)-float(prj_futRec_syr)+1.0)*randu(rng));
-          fut_recruits(1,iproj) = recruits(1,index);
+          fut_recruits(1,iproj) = recruits(1,index)/exp(logRbar(index));
           if (nsex==2) fut_recruits(2,iproj) = recruits(2,index);
         }
         if (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT || Stock_rec_prj==MEAN_RECRUIT){
-          fut_recruits(1,iproj) = mfexp(eps1*SigmaR_prj-SigmaR_prj*SigmaR_prj/2.0);
+          fut_recruits(1,iproj) = mfexp(eps1*SigmaR_prj-SigmaR_prj*SigmaR_prj/2.0)/exp(logRbar(index));
           if (iproj != nproj) eps1 = Prow_prj*eps1 + sqrt(1.0-square(Prow_prj))*randn(rng);
           if (nsex==2) fut_recruits(2,iproj) = fut_recruits(1,iproj);
         }
@@ -12849,13 +12870,13 @@ FUNCTION write_eval
         mcoutDIAG << endl;
         mcoutDIAG << NfunCall << " " << isim << " " << irun << " " << prj_bycatch_on << " " << Stock_rec_prj << " " << exp(log_fimpbar) << " " << Bmsy_out << " " << endl;
 
-        Bproj = project_biomass(nyr, proj_grow_yr,proj_M_syr,proj_M_nyr,proj_Prop_syr,proj_Prop_nyr,
+        Bproj = project_biomass(proj_grow_yr,proj_M_syr,proj_M_nyr,proj_Prop_syr,proj_Prop_nyr,
                                 proj_SexR_syr, proj_SexR_nyr,proj_sel_syr,proj_sel_nyr, proj_rbar, nproj);
         mcoutPROJSSB << NfunCall << " " << isim << " " << irun << " " << exp(log_fimpbar) << " " << Bmsy_out << " ";
         dvar_vector ssb_old(syr,nyrRetro);
         ssb_old = calc_ssb();
-        for (int i=syr;i<=nyr;i++) mcoutPROJSSB << ssb_old(i) << " ";
-        for (int i=nyr+1;i<=nyr+nproj;i++) mcoutPROJSSB <<  Bproj(i) << " ";
+        for (int i=syr;i<=nyrRetro;i++) mcoutPROJSSB << ssb_old(i) << " ";
+        for (int i=nyr+1;i<=nyrRetro+nproj;i++) mcoutPROJSSB <<  Bproj(i) << " ";
         mcoutPROJSSB <<endl;
         for (int k=1;k<=nfleet+5;k++){
           mcoutPROJCAT << NfunCall << " " << isim << " " << irun << " ";
@@ -13055,16 +13076,6 @@ FUNCTION dvector calc_Francis_weights()
     if ((verbose>3)&&(NfunCall<2)) cout<<"Fniished calc_Francis_weights"<<endl;
     return lfwt;
    }
-// -----------------------------------------------------------------------------------------------------------------------------------
-
-  /**
-   * @brief calculate effective sample size           //--WTS CODING: what does this refer to??
-   * @details Calculate the effective sample size
-   *
-   * @param observed proportions
-   * @param predicted proportions
-  **/
-
 // -------------------------------------------------------------------------------------------------------------------------------------------------
   /**
   * Function to format a double using 'g'-type fprmatting in sprintf().
@@ -13746,7 +13757,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << T_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << T_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13767,7 +13778,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << G_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << G_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
    }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13788,7 +13799,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << M_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << M_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13809,7 +13820,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << S_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << S_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13831,7 +13842,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fbar(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fbar(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13861,7 +13872,7 @@ FUNCTION CreateOutput
                 OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
                 RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
                 ParFile1 << NparEst << endl;
-                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
               }
               OutFile1 << endl;
               RepFile1 << endl;
@@ -13900,7 +13911,7 @@ FUNCTION CreateOutput
               OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
               RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
               ParFile1 << NparEst << endl;
-              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
             }
             OutFile1 << endl;
             RepFile1 << endl;
@@ -13934,7 +13945,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_foff(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_foff(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13964,7 +13975,7 @@ FUNCTION CreateOutput
                 OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
                 RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
                 ParFile1 << NparEst << endl;
-                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
               }
               OutFile1 << endl;
               RepFile1 << endl;
@@ -14003,7 +14014,7 @@ FUNCTION CreateOutput
               OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
               RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
               ParFile1 << NparEst << endl;
-              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
             }
             OutFile1 << endl;
             RepFile1 << endl;
@@ -14045,7 +14056,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << "Rec_dev_est_"+str(Ipar) << " " << rec_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << "Rec_dev_est_"+str(Ipar) << " " << rec_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14066,7 +14077,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << "Logit_rec_prop_est_"+str(Ipar) << " " << logit_rec_prop_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << "Logit_rec_prop_est_"+str(Ipar) << " " << logit_rec_prop_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
      }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14088,7 +14099,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_vn(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_vn(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14110,7 +14121,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << survey_q(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << survey_q(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14132,7 +14143,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_add_cv(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_add_cv(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14153,7 +14164,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << devnames1(Ipar) << " " << par_devs(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << devnames1(Ipar) << " " << par_devs(Ipar) << " " << ParsOut.sd(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14164,7 +14175,6 @@ FUNCTION CreateOutput
   RepFile1 << ">EOD<" <<endl;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   ParFile1.close();
-  OutFile5.close();
 
   // Derived quantities
   // ====================
@@ -16112,7 +16122,7 @@ FUNCTION WriteFiles
         if ( nparSs(it,(h-1)*nfleet+k) > 0){
           int ipnt1 = (h-1)*nfleet+k;
           int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-          int ipnt3 = (it-1)*nsex*nfleet*Nyears2+(h-1)*nfleet*Nyears2+(k-1)*Nyears2;
+          int ipnt3 = (it-1)*nsex*nfleet*Nyears4+(h-1)*nfleet*Nyears4+(k-1)*Nyears4;
           if (nparSs(it,ipnt1) > 0)  OutInpFile1 << "# Inputs for type*sex*fleet: " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << endl;
           if (nparSs(it,ipnt1) > 0)  OutInpFile1 << "# MAIN PARS:  Initial  Lower_bound  Upper_bound Prior_type     Prior_1      Prior_2  Phase  Block Blk_fn  Env_L Env_vr     RW RW_Blk RW_Sigma" << endl;
           n_Spar2 = n_Spar;
@@ -17495,7 +17505,9 @@ FINAL_SECTION
 //                    "if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F)" or "if(season_type(j)==CONTINUOUS_F)" in non-projection-related contexts.
 // 2026-06-08 ** WTS. Updated version to 2.20.38.
 // 2026-06-10 ** WTS. Added NfunCall, timing info, and M to gmacs.rep1 output.
-// 2026-06-17 ** WTS. Added "std::" to "isnan" call in acl::dirichlet_alt::ddirichlet_alt to address Windows include issue.
+// 2026-06-20 ** AEP. (a) corrected Time-varying parameters when blocks end after lyear; (b) moved readin of proj to before ctl (so nproj is available); 
+//                    (c) extended pointer arrays to include the projections.
+// 2026-06-22 ** AEP. Fixed some file openings. Updated version to 2.20.39.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
