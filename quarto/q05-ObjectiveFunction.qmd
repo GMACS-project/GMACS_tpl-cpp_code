@@ -1,0 +1,189 @@
+---
+title: "Objective Function"
+---
+
+This section documents the objective function defined in the `gmacsbase.TPL` file that is minimized to find the "best" set of parameter 
+values for a GMACS assessment model.
+
+## Obective function
+
+The objective function is referred to as `nloglike` in the gmacsbase.TPL file. It's value is the result of summing negative log-likelihood 
+components expressing the (mis)fits to the input data, priors on parameters, and penalties.
+
+          objfun =  w_nloglike + 
+                    sum(elem_prod(nlogPenalty,Penalty_emphasis)) + 
+                    sum(priorDensity) + 
+                    TempSS + 
+                    grwthPosFun;
+
+          w_nloglike = sum(elem_prod(nloglike(1),catch_emphasis)) + sum(elem_prod(nloglike(2),cpue_emphasis)) + sum(elem_prod(nloglike(3),lf_emphasis));
+          w_nloglike += sum(nloglike(4));
+          w_nloglike += sum(nloglike(5))*tag_emphasis;
+          w_nloglike += sum(nloglike(6));
+          w_nloglike += sum(nloglike(7))*mmodLkWgt;
+
+
+## Data components
+
+  * 1. fishery catch   : sum(nloglike(1))
+  * 2. index catch     : sum(nloglike(2))
+  * 3. size comps      : sum(nloglike(3))
+  * 4. recruitment     : sum(nloglike(4))
+  * 5. tagging growth  : sum(nloglike(5))
+  * 6. growth data     : sum(nloglike(6))
+  * 7. male mat. og.s  : sum(nloglike(7))
+  * 8. effort expansion: sum(nloglike(8))
+  
+### 5. Tagging-related growth data
+
+          //  5) Likelihood for the tagging-related size-class change data #2
+          if (GrowthObsType==GROWTHCLASS_DATA || GrowthObsType==GROWTHCLASS_VALS){
+            dvariable Prob;
+            dvar_matrix YY(1,nclass,1,nclass);
+            nloglike(5).initialize();
+              // First find all FullY matrices
+            FullY.initialize();
+            for (int h = 1; h <=nsex; h++) {
+              for (int k = 1; k<=nSizeIncVaries(h);k++) {
+                // AEP: Note that the molt_probability is based on syr  
+                for (int ii=1;ii<=nclass;ii++){
+                  for (int jj=1;jj<=nclass;jj++){
+                    if (ii == jj){
+                      YY(ii,jj) = 1.0-molt_probability(h,syr,ii)+growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
+                    } else {
+                      YY(ii,jj) = growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
+                    }
+                  }
+                }
+                FullY(h,k,1) = YY;
+                for (int itime=2;itime<=MaxGrowTimeLibSex(h);itime++) FullY(h,k,itime) = FullY(h,k,itime-1)*YY;
+              } // k loop
+            } // h loop
+        
+            for (int i=1;i<=nGrowthObs;i++) {
+              int h = iMoltIncSex(i);
+              int k = iMoltTrans(i);
+              int iclassRel = iMoltInitSizeClass(i);
+              int iclassRec = iMoltEndSizeClass(i);
+              int itimeLib = iMoltTimeAtLib(i);
+              int ifleetRec = iMoltFleetRecap(i);
+              int iyearRec = iMoltYearRecap(i);
+              double freq = float(iMoltSampSize(i));
+              Prob = FullY(h,k,itimeLib,iclassRel,iclassRec)*exp(log_slx_capture(ifleetRec,h,iyearRec,iclassRec))+1.0e-20;
+              dvariable total = 0;
+              for (int i=1;i<=nSizeSex(h);i++) total += FullY(h,k,itimeLib,iclassRel,i)*exp(log_slx_capture(ifleetRec,h,iyearRec,i));
+              nloglike(5,h) -= log(Prob/total+0.00001)*freq;
+            } // i loop
+          } // Tagging-related growth data
+          if ( verbose >= 3 ) cout << "Ok after tagging-related increment likelihood ..." << endl;
+### 6. Non-tagging growth data
+
+        FUNCTION growth_likelihood
+          if (verbose>=3) ECHOSTR("Strarting growth likelihood")
+        
+          // 6) Likelihood for non-tagging growth increment data
+          if (GrowthObsType==GROWTHINC_DATA_NORMAL){  
+            nloglike(6).initialize(); grwthPosFun.initialize();
+            if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
+              // normal-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+              dvar_vector MoltIncPred = calc_growth_increments_linear(dPreMoltSize, iMoltIncSex,1);
+              for (int i=MoltIncPred.indexmin();i<=MoltIncPred.indexmax();i++)
+                nloglike(6,iMoltIncSex(i)) += dnorm(log(dMoltInc(i)) - log(MoltIncPred(i)), dMoltIncCV(i));//negative log likelihood
+            } 
+          } else if (GrowthObsType==GROWTHINC_DATA_GAMMA){
+            nloglike(6).initialize();
+            if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
+              // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+              nloglike(6) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+            } 
+            if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL){
+              // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+              nloglike(6) = calc_like_gamma_pwrlaw_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+            } else 
+            if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODELALT){
+              // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+              nloglike(6) = calc_like_gamma_pwrlawalt_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+            } 
+          }
+
+
+## Priors
+
+## Penalties
+
+Most penalties are assigned in the `nlogPenalty` vector, which has 13 components: 
+
+  *  1: A penalty on `log_fdev` (male+combined; female) to ensure the fishing mortality devs sum to zero
+  
+            dvariable s     = mean(log_fdev(k));
+            nlogPenalty(1) += Penalty_fdevs(k,1)*s*s;
+            if (nsex > 1){
+              dvariable r     = mean(log_fdov(k));
+              nlogPenalty(1) += Penalty_fdevs(k,2)*r*r;
+            }
+            
+  *  2: A penalty on mean F's to regularize the solution
+
+          int irow = 1;
+          if ( last_phase() ) irow = 2;
+          dvariable fbar;
+          dvariable ln_fbar;
+          for ( int k = 1; k <= nfleet; k++ ){
+           for ( int j = 1; j <= nseason; j++ ){
+             fbar = mean( trans(ft(k,1))(j) );
+             if ( init_fbar(k) > 0 && fbar != 0 ){
+               ln_fbar = log(fbar);
+               nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
+             }
+             if (nsex==2){
+               fbar = mean( trans(ft(k,2))(j) );
+               if ( fbar != 0 ){
+                 ln_fbar = log(fbar);
+                 nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
+               }
+             } 
+           } #--j loop
+          } #--k loop
+
+  *  3: 
+  *  4: 
+  *  5: 
+  *  6: A smoothness penalty on recruitment deviations implemented as a $N(x,1.0)$ normal penalty where $x$ is the first difference in the recruitment deviations.
+  
+            nlogPenalty(6) = dnorm(first_difference(rec_dev),1.0)
+  
+  *  7: A penalty on mean sex ratio:
+  
+          if (nsex > 1) {
+            SumRecF = 0; SumRecM = 0;
+            for ( int i = syr; i <= nyrRetro; i++ )
+             { SumRecF += recruits(2)(i); SumRecM += recruits(1)(i); }
+            nlogPenalty(7) = square(log(SumRecF) - log(SumRecM));
+          }
+ 
+  
+  *  8: A smoothness penalty on molting probability:
+  
+          for (int h=1;h<=nsex;h++)
+           if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)
+            for (int igrow=1;igrow<=nMoltVaries(h);igrow++)
+             nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
+          if (verbose >= 3) cout<<"finished Smoothness penalty on molting probability"<<endl;
+
+  
+  *  9: Smoothness penalty on selectivity patterns with class-specific coefficients
+  
+          nlogPenalty(9) = selex_smooth_pen;
+  
+  * 10: Smoothness penalty on initial numbers at length:
+  
+          nlogPenalty(10) += dnorm(first_difference(logN0(k)), 1.0);
+  
+  * 11: Penalty on annual F-devs for males by fleet
+  * 12: Penalty on annual F-devs for females by fleet
+  * 13: Penalty on deviation parameters other than rec devs and F devs
+  
+The penalties listed above are scaled by `Penalty_emphasis`, a 13-element vector of scale factors.
+
+Another penalty, `grwthPosFun`, is intended to keep mean growth estimates positive.
+  

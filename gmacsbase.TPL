@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.38; ** WTS **; Compiled 2026-06-08");
+ !! TheHeader = adstring("## GMACS Version 2.20.38; ** WTS **; Compiled 2026-06-18");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -4982,11 +4982,11 @@ DATA_SECTION
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > TurnOffPhase) f_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > TurnOffPhase)     foff_phz(Ipar)     = -1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foffdevs_phz(Ipar) > TurnOffPhase) foffdevs_phz(Ipar) = -1;
-  if (rdv_phz > TurnOffPhase) rdv_phz = -1;
+  if (rdv_phz > TurnOffPhase)      rdv_phz = -1;
   if (rec_prop_phz > TurnOffPhase) rec_prop_phz = -1;
-  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > TurnOffPhase) log_vn_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > TurnOffPhase) q_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase) cv_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++)  if (log_vn_phz(Ipar) > TurnOffPhase) log_vn_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_qpar; Ipar++)      if (q_phz(Ipar) > TurnOffPhase)      q_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase)     cv_phz(Ipar) = -1;
 
   for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > 0) NVarPar += 1;
@@ -4996,11 +4996,11 @@ DATA_SECTION
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > 0) NVarPar += nFparams(Ipar);
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > 0)     NVarPar += 1;
   for (Ipar=1;Ipar<=nfleet; Ipar++) if (foffdevs_phz(Ipar) > 0) NVarPar += nYparams(Ipar);
-  if (rdv_phz > 0) NVarPar += (rdv_eyr-rdv_syr+1);
+  if (rdv_phz > 0)      NVarPar += (rdv_eyr-rdv_syr+1);
   if (rec_prop_phz > 0) NVarPar += (rdv_eyr-rdv_syr+1);
-  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > 0) NVarPar += 1;
-  for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > 0) NVarPar += 1;
-  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++)       if (log_vn_phz(Ipar) > 0)     NVarPar += 1;
+  for (Ipar=1;Ipar<=n_qpar; Ipar++)           if (q_phz(Ipar) > 0)          NVarPar += 1;
+  for (Ipar=1;Ipar<=n_addcv_par; Ipar++)      if (cv_phz(Ipar) > 0)         NVarPar += 1;
   for (Ipar=1;Ipar<=n_deviations_est; Ipar++) if (deviations_phz(Ipar) > 0) NVarPar += 1;
   
   cout << "Number of estimated parameters: " << NVarPar << endl;
@@ -5017,6 +5017,12 @@ DATA_SECTION
   NB0Par = NVarPar+1;
   if (OutDynB0==YES) NVarPar += (nyr-syr+1);
   cout << "Number of std variables: " << NVarPar << endl;
+  cout << "ParOut counters: " << endl;
+  cout << "NRefPars: " << NRefPars << endl;
+  cout << "NRecPar : " << NRecPar  << endl;
+  cout << "NSSBPars: " << NSSBPar  << endl;
+  cout << "NfbarPar: " << NfbarPar << endl;
+  cout << "NB0Par  : " << NB0Par   << endl;
  END_CALCS
 
   int PhaseGrowthPar;
@@ -5644,11 +5650,12 @@ PROCEDURE_SECTION
 
   // sd_report variables
   if ( sd_phase() || NfunCall==StopAfterFnCall){
-    if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
+    //if ( verbose >= 3 ) 
+      cout<<"Starting sd_phase. objective function = "<<*objective_function_value::pobjfun<<endl;
     // Save the estimates parameters to ParsOut (used for variance estimation)
     ParsOut.initialize();
     Ipnt = 0;
-    for (ii=1;ii<=n_Tpar;ii++)  if (T_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = T_pars_est(ii); }
+    for (ii=1;ii<=n_Tpar; ii++) if (T_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = T_pars_est(ii); }
     for (ii=1;ii<=n_Gpar; ii++) if (G_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = G_pars_est(ii); }
     for (ii=1;ii<=n_Mpar; ii++) if (M_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = M_pars_est(ii); }
     for (ii=1;ii<=n_Spar; ii++) if (S_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = S_pars_est(ii); }
@@ -5674,7 +5681,8 @@ PROCEDURE_SECTION
     if (CalcRefPoints!=0 && nyrRetroNo==0) calc_spr_reference_points2(1);
     if ( verbose >= 3 ) cout << "Ok after calc_spr_reference_points ..." << endl;
     calc_sdreport();
-    if ( verbose >= 3 ) cout << "Ok after calc_sdreport ..." << endl;
+    //if ( verbose >= 3 ) 
+      cout << "Ok after calc_sdreport. objective function = "<<*objective_function_value::pobjfun<<endl;
   }
 
   // General outputs
@@ -7369,7 +7377,7 @@ FUNCTION dvar_vector calc_like_gamma_linear_growth(const dvector dMoltInc, const
    * and an assumed gamma distribution for the observed molt increment. 
    *
    * Individual predicted postmolt sizes are given in "prdPstMltSizes" vector.
-   * Associated inidivudal negative log-likelihood scores are given in "nllGrowth" vector.
+   * Associated individual negative log-likelihood scores are given in "nllGrowth" vector.
    * 
    * @param dMoltInc is a vector of observed molt increments
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
@@ -7380,9 +7388,9 @@ FUNCTION dvar_vector calc_like_gamma_linear_growth(const dvector dMoltInc, const
   **/
 
 FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+  RETURN_ARRAYS_INCREMENT();
   if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
-  RETURN_ARRAYS_INCREMENT();
     dvariable mnMltInc, r, mu;
     dvar_vector nll(1,nsex);
     int h,i;
@@ -7409,7 +7417,7 @@ FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const
    * and an assumed gamma distribution about the mean. 
    * 
    * Individual predicted postmolt sizes are given in "prdPstMltSizes" vector.
-   * Associated inidivudal negative log-likelihood scores are given in "nllGrowth" vector.
+   * Associated individual negative log-likelihood scores are given in "nllGrowth" vector.
    *
    * @param dMoltInc is a vector of observed molt increments
    * @param vSizes is a vector of doubles of size data from which to compute predicted values
@@ -7420,9 +7428,9 @@ FUNCTION dvar_vector calc_like_gamma_pwrlaw_growth(const dvector dMoltInc, const
   **/
 
 FUNCTION dvar_vector calc_like_gamma_pwrlawalt_growth(const dvector dMoltInc, const dvector vSizes, const ivector iSex, int igrow)
+  RETURN_ARRAYS_INCREMENT();
   if ( vSizes.indexmin() != iSex.indexmin() || vSizes.indexmax() != iSex.indexmax() )
     { cerr << "indices don't match..." << endl; ad_exit(1); }
-  RETURN_ARRAYS_INCREMENT();
     dvariable mnPMZ, mnMltInc, r, mu;
     dvar_vector nll(1,nsex);
     int h,i;
@@ -11084,8 +11092,8 @@ FUNCTION growth_likelihood
   if ( verbose >= 3 ) cout << "Ok after tagging-related increment likelihood ..." << endl;
 
   // 6) Likelihood for non-tagging growth increment data
+  nloglike(6).initialize(); grwthPosFun.initialize();
   if (GrowthObsType==GROWTHINC_DATA_NORMAL){  
-    nloglike(6).initialize(); grwthPosFun.initialize();
     if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
       // normal-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
       dvar_vector MoltIncPred = calc_growth_increments_linear(dPreMoltSize, iMoltIncSex,1);
@@ -11093,7 +11101,6 @@ FUNCTION growth_likelihood
         nloglike(6,iMoltIncSex(i)) += dnorm(log(dMoltInc(i)) - log(MoltIncPred(i)), dMoltIncCV(i));//negative log likelihood
     } 
   } else if (GrowthObsType==GROWTHINC_DATA_GAMMA){
-    nloglike(6).initialize();
     if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
       // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
       nloglike(6) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
@@ -11263,7 +11270,7 @@ FUNCTION calc_objective_function
     cout << "Likelihoods        : " << endl;
     cout << "1. fishery catch   : " << sum(nloglike(1)) << " : " << nloglike(1) << endl;
     cout << "2. index catch     : " << sum(nloglike(2)) << " : " << nloglike(2) << endl;
-    cout << "3. sise comps      : " << sum(nloglike(3)) << " : " << nloglike(3) << endl;
+    cout << "3. size comps      : " << sum(nloglike(3)) << " : " << nloglike(3) << endl;
     cout << "4. recruitment     : " << sum(nloglike(4)) << " : " << nloglike(4) << endl;
     cout << "5. tagging growth  : " << sum(nloglike(5)) << " : " << nloglike(5) << endl;
     cout << "6. growth data     : " << sum(nloglike(6)) << " : " << nloglike(6) << endl;
@@ -13739,7 +13746,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << "  "  << priorDensity(NparEst) << endl;
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << T_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << T_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13760,7 +13767,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << G_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << G_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
    }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13781,7 +13788,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << M_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << M_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13802,7 +13809,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << S_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << parname1(Npar) << " " << S_pars_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13824,7 +13831,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fbar(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fbar(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13854,7 +13861,7 @@ FUNCTION CreateOutput
                 OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
                 RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
                 ParFile1 << NparEst << endl;
-                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
+                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
               }
               OutFile1 << endl;
               RepFile1 << endl;
@@ -13893,7 +13900,7 @@ FUNCTION CreateOutput
               OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
               RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
               ParFile1 << NparEst << endl;
-              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
+              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdev(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
             }
             OutFile1 << endl;
             RepFile1 << endl;
@@ -13927,7 +13934,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " "<< gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_foff(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_foff(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -13957,7 +13964,7 @@ FUNCTION CreateOutput
                 OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
                 RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
                 ParFile1 << NparEst << endl;
-                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
+                OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
               }
               OutFile1 << endl;
               RepFile1 << endl;
@@ -13996,7 +14003,7 @@ FUNCTION CreateOutput
               OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
               RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
               ParFile1 << NparEst << endl;
-              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << endl;
+              OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_fdov(Ipar,Jpar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
             }
             OutFile1 << endl;
             RepFile1 << endl;
@@ -14038,7 +14045,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << "Rec_dev_est_"+str(Ipar) << " " << rec_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << "Rec_dev_est_"+str(Ipar) << " " << rec_dev_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
      }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14059,7 +14066,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << "Logit_rec_prop_est_"+str(Ipar) << " " << logit_rec_prop_est(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << "Logit_rec_prop_est_"+str(Ipar) << " " << logit_rec_prop_est(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
      }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14081,7 +14088,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_vn(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_vn(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14103,7 +14110,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " <<gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << survey_q(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << survey_q(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14125,7 +14132,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " << ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_add_cv(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << anystring << " " << log_add_cv(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14146,7 +14153,7 @@ FUNCTION CreateOutput
       OutFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       RepFile1 << priorDensity(NparEst) << " " << gradientOut(NparEst) << " " <<ParsOut.sd(NparEst) << " " << NparEst; 
       ParFile1 << NparEst << endl;
-      OutFile5 << Npar << " " << NparEst << " " << devnames1(Ipar) << " " << par_devs(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+      OutFile5 << Npar << " " << NparEst << " " << devnames1(Ipar) << " " << par_devs(Ipar) << " " << ParsOut.sd(NparEst) << " " << ParsOut(NparEst) << endl;
     }
     OutFile1 << endl;
     RepFile1 << endl;
@@ -14157,6 +14164,7 @@ FUNCTION CreateOutput
   RepFile1 << ">EOD<" <<endl;
   OutFile1 << "#--------------------------------------------------------------------------------------------" << endl;
   ParFile1.close();
+  OutFile5.close();
 
   // Derived quantities
   // ====================
