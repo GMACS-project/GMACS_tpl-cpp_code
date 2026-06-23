@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.547">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Functions</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./q05-ObjectiveFunction.html" rel="next">
+<link href="./q03-GMACS-flags.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar docked">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./q04-Functions.html">Functions</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Contents</a> 
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q01_Intro.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introduction</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q02-File-organization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">File organization</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q02a-gmacs-dat-file.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">gmacs.dat file</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q02b-model-dat-file.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">model.dat file</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q02c-model-ctl-file.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">model.ctl file</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q02d-model-prj-file.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">model.prj file</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q03-GMACS-flags.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">GMACS flags</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q04-Functions.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Functions</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q05-ObjectiveFunction.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Objective Function</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./q06-EnvCovariates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Environmental covariates</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#initialization" id="toc-initialization" class="nav-link active" data-scroll-target="#initialization">Initialization</a>
+  <ul class="collapse">
+  <li><a href="#initialize_model_parameters" id="toc-initialize_model_parameters" class="nav-link" data-scroll-target="#initialize_model_parameters"><code>initialize_model_parameters</code></a></li>
+  <li><a href="#init_selectivities" id="toc-init_selectivities" class="nav-link" data-scroll-target="#init_selectivities"><code>init_selectivities</code></a></li>
+  <li><a href="#calc_initial_numbers_at_length" id="toc-calc_initial_numbers_at_length" class="nav-link" data-scroll-target="#calc_initial_numbers_at_length"><code>calc_initial_numbers_at_length</code></a></li>
+  <li><a href="#calc_prior_densities" id="toc-calc_prior_densities" class="nav-link" data-scroll-target="#calc_prior_densities"><code>calc_prior_densities</code></a></li>
+  </ul></li>
+  <li><a href="#population-dynamics" id="toc-population-dynamics" class="nav-link" data-scroll-target="#population-dynamics">Population Dynamics</a>
+  <ul class="collapse">
+  <li><a href="#calc_fishing_mortality" id="toc-calc_fishing_mortality" class="nav-link" data-scroll-target="#calc_fishing_mortality"><code>calc_fishing_mortality</code></a></li>
+  <li><a href="#calc_natural_mortality" id="toc-calc_natural_mortality" class="nav-link" data-scroll-target="#calc_natural_mortality"><code>calc_natural_mortality</code></a></li>
+  <li><a href="#calc_total_mortality" id="toc-calc_total_mortality" class="nav-link" data-scroll-target="#calc_total_mortality"><code>calc_total_mortality</code></a></li>
+  <li><a href="#calc_molting_probability" id="toc-calc_molting_probability" class="nav-link" data-scroll-target="#calc_molting_probability"><code>calc_molting_probability</code></a></li>
+  <li><a href="#calc_mature_probability" id="toc-calc_mature_probability" class="nav-link" data-scroll-target="#calc_mature_probability"><code>calc_mature_probability</code></a></li>
+  <li><a href="#calc_growth_increments" id="toc-calc_growth_increments" class="nav-link" data-scroll-target="#calc_growth_increments"><code>calc_growth_increments</code></a></li>
+  <li><a href="#calc_growth_increments_linear" id="toc-calc_growth_increments_linear" class="nav-link" data-scroll-target="#calc_growth_increments_linear"><code>calc_growth_increments_linear</code></a></li>
+  <li><a href="#calc_growth_transition" id="toc-calc_growth_transition" class="nav-link" data-scroll-target="#calc_growth_transition"><code>calc_growth_transition</code></a></li>
+  <li><a href="#calc_recruitment_size_distribution" id="toc-calc_recruitment_size_distribution" class="nav-link" data-scroll-target="#calc_recruitment_size_distribution"><code>calc_recruitment_size_distribution</code></a></li>
+  <li><a href="#update_population_numbers_at_length" id="toc-update_population_numbers_at_length" class="nav-link" data-scroll-target="#update_population_numbers_at_length"><code>update_population_numbers_at_length</code></a></li>
+  <li><a href="#update_population_numbers_at_length_season" id="toc-update_population_numbers_at_length_season" class="nav-link" data-scroll-target="#update_population_numbers_at_length_season"><code>update_population_numbers_at_length_season</code></a></li>
+  <li><a href="#update_population_numbers_at_length_season_new" id="toc-update_population_numbers_at_length_season_new" class="nav-link" data-scroll-target="#update_population_numbers_at_length_season_new"><code>update_population_numbers_at_length_season_new</code></a></li>
+  <li><a href="#updatenumbersatlengthbycase" id="toc-updatenumbersatlengthbycase" class="nav-link" data-scroll-target="#updatenumbersatlengthbycase"><code>updateNumbersAtLengthByCase</code></a></li>
+  <li><a href="#getnumbersatlengthbycase" id="toc-getnumbersatlengthbycase" class="nav-link" data-scroll-target="#getnumbersatlengthbycase"><code>getNumbersAtLengthByCase</code></a></li>
+  <li><a href="#calc_ssb" id="toc-calc_ssb" class="nav-link" data-scroll-target="#calc_ssb"><code>calc_ssb</code></a></li>
+  <li><a href="#calc_ssba" id="toc-calc_ssba" class="nav-link" data-scroll-target="#calc_ssba"><code>calc_ssba</code></a></li>
+  <li><a href="#calc_stock_recruitment_relationship" id="toc-calc_stock_recruitment_relationship" class="nav-link" data-scroll-target="#calc_stock_recruitment_relationship"><code>calc_stock_recruitment_relationship</code></a></li>
+  </ul></li>
+  <li><a href="#observation-models" id="toc-observation-models" class="nav-link" data-scroll-target="#observation-models">Observation Models</a>
+  <ul class="collapse">
+  <li><a href="#calc_selectivities" id="toc-calc_selectivities" class="nav-link" data-scroll-target="#calc_selectivities"><code>calc_selectivities</code></a></li>
+  <li><a href="#calc_predicted_catch" id="toc-calc_predicted_catch" class="nav-link" data-scroll-target="#calc_predicted_catch"><code>calc_predicted_catch</code></a></li>
+  <li><a href="#calc_predicted_catch_det" id="toc-calc_predicted_catch_det" class="nav-link" data-scroll-target="#calc_predicted_catch_det"><code>calc_predicted_catch_det</code></a></li>
+  <li><a href="#calc_predicted_catch_out" id="toc-calc_predicted_catch_out" class="nav-link" data-scroll-target="#calc_predicted_catch_out"><code>calc_predicted_catch_out</code></a></li>
+  <li><a href="#calc_predicted_capture_abdbio" id="toc-calc_predicted_capture_abdbio" class="nav-link" data-scroll-target="#calc_predicted_capture_abdbio"><code>calc_predicted_capture_abdbio</code></a></li>
+  <li><a href="#calc_relative_abundance" id="toc-calc_relative_abundance" class="nav-link" data-scroll-target="#calc_relative_abundance"><code>calc_relative_abundance</code></a></li>
+  <li><a href="#calc_predicted_composition" id="toc-calc_predicted_composition" class="nav-link" data-scroll-target="#calc_predicted_composition"><code>calc_predicted_composition</code></a></li>
+  </ul></li>
+  <li><a href="#likelihoods" id="toc-likelihoods" class="nav-link" data-scroll-target="#likelihoods">Likelihoods</a>
+  <ul class="collapse">
+  <li><a href="#calc_objective_function" id="toc-calc_objective_function" class="nav-link" data-scroll-target="#calc_objective_function"><code>calc_objective_function</code></a></li>
+  <li><a href="#catch_likelihood" id="toc-catch_likelihood" class="nav-link" data-scroll-target="#catch_likelihood"><code>catch_likelihood</code></a></li>
+  <li><a href="#index_likelihood" id="toc-index_likelihood" class="nav-link" data-scroll-target="#index_likelihood"><code>index_likelihood</code></a></li>
+  <li><a href="#length_likelihood" id="toc-length_likelihood" class="nav-link" data-scroll-target="#length_likelihood"><code>length_likelihood</code></a></li>
+  <li><a href="#recruitment_likelihood" id="toc-recruitment_likelihood" class="nav-link" data-scroll-target="#recruitment_likelihood"><code>recruitment_likelihood</code></a></li>
+  <li><a href="#growth_likelihood" id="toc-growth_likelihood" class="nav-link" data-scroll-target="#growth_likelihood"><code>growth_likelihood</code></a></li>
+  <li><a href="#calc_like_gamma_linear_growth" id="toc-calc_like_gamma_linear_growth" class="nav-link" data-scroll-target="#calc_like_gamma_linear_growth"><code>calc_like_gamma_linear_growth</code></a></li>
+  <li><a href="#calc_like_gamma_pwrlaw_growth" id="toc-calc_like_gamma_pwrlaw_growth" class="nav-link" data-scroll-target="#calc_like_gamma_pwrlaw_growth"><code>calc_like_gamma_pwrlaw_growth</code></a></li>
+  <li><a href="#calc_like_gamma_pwrlawalt_growth" id="toc-calc_like_gamma_pwrlawalt_growth" class="nav-link" data-scroll-target="#calc_like_gamma_pwrlawalt_growth"><code>calc_like_gamma_pwrlawalt_growth</code></a></li>
+  <li><a href="#get_prior_pdf" id="toc-get_prior_pdf" class="nav-link" data-scroll-target="#get_prior_pdf"><code>get_prior_pdf</code></a></li>
+  </ul></li>
+  <li><a href="#projections-and-management" id="toc-projections-and-management" class="nav-link" data-scroll-target="#projections-and-management">Projections and Management</a>
+  <ul class="collapse">
+  <li><a href="#calc_spr_reference_points2" id="toc-calc_spr_reference_points2" class="nav-link" data-scroll-target="#calc_spr_reference_points2"><code>calc_spr_reference_points2</code></a></li>
+  <li><a href="#calc_brute_equilibrium" id="toc-calc_brute_equilibrium" class="nav-link" data-scroll-target="#calc_brute_equilibrium"><code>calc_brute_equilibrium</code></a></li>
+  <li><a href="#project_biomass" id="toc-project_biomass" class="nav-link" data-scroll-target="#project_biomass"><code>project_biomass</code></a></li>
+  <li><a href="#project_biomass_ofl" id="toc-project_biomass_ofl" class="nav-link" data-scroll-target="#project_biomass_ofl"><code>project_biomass_OFL</code></a></li>
+  <li><a href="#project_one_year" id="toc-project_one_year" class="nav-link" data-scroll-target="#project_one_year"><code>project_one_year</code></a></li>
+  <li><a href="#calc_predicted_project" id="toc-calc_predicted_project" class="nav-link" data-scroll-target="#calc_predicted_project"><code>calc_predicted_project</code></a></li>
+  <li><a href="#compute_ofl_and_abc" id="toc-compute_ofl_and_abc" class="nav-link" data-scroll-target="#compute_ofl_and_abc"><code>compute_OFL_and_ABC</code></a></li>
+  <li><a href="#project_cohort_numbers_at_length" id="toc-project_cohort_numbers_at_length" class="nav-link" data-scroll-target="#project_cohort_numbers_at_length"><code>project_cohort_numbers_at_length</code></a></li>
+  </ul></li>
+  <li><a href="#output-and-simulation" id="toc-output-and-simulation" class="nav-link" data-scroll-target="#output-and-simulation">Output and Simulation</a>
+  <ul class="collapse">
+  <li><a href="#createoutput" id="toc-createoutput" class="nav-link" data-scroll-target="#createoutput"><code>CreateOutput</code></a></li>
+  <li><a href="#writefiles" id="toc-writefiles" class="nav-link" data-scroll-target="#writefiles"><code>WriteFiles</code></a></li>
+  <li><a href="#write_eval" id="toc-write_eval" class="nav-link" data-scroll-target="#write_eval"><code>write_eval</code></a></li>
+  <li><a href="#calc_sdreport" id="toc-calc_sdreport" class="nav-link" data-scroll-target="#calc_sdreport"><code>calc_sdreport</code></a></li>
+  <li><a href="#simulation_model" id="toc-simulation_model" class="nav-link" data-scroll-target="#simulation_model"><code>simulation_model</code></a></li>
+  </ul></li>
+  <li><a href="#helper-functions" id="toc-helper-functions" class="nav-link" data-scroll-target="#helper-functions">Helper Functions</a>
+  <ul class="collapse">
+  <li><a href="#get_all_sdnr_mar" id="toc-get_all_sdnr_mar" class="nav-link" data-scroll-target="#get_all_sdnr_mar"><code>get_all_sdnr_MAR</code></a></li>
+  <li><a href="#calc_sdnr_mar" id="toc-calc_sdnr_mar" class="nav-link" data-scroll-target="#calc_sdnr_mar"><code>calc_sdnr_MAR</code></a></li>
+  <li><a href="#calc_francis_weights" id="toc-calc_francis_weights" class="nav-link" data-scroll-target="#calc_francis_weights"><code>calc_Francis_weights</code></a></li>
+  <li><a href="#strg" id="toc-strg" class="nav-link" data-scroll-target="#strg"><code>strg</code></a></li>
+  <li><a href="#to_str" id="toc-to_str" class="nav-link" data-scroll-target="#to_str"><code>to_str</code></a></li>
+  <li><a href="#timevarparv" id="toc-timevarparv" class="nav-link" data-scroll-target="#timevarparv"><code>timevarparV</code></a></li>
+  <li><a href="#timevarparv2" id="toc-timevarparv2" class="nav-link" data-scroll-target="#timevarparv2"><code>timevarparV2</code></a></li>
+  <li><a href="#timevarparm" id="toc-timevarparm" class="nav-link" data-scroll-target="#timevarparm"><code>timevarparM</code></a></li>
+  <li><a href="#getpopstatestring" id="toc-getpopstatestring" class="nav-link" data-scroll-target="#getpopstatestring"><code>getPopStateString</code></a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Functions</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This section documents the C++ functions defined in the <code>gmacsbase.TPL</code> file which implement the GMACS assessment model.</p>
+<section id="initialization" class="level2">
+<h2 class="anchored" data-anchor-id="initialization">Initialization</h2>
+<section id="initialize_model_parameters" class="level3">
+<h3 class="anchored" data-anchor-id="initialize_model_parameters"><code>initialize_model_parameters</code></h3>
+<p><strong>Brief</strong>: Initialize model parameters.<br>
+<strong>Details</strong>: Set global variable equal to the estimated parameter vectors.</p>
+</section>
+<section id="init_selectivities" class="level3">
+<h3 class="anchored" data-anchor-id="init_selectivities"><code>init_selectivities</code></h3>
+<p><strong>Brief</strong>: Instantiate and initialize selectivities for each gear as an array of pointers.<br>
+<strong>Author</strong>: William Stockhausen<br>
+<strong>Details</strong>: Selectivity “functions” are handled as classes. The class for each non-mirrored selectivity function is instantiated once here (called in the PRELIMINARY_CALCS_SECTION), and a pointer to it is saved to an array of pointers. Hopefully this will speed up calculating the selectivities in the PROCEDURE_SECTION.</p>
+</section>
+<section id="calc_initial_numbers_at_length" class="level3">
+<h3 class="anchored" data-anchor-id="calc_initial_numbers_at_length"><code>calc_initial_numbers_at_length</code></h3>
+<p><strong>Brief</strong>: Initialize populations numbers-at-length in the start year.<br>
+<strong>Author</strong>: Steve Martell<br>
+<strong>Details</strong>: This function initializes the populations numbers-at-length in the initial year of the model.</p>
+</section>
+<section id="calc_prior_densities" class="level3">
+<h3 class="anchored" data-anchor-id="calc_prior_densities"><code>calc_prior_densities</code></h3>
+<p><strong>Brief</strong>: Calculate prior density functions for leading parameters.<br>
+<strong>Details</strong>: - case 0 is a uniform density between the lower and upper bounds. - case 1 is a normal density with mean = p1 and sd = p2 - case 2 is a lognormal density with mean = log(p1) and sd = p2 - case 3 is a beta density bounded between lb-ub with p1 and p2 as alpha &amp; beta - case 4 is a gamma density with parameters p1 and p2.</p>
+</section>
+</section>
+<section id="population-dynamics" class="level2">
+<h2 class="anchored" data-anchor-id="population-dynamics">Population Dynamics</h2>
+<section id="calc_fishing_mortality" class="level3">
+<h3 class="anchored" data-anchor-id="calc_fishing_mortality"><code>calc_fishing_mortality</code></h3>
+<p><strong>Brief</strong>: Calculate fishing mortality rates for each fleet.<br>
+<strong>Details</strong>: For each fleet estimate scaler log_fbar and deviates (f_devs). This function calculates the fishing mortality rate including deaths due to discards. Where xi is the discard mortality rate.</p>
+</section>
+<section id="calc_natural_mortality" class="level3">
+<h3 class="anchored" data-anchor-id="calc_natural_mortality"><code>calc_natural_mortality</code></h3>
+<p><strong>Brief</strong>: Calculate natural mortality array.<br>
+<strong>Details</strong>: Natural mortality (M) is a 3d array for sex, year and size.</p>
+</section>
+<section id="calc_total_mortality" class="level3">
+<h3 class="anchored" data-anchor-id="calc_total_mortality"><code>calc_total_mortality</code></h3>
+<p><strong>Brief</strong>: Calculate total instantaneous mortality rate and survival rate.<br>
+<strong>Details</strong>: <span class="math inline">\(S = exp(-Z)\)</span>.</p>
+</section>
+<section id="calc_molting_probability" class="level3">
+<h3 class="anchored" data-anchor-id="calc_molting_probability"><code>calc_molting_probability</code></h3>
+<p><strong>Brief</strong>: Calculate the probability of moulting by carapace width.<br>
+<strong>Details</strong>: Note that the parameters <code>molt_mu</code> and <code>molt_cv</code> can only be estimated in cases where there is new shell and old shell data. Note that the diagonal of the P matrix != 0, otherwise the matrix is singular in <code>inv(P)</code>.</p>
+</section>
+<section id="calc_mature_probability" class="level3">
+<h3 class="anchored" data-anchor-id="calc_mature_probability"><code>calc_mature_probability</code></h3>
+<p><strong>Brief</strong>: Calculate the probability of maturing by carapace width. <strong>Details</strong>: Calculates the probability of maturing for immature crab.</p>
+</section>
+<section id="calc_growth_increments" class="level3">
+<h3 class="anchored" data-anchor-id="calc_growth_increments"><code>calc_growth_increments</code></h3>
+<p><strong>Brief</strong>: Calculate mean molt increment as a (linear or power law) function of pre-molt size.</p>
+</section>
+<section id="calc_growth_increments_linear" class="level3">
+<h3 class="anchored" data-anchor-id="calc_growth_increments_linear"><code>calc_growth_increments_linear</code></h3>
+<p><strong>Brief</strong>: Compute (mean) growth increments based on linear form.<br>
+<strong>Details</strong>: Mean growth increments are calculated based on a linear relationship between pre-molt size and molt increment size.</p>
+</section>
+<section id="calc_growth_transition" class="level3">
+<h3 class="anchored" data-anchor-id="calc_growth_transition"><code>calc_growth_transition</code></h3>
+<p><strong>Brief</strong>: Calculate the growth and size transition matrix.<br>
+<strong>Details</strong>: Calculates the size transition matrix for each sex based on growth increments, which is a linear function of the size interval, and the scale parameter for the gamma distribution. This function does the proper integration from the lower to upper size bin, where the mode of the growth increment is scaled by the scale parameter.</p>
+</section>
+<section id="calc_recruitment_size_distribution" class="level3">
+<h3 class="anchored" data-anchor-id="calc_recruitment_size_distribution"><code>calc_recruitment_size_distribution</code></h3>
+<p><strong>Brief</strong>: Calculate size distribution for new recruits.<br>
+<strong>Details</strong>: Based on the gamma distribution, calculates the probability of a new recruit being in size-interval size.</p>
+</section>
+<section id="update_population_numbers_at_length" class="level3">
+<h3 class="anchored" data-anchor-id="update_population_numbers_at_length"><code>update_population_numbers_at_length</code></h3>
+<p><strong>Brief</strong>: Update numbers-at-length.<br>
+<strong>Author</strong>: Team<br>
+<strong>Details</strong>: Projections for entire period.</p>
+</section>
+<section id="update_population_numbers_at_length_season" class="level3">
+<h3 class="anchored" data-anchor-id="update_population_numbers_at_length_season"><code>update_population_numbers_at_length_season</code></h3>
+<p><strong>Brief</strong>: Update numbers-at-length for a season (ORIGINAL logic).<br>
+<strong>Author</strong>: Team<br>
+<strong>Details</strong>: Numbers at length are propagated each year for each sex based on the size transition matrix and a vector of size-specific survival rates. This is for one season. The columns of the size-transition matrix are multiplied by the size-specific survival rate (a scalar). New recruits are added based on the estimated average recruitment and annual deviate, multiplied by a vector of size-proportions (rec_sdd).</p>
+</section>
+<section id="update_population_numbers_at_length_season_new" class="level3">
+<h3 class="anchored" data-anchor-id="update_population_numbers_at_length_season_new"><code>update_population_numbers_at_length_season_new</code></h3>
+<p><strong>Brief</strong>: Update numbers-at-length (REVISED logic).<br>
+<strong>Author</strong>: William Stockhausen<br>
+<strong>Details</strong>: Numbers at length are propagated each year for each sex based on the size transition matrix and a vector of size-specific survival rates. This function implements logic for Terminal Molt option 2 (Tanner crab approach).</p>
+</section>
+<section id="updatenumbersatlengthbycase" class="level3">
+<h3 class="anchored" data-anchor-id="updatenumbersatlengthbycase"><code>updateNumbersAtLengthByCase</code></h3>
+<p><strong>Brief</strong>: Update numbers-at-length by Case to next season/year.</p>
+</section>
+<section id="getnumbersatlengthbycase" class="level3">
+<h3 class="anchored" data-anchor-id="getnumbersatlengthbycase"><code>getNumbersAtLengthByCase</code></h3>
+<p><strong>Brief</strong>: Get numbers-at-length by Case.</p>
+</section>
+<section id="calc_ssb" class="level3">
+<h3 class="anchored" data-anchor-id="calc_ssb"><code>calc_ssb</code></h3>
+<p><strong>Brief</strong>: Calculate mature male biomass (MMB).<br>
+<strong>Details</strong>: Calculation of the mature male biomass is based on the numbers-at-length summed over each shell condition.</p>
+</section>
+<section id="calc_ssba" class="level3">
+<h3 class="anchored" data-anchor-id="calc_ssba"><code>calc_ssba</code></h3>
+<p><strong>Brief</strong>: Calculate mature male abundance (MMA).<br>
+<strong>Details</strong>: Calculation of the mature male abundance is based on the numbers-at-length summed over each shell condition.</p>
+</section>
+<section id="calc_stock_recruitment_relationship" class="level3">
+<h3 class="anchored" data-anchor-id="calc_stock_recruitment_relationship"><code>calc_stock_recruitment_relationship</code></h3>
+<p><strong>Brief</strong>: Calculate stock recruitment relationship.<br>
+<strong>Details</strong>: Assuming a Beverton-Holt relationship between the mature biomass (user defined) and the annual recruits. Note that we derive so and bb in <span class="math inline">\(R = \frac{so \cdot MB}{1 + bb \cdot MB}\)</span> from Ro and steepness.</p>
+</section>
+</section>
+<section id="observation-models" class="level2">
+<h2 class="anchored" data-anchor-id="observation-models">Observation Models</h2>
+<section id="calc_selectivities" class="level3">
+<h3 class="anchored" data-anchor-id="calc_selectivities"><code>calc_selectivities</code></h3>
+<p><strong>Brief</strong>: Calculate selectivities for each gear.<br>
+<strong>Author</strong>: Steve Martell, D’Arcy N. Webber<br>
+<strong>Details</strong>: Three selectivities must be accounted for by each fleet: 1) capture probability, 2) retention probability, and 3) release/discard probability. Only the parameters for capture probability and retention probability are estimated. The discard probability is calculated from these two probabilities. Maintain the possibility of estimating selectivity independently for each sex; assumes there are data to estimate female selex.</p>
+</section>
+<section id="calc_predicted_catch" class="level3">
+<h3 class="anchored" data-anchor-id="calc_predicted_catch"><code>calc_predicted_catch</code></h3>
+<p><strong>Brief</strong>: Calculate predicted catch observations.<br>
+<strong>Details</strong>: The function uses the Baranov catch equation to predict the retained and discarded catch.</p>
+</section>
+<section id="calc_predicted_catch_det" class="level3">
+<h3 class="anchored" data-anchor-id="calc_predicted_catch_det"><code>calc_predicted_catch_det</code></h3>
+<p><strong>Brief</strong>: Calculate predicted catch for a combination of years.<br>
+<strong>Author</strong>: Andre Punt<br>
+<strong>Details</strong>: The function uses the Baranov catch equation to predict the retained, discarded, or total catch for a specific year, season, sex, gear, type, and unit.</p>
+</section>
+<section id="calc_predicted_catch_out" class="level3">
+<h3 class="anchored" data-anchor-id="calc_predicted_catch_out"><code>calc_predicted_catch_out</code></h3>
+<p><strong>Brief</strong>: Calculate predicted catch for all years (not just data years).<br>
+<strong>Author</strong>: D’Arcy N. Webber<br>
+<strong>Details</strong>: The function uses the Baranov catch equation to predict the retained and discarded catch for all model years (not just those years for which we have observations). This is used for plotting purposes only.</p>
+</section>
+<section id="calc_predicted_capture_abdbio" class="level3">
+<h3 class="anchored" data-anchor-id="calc_predicted_capture_abdbio"><code>calc_predicted_capture_abdbio</code></h3>
+<p><strong>Brief</strong>: Calculate predicted capture abundance/biomass by year, fishery, sex, and size.<br>
+<strong>Author</strong>: William Stockhausen<br>
+<strong>Details</strong>: The function uses the Baranov catch equation to predict the fishery captures for all model years (not just those years for which we have observations). This is used for plotting purposes only.</p>
+</section>
+<section id="calc_relative_abundance" class="level3">
+<h3 class="anchored" data-anchor-id="calc_relative_abundance"><code>calc_relative_abundance</code></h3>
+<p><strong>Brief</strong>: Calculate predicted relative abundance and residuals (accommodates q blocks).<br>
+<strong>Author</strong>: Steve Martell, D’Arcy Webber, William Stockhausen<br>
+<strong>Details</strong>: Calculates predicted relative abundance and residuals for each row in <code>dSurveyData</code>.</p>
+</section>
+<section id="calc_predicted_composition" class="level3">
+<h3 class="anchored" data-anchor-id="calc_predicted_composition"><code>calc_predicted_composition</code></h3>
+<p><strong>Brief</strong>: Calculate predicted size composition data.<br>
+<strong>Details</strong>: Predicted size composition data are given in proportions.</p>
+</section>
+</section>
+<section id="likelihoods" class="level2">
+<h2 class="anchored" data-anchor-id="likelihoods">Likelihoods</h2>
+<section id="calc_objective_function" class="level3">
+<h3 class="anchored" data-anchor-id="calc_objective_function"><code>calc_objective_function</code></h3>
+<p><strong>Brief</strong>: Calculate objective function.<br>
+<strong>Details</strong>: Sums likelihood components (catch, index, size comps, recruitment, growth, tagging) and penalty components (F-devs, regularization, smoothness).</p>
+</section>
+<section id="catch_likelihood" class="level3">
+<h3 class="anchored" data-anchor-id="catch_likelihood"><code>catch_likelihood</code></h3>
+<p><strong>Brief</strong>: Calculate likelihood of the catch data (assumes lognormal error).</p>
+</section>
+<section id="index_likelihood" class="level3">
+<h3 class="anchored" data-anchor-id="index_likelihood"><code>index_likelihood</code></h3>
+<p><strong>Brief</strong>: Calculate likelihood of the relative abundance data.</p>
+</section>
+<section id="length_likelihood" class="level3">
+<h3 class="anchored" data-anchor-id="length_likelihood"><code>length_likelihood</code></h3>
+<p><strong>Brief</strong>: Calculate likelihood for size composition data.</p>
+</section>
+<section id="recruitment_likelihood" class="level3">
+<h3 class="anchored" data-anchor-id="recruitment_likelihood"><code>recruitment_likelihood</code></h3>
+<p><strong>Brief</strong>: Calculate likelihood for recruitment deviations.</p>
+</section>
+<section id="growth_likelihood" class="level3">
+<h3 class="anchored" data-anchor-id="growth_likelihood"><code>growth_likelihood</code></h3>
+<p><strong>Brief</strong>: Calculate likelihood for growth data.</p>
+</section>
+<section id="calc_like_gamma_linear_growth" class="level3">
+<h3 class="anchored" data-anchor-id="calc_like_gamma_linear_growth"><code>calc_like_gamma_linear_growth</code></h3>
+<p><strong>Brief</strong>: Calculate likelihood of observed molt increments based on linear relationship for mean growth and a gamma distribution.<br>
+<strong>Details</strong>: Growth likelihood is calculated based on a linear relationship for mean molt increment as a function of pre-molt size and an assumed gamma distribution about the mean.</p>
+</section>
+<section id="calc_like_gamma_pwrlaw_growth" class="level3">
+<h3 class="anchored" data-anchor-id="calc_like_gamma_pwrlaw_growth"><code>calc_like_gamma_pwrlaw_growth</code></h3>
+<p><strong>Brief</strong>: Calculate likelihood of observed postmolt size based on a power law for mean growth and a gamma distribution for molt increment.<br>
+<strong>Details</strong>: Growth likelihood is calculated based on a power law relationship for mean post-molt size given pre-molt size and an assumed gamma distribution for the observed molt increment.</p>
+</section>
+<section id="calc_like_gamma_pwrlawalt_growth" class="level3">
+<h3 class="anchored" data-anchor-id="calc_like_gamma_pwrlawalt_growth"><code>calc_like_gamma_pwrlawalt_growth</code></h3>
+<p><strong>Brief</strong>: Calculate likelihood of observed postmolt size based on an alternative power law for mean growth and a gamma distribution.<br>
+<strong>Details</strong>: Growth likelihood is calculated based on an alternative power law relationship for mean post-molt size given pre-molt size and an assumed gamma distribution about the mean.</p>
+</section>
+<section id="get_prior_pdf" class="level3">
+<h3 class="anchored" data-anchor-id="get_prior_pdf"><code>get_prior_pdf</code></h3>
+<p><strong>Brief</strong>: Calculate prior pdf.<br>
+<strong>Details</strong>: Function to calculate prior pdf value based on prior type and parameters.</p>
+</section>
+</section>
+<section id="projections-and-management" class="level2">
+<h2 class="anchored" data-anchor-id="projections-and-management">Projections and Management</h2>
+<section id="calc_spr_reference_points2" class="level3">
+<h3 class="anchored" data-anchor-id="calc_spr_reference_points2"><code>calc_spr_reference_points2</code></h3>
+<p><strong>Brief</strong>: Calculate SPR reference points.</p>
+</section>
+<section id="calc_brute_equilibrium" class="level3">
+<h3 class="anchored" data-anchor-id="calc_brute_equilibrium"><code>calc_brute_equilibrium</code></h3>
+<p><strong>Brief</strong>: Calculate equilibrium initial conditions.<br>
+<strong>Author</strong>: Andre Punt</p>
+</section>
+<section id="project_biomass" class="level3">
+<h3 class="anchored" data-anchor-id="project_biomass"><code>project_biomass</code></h3>
+<p><strong>Brief</strong>: Project biomass forward.</p>
+</section>
+<section id="project_biomass_ofl" class="level3">
+<h3 class="anchored" data-anchor-id="project_biomass_ofl"><code>project_biomass_OFL</code></h3>
+<p><strong>Brief</strong>: Project biomass for OFL calculation.</p>
+</section>
+<section id="project_one_year" class="level3">
+<h3 class="anchored" data-anchor-id="project_one_year"><code>project_one_year</code></h3>
+<p><strong>Brief</strong>: Project population one year forward.</p>
+</section>
+<section id="calc_predicted_project" class="level3">
+<h3 class="anchored" data-anchor-id="calc_predicted_project"><code>calc_predicted_project</code></h3>
+<p><strong>Brief</strong>: Calculate predicted catch/quantities for projection.</p>
+</section>
+<section id="compute_ofl_and_abc" class="level3">
+<h3 class="anchored" data-anchor-id="compute_ofl_and_abc"><code>compute_OFL_and_ABC</code></h3>
+<p><strong>Brief</strong>: Compute OFL and ABC.</p>
+</section>
+<section id="project_cohort_numbers_at_length" class="level3">
+<h3 class="anchored" data-anchor-id="project_cohort_numbers_at_length"><code>project_cohort_numbers_at_length</code></h3>
+<p><strong>Brief</strong>: Project cohort numbers-at-length.<br>
+<strong>Author</strong>: WTS<br>
+<strong>Details</strong>: Simulate cohort progression through time.</p>
+</section>
+</section>
+<section id="output-and-simulation" class="level2">
+<h2 class="anchored" data-anchor-id="output-and-simulation">Output and Simulation</h2>
+<section id="createoutput" class="level3">
+<h3 class="anchored" data-anchor-id="createoutput"><code>CreateOutput</code></h3>
+<p><strong>Brief</strong>: Generate report files.<br>
+<strong>Details</strong>: Creates <code>Gmacsall.out</code>, <code>gmacs.rep</code>, <code>gmacs.rep1</code>, and other output files.</p>
+</section>
+<section id="writefiles" class="level3">
+<h3 class="anchored" data-anchor-id="writefiles"><code>WriteFiles</code></h3>
+<p><strong>Brief</strong>: Write formatted input files with estimated parameters.<br>
+<strong>Details</strong>: Writes <code>gmacs_out.dat</code>, <code>gmacs_out.ctl</code> containing estimated values and expected data.</p>
+</section>
+<section id="write_eval" class="level3">
+<h3 class="anchored" data-anchor-id="write_eval"><code>write_eval</code></h3>
+<p><strong>Brief</strong>: Conduct projections and write evaluation output.<br>
+<strong>Author</strong>: Andre Punt</p>
+</section>
+<section id="calc_sdreport" class="level3">
+<h3 class="anchored" data-anchor-id="calc_sdreport"><code>calc_sdreport</code></h3>
+<p><strong>Brief</strong>: Calculate sd_report variables.<br>
+<strong>Details</strong>: Sets up variables for which standard deviations are required in the final phase.</p>
+</section>
+<section id="simulation_model" class="level3">
+<h3 class="anchored" data-anchor-id="simulation_model"><code>simulation_model</code></h3>
+<p><strong>Brief</strong>: Simulation model.<br>
+<strong>Details</strong>: Uses many of the same routines as the assessment model but over-writes the observed data in memory with simulated data generated using the current parameter values.</p>
+</section>
+</section>
+<section id="helper-functions" class="level2">
+<h2 class="anchored" data-anchor-id="helper-functions">Helper Functions</h2>
+<section id="get_all_sdnr_mar" class="level3">
+<h3 class="anchored" data-anchor-id="get_all_sdnr_mar"><code>get_all_sdnr_MAR</code></h3>
+<p><strong>Brief</strong>: Calculate SDNR and MAR.<br>
+<strong>Details</strong>: Calculates Standard Deviation of Normalized Residuals and Median Absolute Residuals.</p>
+</section>
+<section id="calc_sdnr_mar" class="level3">
+<h3 class="anchored" data-anchor-id="calc_sdnr_mar"><code>calc_sdnr_MAR</code></h3>
+<p><strong>Brief</strong>: Find the standard deviation of the standardized residuals and their median.</p>
+</section>
+<section id="calc_francis_weights" class="level3">
+<h3 class="anchored" data-anchor-id="calc_francis_weights"><code>calc_Francis_weights</code></h3>
+<p><strong>Brief</strong>: Calculate Francis weights.<br>
+<strong>Details</strong>: This code is based on equation TA1.8 in Francis (2011). Produces the new weight that should be used for composition data.</p>
+</section>
+<section id="strg" class="level3">
+<h3 class="anchored" data-anchor-id="strg"><code>strg</code></h3>
+<p><strong>Brief</strong>: Format a double using ‘g’-type formatting.<br>
+<strong>Details</strong>: Helper for string formatting.</p>
+</section>
+<section id="to_str" class="level3">
+<h3 class="anchored" data-anchor-id="to_str"><code>to_str</code></h3>
+<p><strong>Brief</strong>: Convert dvector to string.<br>
+<strong>Details</strong>: Converts dvector to string of unquoted, space-separated values.</p>
+</section>
+<section id="timevarparv" class="level3">
+<h3 class="anchored" data-anchor-id="timevarparv"><code>timevarparV</code></h3>
+<p><strong>Brief</strong>: Time-varying parameter helper (Vector return).</p>
+</section>
+<section id="timevarparv2" class="level3">
+<h3 class="anchored" data-anchor-id="timevarparv2"><code>timevarparV2</code></h3>
+<p><strong>Brief</strong>: Time-varying parameter helper (Vector return, alternative).</p>
+</section>
+<section id="timevarparm" class="level3">
+<h3 class="anchored" data-anchor-id="timevarparm"><code>timevarparM</code></h3>
+<p><strong>Brief</strong>: Time-varying natural mortality parameter helper.</p>
+</section>
+<section id="getpopstatestring" class="level3">
+<h3 class="anchored" data-anchor-id="getpopstatestring"><code>getPopStateString</code></h3>
+<p><strong>Brief</strong>: Get population state string.<br>
+<strong>Details</strong>: Returns a string describing sex, maturity, and shell condition for a group index.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./q03-GMACS-flags.html" class="pagination-link  aria-label=" gmacs="" flags"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">GMACS flags</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./q05-ObjectiveFunction.html" class="pagination-link" aria-label="Objective Function">
+        <span class="nav-page-text">Objective Function</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>v.2.20.39</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

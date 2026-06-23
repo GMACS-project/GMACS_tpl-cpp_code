@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>GMACS flags</title>
+<title>Environmental covariates</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -30,8 +30,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./q04-Functions.html" rel="next">
-<link href="./q02d-model-prj-file.html" rel="prev">
+<link href="./q05-ObjectiveFunction.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -69,6 +68,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -81,7 +109,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./q03-GMACS-flags.html">GMACS flags</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./q06-EnvCovariates.html">Environmental covariates</a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -144,7 +172,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./q03-GMACS-flags.html" class="sidebar-item-text sidebar-link active">
+  <a href="./q03-GMACS-flags.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">GMACS flags</span></a>
   </div>
 </li>
@@ -162,7 +190,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./q06-EnvCovariates.html" class="sidebar-item-text sidebar-link">
+  <a href="./q06-EnvCovariates.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Environmental covariates</span></a>
   </div>
 </li>
@@ -172,35 +200,14 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">On this page</h2>
-   
-  <ul>
-  <li><a href="#gmacs-flags" id="toc-gmacs-flags" class="nav-link active" data-scroll-target="#gmacs-flags">GMACS flags</a>
-  <ul class="collapse">
-  <li><a href="#basic-flags" id="toc-basic-flags" class="nav-link" data-scroll-target="#basic-flags">Basic flags</a></li>
-  <li><a href="#population-characteristics" id="toc-population-characteristics" class="nav-link" data-scroll-target="#population-characteristics">Population characteristics</a></li>
-  <li><a href="#data-flags" id="toc-data-flags" class="nav-link" data-scroll-target="#data-flags">Data flags</a></li>
-  </ul></li>
-  <li><a href="#ctl-file-options-and-flags" id="toc-ctl-file-options-and-flags" class="nav-link" data-scroll-target="#ctl-file-options-and-flags">ctl file options and flags</a>
-  <ul class="collapse">
-  <li><a href="#prior-types" id="toc-prior-types" class="nav-link" data-scroll-target="#prior-types">Prior types</a></li>
-  <li><a href="#initial-n" id="toc-initial-n" class="nav-link" data-scroll-target="#initial-n">Initial N</a></li>
-  <li><a href="#allometry-length-weight-relationships" id="toc-allometry-length-weight-relationships" class="nav-link" data-scroll-target="#allometry-length-weight-relationships">Allometry: Length-weight relationships</a></li>
-  <li><a href="#natural-mortality-m-flags" id="toc-natural-mortality-m-flags" class="nav-link" data-scroll-target="#natural-mortality-m-flags">Natural mortality (M) flags</a></li>
-  <li><a href="#growth-transition-types" id="toc-growth-transition-types" class="nav-link" data-scroll-target="#growth-transition-types">Growth transition types</a></li>
-  <li><a href="#fishing-mortality-type-flags" id="toc-fishing-mortality-type-flags" class="nav-link" data-scroll-target="#fishing-mortality-type-flags">Fishing mortality type flags</a></li>
-  <li><a href="#selectivity-and-retention-function-flags" id="toc-selectivity-and-retention-function-flags" class="nav-link" data-scroll-target="#selectivity-and-retention-function-flags">Selectivity and retention function flags</a></li>
-  </ul></li>
-  </ul>
-</nav>
+        
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">GMACS flags</h1>
+<h1 class="title">Environmental covariates</h1>
 </div>
 
 
@@ -217,246 +224,16 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="gmacs-flags" class="level2">
-<h2 class="anchored" data-anchor-id="gmacs-flags">GMACS flags</h2>
-<p>The GMACS code and input files use a number of integer “flags” to identify user-specified options and clarify code. The complete list of these flags–identified from macro “defines” in the TPL code–is given in the following sections. For each flag, the value, a brief description, and the macro variable (in parentheses) are given (TODO: finish). For flags associated with functions, the function parameters (in the order they need to be specified in the ctl file) are also given as sub-bullets (TODO: finish).</p>
-<section id="basic-flags" class="level3">
-<h3 class="anchored" data-anchor-id="basic-flags">Basic flags</h3>
-<ul>
-<li>0: no (NO)</li>
-<li>1: yes (YES)</li>
-</ul>
-</section>
-<section id="population-characteristics" class="level3">
-<h3 class="anchored" data-anchor-id="population-characteristics">Population characteristics</h3>
-<section id="sex-flags" class="level4">
-<h4 class="anchored" data-anchor-id="sex-flags">Sex flags</h4>
-<ul>
-<li>0: undetermined or single sex (UNDET_SEX)</li>
-<li>1: male (MALES)</li>
-<li>2: female (FEMALES)</li>
-</ul>
-</section>
-<section id="shell-condition-flags" class="level4">
-<h4 class="anchored" data-anchor-id="shell-condition-flags">Shell condition flags</h4>
-<ul>
-<li>0: undetermined (UNDET_SHELL)</li>
-<li>1: new shell (NEW_SHELL)</li>
-<li>2: old shell (OLD_SHELL)</li>
-</ul>
-</section>
-<section id="maturity-state-flags" class="level4">
-<h4 class="anchored" data-anchor-id="maturity-state-flags">Maturity state flags</h4>
-<ul>
-<li>0: undetermined (UNDET_MATURE)</li>
-<li>1: mature (MATURE)</li>
-<li>2: immature (IMMATURE)</li>
-</ul>
-</section>
-</section>
-<section id="data-flags" class="level3">
-<h3 class="anchored" data-anchor-id="data-flags">Data flags</h3>
-<section id="basic-data-types" class="level4">
-<h4 class="anchored" data-anchor-id="basic-data-types">Basic data types</h4>
-<ul>
-<li>1: biomass (BIOMASS)</li>
-<li>2: abundance (ABUNDANCE)</li>
-</ul>
-</section>
-<section id="catch-data-type-flags" class="level4">
-<h4 class="anchored" data-anchor-id="catch-data-type-flags">Catch data type flags</h4>
-<ul>
-<li>0: total catch (TOTALCATCH)</li>
-<li>1: retaied catch (RETAINED)</li>
-<li>2: discarded catch (DISCARDED)</li>
-</ul>
-</section>
-<section id="growth-data-type-flags" class="level4">
-<h4 class="anchored" data-anchor-id="growth-data-type-flags">Growth data type flags</h4>
-<ul>
-<li>0: no growth data (NOGROWTH_DATA)</li>
-<li>1: normally-distributed growth increment data (GROWTHINC_DATA_NORMAL)</li>
-<li>2: data for a growth class (??) (GROWTHCLASS_DATA)</li>
-<li>3: values for a growth class (??) (GROWTHCLASS_VALS)</li>
-<li>4: gamma-distributed growth increment data (GROWTHINC_DATA_GAMMA)</li>
-</ul>
-<p>For 1 (GROWTHINC_DATA_NORMAL), the difference between the observed growth increment and the predicted (the “error”) is assumed to be normally-distributed with an assumed CV, but note that this is not necessarily reflective of the predicted growth transition matrix. The “error” can be regarded as including both the variability for any individual molt increment and any measurement error. For 4, the “error” is simply the difference between the observed molt increment and the predicted mean, and thus the likelihood is consistent with the transition matrix..</p>
-</section>
-</section>
-</section>
-<section id="ctl-file-options-and-flags" class="level2">
-<h2 class="anchored" data-anchor-id="ctl-file-options-and-flags">ctl file options and flags</h2>
-<section id="prior-types" class="level3">
-<h3 class="anchored" data-anchor-id="prior-types">Prior types</h3>
-<ul>
-<li>0: Uniform - parameters are the range of the uniform prior (UNIFORM_PRIOR)</li>
-<li>1: Normal - parameters are the mean and sd (NORMAL_PRIOR)</li>
-<li>2: Lognormal - parameters are the mean and sd of the log (LOGNORMAL_PRIOR)</li>
-<li>3: Beta - parameters are the two beta parameters [see dbeta] (BETA_PRIOR)</li>
-<li>4: Gamma - parameters are the two gamma parameters [see dgamma] (GAMMA_PRIOR)</li>
-</ul>
-</section>
-<section id="initial-n" class="level3">
-<h3 class="anchored" data-anchor-id="initial-n">Initial N</h3>
-<ul>
-<li>0: unfished equilibrium (UNFISHEDEQN)</li>
-<li>1: fished equilibrium (FISHEDEQN)</li>
-<li>2: freely-estimated parameters (FREEPARS)</li>
-<li>3: freely-estimated parameters (scaled) (FREEPARSSCALED)</li>
-<li>4: reference points (??) (REFPOINTS)</li>
-</ul>
-</section>
-<section id="allometry-length-weight-relationships" class="level3">
-<h3 class="anchored" data-anchor-id="allometry-length-weight-relationships">Allometry: Length-weight relationships</h3>
-<ul>
-<li>1: functional relationship (LW_RELATIONSHIP)</li>
-<li>2: vector of values (weights-at-sizes) (LW_VECTOR)</li>
-<li>3: matrix (rows: years; columns: weights-at-sizes) (LW_MATRIX)</li>
-</ul>
-</section>
-<section id="natural-mortality-m-flags" class="level3">
-<h3 class="anchored" data-anchor-id="natural-mortality-m-flags">Natural mortality (M) flags</h3>
-<ul>
-<li>0: constant M (M_CONSTANT)</li>
-<li>1: random (walk?) (M_RANDOM)</li>
-<li>2: cubic spline (M_CUBIC_SPLINE)</li>
-<li>3: blocked changes (M_BLOCKED_CHANGES)</li>
-<li>4: time blocks type 1 (M_TIME_BLOCKS1)</li>
-<li>5: time blocks type 3 (M_TIME_BLOCKS3)</li>
-<li>6: time blocks type 2 (M_TIME_BLOCKS2) [yes, out of order]</li>
-</ul>
-<section id="custom-m" class="level4">
-<h4 class="anchored" data-anchor-id="custom-m">Custom M</h4>
-<ul>
-<li>0: no custom M (NO_CUSTOM_M)</li>
-<li>1: w/ custom M (??) (WITH_CUSTOM_M)</li>
-</ul>
-</section>
-</section>
-<section id="growth-transition-types" class="level3">
-<h3 class="anchored" data-anchor-id="growth-transition-types">Growth transition types</h3>
-<section id="options-for-the-growth-matrix" class="level4">
-<h4 class="anchored" data-anchor-id="options-for-the-growth-matrix">Options for the growth matrix</h4>
-<ul>
-<li>1: Pre-specified growth transition matrix (requires molt probability) (GROWTH_FIXEDGROWTHTRANS)</li>
-<li>2: Pre-specified size transition matrix (molt probability is ignored) (GROWTH_FIXEDSIZETRANS)</li>
-<li>3: Growth increment is gamma distributed (requires molt probability) (GROWTH_INCGAMMA)</li>
-<li>4: Post-molt size is gamma distributed (requires molt probability) (GROWTH_SIZEGAMMA)</li>
-<li>5: Von Bert.: kappa varies among individuals (requires molt probability) (GROWTH_VARYK)</li>
-<li>6: Von Bert.: Linf varies among individuals (requires molt probability) (GROWTH_VARYLINF)</li>
-<li>7: Von Bert.: kappa and Linf varies among individuals (requires molt probability) (GROWTH_VARYKLINF)</li>
-<li>8: Growth increment is normally distributed (requires molt probability) (GROWTH_NORMAL)</li>
-</ul>
-</section>
-<section id="options-for-the-growth-increment-model-matrix" class="level4">
-<h4 class="anchored" data-anchor-id="options-for-the-growth-increment-model-matrix">Options for the growth increment model matrix</h4>
-<ul>
-<li>1: Linear (LINEAR_GROWTHMODEL)
-<ul>
-<li>intercept</li>
-<li>slope</li>
-<li>ln-scale gamma distribution scale parameter</li>
-</ul></li>
-<li>2: Individual (INDIVIDUAL_GROWTHMODEL1)</li>
-<li>3: Individual (Same as 2) (INDIVIDUAL_GROWTHMODEL2)</li>
-<li>4: Power law for mean post-molt size (PWRLAW_GROWTHMODEL)
-<ul>
-<li>ln-scale intercept</li>
-<li>ln-scale slope</li>
-<li>ln-scale gamma distribution scale parameter</li>
-</ul></li>
-<li>5: Alternative power law for mean post-molt size (PWRLAW_GROWTHMODELALT)
-<ul>
-<li>reference (small) pre-molt size (constant: must have phase &lt; 0)</li>
-<li>mean post-molt size at small reference pre-molt size</li>
-<li>reference (large) pre-molt size (constant: must have phase &lt; 0)</li>
-<li>mean post-molt size at large reference pre-molt size</li>
-<li>ln-scale gamma distribution scale parameter</li>
-</ul></li>
-</ul>
-<section id="options-for-the-molt-probability-function" class="level5">
-<h5 class="anchored" data-anchor-id="options-for-the-molt-probability-function">Options for the molt probability function</h5>
-<ul>
-<li>0: Pre-specified (FIXED_PROB_MOLT)</li>
-<li>1: Constant at 1 (CONSTANT_PROB_MOLT)</li>
-<li>2: Logistic (LOGISTIC_PROB_MOLT)</li>
-<li>3: Individual (FREE_PROB_MOLT)</li>
-</ul>
-</section>
-<section id="options-for-the-mature-probability-function" class="level5">
-<h5 class="anchored" data-anchor-id="options-for-the-mature-probability-function">Options for the mature probability function</h5>
-<ul>
-<li>0: Pre-specified (FIXED_PROB_MATURE)</li>
-<li>1: Constant at 1 (CONSTANT_PROB_MATURE)</li>
-<li>2: Logistic (LOGISTIC_PROB_MATURE)</li>
-<li>3: Individual (FREE_PROB_MATURE)</li>
-</ul>
-</section>
-</section>
-</section>
-<section id="fishing-mortality-type-flags" class="level3">
-<h3 class="anchored" data-anchor-id="fishing-mortality-type-flags">Fishing mortality type flags</h3>
-<ul>
-<li>0: inatantaneous F (INSTANT_F)</li>
-<li>1: constinuous F (CONTINUOUS_F)</li>
-<li>2: ?? (EXPLOIT_F)</li>
-</ul>
-</section>
-<section id="selectivity-and-retention-function-flags" class="level3">
-<h3 class="anchored" data-anchor-id="selectivity-and-retention-function-flags">Selectivity and retention function flags</h3>
-<p>See code in include/selex.hpp for more details on specific functions.</p>
-<ul>
-<li>0: Parametric selectivity (SELEX_PARAMETRIC; gsm::ParameterPerClass)
-<ul>
-<li>1 ln-scale parameter per size class</li>
-</ul></li>
-<li>1: coefficients (SELEX_COEFFICIENTS; gsm::SelectivityCoefficients)
-<ul>
-<li>1 parameter per class (documentation says logit-scale, but code implies ln-scale)</li>
-</ul></li>
-<li>2: standard logistic (SELEX_STANLOGISTIC; gsm::LogisticCurve)
-<ul>
-<li>ln-scale size-at-50% selected</li>
-<li>ln-scale width</li>
-</ul></li>
-<li>3: alternative logistic (SELEX_5095LOGISTIC; gsm::LogisticCurve95)
-<ul>
-<li>ln-scale size-at-50% selected</li>
-<li>ln-scale size at 95% selected</li>
-</ul></li>
-<li>4: 3-parameter double normal (SELEX_DOUBLENORM; gsm::DoubleNormal)
-<ul>
-<li>ln-scale ascending limb width</li>
-<li>ln-scale size at full selection (50% cdf)</li>
-<li>ln-scale descending limb width</li>
-</ul></li>
-<li>5: uniform with value 1 (SELEX_UNIFORM1; gsm::UniformCurve)</li>
-<li>6: uniform with value 0 (SELEX_UNIFORM0; gsm::Uniform0Curve)</li>
-<li>7: 4-parameter double normal (SELEX_DOUBLENORM4; gsm::DoubleNormal4)
-<ul>
-<li>ln-scale ascending limb width</li>
-<li>ln-scale ascending limb size at full selection</li>
-<li>ln-scale descending limb width</li>
-<li>ln-scale descending limb size at full selection</li>
-</ul></li>
-<li>8: declining logistic (SELEX_DECLLOGISTIC; gsm::DeclineLogistic)
-<ul>
-<li>ln-scale size-at-50% selected</li>
-<li>ln-scale slope at 50% selected</li>
-</ul></li>
-<li>9: cubic spline (SELEX_CUBIC_SPLINE; gsm::SelectivitySpline)</li>
-<li>10: 1-parameter logistic (SELEX_ONE_PAR_LOGISTIC; gsm::LogisticCurveOne)
-<ul>
-<li>ln-scale size at 50% selected (slope fixed at 1)</li>
-</ul></li>
-<li>11: pre-specified (SELEX_PRESPECIFIED)</li>
-<li>12: cubic spline w/ a floor (SELEX_CUBIC_SPLINE_FLOOR; gsm::SelectivitySpline)</li>
-<li>13 stacked logistic (SELEX_STACKED_LOGISTIC; gsm::StackedLogistic)</li>
-</ul>
+<p>This section documents specification of the environmental covariates for parameters in GMACS.</p>
+<p>Most of the parameters of GMACS (e.g., mean recruitment, selectivity, growth and survey catchability) can be estimated in blocks or as a function of environmental covariates. There are three ways in which environmental variables can impact the value of a parameter, i.e.:</p>
+<p>Additive: <span class="math inline">\(P_y=P_{base}+\gamma_y\)</span></p>
+<p>Multiplicative: <span class="math inline">\(P_y=P_{base}\cdot \gamma_y\)</span></p>
+<p>Exponential: <span class="math inline">\(P_y=P_{base}\cdot exp(\gamma_y)\)</span></p>
+<p>where <span class="math inline">\(P_y\)</span> is the value of parameter <span class="math inline">\(P\)</span> during year <span class="math inline">\(y\)</span>, <span class="math inline">\(P_{base}\)</span> is the base (or reference) value of parameter <span class="math inline">\(P\)</span>, and <span class="math inline">\(\gamma_y\)</span> is the environment factor for parameter <span class="math inline">\(P\)</span>. <span class="math inline">\(\gamma_y\)</span> can be a polynomial function of multiple environmental variables (usually normalized to be mean 0 and standard deviation 1 for ease of interpretation). In its most general form, <span class="math inline">\(\gamma_y\)</span> is parameterized as:</p>
+<p><span id="eq-EnvCovs"><span class="math display">\[\gamma_y=∑_v∑_{j=1}^{n_v}\chi_{v,j} \cdot E_{v,y} ^j \tag{1}\]</span></span></p>
+<p>where <span class="math inline">\(E_{v,y}\)</span> is the value of environmental variable <span class="math inline">\(v\)</span> for year <span class="math inline">\(y\)</span>, <span class="math inline">\(n_v\)</span> is the polynomial degree for variable <span class="math inline">\(v\)</span>, and <span class="math inline">\(\gamma_{v,j}\)</span> is the (potentially) estimated parameter for environmental variable <span class="math inline">\(v\)</span> and degree <span class="math inline">\(j\)</span>. Terms in Equation <a href="#eq-EnvCovs" class="quarto-xref">1</a> can be omitted by setting the initial value for <span class="math inline">\(\gamma_{v,j}\)</span> to zero and not estimating this parameter.</p>
 
 
-</section>
-</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -848,14 +625,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./q02d-model-prj-file.html" class="pagination-link  aria-label=" model.prj="" file"="">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">model.prj file</span>
+      <a href="./q05-ObjectiveFunction.html" class="pagination-link  aria-label=" objective="" function"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Objective Function</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./q04-Functions.html" class="pagination-link" aria-label="Functions">
-        <span class="nav-page-text">Functions</span> <i class="bi bi-arrow-right-short"></i>
-      </a>
   </div>
 </nav>
 </div> <!-- /content -->

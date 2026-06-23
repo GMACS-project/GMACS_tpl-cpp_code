@@ -1,31 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q03-GMACS-flags.html</loc>
-    <lastmod>2025-03-31T16:58:35.437Z</lastmod>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q06-EnvCovariates.html</loc>
+    <lastmod>2026-06-23T14:36:15.675Z</lastmod>
   </url>
   <url>
-    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02c-model-ctl-file.html</loc>
-    <lastmod>2025-03-31T17:00:35.190Z</lastmod>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q04-Functions.html</loc>
+    <lastmod>2026-03-19T13:25:02.679Z</lastmod>
   </url>
   <url>
-    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02a-gmacs-dat-file.html</loc>
-    <lastmod>2024-02-14T11:42:47.156Z</lastmod>
-  </url>
-  <url>
-    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q01_Intro.html</loc>
-    <lastmod>2025-01-28T16:50:26.143Z</lastmod>
-  </url>
-  <url>
-    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02-File-organization.html</loc>
-    <lastmod>2024-02-08T20:36:15.337Z</lastmod>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02d-model-prj-file.html</loc>
+    <lastmod>2024-02-08T22:53:46.807Z</lastmod>
   </url>
   <url>
     <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02b-model-dat-file.html</loc>
     <lastmod>2024-02-14T14:27:21.385Z</lastmod>
   </url>
   <url>
-    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02d-model-prj-file.html</loc>
-    <lastmod>2024-02-08T22:53:46.807Z</lastmod>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02-File-organization.html</loc>
+    <lastmod>2024-02-08T20:36:15.337Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q01_Intro.html</loc>
+    <lastmod>2025-01-28T16:50:26.143Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02a-gmacs-dat-file.html</loc>
+    <lastmod>2024-02-14T11:42:47.156Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q02c-model-ctl-file.html</loc>
+    <lastmod>2025-04-01T00:02:39.977Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q03-GMACS-flags.html</loc>
+    <lastmod>2025-04-01T00:02:39.984Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q05-ObjectiveFunction.html</loc>
+    <lastmod>2026-06-23T14:28:25.975Z</lastmod>
   </url>
 </urlset>

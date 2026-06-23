@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>GMACS flags</title>
+<title>Objective Function</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -30,8 +30,8 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./q04-Functions.html" rel="next">
-<link href="./q02d-model-prj-file.html" rel="prev">
+<link href="./q06-EnvCovariates.html" rel="next">
+<link href="./q04-Functions.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -69,6 +69,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -81,7 +110,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./q03-GMACS-flags.html">GMACS flags</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./q05-ObjectiveFunction.html">Objective Function</a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -144,7 +173,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./q03-GMACS-flags.html" class="sidebar-item-text sidebar-link active">
+  <a href="./q03-GMACS-flags.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">GMACS flags</span></a>
   </div>
 </li>
@@ -156,7 +185,7 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./q05-ObjectiveFunction.html" class="sidebar-item-text sidebar-link">
+  <a href="./q05-ObjectiveFunction.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Objective Function</span></a>
   </div>
 </li>
@@ -176,22 +205,14 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#gmacs-flags" id="toc-gmacs-flags" class="nav-link active" data-scroll-target="#gmacs-flags">GMACS flags</a>
+  <li><a href="#objective-function" id="toc-objective-function" class="nav-link active" data-scroll-target="#objective-function">Objective function</a></li>
+  <li><a href="#data-components" id="toc-data-components" class="nav-link" data-scroll-target="#data-components">Data components</a>
   <ul class="collapse">
-  <li><a href="#basic-flags" id="toc-basic-flags" class="nav-link" data-scroll-target="#basic-flags">Basic flags</a></li>
-  <li><a href="#population-characteristics" id="toc-population-characteristics" class="nav-link" data-scroll-target="#population-characteristics">Population characteristics</a></li>
-  <li><a href="#data-flags" id="toc-data-flags" class="nav-link" data-scroll-target="#data-flags">Data flags</a></li>
+  <li><a href="#tagging-related-growth-data" id="toc-tagging-related-growth-data" class="nav-link" data-scroll-target="#tagging-related-growth-data">5. Tagging-related growth data</a></li>
+  <li><a href="#non-tagging-growth-data" id="toc-non-tagging-growth-data" class="nav-link" data-scroll-target="#non-tagging-growth-data">6. Non-tagging growth data</a></li>
   </ul></li>
-  <li><a href="#ctl-file-options-and-flags" id="toc-ctl-file-options-and-flags" class="nav-link" data-scroll-target="#ctl-file-options-and-flags">ctl file options and flags</a>
-  <ul class="collapse">
-  <li><a href="#prior-types" id="toc-prior-types" class="nav-link" data-scroll-target="#prior-types">Prior types</a></li>
-  <li><a href="#initial-n" id="toc-initial-n" class="nav-link" data-scroll-target="#initial-n">Initial N</a></li>
-  <li><a href="#allometry-length-weight-relationships" id="toc-allometry-length-weight-relationships" class="nav-link" data-scroll-target="#allometry-length-weight-relationships">Allometry: Length-weight relationships</a></li>
-  <li><a href="#natural-mortality-m-flags" id="toc-natural-mortality-m-flags" class="nav-link" data-scroll-target="#natural-mortality-m-flags">Natural mortality (M) flags</a></li>
-  <li><a href="#growth-transition-types" id="toc-growth-transition-types" class="nav-link" data-scroll-target="#growth-transition-types">Growth transition types</a></li>
-  <li><a href="#fishing-mortality-type-flags" id="toc-fishing-mortality-type-flags" class="nav-link" data-scroll-target="#fishing-mortality-type-flags">Fishing mortality type flags</a></li>
-  <li><a href="#selectivity-and-retention-function-flags" id="toc-selectivity-and-retention-function-flags" class="nav-link" data-scroll-target="#selectivity-and-retention-function-flags">Selectivity and retention function flags</a></li>
-  </ul></li>
+  <li><a href="#priors" id="toc-priors" class="nav-link" data-scroll-target="#priors">Priors</a></li>
+  <li><a href="#penalties" id="toc-penalties" class="nav-link" data-scroll-target="#penalties">Penalties</a></li>
   </ul>
 </nav>
     </div>
@@ -200,7 +221,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">GMACS flags</h1>
+<h1 class="title">Objective Function</h1>
 </div>
 
 
@@ -217,245 +238,190 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="gmacs-flags" class="level2">
-<h2 class="anchored" data-anchor-id="gmacs-flags">GMACS flags</h2>
-<p>The GMACS code and input files use a number of integer “flags” to identify user-specified options and clarify code. The complete list of these flags–identified from macro “defines” in the TPL code–is given in the following sections. For each flag, the value, a brief description, and the macro variable (in parentheses) are given (TODO: finish). For flags associated with functions, the function parameters (in the order they need to be specified in the ctl file) are also given as sub-bullets (TODO: finish).</p>
-<section id="basic-flags" class="level3">
-<h3 class="anchored" data-anchor-id="basic-flags">Basic flags</h3>
+<p>This section documents the objective function defined in the <code>gmacsbase.TPL</code> file that is minimized to find the “best” set of parameter values for a GMACS assessment model.</p>
+<section id="objective-function" class="level2">
+<h2 class="anchored" data-anchor-id="objective-function">Objective function</h2>
+<p>The objective function is referred to as <code>nloglike</code> in the gmacsbase.TPL file. It’s value is the result of summing negative log-likelihood components expressing the (mis)fits to the input data, priors on parameters, and penalties.</p>
+<pre><code>      objfun =  w_nloglike + 
+                sum(elem_prod(nlogPenalty,Penalty_emphasis)) + 
+                sum(priorDensity) + 
+                TempSS + 
+                grwthPosFun;
+
+      w_nloglike = sum(elem_prod(nloglike(1),catch_emphasis)) + sum(elem_prod(nloglike(2),cpue_emphasis)) + sum(elem_prod(nloglike(3),lf_emphasis));
+      w_nloglike += sum(nloglike(4));
+      w_nloglike += sum(nloglike(5))*tag_emphasis;
+      w_nloglike += sum(nloglike(6));
+      w_nloglike += sum(nloglike(7))*mmodLkWgt;</code></pre>
+</section>
+<section id="data-components" class="level2">
+<h2 class="anchored" data-anchor-id="data-components">Data components</h2>
 <ul>
-<li>0: no (NO)</li>
-<li>1: yes (YES)</li>
+<li><ol type="1">
+<li>fishery catch : sum(nloglike(1))</li>
+</ol></li>
+<li><ol start="2" type="1">
+<li>index catch : sum(nloglike(2))</li>
+</ol></li>
+<li><ol start="3" type="1">
+<li>size comps : sum(nloglike(3))</li>
+</ol></li>
+<li><ol start="4" type="1">
+<li>recruitment : sum(nloglike(4))</li>
+</ol></li>
+<li><ol start="5" type="1">
+<li>tagging growth : sum(nloglike(5))</li>
+</ol></li>
+<li><ol start="6" type="1">
+<li>growth data : sum(nloglike(6))</li>
+</ol></li>
+<li><ol start="7" type="1">
+<li>male mat. og.s : sum(nloglike(7))</li>
+</ol></li>
+<li><ol start="8" type="1">
+<li>effort expansion: sum(nloglike(8))</li>
+</ol></li>
 </ul>
+<section id="tagging-related-growth-data" class="level3">
+<h3 class="anchored" data-anchor-id="tagging-related-growth-data">5. Tagging-related growth data</h3>
+<pre><code>      //  5) Likelihood for the tagging-related size-class change data #2
+      if (GrowthObsType==GROWTHCLASS_DATA || GrowthObsType==GROWTHCLASS_VALS){
+        dvariable Prob;
+        dvar_matrix YY(1,nclass,1,nclass);
+        nloglike(5).initialize();
+          // First find all FullY matrices
+        FullY.initialize();
+        for (int h = 1; h &lt;=nsex; h++) {
+          for (int k = 1; k&lt;=nSizeIncVaries(h);k++) {
+            // AEP: Note that the molt_probability is based on syr  
+            for (int ii=1;ii&lt;=nclass;ii++){
+              for (int jj=1;jj&lt;=nclass;jj++){
+                if (ii == jj){
+                  YY(ii,jj) = 1.0-molt_probability(h,syr,ii)+growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
+                } else {
+                  YY(ii,jj) = growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
+                }
+              }
+            }
+            FullY(h,k,1) = YY;
+            for (int itime=2;itime&lt;=MaxGrowTimeLibSex(h);itime++) FullY(h,k,itime) = FullY(h,k,itime-1)*YY;
+          } // k loop
+        } // h loop
+    
+        for (int i=1;i&lt;=nGrowthObs;i++) {
+          int h = iMoltIncSex(i);
+          int k = iMoltTrans(i);
+          int iclassRel = iMoltInitSizeClass(i);
+          int iclassRec = iMoltEndSizeClass(i);
+          int itimeLib = iMoltTimeAtLib(i);
+          int ifleetRec = iMoltFleetRecap(i);
+          int iyearRec = iMoltYearRecap(i);
+          double freq = float(iMoltSampSize(i));
+          Prob = FullY(h,k,itimeLib,iclassRel,iclassRec)*exp(log_slx_capture(ifleetRec,h,iyearRec,iclassRec))+1.0e-20;
+          dvariable total = 0;
+          for (int i=1;i&lt;=nSizeSex(h);i++) total += FullY(h,k,itimeLib,iclassRel,i)*exp(log_slx_capture(ifleetRec,h,iyearRec,i));
+          nloglike(5,h) -= log(Prob/total+0.00001)*freq;
+        } // i loop
+      } // Tagging-related growth data
+      if ( verbose &gt;= 3 ) cout &lt;&lt; "Ok after tagging-related increment likelihood ..." &lt;&lt; endl;
+      </code></pre>
 </section>
-<section id="population-characteristics" class="level3">
-<h3 class="anchored" data-anchor-id="population-characteristics">Population characteristics</h3>
-<section id="sex-flags" class="level4">
-<h4 class="anchored" data-anchor-id="sex-flags">Sex flags</h4>
+<section id="non-tagging-growth-data" class="level3">
+<h3 class="anchored" data-anchor-id="non-tagging-growth-data">6. Non-tagging growth data</h3>
+<pre><code>    FUNCTION growth_likelihood
+      if (verbose&gt;=3) ECHOSTR("Strarting growth likelihood")
+    
+      // 6) Likelihood for non-tagging growth increment data
+      if (GrowthObsType==GROWTHINC_DATA_NORMAL){  
+        nloglike(6).initialize(); grwthPosFun.initialize();
+        if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
+          // normal-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+          dvar_vector MoltIncPred = calc_growth_increments_linear(dPreMoltSize, iMoltIncSex,1);
+          for (int i=MoltIncPred.indexmin();i&lt;=MoltIncPred.indexmax();i++)
+            nloglike(6,iMoltIncSex(i)) += dnorm(log(dMoltInc(i)) - log(MoltIncPred(i)), dMoltIncCV(i));//negative log likelihood
+        } 
+      } else if (GrowthObsType==GROWTHINC_DATA_GAMMA){
+        nloglike(6).initialize();
+        if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
+          // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+          nloglike(6) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+        } 
+        if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL){
+          // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+          nloglike(6) = calc_like_gamma_pwrlaw_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+        } else 
+        if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODELALT){
+          // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
+          nloglike(6) = calc_like_gamma_pwrlawalt_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
+        } 
+      }</code></pre>
+</section>
+</section>
+<section id="priors" class="level2">
+<h2 class="anchored" data-anchor-id="priors">Priors</h2>
+</section>
+<section id="penalties" class="level2">
+<h2 class="anchored" data-anchor-id="penalties">Penalties</h2>
+<p>Most penalties are assigned in the <code>nlogPenalty</code> vector, which has 13 components:</p>
 <ul>
-<li>0: undetermined or single sex (UNDET_SEX)</li>
-<li>1: male (MALES)</li>
-<li>2: female (FEMALES)</li>
+<li><p>1: A penalty on <code>log_fdev</code> (male+combined; female) to ensure the fishing mortality devs sum to zero</p>
+<pre><code>   dvariable s     = mean(log_fdev(k));
+   nlogPenalty(1) += Penalty_fdevs(k,1)*s*s;
+   if (nsex &gt; 1){
+     dvariable r     = mean(log_fdov(k));
+     nlogPenalty(1) += Penalty_fdevs(k,2)*r*r;
+   }</code></pre></li>
+<li><p>2: A penalty on mean F’s to regularize the solution</p>
+<pre><code> int irow = 1;
+ if ( last_phase() ) irow = 2;
+ dvariable fbar;
+ dvariable ln_fbar;
+ for ( int k = 1; k &lt;= nfleet; k++ ){
+  for ( int j = 1; j &lt;= nseason; j++ ){
+    fbar = mean( trans(ft(k,1))(j) );
+    if ( init_fbar(k) &gt; 0 &amp;&amp; fbar != 0 ){
+      ln_fbar = log(fbar);
+      nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
+    }
+    if (nsex==2){
+      fbar = mean( trans(ft(k,2))(j) );
+      if ( fbar != 0 ){
+        ln_fbar = log(fbar);
+        nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
+      }
+    } 
+  } #--j loop
+ } #--k loop</code></pre></li>
+<li><p>3:</p></li>
+<li><p>4:</p></li>
+<li><p>5:</p></li>
+<li><p>6: A smoothness penalty on recruitment deviations implemented as a <span class="math inline">\(N(x,1.0)\)</span> normal penalty where <span class="math inline">\(x\)</span> is the first difference in the recruitment deviations.</p>
+<pre><code>   nlogPenalty(6) = dnorm(first_difference(rec_dev),1.0)</code></pre></li>
+<li><p>7: A penalty on mean sex ratio:</p>
+<pre><code> if (nsex &gt; 1) {
+   SumRecF = 0; SumRecM = 0;
+   for ( int i = syr; i &lt;= nyrRetro; i++ )
+    { SumRecF += recruits(2)(i); SumRecM += recruits(1)(i); }
+   nlogPenalty(7) = square(log(SumRecF) - log(SumRecM));
+ }</code></pre></li>
+<li><p>8: A smoothness penalty on molting probability:</p>
+<pre><code> for (int h=1;h&lt;=nsex;h++)
+  if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)
+   for (int igrow=1;igrow&lt;=nMoltVaries(h);igrow++)
+    nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
+ if (verbose &gt;= 3) cout&lt;&lt;"finished Smoothness penalty on molting probability"&lt;&lt;endl;</code></pre></li>
+<li><p>9: Smoothness penalty on selectivity patterns with class-specific coefficients</p>
+<pre><code> nlogPenalty(9) = selex_smooth_pen;</code></pre></li>
+<li><p>10: Smoothness penalty on initial numbers at length:</p>
+<pre><code>  nlogPenalty(10) += dnorm(first_difference(logN0(k)), 1.0);</code></pre></li>
+<li><p>11: Penalty on annual F-devs for males by fleet</p></li>
+<li><p>12: Penalty on annual F-devs for females by fleet</p></li>
+<li><p>13: Penalty on deviation parameters other than rec devs and F devs</p></li>
 </ul>
-</section>
-<section id="shell-condition-flags" class="level4">
-<h4 class="anchored" data-anchor-id="shell-condition-flags">Shell condition flags</h4>
-<ul>
-<li>0: undetermined (UNDET_SHELL)</li>
-<li>1: new shell (NEW_SHELL)</li>
-<li>2: old shell (OLD_SHELL)</li>
-</ul>
-</section>
-<section id="maturity-state-flags" class="level4">
-<h4 class="anchored" data-anchor-id="maturity-state-flags">Maturity state flags</h4>
-<ul>
-<li>0: undetermined (UNDET_MATURE)</li>
-<li>1: mature (MATURE)</li>
-<li>2: immature (IMMATURE)</li>
-</ul>
-</section>
-</section>
-<section id="data-flags" class="level3">
-<h3 class="anchored" data-anchor-id="data-flags">Data flags</h3>
-<section id="basic-data-types" class="level4">
-<h4 class="anchored" data-anchor-id="basic-data-types">Basic data types</h4>
-<ul>
-<li>1: biomass (BIOMASS)</li>
-<li>2: abundance (ABUNDANCE)</li>
-</ul>
-</section>
-<section id="catch-data-type-flags" class="level4">
-<h4 class="anchored" data-anchor-id="catch-data-type-flags">Catch data type flags</h4>
-<ul>
-<li>0: total catch (TOTALCATCH)</li>
-<li>1: retaied catch (RETAINED)</li>
-<li>2: discarded catch (DISCARDED)</li>
-</ul>
-</section>
-<section id="growth-data-type-flags" class="level4">
-<h4 class="anchored" data-anchor-id="growth-data-type-flags">Growth data type flags</h4>
-<ul>
-<li>0: no growth data (NOGROWTH_DATA)</li>
-<li>1: normally-distributed growth increment data (GROWTHINC_DATA_NORMAL)</li>
-<li>2: data for a growth class (??) (GROWTHCLASS_DATA)</li>
-<li>3: values for a growth class (??) (GROWTHCLASS_VALS)</li>
-<li>4: gamma-distributed growth increment data (GROWTHINC_DATA_GAMMA)</li>
-</ul>
-<p>For 1 (GROWTHINC_DATA_NORMAL), the difference between the observed growth increment and the predicted (the “error”) is assumed to be normally-distributed with an assumed CV, but note that this is not necessarily reflective of the predicted growth transition matrix. The “error” can be regarded as including both the variability for any individual molt increment and any measurement error. For 4, the “error” is simply the difference between the observed molt increment and the predicted mean, and thus the likelihood is consistent with the transition matrix..</p>
-</section>
-</section>
-</section>
-<section id="ctl-file-options-and-flags" class="level2">
-<h2 class="anchored" data-anchor-id="ctl-file-options-and-flags">ctl file options and flags</h2>
-<section id="prior-types" class="level3">
-<h3 class="anchored" data-anchor-id="prior-types">Prior types</h3>
-<ul>
-<li>0: Uniform - parameters are the range of the uniform prior (UNIFORM_PRIOR)</li>
-<li>1: Normal - parameters are the mean and sd (NORMAL_PRIOR)</li>
-<li>2: Lognormal - parameters are the mean and sd of the log (LOGNORMAL_PRIOR)</li>
-<li>3: Beta - parameters are the two beta parameters [see dbeta] (BETA_PRIOR)</li>
-<li>4: Gamma - parameters are the two gamma parameters [see dgamma] (GAMMA_PRIOR)</li>
-</ul>
-</section>
-<section id="initial-n" class="level3">
-<h3 class="anchored" data-anchor-id="initial-n">Initial N</h3>
-<ul>
-<li>0: unfished equilibrium (UNFISHEDEQN)</li>
-<li>1: fished equilibrium (FISHEDEQN)</li>
-<li>2: freely-estimated parameters (FREEPARS)</li>
-<li>3: freely-estimated parameters (scaled) (FREEPARSSCALED)</li>
-<li>4: reference points (??) (REFPOINTS)</li>
-</ul>
-</section>
-<section id="allometry-length-weight-relationships" class="level3">
-<h3 class="anchored" data-anchor-id="allometry-length-weight-relationships">Allometry: Length-weight relationships</h3>
-<ul>
-<li>1: functional relationship (LW_RELATIONSHIP)</li>
-<li>2: vector of values (weights-at-sizes) (LW_VECTOR)</li>
-<li>3: matrix (rows: years; columns: weights-at-sizes) (LW_MATRIX)</li>
-</ul>
-</section>
-<section id="natural-mortality-m-flags" class="level3">
-<h3 class="anchored" data-anchor-id="natural-mortality-m-flags">Natural mortality (M) flags</h3>
-<ul>
-<li>0: constant M (M_CONSTANT)</li>
-<li>1: random (walk?) (M_RANDOM)</li>
-<li>2: cubic spline (M_CUBIC_SPLINE)</li>
-<li>3: blocked changes (M_BLOCKED_CHANGES)</li>
-<li>4: time blocks type 1 (M_TIME_BLOCKS1)</li>
-<li>5: time blocks type 3 (M_TIME_BLOCKS3)</li>
-<li>6: time blocks type 2 (M_TIME_BLOCKS2) [yes, out of order]</li>
-</ul>
-<section id="custom-m" class="level4">
-<h4 class="anchored" data-anchor-id="custom-m">Custom M</h4>
-<ul>
-<li>0: no custom M (NO_CUSTOM_M)</li>
-<li>1: w/ custom M (??) (WITH_CUSTOM_M)</li>
-</ul>
-</section>
-</section>
-<section id="growth-transition-types" class="level3">
-<h3 class="anchored" data-anchor-id="growth-transition-types">Growth transition types</h3>
-<section id="options-for-the-growth-matrix" class="level4">
-<h4 class="anchored" data-anchor-id="options-for-the-growth-matrix">Options for the growth matrix</h4>
-<ul>
-<li>1: Pre-specified growth transition matrix (requires molt probability) (GROWTH_FIXEDGROWTHTRANS)</li>
-<li>2: Pre-specified size transition matrix (molt probability is ignored) (GROWTH_FIXEDSIZETRANS)</li>
-<li>3: Growth increment is gamma distributed (requires molt probability) (GROWTH_INCGAMMA)</li>
-<li>4: Post-molt size is gamma distributed (requires molt probability) (GROWTH_SIZEGAMMA)</li>
-<li>5: Von Bert.: kappa varies among individuals (requires molt probability) (GROWTH_VARYK)</li>
-<li>6: Von Bert.: Linf varies among individuals (requires molt probability) (GROWTH_VARYLINF)</li>
-<li>7: Von Bert.: kappa and Linf varies among individuals (requires molt probability) (GROWTH_VARYKLINF)</li>
-<li>8: Growth increment is normally distributed (requires molt probability) (GROWTH_NORMAL)</li>
-</ul>
-</section>
-<section id="options-for-the-growth-increment-model-matrix" class="level4">
-<h4 class="anchored" data-anchor-id="options-for-the-growth-increment-model-matrix">Options for the growth increment model matrix</h4>
-<ul>
-<li>1: Linear (LINEAR_GROWTHMODEL)
-<ul>
-<li>intercept</li>
-<li>slope</li>
-<li>ln-scale gamma distribution scale parameter</li>
-</ul></li>
-<li>2: Individual (INDIVIDUAL_GROWTHMODEL1)</li>
-<li>3: Individual (Same as 2) (INDIVIDUAL_GROWTHMODEL2)</li>
-<li>4: Power law for mean post-molt size (PWRLAW_GROWTHMODEL)
-<ul>
-<li>ln-scale intercept</li>
-<li>ln-scale slope</li>
-<li>ln-scale gamma distribution scale parameter</li>
-</ul></li>
-<li>5: Alternative power law for mean post-molt size (PWRLAW_GROWTHMODELALT)
-<ul>
-<li>reference (small) pre-molt size (constant: must have phase &lt; 0)</li>
-<li>mean post-molt size at small reference pre-molt size</li>
-<li>reference (large) pre-molt size (constant: must have phase &lt; 0)</li>
-<li>mean post-molt size at large reference pre-molt size</li>
-<li>ln-scale gamma distribution scale parameter</li>
-</ul></li>
-</ul>
-<section id="options-for-the-molt-probability-function" class="level5">
-<h5 class="anchored" data-anchor-id="options-for-the-molt-probability-function">Options for the molt probability function</h5>
-<ul>
-<li>0: Pre-specified (FIXED_PROB_MOLT)</li>
-<li>1: Constant at 1 (CONSTANT_PROB_MOLT)</li>
-<li>2: Logistic (LOGISTIC_PROB_MOLT)</li>
-<li>3: Individual (FREE_PROB_MOLT)</li>
-</ul>
-</section>
-<section id="options-for-the-mature-probability-function" class="level5">
-<h5 class="anchored" data-anchor-id="options-for-the-mature-probability-function">Options for the mature probability function</h5>
-<ul>
-<li>0: Pre-specified (FIXED_PROB_MATURE)</li>
-<li>1: Constant at 1 (CONSTANT_PROB_MATURE)</li>
-<li>2: Logistic (LOGISTIC_PROB_MATURE)</li>
-<li>3: Individual (FREE_PROB_MATURE)</li>
-</ul>
-</section>
-</section>
-</section>
-<section id="fishing-mortality-type-flags" class="level3">
-<h3 class="anchored" data-anchor-id="fishing-mortality-type-flags">Fishing mortality type flags</h3>
-<ul>
-<li>0: inatantaneous F (INSTANT_F)</li>
-<li>1: constinuous F (CONTINUOUS_F)</li>
-<li>2: ?? (EXPLOIT_F)</li>
-</ul>
-</section>
-<section id="selectivity-and-retention-function-flags" class="level3">
-<h3 class="anchored" data-anchor-id="selectivity-and-retention-function-flags">Selectivity and retention function flags</h3>
-<p>See code in include/selex.hpp for more details on specific functions.</p>
-<ul>
-<li>0: Parametric selectivity (SELEX_PARAMETRIC; gsm::ParameterPerClass)
-<ul>
-<li>1 ln-scale parameter per size class</li>
-</ul></li>
-<li>1: coefficients (SELEX_COEFFICIENTS; gsm::SelectivityCoefficients)
-<ul>
-<li>1 parameter per class (documentation says logit-scale, but code implies ln-scale)</li>
-</ul></li>
-<li>2: standard logistic (SELEX_STANLOGISTIC; gsm::LogisticCurve)
-<ul>
-<li>ln-scale size-at-50% selected</li>
-<li>ln-scale width</li>
-</ul></li>
-<li>3: alternative logistic (SELEX_5095LOGISTIC; gsm::LogisticCurve95)
-<ul>
-<li>ln-scale size-at-50% selected</li>
-<li>ln-scale size at 95% selected</li>
-</ul></li>
-<li>4: 3-parameter double normal (SELEX_DOUBLENORM; gsm::DoubleNormal)
-<ul>
-<li>ln-scale ascending limb width</li>
-<li>ln-scale size at full selection (50% cdf)</li>
-<li>ln-scale descending limb width</li>
-</ul></li>
-<li>5: uniform with value 1 (SELEX_UNIFORM1; gsm::UniformCurve)</li>
-<li>6: uniform with value 0 (SELEX_UNIFORM0; gsm::Uniform0Curve)</li>
-<li>7: 4-parameter double normal (SELEX_DOUBLENORM4; gsm::DoubleNormal4)
-<ul>
-<li>ln-scale ascending limb width</li>
-<li>ln-scale ascending limb size at full selection</li>
-<li>ln-scale descending limb width</li>
-<li>ln-scale descending limb size at full selection</li>
-</ul></li>
-<li>8: declining logistic (SELEX_DECLLOGISTIC; gsm::DeclineLogistic)
-<ul>
-<li>ln-scale size-at-50% selected</li>
-<li>ln-scale slope at 50% selected</li>
-</ul></li>
-<li>9: cubic spline (SELEX_CUBIC_SPLINE; gsm::SelectivitySpline)</li>
-<li>10: 1-parameter logistic (SELEX_ONE_PAR_LOGISTIC; gsm::LogisticCurveOne)
-<ul>
-<li>ln-scale size at 50% selected (slope fixed at 1)</li>
-</ul></li>
-<li>11: pre-specified (SELEX_PRESPECIFIED)</li>
-<li>12: cubic spline w/ a floor (SELEX_CUBIC_SPLINE_FLOOR; gsm::SelectivitySpline)</li>
-<li>13 stacked logistic (SELEX_STACKED_LOGISTIC; gsm::StackedLogistic)</li>
-</ul>
+<p>The penalties listed above are scaled by <code>Penalty_emphasis</code>, a 13-element vector of scale factors.</p>
+<p>Another penalty, <code>grwthPosFun</code>, is intended to keep mean growth estimates positive.</p>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->
@@ -848,13 +814,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./q02d-model-prj-file.html" class="pagination-link  aria-label=" model.prj="" file"="">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">model.prj file</span>
+      <a href="./q04-Functions.html" class="pagination-link  aria-label=" functions"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Functions</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./q04-Functions.html" class="pagination-link" aria-label="Functions">
-        <span class="nav-page-text">Functions</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./q06-EnvCovariates.html" class="pagination-link" aria-label="Environmental covariates">
+        <span class="nav-page-text">Environmental covariates</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
