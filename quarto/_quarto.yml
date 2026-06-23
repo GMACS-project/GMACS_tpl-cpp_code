@@ -9,6 +9,9 @@ project:
     - q02c-model-ctl-file.qmd
     - q02d-model-prj-file.qmd
     - q03-GMACS-flags.qmd
+    - q04-Functions.qmd
+    - q05-ObjectiveFunction.qmd
+    - q06-EnvCovariates.qmd
   
 website:
   sidebar:
@@ -24,9 +27,12 @@ website:
       - file: q02c-model-ctl-file.qmd
       - file: q02d-model-prj-file.qmd
       - file: q03-GMACS-flags.qmd
+      - file: q04-Functions.qmd
+      - file: q05-ObjectiveFunction.qmd
+      - file: q06-EnvCovariates.qmd
   page-navigation: true
   page-footer: 
-    right: "v.2.01.M.09"
+    right: "v.2.20.39"
 
 format:
   html: 
