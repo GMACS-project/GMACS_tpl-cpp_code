@@ -8,6 +8,7 @@ include/.DS_Store
 /html/
 .Rproj.user
 .Rhistory
+~$*
 gmacsbase_20240304.TPL
 gmacsbaseOLD.TPL
 gmacsbase_copy.TPL

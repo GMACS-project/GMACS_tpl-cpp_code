@@ -5,7 +5,7 @@ title: "Objective Function"
 This section documents the objective function defined in the `gmacsbase.TPL` file that is minimized to find the "best" set of parameter 
 values for a GMACS assessment model.
 
-## Obective function
+## Objective function
 
 The objective function is referred to as `nloglike` in the gmacsbase.TPL file. It's value is the result of summing negative log-likelihood 
 components expressing the (mis)fits to the input data, priors on parameters, and penalties.
@@ -76,6 +76,7 @@ components expressing the (mis)fits to the input data, priors on parameters, and
             } // i loop
           } // Tagging-related growth data
           if ( verbose >= 3 ) cout << "Ok after tagging-related increment likelihood ..." << endl;
+          
 ### 6. Non-tagging growth data
 
         FUNCTION growth_likelihood

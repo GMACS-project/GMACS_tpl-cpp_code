@@ -1,0 +1,19 @@
+---
+title: "Environmental covariates"
+---
+
+This section documents specification of the environmental covariates for parameters in GMACS.
+
+Most of the parameters of GMACS (e.g., mean recruitment, selectivity, growth and survey catchability)  can be estimated in blocks or as a function of environmental covariates. There are three ways in which environmental variables can impact the value of a parameter, i.e.:
+
+  Additive:       $P_y=P_{base}+\gamma_y$
+  
+  Multiplicative: $P_y=P_{base}\cdot \gamma_y$
+  
+  Exponential:    $P_y=P_{base}\cdot exp(\gamma_y)$
+
+where $P_y$ is the value of parameter $P$ during year $y$, $P_{base}$ is the base (or reference) value of parameter $P$, and $\gamma_y$ is the environment factor for parameter $P$. $\gamma_y$ can be a polynomial function of multiple environmental variables (usually normalized to be mean 0 and standard deviation 1 for ease of interpretation). In its most general form, $\gamma_y$ is parameterized as:
+
+$$\gamma_y=∑_v∑_{j=1}^{n_v}\chi_{v,j} \cdot E_{v,y} ^j$$                  {#eq-EnvCovs}
+
+where $E_{v,y}$ is the value of environmental variable $v$ for year $y$, $n_v$ is the polynomial degree for variable $v$, and $\gamma_{v,j}$ is the (potentially) estimated parameter for environmental variable $v$ and degree $j$. Terms in Equation [-@eq-EnvCovs] can be omitted by setting the initial value for $\gamma_{v,j}$ to zero and not estimating this parameter.
