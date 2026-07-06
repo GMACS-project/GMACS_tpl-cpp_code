@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.40; ** AEP **; Compiled 2026-07-05");
+ !! TheHeader = adstring("## GMACS Version 2.20.39; ** AEP **; Compiled 2026-06-22");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1578,9 +1578,6 @@ DATA_SECTION
   init_int Calc_MSY;
   !! WRITEPRJ(Calc_MSY);
   !! if (Calc_MSY != NO && Calc_MSY != YES)  { cout << "Calc_MSY = "<<Calc_MSY<<". Indicate 1=Yes or 0=No for whether MSY should be computed. STOPPING" << endl; exit(1); }
-  init_int Calc_MEY;
-  !! WRITEPRJ(Calc_MEY);
-  !! if (Calc_MEY != NO && Calc_MEY != YES)  { cout << "Calc_MEY = "<<Calc_MEY<<". Indicate 1=Yes or 0=No for whether MEY should be computed. STOPPING" << endl; exit(1); }
   init_ivector Ffixed(1,nfleet);
   !! ECHO(Ffixed);
   !! for (int k=1;k<=nfleet;k++) gmacs_prj << Ffixed(k) << " #--"<<fleetname(k)<<endl;
@@ -1822,20 +1819,6 @@ DATA_SECTION
   !! WRITEPRJ(NHCRpars);
   init_vector HCRpars(1,NHCRpars);
   !! WRITEPRJ(HCRpars); 
-  
-  init_vector Price(1,nclass);                             // Price as a function of size
-  !! WRITEPRJ(Price);
-  init_vector DaysPerF(1,nfleet);                          // Convert from fully-selected F to Days
-  !! WRITEPRJ(DaysPerF);
-  init_vector CostPerDay(1,nfleet);                        // Convert from days to cost
-  !! WRITEPRJ(CostPerDay);
-  init_int Stock_rec_ref;                                  ///> Stock-recruitment relationship
-  !! gmacs_prj << "# Options for the stock-recruitment relationship for reference points" << endl;
-  !! gmacs_prj << "#    1: Set to mean pre-specified range of years"<< endl;
-  !! gmacs_prj << "#    2: Ricker stock-recruitment relationship"<< endl;
-  !! gmacs_prj << "#    3: Beverton-Holt stock-recruitment relationship"<< endl;
-  !! gmacs_prj << "#    4: Pre-specified (constant) future recruitment "<< endl;
-  !! gmacs_prj << Stock_rec_ref << endl;
 
   init_int max_prj;
   !! WRITEPRJ(max_prj);
@@ -5360,8 +5343,7 @@ PARAMETER_SECTION
   vector log_fimpbar(1,nfleet);                            ///> Vector of Fs
   vector log_fimpbarOFL(1,nfleet);                         ///> Vector of Fs for computing OFL
   vector log_fimpbarPass(1,nfleet);                        ///> Vector of Fs
-  vector catch_pass(1,4+nfleet);                           ///> Various catch outputs
-  vector catch_pass_eqn(1,4+nfleet);                       ///> Various catch outputs (in equilibrium)
+  vector catch_pass(1,2+nfleet);                           ///> Various catch outputs
   matrix catch_summary(1,nfleet+5,1,nproj)                 ///> Various catch outputs for projections
   vector dvar_mid_points(1,nclass);                        ///>dvar version of size class midpoints
   !!dvar_mid_points = mid_points;
@@ -5378,8 +5360,6 @@ PARAMETER_SECTION
   number spr_cofl_ret;				           ///> retained portion of the OFL
   number spr_fofl;                                         ///> F relative to FMSY for the OFL
   number Bmsy;                                             ///> Also MMB corresponding to FMSY
-  number Bmey_out;                                         ///> Also MMB corresponding to FMEY
-  number Fmey_out;                                         ///> FMEY
   matrix equilibrium_numbers_F0(1,n_grp,1,nclass);         ///> equilibrium numbers-at-size in season_ssb at F=0
   matrix equilibrium_numbers_FM(1,n_grp,1,nclass);         ///> equilibrium numbers-at-size in season_ssb at F=Fmsy
   matrix equilibrium_biomass_F0(1,n_grp,1,nclass);         ///> equilibrium biomass-at-size in season_ssb at F=0
@@ -5394,7 +5374,7 @@ PARAMETER_SECTION
   matrix spr_yield(0,100,1,4);                             ///> Yield function
   matrix fut_recruits(1,nsex,1,nproj);                     ///> Projected recruitment
   4darray numbers_proj_gytl(1,n_grp,1,nprojVec,1,nseason,1,nclass);      ///> The N matrix for the projection
-  vector OFLoutpass(1,4+nfleet);                           ///> Output of OFLs
+  vector OFLoutpass(1,2+nfleet);                           ///> Output of OFLs
 
   // Extra sd variables
 //  vector sd_fbar(syr,nyr-1);
@@ -8103,13 +8083,13 @@ FUNCTION calc_initial_numbers_at_length
     case UNFISHEDEQN:                                     ///> Unfished conditions
      bSteadyState = UNFISHEDEQN;
      for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
-     x = calc_brute_equilibrium(1,syr,syr,syr,syr,syr,syr,syr,syr,syr,syr,NyrEquil,Stock_rec_prj);
+     x = calc_brute_equilibrium(1,syr,syr,syr,syr,syr,syr,syr,syr,syr,syr,NyrEquil);
      for ( int ig = 1; ig <= n_grp; ig++ ) d4_N(ig)(syr)(1) = x(ig);
      break;
     case FISHEDEQN:                                       ///> Steady-state fished conditions
      bSteadyState = FISHEDEQN;
      for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log(finit(k)+1.0e-10);
-     x = calc_brute_equilibrium(1,syr,syr,syr,syr,syr,syr,syr,syr,syr,syr,NyrEquil,Stock_rec_prj);
+     x = calc_brute_equilibrium(1,syr,syr,syr,syr,syr,syr,syr,syr,syr,syr,NyrEquil);
      for ( int ig = 1; ig <= n_grp; ig++ ) d4_N(ig)(syr)(1) = x(ig);
      break;
     case FREEPARS:                                        ///> Free parameters
@@ -11441,7 +11421,7 @@ FUNCTION dvar_vector calc_ssba()
 // Label 501: calc_brute_equilibrium
 FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1, const int YrRefSexR2, const int YrRef, const int YrRefGrow, 
                      const int YrRefM1, const int YrRefM2, const int YrRefSea1, const int YrRefSea2,
-                     const int YrRefSel1, const int YrRefSel2, const int ninit, const int Stock_rec_use)
+                     const int YrRefSel1, const int YrRefSel2, const int ninit)
   if ((verbose>3)&&(NfunCall<2)) cout<<"--Starting calc_brute_equilibrium"<<endl;
   RETURN_ARRAYS_INCREMENT();
   int isizeTrans;
@@ -11478,7 +11458,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
   dvar_vector Mbar(1,nclass);                                              ///> Natural mortality
   dvariable Mprop;                                                         ///> Season before removals
   dvar_vector tempZ1(1,nclass);                                            ///> Total mortality
-  dvar_vector out(1,4+nfleet);
+  dvar_vector out(1,2+nfleet);
 
   // Initialize
   d4_N_init.initialize();
@@ -11628,12 +11608,9 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
   for ( int i = 1; i < ninit; i++ ){
     // Recruitment
     if (Eqn_basis != CONSTANTREC){
-      if (Stock_rec_use==RICKER){
+      if (Stock_rec_prj==RICKER){
         ssb_use = ssb_prj(nyrRetro+i-Age_at_rec_prj);
-        if (ssb_use >= 0)
-         TotalRec = SR_alpha_prj*ssb_use*exp(-1*SR_beta_prj*ssb_use);
-        else
-         TotalRec = 0;
+        TotalRec = SR_alpha_prj*ssb_use*exp(-1*SR_beta_prj*ssb_use);
         if (nsex>1){
           if(BRP_rec_sexR == 0){
             rtt(1) = TotalRec * 1 / (1 + mfexp(-logit_rec_prop(YrRef))) * rec_sdd(1);
@@ -11645,13 +11622,10 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
         } else {
           rtt(1) = TotalRec * rec_sdd(1);
         }
-      }//--Stock_rec_use==RICKER
-      if (Stock_rec_use==BEVHOLT){
+      }//--Stock_rec_prj==RICKER
+      if (Stock_rec_prj==BEVHOLT){
         ssb_use = ssb_prj(nyrRetro+i-Age_at_rec_prj);
-        if (ssb_use > 0)
-         TotalRec = SR_alpha_prj*ssb_use/(SR_beta_prj+ssb_use);
-        else
-         TotalRec = 0;
+        TotalRec = SR_alpha_prj*ssb_use/(SR_beta_prj+ssb_use);
         if (nsex>1){
           if(BRP_rec_sexR == 0){
             rtt(1) = TotalRec * 1 / (1 + mfexp(-logit_rec_prop(YrRef))) * rec_sdd(1);
@@ -11663,7 +11637,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
         } else {
           rtt(1) = TotalRec * rec_sdd(1);
         }
-      }//--Stock_rec_use==BEVHOLT
+      }//--Stock_rec_prj==BEVHOLT
     }//-- Eqn_basis != CONSTANTREC
   
     // Projections for Case 2
@@ -11696,25 +11670,21 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
         }
       }
     } //--ig loop
-   } //--i loop (1 to ninit)
+  } //--i loop (1 to ninit)
 
   // Extract the equilibrium numbers (for return)
   for ( int ig = 1; ig <= n_grp; ig++ ) equilibrium_numbers(ig) = d4_N_init(ig)(ninit-1)(ssn); //--WTS: changed to "ssn" from 1; 2026-06-01
 
   // ssb to reurn
   ssb_pass = ssb_prj(nyrRetro+ninit-1);
-  //cout << "SSB: " << ssb_pass << endl;
 
   // Projected catches
   for ( int j = 1; j <= nseason; j++ )
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass(ig,j) = d4_N_init(ig)(ninit-1)(j);
   out = calc_predicted_project(nyrRetro, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass, _ft, ZZ1, ZZ2, ZZ3);
-  catch_pass_eqn = out;
   oflret_pass = out(1); ofltot_pass = out(2);
-  //cout << oflret_pass << endl;
-  //cout << ofltot_pass << endl;
-    
+  
   if ((verbose>3)&&(NfunCall<2)) cout<<"--finished calc_brute_equilibrium"<<endl;
   RETURN_ARRAYS_DECREMENT();
   return(equilibrium_numbers);
@@ -11921,7 +11891,7 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
   int YrRefM1Use, YrRefM2Use;                                              ///> Years for M
   int YrRefGrowUse;                                                        ///> Year for growth
   
-  double xi1;                                                              ///> discard mortality rate
+  double xi1;                                                               ///> discard mortality rate
   double _xi;                                                              ///> averaged discard mortality rate
   dvariable log_ftmp;
   dvar_vector x(1,nclass);                                                 ///> Temp vector for numbers
@@ -12050,7 +12020,6 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
   } //--ig loop
 
   // Calculate the catch
-  cout << "project_one_year" << endl;
   for ( int j = 1; j <= nseason; j++ )
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass(ig,j) = numbers_proj_gytl(ig,i,j);
@@ -12084,7 +12053,7 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
   
   double xi1;                                                              ///> discard mortality rate
   double _xi;                                                              ///> averaged discard mortality rate
-  dvar_vector out(1,4+nfleet);                                             ///> Output
+  dvar_vector out(1,2+nfleet);                                             ///> Output
   dvariable tmp_ft,out2;                                                   ///> Temp
   dvar_vector sel(1,nclass);                                               ///> Capture selectivity
   dvar_vector sel1(1,nclass);                                              ///> Capture selectivity
@@ -12094,13 +12063,10 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
   dvar_vector vul(1,nclass);                                               ///> Total vulnerability
   dvar_vector nal(1,nclass);                                               ///> Numbers-at-length
   dvar_vector tempZ1(1,nclass);                                            ///> total mortality
-  dvar_vector ret_catch_at_length(1,nclass);                               ///> Retained catch-at-length (in weight)
 
   // out(1): retained catch biomass
   // out(2): total fishing mortality as biomass
   // out(2+k): fishing mortality as biomass by feet
-  // out(3+k): total revenue
-  // out(4+k): total cost
 
   // Projection could be average or year-specific
   if (YrRefSel1 < 0)
@@ -12138,9 +12104,7 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
           if (season_type(j)==CONTINUOUS_F) tempZ1 = _Z2(h,m,j);// consistent with previous??
           if (season_type(j)==TCSAM02_F)    tempZ1 = _Z3(h,m,j);// TCSAM02-like
           if (_ft(k,h,j) > 0){
-            ret_catch_at_length = elem_prod(nal, elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1));// Total retained catch biomass
-            out(1)        += sum(ret_catch_at_length);
-            out(3+nfleet) += sum(elem_prod(ret_catch_at_length, Price));
+            out(1)   += nal * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);// Total retained catch biomass
             if (season_type(j)!=TCSAM02_F){
               out(2)   += nal * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
               out(2+k) += nal * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific fishery mortality as biomass
@@ -12155,14 +12119,6 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
       }//--j loop
     }//--h loop
   }//--m loop
-  
-  // Compute cost
-  for ( int k = 1; k <= nfleet; k++ ){
-   for ( int j = 1; j <= nseason; j++ ){
-    out(4+nfleet) += _ft(k,1,j)*DaysPerF(k)*CostPerDay(k);
-   }//--j loop
-  }//--k loop 
-   
   RETURN_ARRAYS_DECREMENT();
   return(out);
 //--calc_predicted_project
@@ -12339,7 +12295,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
   dvar_vector Mbar(1,nclass);                                              ///> Natural mortality
   dvariable Mprop;                                                         ///> time before  catch
   dvar_vector nal(1,nclass);                                               ///> Numbers-at-length
-  dvar_vector out(1,4+nfleet);                                             ///> Output
+  dvar_vector out(1,2+nfleet);                                             ///> Output
 
   // Projection could be average or year-specific
   if (YrRefSel1 < 0)
@@ -12471,7 +12427,6 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass_2(ig,j) = numbers_proj_gytl(ig)(iyr+iproj-1)(j);
   // calculate 
-  cout << "project_biomass_OFL " << endl;
   out = calc_predicted_project(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
   oflret_pass = out(1); ofltot_pass = out(2);
   OFLoutpass = out;
@@ -12527,7 +12482,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   dvariable TotalF;
   dvariable MeanF, NF;    //--WTS CODING: NF should be an integer, not a dvariable
   dvariable Fmult, Fmult2, SSBV0, SSBV1a,SSBV1b,Deriv, Adjust, R1;
-  dvariable Deriv2, Profit0, Profit1a, Profit1b;
   dvariable SteepMin,SteepMax;
   dvar_vector Fave(1,nfleet);
   dvar_matrix d4_Npass(1,n_grp,1,nclass);       ///> Numbers-at-sex/mature/shell/length.
@@ -12561,7 +12515,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 
   // Find SSB for F=0 for all fleets
   for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
-  equilibrium_numbers_F0 = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+  equilibrium_numbers_F0 = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
   if (verbose>5) cout << "eq_N_F0 = " << equilibrium_numbers_F0 << endl;
   for (int ig=1;ig<=n_grp;ig++) equilibrium_biomass_F0(ig) = elem_prod(mean_wt(isex(ig),imature(ig),spr_grow_yr),equilibrium_numbers_F0(ig));
   if (verbose>5) cout << "eq_B_0 = " << equilibrium_biomass_F0 << endl;
@@ -12578,17 +12532,17 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);
       // AEP:AEP Why 1 and not season_ssb
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV0 = ssb_pass/ssbF0-spr_target;
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult+0.001));
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1a = ssb_pass/ssbF0-spr_target;
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult-0.001));
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1b = ssb_pass/ssbF0-spr_target;
 
       Deriv = (SSBV1a-SSBV1b)/0.002;
@@ -12604,7 +12558,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     //--F35% = Fave(k)*Fmult for
     for (int k=1;k<=nfleet;k++)
       if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);  //--WTS: think this is wrong if Ffixed(k) != 1 for more than 1 fleet 
-    equilibrium_numbers_FM = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+    equilibrium_numbers_FM = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
     if (verbose>5) cout << "eq_N_FM = " << equilibrium_numbers_FM << endl;
     for (int ig=1;ig<=n_grp;ig++) equilibrium_biomass_FM(ig) = elem_prod(mean_wt(isex(ig),imature(ig),spr_grow_yr),equilibrium_numbers_FM(ig));
     if (verbose>5) cout << "eq_B_FM = " << equilibrium_biomass_FM<< endl;
@@ -12691,7 +12645,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   if (verbose >=3) cout << OFLoutpass << endl;
  
   // Continue only calc_MSY is YES
-  if (Calc_MSY == YES && (Stock_rec_ref==RICKER || Stock_rec_ref==BEVHOLT)){
+  if (Calc_MSY == YES && (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT)){
 
     // Find Steepness and R0
     cout << "Computing steepness" << endl;
@@ -12702,22 +12656,22 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     for (int ii=1;ii<=30;ii++)
      {
       Steepness = SteepMin+(SteepMax-SteepMin)/29.0*float(ii-1);
-      if (Stock_rec_ref==RICKER){
+      if (Stock_rec_prj==RICKER){
         SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
         SR_beta_prj = log(5.0*Steepness)/(0.8*ssbF0);
       }
-      if (Stock_rec_ref==BEVHOLT){
+      if (Stock_rec_prj==BEVHOLT){
         SR_alpha_prj = 4.0*Steepness*spr_rbar(1)/(5*Steepness-1.0);
         SR_beta_prj = (1.0-Steepness)*ssbF0/(5*Steepness-1.0);
       }
 
       for (int k=1;k<=nfleet;k++)
        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1a = oflret_pass;
       for (int k=1;k<=nfleet;k++)
        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*0.999);
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1b = oflret_pass;
       Deriv = (SSBV1a-SSBV1b)/0.002;
       //cout << "Solve2 " << ii << " " << Steepness << " " << Deriv << endl;
@@ -12732,45 +12686,45 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     for (int ii=1;ii<=30;ii++)
      {
       Steepness = (SteepMin+SteepMax)/2.0;
-      if (Stock_rec_ref==RICKER){
+      if (Stock_rec_prj==RICKER){
         SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
         SR_beta_prj = log(5.0*Steepness)/(0.8*ssbF0);
       }
-      if (Stock_rec_ref==BEVHOLT){
+      if (Stock_rec_prj==BEVHOLT){
         SR_alpha_prj = 4.0*Steepness*spr_rbar(1)/(5*Steepness-1.0);
         SR_beta_prj = (1.0-Steepness)*ssbF0/(5*Steepness-1.0);
       }
 
       for (int k=1;k<=nfleet;k++)
       if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1a = oflret_pass;
       for (int k=1;k<=nfleet;k++)
        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*0.999);
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
       SSBV1b = oflret_pass;
       Deriv = (SSBV1a-SSBV1b)/0.002;
       //cout << "Solve " << ii << " " << SteepMin << " " << SteepMax << " " << Deriv << endl;
       if (Deriv < 0) SteepMin = Steepness; else SteepMax = Steepness;
      }
     //cout << Steepness << " " << Deriv << " " << ssbF0 << endl;
-    if (Stock_rec_ref==RICKER){
+    if (Stock_rec_prj==RICKER){
       SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
       SR_beta_prj = log(5.0*Steepness)/(0.8*ssbF0);
     }
-    if (Stock_rec_ref==BEVHOLT){
+    if (Stock_rec_prj==BEVHOLT){
       SR_alpha_prj = 4.0*Steepness*spr_rbar(1)/(5*Steepness-1.0);
       SR_beta_prj = (1.0-Steepness)*ssbF0/(5*Steepness-1.0);
     }
     log_fimpbar = log(sd_fmsy);
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
   
     Adjust = spr_bmsy/ssb_pass;
-    if (Stock_rec_ref==RICKER){
+    if (Stock_rec_prj==RICKER){
       SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
       SR_beta_prj = log(5.0*Steepness)/(0.8*ssbF0*Adjust);
     }
-    if (Stock_rec_ref==BEVHOLT){
+    if (Stock_rec_prj==BEVHOLT){
       SR_alpha_prj = 4.0*Steepness*spr_rbar(1)*Adjust/(5*Steepness-1.0);
       SR_beta_prj = (1.0-Steepness)*ssbF0*Adjust/(5*Steepness-1.0);
     }
@@ -12778,30 +12732,30 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     // Find SSB for F=0 for all fleets
     for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
     //--might want to use season_ssb instead of 1 in next
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
     ssbF0 = ssb_pass;
 
     // Check derivative
     log_fimpbar = log(sd_fmsy);
     for (int k=1;k<=nfleet;k++)
      if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
     SSBV1a = oflret_pass;
     for (int k=1;k<=nfleet;k++)
      if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*0.999);
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
     SSBV1b = oflret_pass;
     Deriv = (SSBV1a-SSBV1b)/0.002;
 
     log_fimpbar = log(sd_fmsy);
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
     cout << "Final Yield" << ssb_pass/ssbF0 << " " << ssb_pass/spr_bmsy << " " << exp(log_fimpbar) << " " << oflret_pass << " " << Steepness << " " << Deriv << " " << ssbF0 << " " << spr_bmsy << endl;
 
     if (Compute_yield_prj==YES && DoProfile==YES){
       for (int ii=0;ii<=100;ii++){
         if (ii==0) FF = 1.0e-10; else FF = float(ii)/20;
         for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*FF);
-        equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+        equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil);
         spr_yield(ii,1) = ssb_pass/ssbF0;
         spr_yield(ii,2) = ssb_pass/spr_bmsy;
         spr_yield(ii,3) = exp(log_fimpbar(1));
@@ -12810,60 +12764,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       } //--ii
     }
     exit(1);  //--WTS: why exit here?!!
-  }  //--(Calc_MSY == YES && (Stock_rec_ref==RICKER || Stock_rec_ref==BEVHOLT))
-    
-  // Solve for FMEY and hence the Fmey proxy
-  if (Calc_MEY==1){
-    // Find Fmey when adjusting the Fs for some fleets
-    Eqn_basis = STOCKRECREC;
-    for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log(Fave(k));
-    
-    // Set sr-values
-    if (Stock_rec_ref==RICKER){
-     SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*steepness)/0.8);
-     SR_beta_prj = log(5.0*steepness)/(0.8*ssbF0);
-    }
-    if (Stock_rec_ref==BEVHOLT){
-     SR_alpha_prj = 4.0*steepness*spr_rbar(1)/(5*steepness-1.0);
-     SR_beta_prj = (1.0-steepness)*ssbF0/(5*steepness-1.0);
-    }
-
-    Fmult = 1.0;
-    for (int i=1;i<=10;i++){
-      // Set F
-       for (int k=1;k<=nfleet;k++)
-        if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
-      Profit0 =catch_pass_eqn(3+nfleet) - catch_pass_eqn(4+nfleet);
-
-      for (int k=1;k<=nfleet;k++)
-        if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult+0.001));
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
-      Profit1a =catch_pass_eqn(3+nfleet) - catch_pass_eqn(4+nfleet); 
-
-      for (int k=1;k<=nfleet;k++)
-        if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult-0.001));
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
-      Profit1b =catch_pass_eqn(3+nfleet) - catch_pass_eqn(4+nfleet); 
-
-      Deriv = (Profit1a-Profit1b)/0.002;
-      Deriv2 = (Profit1a-2*Profit0 + Profit1b)/(0.001*0.001);
-      Fmult2 = Fmult - Deriv/Deriv2;
-      if (Fmult2 < 0.01) Fmult2 = 0.01;
-      if (Fmult2 < 0.1*Fmult){
-        Fmult = 0.1*Fmult;
-      } else {
-        Fmult = Fmult2;
-      }
-      
-     //cout << i << " " << Fmult << " " << Profit0 << " " << Deriv << " " << ssb_pass/ssbF0 << endl;
-    } //--i loop (10 iterations): calculates Fmult: FMEY = Fave(k)*Fmult when done
-   
-   Bmey_out = ssb_pass;
-   Fmey_out = Fmult;
-  } // Calculate FMEY
-  
-  
+  }  //--(Calc_MSY == YES && (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT))
 //--calc_spr_reference_points2
 // -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -15553,8 +15454,6 @@ FUNCTION CreateOutput
     REPVEC(spr_cofl);
     REPVEC(spr_cofl_ret);
     REPVEC(Bmsy);
-    REPVEC(Fmey_out);
-    REPVEC(Bmey_out);
     if (Compute_yield_prj==1) {
       REPMAT(spr_yield);
       //OutFile1 << ">EOM<" << endl;
@@ -17609,7 +17508,6 @@ FINAL_SECTION
 // 2026-06-20 ** AEP. (a) corrected Time-varying parameters when blocks end after lyear; (b) moved readin of proj to before ctl (so nproj is available); 
 //                    (c) extended pointer arrays to include the projections.
 // 2026-06-22 ** AEP. Fixed some file openings. Updated version to 2.20.39.
-// 2026-07-05 ** AEP. Added FMEY as an output. Updated version 2.20.40
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
