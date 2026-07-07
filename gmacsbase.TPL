@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.40; ** AEP **; Compiled 2026-07-05");
+ !! TheHeader = adstring("## GMACS Version 2.20.41; ** WTS **; Compiled 2026-07-07");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1441,7 +1441,7 @@ DATA_SECTION
   !! gmacs_data << hasMMOD << "  #--has mature male ogive data? (0: no, 1: yes)" << endl;
   number mmodLkWgt;    //--likehood weight
   int mmodNumZBs;      //--number of size bins
-  ivector mmodZCs;     //--vector of size cutpoints (size: mmodNumZBs+1)
+  vector mmodZCs;      //--vector of size cutpoints (size: mmodNumZBs+1)
   int mmodNumObs;      //--number of observations
   matrix mmodObsData;  //--data matrix (mmodNumObs x 10: yr, season, fleet, rai_id, q_id, size bin,bin index, effN, prMat, uncertainty)
   int mmodNumYrs;      //--number of years of mmo data
@@ -1823,19 +1823,50 @@ DATA_SECTION
   init_vector HCRpars(1,NHCRpars);
   !! WRITEPRJ(HCRpars); 
   
-  init_vector Price(1,nclass);                             // Price as a function of size
-  !! WRITEPRJ(Price);
-  init_vector DaysPerF(1,nfleet);                          // Convert from fully-selected F to Days
-  !! WRITEPRJ(DaysPerF);
-  init_vector CostPerDay(1,nfleet);                        // Convert from days to cost
-  !! WRITEPRJ(CostPerDay);
-  init_int Stock_rec_ref;                                  ///> Stock-recruitment relationship
-  !! gmacs_prj << "# Options for the stock-recruitment relationship for reference points" << endl;
-  !! gmacs_prj << "#    1: Set to mean pre-specified range of years"<< endl;
-  !! gmacs_prj << "#    2: Ricker stock-recruitment relationship"<< endl;
-  !! gmacs_prj << "#    3: Beverton-Holt stock-recruitment relationship"<< endl;
-  !! gmacs_prj << "#    4: Pre-specified (constant) future recruitment "<< endl;
-  !! gmacs_prj << Stock_rec_ref << endl;
+  vector Price(1,nclass);                             // Price as a function of size
+ LOCAL_CALCS
+    gmacs_prj << "# Inputs for MEY calculation" << endl;
+    Price.initialize();
+    if (Calc_MEY==YES) {
+      (*ad_comm::global_datafile) >> Price;
+    } else {
+      gmacs_prj << " # ";
+    }
+    gmacs_prj << Price << "  #--Price (nclass values)" << endl;
+ END_CALCS
+  vector DaysPerF(1,nfleet);                          // Convert from fully-selected F to Days
+ LOCAL_CALCS
+    DaysPerF.initialize();
+    if (Calc_MEY==YES) {
+      (*ad_comm::global_datafile) >> DaysPerF;
+    } else {
+      gmacs_prj << " # ";
+    }
+    gmacs_prj << DaysPerF << "  #--Days per F (nfleet values)" << endl;
+ END_CALCS
+  vector CostPerDay(1,nfleet);                        // Convert from days to cost
+ LOCAL_CALCS
+    CostPerDay.initialize();
+    if (Calc_MEY==YES) {
+      (*ad_comm::global_datafile) >> CostPerDay;
+    } else {
+      gmacs_prj << " # ";
+    }
+    gmacs_prj << CostPerDay << "  #--Cost per day (nfleet values)" << endl;
+ END_CALCS
+
+  int Stock_rec_ref;                                  ///> Stock-recruitment relationship
+ LOCAL_CALCS
+    Stock_rec_ref = 1;
+    if (Calc_MEY==YES) (*ad_comm::global_datafile) >> Stock_rec_ref;
+    gmacs_prj << "# Options for the stock-recruitment relationship for MEY reference points" << endl;
+    gmacs_prj << "#    1: Set to mean pre-specified range of years"<< endl;
+    gmacs_prj << "#    2: Ricker stock-recruitment relationship"<< endl;
+    gmacs_prj << "#    3: Beverton-Holt stock-recruitment relationship"<< endl;
+    gmacs_prj << "#    4: Pre-specified (constant) future recruitment "<< endl;
+    if (Calc_MEY==NO) gmacs_prj << "# ";
+    gmacs_prj << Stock_rec_ref << endl;
+ END_CALCS
 
   init_int max_prj;
   !! WRITEPRJ(max_prj);
@@ -5444,8 +5475,10 @@ PRELIMINARY_CALCS_SECTION
 
   nprojUse = nproj; 
  
-  zbRemapper = getRebinMatrix(size_breaks,mmodZCs);//--matrix to "remap" vectors with model size bins to vectors with MMOD size bins
-  cout << "zbRemapper = " << endl << zbRemapper << endl;
+  if (hasMMOD){
+    zbRemapper = getRebinMatrix(size_breaks,mmodZCs);//--matrix to "remap" vectors with model size bins to vectors with MMOD size bins
+    cout << "zbRemapper = " << endl << zbRemapper << endl;
+  }
   
   // 32 Gaussian evaluation points
   xg( 1)=-0.99726; xg( 2)=-0.98561; xg( 3)=-0.96476; xg( 4)=-0.93490; xg( 5)=-0.89632; xg( 6)=-0.84936; xg( 7)=-0.79448; xg( 8)=-0.73218;
@@ -14520,28 +14553,41 @@ FUNCTION CreateOutput
   RepFile1 << ">EOD<" << endl;
  
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "PredictedMMOs: dataframe" << endl;
-  RepFile1 << "year type  "<< mid_points << endl;
-  for (int i=syr;i<=nyrRetro+1;i++){
-    RepFile1 << i << " " << " matN  " << d3_PrdMMOs(i,1) << endl;
-    RepFile1 << i << " " << " totN  " << d3_PrdMMOs(i,2) << endl;
-    RepFile1 << i << " " << " prMat " << d3_PrdMMOs(i,3) << endl;
-  }
-  RepFile1 << ">EOD<" << endl;
- 
-  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "PredictedMMOsP: dataframe" << endl;
-  {
-    dvector mmodZBs(1,mmodNumZBs); 
-    for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
-    RepFile1 << "year type  "<< mmodZBs << endl;
+  if (hasMMOD){
+    RepFile1 << "PredictedMMOs: dataframe" << endl;
+    RepFile1 << "year type  "<< mid_points << endl;
     for (int i=syr;i<=nyrRetro+1;i++){
-      RepFile1 << i << " " << " matN  " << d3_PrdMMOsP(i,1) << endl;
-      RepFile1 << i << " " << " totN  " << d3_PrdMMOsP(i,2) << endl;
-      RepFile1 << i << " " << " prMat " << d3_PrdMMOsP(i,3) << endl;
+      RepFile1 << i << " " << " matN  " << d3_PrdMMOs(i,1) << endl;
+      RepFile1 << i << " " << " totN  " << d3_PrdMMOs(i,2) << endl;
+      RepFile1 << i << " " << " prMat " << d3_PrdMMOs(i,3) << endl;
     }
+    RepFile1 << ">EOD<" << endl;
+  } else {
+    RepFile1 << "# No PredictedMMOs: dataframe" << endl;
+    RepFile1 << "# no MMO predictions" << endl << 
+                "#--------------------------------------------------------------------------------------------" << endl;
   }
-  RepFile1 << ">EOD<" << endl;
+  
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  if (hasMMOD){
+    RepFile1 << "PredictedMMOsP: dataframe" << endl;
+    {
+      RepFile1 << mmodNumZBs << "  # mmodNumZBs" << endl;
+      dvector mmodZBs(1,mmodNumZBs); 
+      for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
+      RepFile1 << "year type  "<< mmodZBs << endl;
+      for (int i=syr;i<=nyrRetro+1;i++){
+        RepFile1 << i << " " << " matN  " << d3_PrdMMOsP(i,1) << endl;
+        RepFile1 << i << " " << " totN  " << d3_PrdMMOsP(i,2) << endl;
+        RepFile1 << i << " " << " prMat " << d3_PrdMMOsP(i,3) << endl;
+      }
+    }
+    RepFile1 << ">EOD<" << endl;
+  } else {
+    RepFile1 << "# No PredictedMMOsP: dataframe" << endl;
+    RepFile1 << "# no MMO predictions" << endl << 
+                "#--------------------------------------------------------------------------------------------" << endl;
+  }
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   if (hasMMOD){
@@ -14554,6 +14600,7 @@ FUNCTION CreateOutput
     }
     RepFile1 << ">EOD<" << endl;
   } else {
+    RepFile1 << "# No PredictedSurveyMMOs: dataframe" << endl;
     RepFile1 << "# no MMO data" << endl << 
                 "#--------------------------------------------------------------------------------------------" << endl;
   }
@@ -14571,13 +14618,14 @@ FUNCTION CreateOutput
     }
     RepFile1 << ">EOD<" << endl;
   } else {
+    RepFile1 << "# No PredictedSurveyMMOsP: dataframe" << endl;
     RepFile1 << "# no MMO data" << endl << 
                 "#--------------------------------------------------------------------------------------------" << endl;
   }
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   if (hasMMOD){
-    RepFile1 << "likeSuumaryMMOsP: dataframe" << endl;
+    RepFile1 << "likeSummaryMMOsP: dataframe" << endl;
     {
       dvector mmodZBs(1,mmodNumZBs); 
       for (int iz=1;iz<=mmodNumZBs;iz++) mmodZBs(iz) = 0.5*(mmodZCs(iz+1)+mmodZCs(iz));
@@ -14595,6 +14643,7 @@ FUNCTION CreateOutput
     }
     RepFile1 << ">EOD<" << endl;
   } else {
+    RepFile1 << "# No likeSummaryMMOsP: dataframe" << endl;
     RepFile1 << "# no MMO data" << endl << 
                 "#--------------------------------------------------------------------------------------------" << endl;
   }
@@ -14612,6 +14661,7 @@ FUNCTION CreateOutput
     }
     RepFile1 << ">EOD<" << endl;
   }   else {
+    RepFile1 << "# No zbRemapper: dataframe" << endl;
     RepFile1 << "# no MMO data" << endl << 
                 "#--------------------------------------------------------------------------------------------" << endl;
   }
@@ -17610,6 +17660,9 @@ FINAL_SECTION
 //                    (c) extended pointer arrays to include the projections.
 // 2026-06-22 ** AEP. Fixed some file openings. Updated version to 2.20.39.
 // 2026-07-05 ** AEP. Added FMEY as an output. Updated version 2.20.40
+// 2026-07-07 ** WTS. Revised how projection file is read depending on whether Calc_MEY is YES or NO. 
+//                    Corrected output to gmacs.rep1 when there is no male maturity ogive data. 
+//                    Incremented version to 2.20.41.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
