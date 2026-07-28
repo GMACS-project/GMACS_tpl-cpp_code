@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.41; ** WTS **; Compiled 2026-07-07");
+ !! TheHeader = adstring("## GMACS Version 2.20.42; ** WTS **; Compiled 2026-07-28");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -5353,10 +5353,11 @@ PARAMETER_SECTION
   3darray d3_newShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> New shell crabs-at-length.
   3darray d3_oldShell(1,nsex,syr,nyrRetro+1,1,nclass);              ///> Old shell crabs-at-length.
 
-  3darray d3_PrdMMOs(syr,nyrRetro+1,1,3,1,nclass)                          ///> predicted annual mature male ogives using predicted model abundance and size bins
-  3darray d3_PrdMMOsP(syr,nyrRetro+1,1,3,1,mmodNumZBs)                     ///> predicted annual mature male ogives using predicted model abundance and observed data size bins
-  3darray d3_PrdSrvMMOs(syr,nyrRetro+1,1,3,1,nclass)                       ///> predicted  mature male ogives using model size bins and predicted survey abundance
-  3darray d3_PrdSrvMMOsP(syr,nyrRetro+1,1,3,1,mmodNumZBs)                  ///> predicted  mature male ogives using observed size bins and predicted survey abundance
+  3darray d3_PrdMMOs;                          ///> predicted annual mature male ogives using predicted model abundance and size bins
+  3darray d3_PrdMMOsP;                     ///> predicted annual mature male ogives using predicted model abundance and observed data size bins
+  3darray d3_PrdSrvMMOs;                       ///> predicted  mature male ogives using model size bins and predicted survey abundance
+  3darray d3_PrdSrvMMOsP;                  ///> predicted  mature male ogives using observed size bins and predicted survey abundance
+
   4darray d4_N_coh(1,n_grp,1,mxYrsCohortProgression,1,nseason,1,nclass);   ///> Cohort-type numbers-at-sex/mature/shell/year/season/length.
 
   number TempSS;                                                    ///> Use to compute the selextivity penalty
@@ -5476,6 +5477,10 @@ PRELIMINARY_CALCS_SECTION
   nprojUse = nproj; 
  
   if (hasMMOD){
+    d3_PrdMMOs.allocate(syr,nyrRetro+1,1,3,1,nclass);                          ///> predicted annual mature male ogives using predicted model abundance and size bins
+    d3_PrdMMOsP.allocate(syr,nyrRetro+1,1,3,1,mmodNumZBs);                     ///> predicted annual mature male ogives using predicted model abundance and observed data size bins
+    d3_PrdSrvMMOs.allocate(syr,nyrRetro+1,1,3,1,nclass);                       ///> predicted  mature male ogives using model size bins and predicted survey abundance
+    d3_PrdSrvMMOsP.allocate(syr,nyrRetro+1,1,3,1,mmodNumZBs);                  ///> predicted  mature male ogives using observed size bins and predicted survey abundance
     zbRemapper = getRebinMatrix(size_breaks,mmodZCs);//--matrix to "remap" vectors with model size bins to vectors with MMOD size bins
     cout << "zbRemapper = " << endl << zbRemapper << endl;
   }
@@ -11278,7 +11283,7 @@ FUNCTION calc_objective_function
   w_nloglike += sum(nloglike(4));
   w_nloglike += sum(nloglike(5))*tag_emphasis;
   w_nloglike += sum(nloglike(6));
-  w_nloglike += sum(nloglike(7))*mmodLkWgt;
+  if (hasMMOD) w_nloglike += sum(nloglike(7))*mmodLkWgt; //--nloglike(7) *should* be 0's anyway if hasMMOD is FALSE
 
   objfun =  w_nloglike + sum(elem_prod(nlogPenalty,Penalty_emphasis))+ sum(priorDensity) + TempSS + grwthPosFun;
 
@@ -13743,6 +13748,7 @@ FUNCTION CreateOutput
   OutFile1 << "Stock_recruitment: " << sum(nloglike(4)) << " " << sum(nloglike(4)) << endl;
   OutFile1 << "Tagging_data: " << sum(nloglike(5)) << " " << sum(nloglike(5))*tag_emphasis << endl;
   OutFile1 << "Growth_data: " << sum(nloglike(6)) << " " << sum(nloglike(6)) << endl;
+  if (hasMMOD) OutFile1 << "MMOD_data: " << sum(nloglike(7)) << " " << sum(nloglike(7)) << endl;
   OutFile1 << "Penalties: " << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
   OutFile1 << "Priors: " << sum(priorDensity) << endl;
   OutFile1 << "Initial_size_structure: " << TempSS << endl;
@@ -13781,6 +13787,11 @@ FUNCTION CreateOutput
       OutFile1 << "Raw_likelihood    : " << nloglike(6) << endl;
       OutFile1 << "posfun: " << grwthPosFun << endl;
     OutFile1 << ">EOL<"<<endl;
+    if (hasMMOD){
+      OutFile1 << "--MMOD_likelihood: list" << endl;
+        OutFile1 << "Raw_likelihood    : " << nloglike(7) << endl;
+      OutFile1 << ">EOL<"<<endl;
+    }
   OutFile1 << ">EOL<"<<endl<<endl;
 
   OutFile1 << "--Penalties: list" << endl;
@@ -13811,7 +13822,7 @@ FUNCTION CreateOutput
   RepFile1 << "Stock_recruitment      " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(4)) << " "  << sum(nloglike(4))                             << endl;
   RepFile1 << "Tagging_data           " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(5)) << " "  << sum(nloglike(5))*tag_emphasis                << endl;
   RepFile1 << "Growth_data            " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(6)) << " "  << sum(nloglike(6))                             << endl;
-  RepFile1 << "MMO_data               " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(7)) << " "  << mmodLkWgt*sum(nloglike(7))                   << endl;
+  if (hasMMOD) RepFile1 << "MMO_data               " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(7)) << " "  << mmodLkWgt*sum(nloglike(7))                   << endl;
   RepFile1 << "Penalties              " << " summary    NA        NA        NA    NA        NA      " << sum(nlogPenalty) << " "  << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
   RepFile1 << "Priors                 " << " summary    NA        NA        NA    NA        NA      " << sum(priorDensity)<< " "  << sum(priorDensity)                            << endl;
   RepFile1 << "Initial_size_structure " << " summary    NA        NA        NA    NA        NA      " << TempSS           << " "  << TempSS      << endl;
@@ -13858,9 +13869,11 @@ FUNCTION CreateOutput
   }
     RepFile1 << "Growth_data            " << " posfun             NA       NA      NA     NA       NA  "       << 
                                              grwthPosFun    << " " << 1             << " " << grwthPosFun                              << endl;
-  for (int iy=syr; iy<=(nyrRetro+1);iy++){
+  if (hasMMOD){
+    for (int iy=syr; iy<=(nyrRetro+1);iy++){
     RepFile1 << "MMOD_data              " << "mmod_data         " << iy << "  NA      NA       NA      NA " <<
                                            nloglike(7,iy) << " " << mmodLkWgt             << " " << nloglike(7,iy)                             << endl;
+    }
   }
   RepFile1 << ">EOD<" <<endl<<endl;
   
@@ -15650,11 +15663,14 @@ FUNCTION CreateOutput
   OutFile2 <<  nloglike(5) << endl;
   OutFile2 << "Growth_like" << endl;
   OutFile2 <<  nloglike(6) << endl;
-  OutFile2 << "MMOD_like" << endl;
-  OutFile2 <<  nloglike(7) << endl;
-
   OutFile2 << "Growth_posfun" << endl;
   OutFile2 <<  grwthPosFun << endl;
+
+  if (hasMMOD){
+    OutFile2 << "MMOD_like" << endl;
+    OutFile2 <<  nloglike(7) << endl;
+  }
+
 
   OutFile2 << "MeanF_pen " << endl;
   OutFile2 << nlogPenalty(1)*Penalty_emphasis(1) << endl;
@@ -17663,6 +17679,10 @@ FINAL_SECTION
 // 2026-07-07 ** WTS. Revised how projection file is read depending on whether Calc_MEY is YES or NO. 
 //                    Corrected output to gmacs.rep1 when there is no male maturity ogive data. 
 //                    Incremented version to 2.20.41.
+// 2026-07-28 ** WTS. Revised output for male maturity ogives data so likelihoods and related information are not printed to files. More importantly, 
+//                    I revised when the d3_PrdMMOs and associated arrays were allocated so they actually are explicitly not allocated when there's no 
+//                    male maturity ogive data to fit. Otherwise, the sizes were possibly being allocated using arbitrary values for mmodNumZBs 
+//                    and mmodNumYrs, which could have been causing problems (definitely were on a Mac). Incremented version to 2.20.42.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
