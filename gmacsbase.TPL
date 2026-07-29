@@ -13883,7 +13883,7 @@ FUNCTION CreateOutput
   OutFile1 << "--Estimated parameters: dataframe" << endl;
   OutFile1 << "Parameter_count Parameter_type Estimate Phase Lower_bound Upper_bound Status Penalty Gradient Standard_error Estimated_parameter_count" << endl;
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "Estimated parameters: dataframe" << endl;
+  RepFile1 << "Estimated_parameters: dataframe" << endl;
   RepFile1 << "par_count par_type est phz lb ub status pen grd se est_par_cnt" << endl;
   ParFile1 << "#est    par_count  par_type     est_par_count    prior " << endl;
 

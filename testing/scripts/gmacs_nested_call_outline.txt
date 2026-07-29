@@ -1,0 +1,346 @@
+Nested Function Call Outline for _build/gmacs.cpp
+Scope: functions defined in this file; nested calls shown to level 2.
+Recursion policy: recursion is not expanded in this mode; see filtered mode for rooted trees.
+Function count: 78
+
+Recursive functions detected (heuristic): none
+
+CalcStateTAC  [line 16454]
+  L1: StMatsTAC
+  L2 via StMatsTAC: (no in-file calls detected)
+
+CheckBounds  [line 477]
+  L1: (no in-file calls detected)
+
+CreateOutput  [line 13467]
+  L1: to_str, get_all_sdnr_MAR, CheckBounds, calc_ssb, calc_ssba, project_cohort_numbers_at_length, calc_predicted_capture_abdbio, to_str15, MyOutput, calc_spr_reference_points2, WriteFiles
+  L2 via to_str: (no in-file calls detected)
+  L2 via get_all_sdnr_MAR: calc_sdnr_MAR, calc_Francis_weights
+  L2 via CheckBounds: (no in-file calls detected)
+  L2 via calc_ssb: (no in-file calls detected)
+  L2 via calc_ssba: (no in-file calls detected)
+  L2 via project_cohort_numbers_at_length: update_population_numbers_at_length_season, update_population_numbers_at_length_season_new
+  L2 via calc_predicted_capture_abdbio: (no in-file calls detected)
+  L2 via to_str15: (no in-file calls detected)
+  L2 via MyOutput: (no in-file calls detected)
+  L2 via calc_spr_reference_points2: calc_ssb
+  L2 via WriteFiles: (no in-file calls detected)
+
+GenJitter  [line 423]
+  L1: (no in-file calls detected)
+
+MyOutput  [line 16391]
+  L1: (no in-file calls detected)
+
+StMatsTAC  [line 16464]
+  L1: (no in-file calls detected)
+
+WriteFiles  [line 15447]
+  L1: (no in-file calls detected)
+
+ad_boundf  [line 16592]
+  L1: (no in-file calls detected)
+
+addToAnystring  [line 521]
+  L1: (no in-file calls detected)
+
+between_phases_calculations  [line 5867]
+  L1: (no in-file calls detected)
+
+calc_Francis_weights  [line 13037]
+  L1: (no in-file calls detected)
+
+calc_fishing_mortality  [line 7301]
+  L1: (no in-file calls detected)
+
+calc_growth_increments  [line 7682]
+  L1: (no in-file calls detected)
+
+calc_growth_increments_linear  [line 7533]
+  L1: (no in-file calls detected)
+
+calc_growth_transition  [line 7747]
+  L1: (no in-file calls detected)
+
+calc_initial_numbers_at_length  [line 8239]
+  L1: writeToPopProg
+  L2 via writeToPopProg: (no in-file calls detected)
+
+calc_like_gamma_linear_growth  [line 7571]
+  L1: (no in-file calls detected)
+
+calc_like_gamma_pwrlaw_growth  [line 7609]
+  L1: (no in-file calls detected)
+
+calc_like_gamma_pwrlawalt_growth  [line 7648]
+  L1: (no in-file calls detected)
+
+calc_mature_probability  [line 8087]
+  L1: (no in-file calls detected)
+
+calc_molting_probability  [line 7484]
+  L1: (no in-file calls detected)
+
+calc_natural_mortality  [line 7438]
+  L1: (no in-file calls detected)
+
+calc_objective_function  [line 11160]
+  L1: catch_likelihood, index_likelihood, length_likelihood, recruitment_likelihood, growth_likelihood, mmos_likelihood_survey, dnorm, writeRepPar
+  L2 via catch_likelihood: dnorm
+  L2 via index_likelihood: (no in-file calls detected)
+  L2 via length_likelihood: (no in-file calls detected)
+  L2 via recruitment_likelihood: dnorm
+  L2 via growth_likelihood: calc_growth_increments_linear, dnorm, calc_like_gamma_linear_growth, calc_like_gamma_pwrlaw_growth, calc_like_gamma_pwrlawalt_growth
+  L2 via mmos_likelihood_survey: (no in-file calls detected)
+  L2 via dnorm: (no in-file calls detected)
+  L2 via writeRepPar: CheckBounds
+
+calc_predicted_MMOs_pop  [line 10311]
+  L1: (no in-file calls detected)
+
+calc_predicted_MMOs_survey  [line 10370]
+  L1: (no in-file calls detected)
+
+calc_predicted_capture_abdbio  [line 9659]
+  L1: (no in-file calls detected)
+
+calc_predicted_catch  [line 9358]
+  L1: (no in-file calls detected)
+
+calc_predicted_catch_det  [line 9609]
+  L1: (no in-file calls detected)
+
+calc_predicted_composition  [line 10020]
+  L1: CreateOutput
+  L2 via CreateOutput: to_str, get_all_sdnr_MAR, CheckBounds, calc_ssb, calc_ssba, project_cohort_numbers_at_length, calc_predicted_capture_abdbio, to_str15, MyOutput, calc_spr_reference_points2, WriteFiles
+
+calc_prior_densities  [line 10768]
+  L1: get_prior_pdf
+  L2 via get_prior_pdf: dnorm
+
+calc_recruitment_size_distribution  [line 8130]
+  L1: (no in-file calls detected)
+
+calc_relative_abundance  [line 9715]
+  L1: (no in-file calls detected)
+
+calc_sdnr_MAR  [line 13005]
+  L1: (no in-file calls detected)
+
+calc_sdreport  [line 12907]
+  L1: calc_ssb, calc_total_mortality, calc_initial_numbers_at_length, update_population_numbers_at_length
+  L2 via calc_ssb: (no in-file calls detected)
+  L2 via calc_total_mortality: (no in-file calls detected)
+  L2 via calc_initial_numbers_at_length: writeToPopProg
+  L2 via update_population_numbers_at_length: update_population_numbers_at_length_season, update_population_numbers_at_length_season_new
+
+calc_selectivities  [line 7034]
+  L1: dnorm
+  L2 via dnorm: (no in-file calls detected)
+
+calc_spr_reference_points2  [line 12467]
+  L1: calc_ssb
+  L2 via calc_ssb: (no in-file calls detected)
+
+calc_ssb  [line 11372]
+  L1: (no in-file calls detected)
+
+calc_ssba  [line 11407]
+  L1: (no in-file calls detected)
+
+calc_stock_recruitment_relationship  [line 10642]
+  L1: calc_ssb
+  L2 via calc_ssb: (no in-file calls detected)
+
+calc_total_mortality  [line 7451]
+  L1: (no in-file calls detected)
+
+catch_likelihood  [line 10907]
+  L1: dnorm
+  L2 via dnorm: (no in-file calls detected)
+
+dnorm  [line 509]
+  L1: (no in-file calls detected)
+
+final_calcs  [line 16346]
+  L1: CreateOutput
+  L2 via CreateOutput: to_str, get_all_sdnr_MAR, CheckBounds, calc_ssb, calc_ssba, project_cohort_numbers_at_length, calc_predicted_capture_abdbio, to_str15, MyOutput, calc_spr_reference_points2, WriteFiles
+
+getNumbersAtLengthByCase  [line 8359]
+  L1: (no in-file calls detected)
+
+getPopStateString  [line 9161]
+  L1: (no in-file calls detected)
+
+getRebinMatrix  [line 10572]
+  L1: (no in-file calls detected)
+
+get_all_sdnr_MAR  [line 12968]
+  L1: calc_sdnr_MAR, calc_Francis_weights
+  L2 via calc_sdnr_MAR: (no in-file calls detected)
+  L2 via calc_Francis_weights: (no in-file calls detected)
+
+get_prior_pdf  [line 10723]
+  L1: dnorm
+  L2 via dnorm: (no in-file calls detected)
+
+growth_likelihood  [line 11077]
+  L1: calc_growth_increments_linear, dnorm, calc_like_gamma_linear_growth, calc_like_gamma_pwrlaw_growth, calc_like_gamma_pwrlawalt_growth
+  L2 via calc_growth_increments_linear: (no in-file calls detected)
+  L2 via dnorm: (no in-file calls detected)
+  L2 via calc_like_gamma_linear_growth: (no in-file calls detected)
+  L2 via calc_like_gamma_pwrlaw_growth: (no in-file calls detected)
+  L2 via calc_like_gamma_pwrlawalt_growth: (no in-file calls detected)
+
+index_likelihood  [line 10935]
+  L1: (no in-file calls detected)
+
+init_selectivities  [line 6885]
+  L1: (no in-file calls detected)
+
+initializationfunction  [line 5028]
+  L1: (no in-file calls detected)
+
+initialize_model_parameters  [line 5993]
+  L1: (no in-file calls detected)
+
+length_likelihood  [line 10969]
+  L1: (no in-file calls detected)
+
+main  [line 16549]
+  L1: preliminary_calculations
+  L2 via preliminary_calculations: getRebinMatrix, simulation_model, GenJitter, initialize_model_parameters, calc_growth_increments, calc_molting_probability, calc_mature_probability, calc_growth_transition, init_selectivities, calc_selectivities
+
+mmos_likelihood_pop  [line 10451]
+  L1: (no in-file calls detected)
+
+mmos_likelihood_survey  [line 10509]
+  L1: (no in-file calls detected)
+
+model_data  [line 5049]
+  L1: initializationfunction
+  L2 via initializationfunction: (no in-file calls detected)
+
+preliminary_calculations  [line 5697]
+  L1: getRebinMatrix, simulation_model, GenJitter, initialize_model_parameters, calc_growth_increments, calc_molting_probability, calc_mature_probability, calc_growth_transition, init_selectivities, calc_selectivities
+  L2 via getRebinMatrix: (no in-file calls detected)
+  L2 via simulation_model: initialize_model_parameters, calc_selectivities, calc_fishing_mortality, calc_growth_increments, calc_molting_probability, calc_mature_probability, calc_growth_transition, calc_natural_mortality, calc_total_mortality, calc_recruitment_size_distribution, calc_initial_numbers_at_length, update_population_numbers_at_length, calc_predicted_catch, calc_relative_abundance, calc_predicted_composition
+  L2 via GenJitter: (no in-file calls detected)
+  L2 via initialize_model_parameters: (no in-file calls detected)
+  L2 via calc_growth_increments: (no in-file calls detected)
+  L2 via calc_molting_probability: (no in-file calls detected)
+  L2 via calc_mature_probability: (no in-file calls detected)
+  L2 via calc_growth_transition: (no in-file calls detected)
+  L2 via init_selectivities: (no in-file calls detected)
+  L2 via calc_selectivities: dnorm
+
+project_cohort_numbers_at_length  [line 9177]
+  L1: update_population_numbers_at_length_season, update_population_numbers_at_length_season_new
+  L2 via update_population_numbers_at_length_season: getPopStateString
+  L2 via update_population_numbers_at_length_season_new: getNumbersAtLengthByCase, updateNumbersAtLengthByCase
+
+recruitment_likelihood  [line 11054]
+  L1: dnorm
+  L2 via dnorm: (no in-file calls detected)
+
+report  [line 15421]
+  L1: CreateOutput, writeJitterResults
+  L2 via CreateOutput: to_str, get_all_sdnr_MAR, CheckBounds, calc_ssb, calc_ssba, project_cohort_numbers_at_length, calc_predicted_capture_abdbio, to_str15, MyOutput, calc_spr_reference_points2, WriteFiles
+  L2 via writeJitterResults: calc_spr_reference_points2
+
+save_params  [line 16337]
+  L1: (no in-file calls detected)
+
+set_runtime  [line 16327]
+  L1: (no in-file calls detected)
+
+simulation_model  [line 11298]
+  L1: initialize_model_parameters, calc_selectivities, calc_fishing_mortality, calc_growth_increments, calc_molting_probability, calc_mature_probability, calc_growth_transition, calc_natural_mortality, calc_total_mortality, calc_recruitment_size_distribution, calc_initial_numbers_at_length, update_population_numbers_at_length, calc_predicted_catch, calc_relative_abundance, calc_predicted_composition
+  L2 via initialize_model_parameters: (no in-file calls detected)
+  L2 via calc_selectivities: dnorm
+  L2 via calc_fishing_mortality: (no in-file calls detected)
+  L2 via calc_growth_increments: (no in-file calls detected)
+  L2 via calc_molting_probability: (no in-file calls detected)
+  L2 via calc_mature_probability: (no in-file calls detected)
+  L2 via calc_growth_transition: (no in-file calls detected)
+  L2 via calc_natural_mortality: (no in-file calls detected)
+  L2 via calc_total_mortality: (no in-file calls detected)
+  L2 via calc_recruitment_size_distribution: (no in-file calls detected)
+  L2 via calc_initial_numbers_at_length: writeToPopProg
+  L2 via update_population_numbers_at_length: update_population_numbers_at_length_season, update_population_numbers_at_length_season_new
+  L2 via calc_predicted_catch: (no in-file calls detected)
+  L2 via calc_relative_abundance: (no in-file calls detected)
+  L2 via calc_predicted_composition: CreateOutput
+
+strg  [line 13086]
+  L1: (no in-file calls detected)
+
+strg15  [line 13133]
+  L1: (no in-file calls detected)
+
+to_str  [line 13120]
+  L1: (no in-file calls detected)
+
+to_str15  [line 13161]
+  L1: (no in-file calls detected)
+
+updateNumbersAtLengthByCase  [line 8403]
+  L1: writeToPopProg
+  L2 via writeToPopProg: (no in-file calls detected)
+
+update_population_numbers_at_length  [line 9293]
+  L1: update_population_numbers_at_length_season, update_population_numbers_at_length_season_new
+  L2 via update_population_numbers_at_length_season: getPopStateString
+  L2 via update_population_numbers_at_length_season_new: getNumbersAtLengthByCase, updateNumbersAtLengthByCase
+
+update_population_numbers_at_length_season  [line 8718]
+  L1: getPopStateString
+  L2 via getPopStateString: (no in-file calls detected)
+
+update_population_numbers_at_length_season_new  [line 8473]
+  L1: getNumbersAtLengthByCase, updateNumbersAtLengthByCase
+  L2 via getNumbersAtLengthByCase: (no in-file calls detected)
+  L2 via updateNumbersAtLengthByCase: writeToPopProg
+
+userfunction  [line 5877]
+  L1: initialize_model_parameters, calc_selectivities, calc_fishing_mortality, calc_total_mortality, calc_growth_increments, calc_molting_probability, calc_mature_probability, calc_growth_transition, calc_recruitment_size_distribution, calc_initial_numbers_at_length, update_population_numbers_at_length, calc_stock_recruitment_relationship, calc_predicted_catch, calc_relative_abundance, calc_predicted_composition, calc_predicted_MMOs_pop, calc_predicted_MMOs_survey, calc_prior_densities, calc_objective_function, calc_spr_reference_points2, calc_sdreport, write_eval, save_params, CreateOutput
+  L2 via initialize_model_parameters: (no in-file calls detected)
+  L2 via calc_selectivities: dnorm
+  L2 via calc_fishing_mortality: (no in-file calls detected)
+  L2 via calc_total_mortality: (no in-file calls detected)
+  L2 via calc_growth_increments: (no in-file calls detected)
+  L2 via calc_molting_probability: (no in-file calls detected)
+  L2 via calc_mature_probability: (no in-file calls detected)
+  L2 via calc_growth_transition: (no in-file calls detected)
+  L2 via calc_recruitment_size_distribution: (no in-file calls detected)
+  L2 via calc_initial_numbers_at_length: writeToPopProg
+  L2 via update_population_numbers_at_length: update_population_numbers_at_length_season, update_population_numbers_at_length_season_new
+  L2 via calc_stock_recruitment_relationship: calc_ssb
+  L2 via calc_predicted_catch: (no in-file calls detected)
+  L2 via calc_relative_abundance: (no in-file calls detected)
+  L2 via calc_predicted_composition: CreateOutput
+  L2 via calc_predicted_MMOs_pop: (no in-file calls detected)
+  L2 via calc_predicted_MMOs_survey: (no in-file calls detected)
+  L2 via calc_prior_densities: get_prior_pdf
+  L2 via calc_objective_function: catch_likelihood, index_likelihood, length_likelihood, recruitment_likelihood, growth_likelihood, mmos_likelihood_survey, dnorm, writeRepPar
+  L2 via calc_spr_reference_points2: calc_ssb
+  L2 via calc_sdreport: calc_ssb, calc_total_mortality, calc_initial_numbers_at_length, update_population_numbers_at_length
+  L2 via write_eval: calc_spr_reference_points2, calc_ssb
+  L2 via save_params: (no in-file calls detected)
+  L2 via CreateOutput: to_str, get_all_sdnr_MAR, CheckBounds, calc_ssb, calc_ssba, project_cohort_numbers_at_length, calc_predicted_capture_abdbio, to_str15, MyOutput, calc_spr_reference_points2, WriteFiles
+
+writeJitterResults  [line 13447]
+  L1: calc_spr_reference_points2
+  L2 via calc_spr_reference_points2: calc_ssb
+
+writeRepPar  [line 13168]
+  L1: CheckBounds
+  L2 via CheckBounds: (no in-file calls detected)
+
+writeToPopProg  [line 8173]
+  L1: (no in-file calls detected)
+
+write_eval  [line 12790]
+  L1: calc_spr_reference_points2, calc_ssb
+  L2 via calc_spr_reference_points2: calc_ssb
+  L2 via calc_ssb: (no in-file calls detected)
