@@ -1,0 +1,158 @@
+Trace starting in model_parameters::userfunction and working backward from objfun.
+
+Direct objfun change points
+
+Reset in generated C++ only
+gmacs.cpp L5879: objfun =0.0;
+There is no corresponding reset line in gmacsbase.TPL PROCEDURE_SECTION; this reset is generated in C++.
+Final objective assignment
+gmacs.cpp L11269: objfun = w_nloglike + sum(elem_prod(nlogPenalty,Penalty_emphasis))+ sum(priorDensity) + TempSS + grwthPosFun;
+gmacsbase.TPL L11289: objfun = w_nloglike + sum(elem_prod(nlogPenalty,Penalty_emphasis))+ sum(priorDensity) + TempSS + grwthPosFun;
+Call path from userfunction to objective construction
+
+gmacs.cpp L5933-L5935: nloglike.initialize(); calc_prior_densities(); calc_objective_function();
+gmacsbase.TPL L5715-L5717: nloglike.initialize(); calc_prior_densities(); calc_objective_function();
+Backward trace of each term added into objfun
+
+Term: w_nloglike
+Build lines:
+gmacs.cpp L11264: w_nloglike = sum(elem_prod(nloglike(1),catch_emphasis)) + sum(elem_prod(nloglike(2),cpue_emphasis)) + sum(elem_prod(nloglike(3),lf_emphasis));
+gmacs.cpp L11265: w_nloglike += sum(nloglike(4));
+gmacs.cpp L11266: w_nloglike += sum(nloglike(5))*tag_emphasis;
+gmacs.cpp L11267: w_nloglike += sum(nloglike(6));
+gmacs.cpp L11268: if (hasMMOD) w_nloglike += sum(nloglike(7))*mmodLkWgt;
+TPL counterparts:
+gmacsbase.TPL L11283-L11287
+Term sources for nloglike(1..7) used by w_nloglike
+nloglike(1): catch likelihood
+
+gmacs.cpp L10923: nloglike(1,k) += dnorm(res_catch(k,jj), catch_sd(jj));
+
+gmacs.cpp L10927: if (!doTCSAM02EffExp) nloglike(1,k) += dnorm(res_catch(k,jj), catch_sd(jj));
+
+gmacsbase.TPL L10910, L10914
+
+nloglike(2): index likelihood
+
+gmacs.cpp L10960: nloglike(2,rai_id) += log(stdtmp) + 0.5 * square(res_cpue(jj) / stdtmp);
+
+gmacsbase.TPL L10959
+
+nloglike(3): size composition likelihood
+
+gmacs.cpp L11039: nloglike(3,ii) += nll;
+
+gmacsbase.TPL L11043
+
+nloglike(4): recruitment likelihood
+
+gmacs.cpp L11061: nloglike(4,1) = dnorm(res_recruit, sigR);
+
+gmacs.cpp L11072: nloglike(4,3) = dnorm(logit_rec_prop_est, 2.0);
+
+gmacsbase.TPL L11066, L11077
+
+nloglike(5): tagging-growth likelihood
+
+gmacs.cpp L11116: nloglike(5,h) -= log(Prob/total+0.00001)*freq;
+
+gmacsbase.TPL L11122
+
+nloglike(6): non-tagging growth increment likelihood
+
+gmacs.cpp L11127: nloglike(6,iMoltIncSex(i)) += dnorm(log(dMoltInc(i)) - log(MoltIncPred(i)), dMoltIncCV(i));
+
+gmacs.cpp L11133, L11137, L11141: nloglike(6) = calc_like_gamma_linear_growth(...) or calc_like_gamma_pwrlaw_growth(...) or calc_like_gamma_pwrlawalt_growth(...);
+
+gmacsbase.TPL L11134, L11140, L11144, L11148
+
+nloglike(7): MMO likelihood
+
+gmacs.cpp L10490: nloglike(7) = nlls_y; (population version)
+
+gmacs.cpp L10556: nloglike(7) = nlls_y; (survey version)
+
+gmacsbase.TPL L10457, L10523
+
+Term: sum(elem_prod(nlogPenalty,Penalty_emphasis))
+Penalty vector reset:
+
+gmacs.cpp L11179: nlogPenalty.initialize();
+
+gmacsbase.TPL L11189
+
+Components written into nlogPenalty:
+
+gmacs.cpp L11184, L11188: nlogPenalty(1) += ...
+
+gmacs.cpp L11204, L11212: nlogPenalty(2) += ...
+
+gmacs.cpp L11221: nlogPenalty(6) = dnorm(first_difference(rec_dev), 1.0);
+
+gmacs.cpp L11229: nlogPenalty(7) = square(log(SumRecF) - log(SumRecM));
+
+gmacs.cpp L11236: nlogPenalty(8) += ...
+
+gmacs.cpp L11240: nlogPenalty(9) = selex_smooth_pen;
+
+gmacs.cpp L11244: nlogPenalty(10) += ...
+
+gmacs.cpp L11248: nlogPenalty(11) += ...
+
+gmacs.cpp L11253: nlogPenalty(12) += ...
+
+gmacs.cpp L11257, L11262: nlogPenalty(13) = 0; then += ...
+
+TPL counterparts:
+
+gmacsbase.TPL L11195-L11280
+
+Term: sum(priorDensity)
+Initialization:
+
+gmacs.cpp L10776: priorDensity.initialize();
+
+gmacsbase.TPL L10754
+
+Repeated fill pattern in calc_prior_densities:
+
+gmacs.cpp L10791: priorDensity(iprior) = get_prior_pdf(itype, x, p1, p2);
+
+same assignment repeats at gmacs.cpp L10807, L10823, L10840, L10863, L10878, L10899
+
+TPL counterparts:
+
+gmacsbase.TPL L10770, L10787, L10804, L10822, L10848, L10863, L10885
+
+Term: TempSS
+Set and accumulated in initialization of unfished numbers:
+gmacs.cpp L6138: TempSS = 0;
+gmacs.cpp L6155: if (active(T_pars_est(Jpnt+Ipnt))) TempSS += T_pars_est(Jpnt+Ipnt)*T_pars_est(Jpnt+Ipnt);
+TPL counterparts:
+gmacsbase.TPL L5929, L5946
+Term: grwthPosFun
+Reset in growth likelihood:
+
+gmacs.cpp L11122: nloglike(6).initialize(); grwthPosFun.initialize();
+
+gmacsbase.TPL L11129
+
+Incremented through posfun safeguard in gamma-growth helpers:
+
+gmacs.cpp L7586: r = posfun(r,0.0001,grwthPosFun);
+
+gmacs.cpp L7624: r = posfun(r,0.0001,grwthPosFun);
+
+gmacs.cpp L7663: r = posfun(r,0.0001,grwthPosFun);
+
+TPL counterparts:
+
+gmacsbase.TPL L7413, L7453, L7493
+
+Notes on subtraction
+
+There is no direct subtraction in the final objfun assignment line; all top-level terms are added.
+Negative contributions enter through component constructions, for example:
+gmacs.cpp L11116: nloglike(5,h) -= log(Prob/total+0.00001)*freq;
+gmacs.cpp L10478-L10479: nlls_y(y_n) -= ... inside MMO likelihood assembly
+same patterns in gmacsbase.TPL at corresponding lines L10445-L10446 and L11122.
