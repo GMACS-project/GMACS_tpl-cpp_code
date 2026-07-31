@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.42; ** WTS **; Compiled 2026-07-28");
+ !! TheHeader = adstring("## GMACS Version 2.20.43; ** WTS **; Compiled 2026-07-30");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -8203,7 +8203,8 @@ FUNCTION calc_initial_numbers_at_length
       }
     }
   }
-  if (!IsJittered) writeToPopProg(popprog,syr,1,d2_N_gz); //--pop abundance at START of start year, season 1
+  if ((!IsJittered)&&((verbose>3)||last_phase())) 
+    writeToPopProg(popprog,syr,1,d2_N_gz); //--pop abundance at START of start year, season 1
 
 // --------------------------------------------------------------------------------------------------------------------------------------
   /**
@@ -8283,7 +8284,7 @@ FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, 
     }
   }
 
-  if ((Case==1)&&(!IsJittered)){
+  if ((Case==1)&&(!IsJittered)&&((verbose>3)||last_phase())){
     if (j==nseason){
       writeToPopProg(popprog,i+1,1,next); //--pop abundance at START of year i+1, season 1
     } else {
@@ -13053,7 +13054,7 @@ FUNCTION calc_sdreport
         { ParsOut(Ipnt) = log(recruits(h,y)); Ipnt +=1; }
 
   sd_log_ssb.initialize();
-  sd_log_ssb = log(calc_ssb());
+  sd_log_ssb = log(calc_ssb()+0.00001);//--need to add small constant to avoid log(0) when SSB=0
   Ipnt = NSSBPar;
   if (OutSSB==YES) 
     for (int y=syr;y<=nyrRetro;y++)
@@ -13670,8 +13671,6 @@ FUNCTION CreateOutput
   OutFile1.open("Gmacsall.out");
   OutFile2.close();
   OutFile2.open("gmacs.rep");
-  RepFile1.close();
-  RepFile1.open("gmacs.rep1");
   OutFile3.close();
   OutFile3.open("personal.rep");
   OutFile4.close();
@@ -13679,6 +13678,9 @@ FUNCTION CreateOutput
   OutFile5.close();
   OutFile5.open("Gmacsall.std");
   
+  RepFile1.close();
+  RepFile1.open("gmacs.rep1");
+
   // The header material
   OutFile1 << TheHeader << endl << endl;;
   OutFile1 << "#--Start time: " << ctime(&start) << endl;
@@ -15557,7 +15559,7 @@ FUNCTION CreateOutput
    }
   
    // Natural mortality
-  RepFile1 << "M: dataframe" << endl;
+  RepFile1 << endl <<"M: dataframe" << endl;
   RepFile1 << "year sex  maturity  M  "; for (int j=1;j<=nseason;j++) {RepFile1 << "ssn" << j << " ";} RepFile1 << endl; 
   for (int i=syr;i<=nyrRetro;i++){
     for (int h=1; h<=nsex; h++){
@@ -15568,6 +15570,7 @@ FUNCTION CreateOutput
       }
     }
   }
+  RepFile1 << ">EOD<" << endl;
 
 // Special output
   if (verbose > 3) cout<<"writing MyOutput"<<endl;
@@ -17635,8 +17638,8 @@ FINAL_SECTION
 //                    Extracted repeated code (three times!) for construction of "anystring" labels for SELEX functions as a function 
 //                    addToAnystring defined in the GLOBALS section. The function is now called in the three sections where the previous code
 //                    has been commented out (pending deletion).
-// 2026-04-10 ** WTS. Added export of population abundance by year, season, group, size class to "gmacs_popprog.csv" file to facilitate comparison with TCSAM02 
-//                    results.  TODO: apply verbose check to this export.
+// 2026-04-10 ** WTS. Added writeToPopProg function to export of population abundance by year, season, group, size class to "gmacs_popprog.csv" file to facilitate comparison with TCSAM02 
+//                    results.  TODO: apply verbose check to this export. (Done 2026-07-29).
 // 2026-04-11 ** WTS. Revised data input, prediction, likelihood calculations for male maturity ogive data so that prediction can be based on predicted survey 
 //                    abundance, not population abundance in season 1. Old function mmos_likelihood is now mmos_likelihood_pop and the new function is 
 //                    mmos_likelihood_survey. mmos_likelihood_pop is not called and associated model ouput to RepFile1 is now based on mmos_likelihood_survey.
@@ -17683,6 +17686,9 @@ FINAL_SECTION
 //                    I revised when the d3_PrdMMOs and associated arrays were allocated so they actually are explicitly not allocated when there's no 
 //                    male maturity ogive data to fit. Otherwise, the sizes were possibly being allocated using arbitrary values for mmodNumZBs 
 //                    and mmodNumYrs, which could have been causing problems (definitely were on a Mac). Incremented version to 2.20.42.
+// 2026-07-29 ** WTS. Added verbose check when calling writeToPopProg to avoid writing extraneous information.
+// 2026-07-30 ** WTS. Added small value to (0.00001) to SSB when calculating sd_log_ssb to avoid log(0) when SSB=0. 
+//                    Changed compiled time to 2026-07-30. Incremented version to 2.20.43.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
