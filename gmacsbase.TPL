@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.43; ** WTS **; Compiled 2026-07-30");
+ !! TheHeader = adstring("## GMACS Version 2.20.44; ** WTS **; Compiled 2026-08-02");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -17689,6 +17689,10 @@ FINAL_SECTION
 // 2026-07-29 ** WTS. Added verbose check when calling writeToPopProg to avoid writing extraneous information.
 // 2026-07-30 ** WTS. Added small value to (0.00001) to SSB when calculating sd_log_ssb to avoid log(0) when SSB=0. 
 //                    Changed compiled time to 2026-07-30. Incremented version to 2.20.43.
+// 2026-08-02 ** WTS. Added AI-improved documentation to size composition negative log-likelihood function headers.
+//                    Incremented to v2.20.44. Changed size composition likelihood calculations using negativeLoglikelihood classes. "Internal" 
+//                    functions now return dvar_vectors (values for each individual composition) rather than a single value for the total likelihood. 
+//                    The total likelihood is calculated in the calling function.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps

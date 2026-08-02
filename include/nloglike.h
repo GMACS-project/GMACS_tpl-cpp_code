@@ -1,11 +1,22 @@
 /**
- * @file nloglike.h 
- * @defgroup Likelihoods
+ * @file nloglike.h
+ * @brief Composition-data negative log-likelihood interfaces and implementations.
+ * @defgroup Likelihoods Likelihood models for composition data
  * @author Steven Martell, D'Arcy Webber
- * @namespace acl
  * @date   Feb 10, 2014
- * @title Selectivity functions
- * @details Uses abstract base class for computing negative loglikelihoods
+ * @details
+ * This header defines a polymorphic interface and concrete classes used to
+ * evaluate negative log-likelihoods for composition data.
+ *
+ * Conventions used throughout this file:
+ * - Observed compositions are passed as `dmatrix O` with one row per sample.
+ * - Predicted compositions are passed as `dvar_matrix P` with matching shape.
+ * - Effective sample-size-like quantities are supplied on log scale
+ *   (`log_vn`, `log_effn`) unless noted otherwise.
+ * - `nloglike(...)` methods return objective-function contributions, not
+ *   probabilities.
+ * - Optional tail compression creates ragged rows by collapsing tails into
+ *   boundary bins.
 **/
 #ifndef NLOGLIKE_H
 #define NLOGLIKE_H
@@ -17,341 +28,585 @@
 
 namespace acl
 {
-	/**
-	 * Base class for negative loglikelihoods used in composition data.
-	 * @details This class has two virtual methods: nloglike and residual.
-	 * @namepsace acl
-	**/
-	class negativeLogLikelihood
-	{
+  /**
+   * @brief Abstract base class for composition likelihoods.
+   * @details
+   * Stores observed composition data and shared metadata needed to optionally
+   * compress tails in each row (ragged representation). Derived classes provide
+   * model-specific objective and residual calculations.
+   *
+   * Interface contract:
+   * - `_P` must have row and column extents compatible with `get_O()`.
+   * - `_n` must have one element per row of `get_O()`.
+   * - Rows used in compression should have strictly positive sums.
+  **/
+  class negativeLogLikelihood
+  {
 
-	private:
-		int r1,r2;
-		int c1,c2;
-		ivector m_jmin;
-		ivector m_jmax;
-		dmatrix m_O;
-		dmatrix m_Or;
+  private:
+    /** @brief First row index in the observed matrix. */
+    int r1,r2;
+    /** @brief First and last column indices in the observed matrix. */
+    int c1,c2;
+    /** @brief Per-row first bin retained after tail compression. */
+    ivector m_jmin;
+    /** @brief Per-row last bin retained after tail compression. */
+    ivector m_jmax;
+    /** @brief Observed composition matrix (uncompressed). */
+    dmatrix m_O;
+    /** @brief Optional observed matrix in ragged/compressed form. */
+    dmatrix m_Or;
 
-	public:
-		//virtual const dvariable nloglike(const dmatrix& _O) const = 0;
-		//virtual const   dmatrix residual(const dmatrix& _O) const = 0;
-		
-		virtual const dvariable nloglike(const dvar_vector& _n, const dvar_matrix& _P) const = 0;
-		virtual const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const = 0;
+  public:
+    //virtual const dvariable nloglike(const dmatrix& _O) const = 0;
+    //virtual const   dmatrix residual(const dmatrix& _O) const = 0;
+    
+    /**
+     * @brief Compute negative log-likelihood contribution.
+     * @param _n Row-wise scale parameter(s), typically on log scale.
+     * @param _P Predicted composition matrix aligned with observed data.
+     * @return Negative log-likelihood contribution.
+     */
+    virtual const dvariable nloglike(const dvar_vector& _n, const dvar_matrix& _P) const = 0;
 
-		negativeLogLikelihood(){}
-		negativeLogLikelihood(const dmatrix& _O)
-		:m_O(_O) 
-		{
-			r1 = m_O.rowmin();
-			r2 = m_O.rowmax();
-			c1 = m_O.colmin();
-			c2 = m_O.colmax();
-		}
-		     // ~negativeLogLikelihood(){}
-		virtual ~negativeLogLikelihood() { }
-		
-		dmatrix get_O()     const{ return m_O;    }
-		void    set_O(dmatrix _O){ this->m_O = _O;}
+    /**
+     * @brief Compute residual matrix associated with the likelihood.
+     * @param _n Row-wise scale parameter(s), typically on log scale.
+     * @param _P Predicted composition matrix aligned with observed data.
+     * @return Residual matrix with dimensions compatible with observed data.
+     */
+    virtual const dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const = 0;
 
-		dmatrix get_Or()     const{ return m_Or;    }
-		void    set_Or(dmatrix _O){ this->m_Or = _O;}
+    /**
+     * @brief Compute a baseline likelihood contribution using observed
+     * compositions as predicted compositions.
+     * @details
+     * Implementations should optionally compress observed data when the class
+     * is configured for compression, row-normalize the resulting matrix, and
+     * call `nloglike(_n, P)` with that normalized matrix as `P`.
+     * @param _n Row-wise scale parameter(s), typically on log scale.
+     * @return Baseline negative log-likelihood contribution.
+     */
+    virtual const dvariable nll_base(const dvar_vector& _n) const = 0;
 
-		const ivector get_jmin() const { return m_jmin; }
-		const ivector get_jmax() const { return m_jmax; }
+    negativeLogLikelihood(){}
+    negativeLogLikelihood(const dmatrix& _O)
+    :m_O(_O) 
+    {
+      r1 = m_O.rowmin();
+      r2 = m_O.rowmax();
+      c1 = m_O.colmin();
+      c2 = m_O.colmax();
+    }
+         // ~negativeLogLikelihood(){}
+    virtual ~negativeLogLikelihood() { }
+    
+    /** @brief Get uncompressed observed compositions. */
+    dmatrix get_O()     const{ return m_O;    }
+    /** @brief Set uncompressed observed compositions. */
+    void    set_O(dmatrix _O){ this->m_O = _O;}
 
-		void tail_compression();	///> get indexes for ragged objects
+    /** @brief Get compressed/ragged observed compositions, if set. */
+    dmatrix get_Or()     const{ return m_Or;    }
+    /** @brief Set compressed/ragged observed compositions. */
+    void    set_Or(dmatrix _O){ this->m_Or = _O;}
 
-		template <typename T>
-		inline
-		const T compress(const T& _M) const; ///> make ragged objects
+    /** @brief Get row-wise left compression indices. */
+    const ivector get_jmin() const { return m_jmin; }
+    /** @brief Get row-wise right compression indices. */
+    const ivector get_jmax() const { return m_jmax; }
 
-	};
+    /**
+     * @brief Build row-wise index bounds used for ragged tail compression.
+     * @details Populates `m_jmin` and `m_jmax` from observed data.
+     */
+    void tail_compression();
+
+    template <typename T>
+    inline
+    /**
+     * @brief Compress a matrix-like object to ragged form using tail bounds.
+     * @details
+     * Each row is normalized to sum to one, interior bins are copied from
+     * `[m_jmin(i), m_jmax(i)]`, and both tails are collapsed into the boundary
+     * bins.
+     * @param _M Matrix-like object with row indexing compatible with observed data.
+     * @return Compressed object with ragged row extents.
+     */
+    const T compress(const T& _M) const;
+
+  };
 
   
-	template <typename T>
-	inline
-	const T acl::negativeLogLikelihood::compress(const T& _M) const
-	{
-		// cout<<"In compress"<<endl;
-	
-		T R;
-		T M = _M;
-		R.allocate(r1,r2,m_jmin,m_jmax);
-		R.initialize();
+  template <typename T>
+  inline
+  const T acl::negativeLogLikelihood::compress(const T& _M) const
+  {
+    // NOTE: Assumes each row sum is positive before normalization.
 
-		// fill ragged array R
-		for ( int i = r1; i <= r2; i++ )
-		{
-			M(i) /= sum(M(i));
-			R(i)(m_jmin(i),m_jmax(i)) = M(i)(m_jmin(i),m_jmax(i));
+    T R;
+    T M = _M;
+    R.allocate(r1,r2,m_jmin,m_jmax);
+    R.initialize();
 
-			// add cumulative sum to tails.
-			R(i)(m_jmin(i)) = sum(M(i)(c1,m_jmin(i)));
-			R(i)(m_jmax(i)) = sum(M(i)(m_jmax(i),c2));
-		}
-		return R;
-	}
+    // fill ragged array R
+    for ( int i = r1; i <= r2; i++ )
+    {
+      M(i) /= sum(M(i));
+      R(i)(m_jmin(i),m_jmax(i)) = M(i)(m_jmin(i),m_jmax(i));
+
+      // add cumulative sum to tails.
+      R(i)(m_jmin(i)) = sum(M(i)(c1,m_jmin(i)));
+      R(i)(m_jmax(i)) = sum(M(i)(m_jmax(i),c2));
+    }
+    return R;
+  }
   
-	
-	/**
-	 * @brief Class for multinomial negative log-likelihood.
-	 * @details This is a derived class which inherits the virtual methods in negativeLogLikelihood.
-	**/
-	class multinomial: public negativeLogLikelihood
-	{
+  
+  /**
+   * @brief Class for multinomial negative log-likelihood.
+   * @details
+   * Evaluates multinomial composition likelihood with optional tail compression.
+   * `log_vn` is interpreted as log effective sample size by row.
+  **/
+  class multinomial: public negativeLogLikelihood
+  {
 
-	private:
-		bool        m_bCompress;
-		dvariable   m_log_vn;
-		dvar_matrix m_P;
+  private:
+    /** @brief If true, compress observed/predicted rows before evaluation. */
+    bool        m_bCompress;
+    /** @brief Cached log effective sample size parameter(s). */
+    dvariable   m_log_vn;
+    /** @brief Cached predicted composition matrix (optional storage). */
+    dvar_matrix m_P;
 
-	public:
-		multinomial(const dmatrix &_O, const bool bCompress=false)
-		: negativeLogLikelihood(_O), m_bCompress(bCompress) 
-		{
-			if ( m_bCompress ) tail_compression();
-		}
-		virtual ~multinomial() { }
+  public:
+    multinomial(const dmatrix &_O, const bool bCompress=false)
+    : negativeLogLikelihood(_O), m_bCompress(bCompress) 
+    {
+      if ( m_bCompress ) tail_compression();
+    }
+    virtual ~multinomial() { }
 
-		// ~multinomial();
+    // ~multinomial();
 
-		dvariable get_n()      const { return m_log_vn;    }
-		void      set_n(dvariable _n){ this->m_log_vn = _n;}
+    /** @brief Get cached log effective sample size parameter. */
+    dvariable get_n()      const { return m_log_vn;    }
+    /** @brief Set cached log effective sample size parameter. */
+    void      set_n(dvariable _n){ this->m_log_vn = _n;}
 
-		dvar_matrix get_P()         const { return m_P;    }
-		void        set_P(dvar_matrix _P) { this->m_P = _P;}
+    /** @brief Get cached predicted composition matrix. */
+    dvar_matrix get_P()         const { return m_P;    }
+    /** @brief Set cached predicted composition matrix. */
+    void        set_P(dvar_matrix _P) { this->m_P = _P;}
 
-		// negative log likelihood
-		const dvariable nloglike(const dvar_vector& log_vn, const dvar_matrix& _P) const 
-		{
-			if ( m_bCompress )
-			{
-				dmatrix     Or = compress(this->get_O());
-				dvar_matrix Pr = compress(_P);
-				return dmultinom(log_vn,Or,Pr);
-			} else {
-				return dmultinom(log_vn,this->get_O(),_P);	
-			}
-		}
+    /**
+     * @brief Compute multinomial negative log-likelihood.
+     * @param log_vn Log effective sample size by row.
+     * @param _P Predicted composition proportions by row/bin.
+     * @return Multinomial negative log-likelihood contribution.
+     */
+    const dvariable nloglike(const dvar_vector& log_vn, const dvar_matrix& _P) const 
+    {
+      if ( m_bCompress )
+      {
+        dmatrix     Or = compress(this->get_O());
+        dvar_matrix Pr = compress(_P);
+        return sum(dmultinom(log_vn,Or,Pr));
+      } else {
+        return sum(dmultinom(log_vn,this->get_O(),_P));  
+      }
+    }
 
-		// pearson residuals
-		const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
-		{
-			return pearson_residuals(_n,this->get_O(),_P);
-		}
-		
-		const dvariable dmultinom(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const;
+    /**
+     * @brief Baseline multinomial contribution from row-normalized observations.
+     * @param _n Log effective sample size by row.
+     * @return Baseline multinomial negative log-likelihood contribution.
+     */
+    const dvariable nll_base(const dvar_vector& _n) const
+    {
+      dmatrix O = this->get_O();
+      if (m_bCompress) O = compress(O);
+      dvar_matrix P = O;
+      for (int i = P.rowmin(); i <= P.rowmax(); i++)
+      {
+        dvariable s = sum(P(i));
+        if (value(s) > 0.0) P(i) /= s;
+      }
+      return nloglike(_n, P);
+    }
 
-		const dmatrix pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const;
-	};
+    /**
+     * @brief Compute Pearson residuals for multinomial fit diagnostics.
+     */
+    const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
+    {
+      return pearson_residuals(_n,this->get_O(),_P);
+    }
+    
+    /**
+     * @brief Internal multinomial objective kernel.
+     * @return Per-row negative log-likelihood contributions.
+     */
+    const dvar_vector dmultinom(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const;
 
-
-	/**
-	 * @brief Class for multinomial negative log-likelihood with alternative minimum.
-	 * @details This is a derived class which inherits the virtual methods in negativeLogLikelihood.
-	**/
-	class multinomial_alt: public negativeLogLikelihood
-	{
-
-	private:
-		bool        m_bCompress;
-    double      m_smlVal = 0.00001;//small value to keep things > 0
-		dvariable   m_log_vn;
-		dvar_matrix m_P;
-
-	public:
-		multinomial_alt(const dmatrix &_O, const bool bCompress=false)
-		: negativeLogLikelihood(_O), m_bCompress(bCompress) 
-		{
-			if ( m_bCompress ) tail_compression();
-		}
-		virtual ~multinomial_alt() { }
-
-		dvariable get_n()      const { return m_log_vn;    }
-		void      set_n(dvariable _n){ this->m_log_vn = _n;}
-
-		dvar_matrix get_P()         const { return m_P;    }
-		void        set_P(dvar_matrix _P) { this->m_P = _P;}
-
-		// negative log likelihood
-		const dvariable nloglike(const dvar_vector& log_vn, const dvar_matrix& _P) const 
-		{
-			if ( m_bCompress )
-			{
-				dmatrix     Or = compress(this->get_O());
-				dvar_matrix Pr = compress(_P);
-				return dmultinom_alt(log_vn,Or,Pr);
-			} else {
-				return dmultinom_alt(log_vn,this->get_O(),_P);	
-			}
-		}
-
-		// pearson residuals
-		const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
-		{
-			return pearson_residuals(_n,this->get_O(),_P);
-		}
-		
-		const dvariable dmultinom_alt(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const;
-
-		const dmatrix pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const;
-	};
+    /** @brief Internal Pearson residual kernel for multinomial model. */
+    const dmatrix pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const;
+  };
 
 
-	/**
-	 * @brief Class for robust multinomial negative log-likelihood.
-	 * @details This is a derived class which inherits the virtual methods
-	 * in negativeLogLikelihood.
-	**/
-	class robust_multi: public negativeLogLikelihood
-	{
+  /**
+   * @brief Class for multinomial negative log-likelihood with alternative minimum.
+   * @details
+   * Variant of multinomial likelihood that applies a small positive floor in
+   * the kernel implementation to improve numerical behavior when probabilities
+   * are very small.
+  **/
+  class multinomial_alt: public negativeLogLikelihood
+  {
 
-	private:
-		bool        m_bCompress;
-		dvariable   m_log_vn;
-		dvar_matrix m_P;
+  private:
+    /** @brief If true, compress observed/predicted rows before evaluation. */
+    bool        m_bCompress;
+    /** @brief Small positive floor used in alternative multinomial kernel. */
+    double      m_smlVal = 0.00001;
+    /** @brief Cached log effective sample size parameter(s). */
+    dvariable   m_log_vn;
+    /** @brief Cached predicted composition matrix (optional storage). */
+    dvar_matrix m_P;
 
-	public:
-		robust_multi(const dmatrix &_O, const bool bCompress=false)
-		: negativeLogLikelihood(_O),m_bCompress(bCompress) 
-		{
-			if ( m_bCompress ) tail_compression();
-		}
+  public:
+    multinomial_alt(const dmatrix &_O, const bool bCompress=false)
+    : negativeLogLikelihood(_O), m_bCompress(bCompress) 
+    {
+      if ( m_bCompress ) tail_compression();
+    }
+    virtual ~multinomial_alt() { }
 
-		// ~robust_multi();
-		virtual ~robust_multi() { }
+    /** @brief Get cached log effective sample size parameter. */
+    dvariable get_n()      const { return m_log_vn;    }
+    /** @brief Set cached log effective sample size parameter. */
+    void      set_n(dvariable _n){ this->m_log_vn = _n;}
 
-		dvariable get_n()      const { return m_log_vn;    }
-		void      set_n(dvariable _n){ this->m_log_vn = _n;}
+    /** @brief Get cached predicted composition matrix. */
+    dvar_matrix get_P()         const { return m_P;    }
+    /** @brief Set cached predicted composition matrix. */
+    void        set_P(dvar_matrix _P) { this->m_P = _P;}
 
-		dvar_matrix get_P()         const { return m_P;    }
-		void        set_P(dvar_matrix _P) { this->m_P = _P;}
+    /**
+     * @brief Compute alternative multinomial negative log-likelihood.
+     * @param log_vn Log effective sample size by row.
+     * @param _P Predicted composition proportions by row/bin.
+     * @return Alternative multinomial negative log-likelihood contribution.
+     */
+    const dvariable nloglike(const dvar_vector& log_vn, const dvar_matrix& _P) const 
+    {
+      if ( m_bCompress )
+      {
+        dmatrix     Or = compress(this->get_O());
+        dvar_matrix Pr = compress(_P);
+        return sum(dmultinom_alt(log_vn,Or,Pr));
+      } else {
+        return sum(dmultinom_alt(log_vn,this->get_O(),_P));  
+      }
+    }
 
-		// negative log likelihood
-		const dvariable nloglike(const dvar_vector& log_vn, const dvar_matrix& _P) const 
-		{
-			if ( m_bCompress )
-			{
-				dmatrix     Or = compress(this->get_O());
-				dvar_matrix Pr = compress(_P);
-				return pdf(Or,Pr,log_vn);
-			} else {
-				return pdf(this->get_O(),_P,log_vn);	
-			}
-		}
+    /**
+     * @brief Baseline alternative multinomial contribution from observations.
+     * @param _n Log effective sample size by row.
+     * @return Baseline alternative multinomial negative log-likelihood contribution.
+     */
+    const dvariable nll_base(const dvar_vector& _n) const
+    {
+      dmatrix O = this->get_O();
+      if (m_bCompress) O = compress(O);
+      dvar_matrix P = O;
+      for (int i = P.rowmin(); i <= P.rowmax(); i++)
+      {
+        dvariable s = sum(P(i));
+        if (value(s) > 0.0) P(i) /= s;
+      }
+      return nloglike(_n, P);
+    }
 
-		// pearson residuals
-		const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
-		{
-			return pearson_residuals(this->get_O(),_P,_n);
-		}
-		
-		const dvariable pdf(const dmatrix& O, const dvar_matrix& P, const dvar_vector& lnN) const;
-		
-		const dmatrix pearson_residuals(const dmatrix& o, const dvar_matrix p, const dvar_vector& log_vn) const;
-	};
+    /** @brief Compute Pearson residuals for alternative multinomial model. */
+    const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
+    {
+      return pearson_residuals(_n,this->get_O(),_P);
+    }
+    
+    /**
+     * @brief Internal alternative multinomial objective kernel.
+     * @return Per-row negative log-likelihood contributions.
+     */
+    const dvar_vector dmultinom_alt(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const;
+
+    /** @brief Internal Pearson residual kernel for alternative multinomial model. */
+    const dmatrix pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const;
+  };
 
 
-	/**
-	 * @brief Class for Dirichlet negative log-likelihood.
-	 * @details This is a derived class which inherits the virtual methods in negativeLogLikelihood.
-	**/
-	class dirichlet: public negativeLogLikelihood
-	{
+  /**
+   * @brief Class for robust multinomial negative log-likelihood.
+   * @details This is a derived class which inherits the virtual methods
+   * in negativeLogLikelihood. The objective is less sensitive to extreme
+   * composition residuals than a standard multinomial formulation.
+  **/
+  class robust_multi: public negativeLogLikelihood
+  {
 
-	private:
-		bool        m_bCompress;
-		dvariable   m_log_vn;
-		dvar_matrix m_P;
+  private:
+    /** @brief If true, compress observed/predicted rows before evaluation. */
+    bool        m_bCompress;
+    /** @brief Cached log effective sample size parameter(s). */
+    dvariable   m_log_vn;
+    /** @brief Cached predicted composition matrix (optional storage). */
+    dvar_matrix m_P;
 
-	public:
-		dirichlet(const dmatrix &_O, const bool bCompress=false)
-		: negativeLogLikelihood(_O), m_bCompress(bCompress) 
-		{
-			if ( m_bCompress ) tail_compression();
-		}
+  public:
+    robust_multi(const dmatrix &_O, const bool bCompress=false)
+    : negativeLogLikelihood(_O),m_bCompress(bCompress) 
+    {
+      if ( m_bCompress ) tail_compression();
+    }
 
-		// ~dirichlet();
-		virtual ~dirichlet() { }
+    // ~robust_multi();
+    virtual ~robust_multi() { }
 
-		dvariable get_n()      const { return m_log_vn;    }
-		void      set_n(dvariable _n){ this->m_log_vn = _n;}
+    /** @brief Get cached log effective sample size parameter. */
+    dvariable get_n()      const { return m_log_vn;    }
+    /** @brief Set cached log effective sample size parameter. */
+    void      set_n(dvariable _n){ this->m_log_vn = _n;}
 
-		dvar_matrix get_P()         const { return m_P;    }
-		void        set_P(dvar_matrix _P) { this->m_P = _P;}
+    /** @brief Get cached predicted composition matrix. */
+    dvar_matrix get_P()         const { return m_P;    }
+    /** @brief Set cached predicted composition matrix. */
+    void        set_P(dvar_matrix _P) { this->m_P = _P;}
 
-		// negative log likelihood
-		const dvariable nloglike(const dvar_vector& log_vn, const dvar_matrix& _P) const 
-		{
-			if ( m_bCompress )
-			{
-				dmatrix     Or = compress(this->get_O());
-				dvar_matrix Pr = compress(_P);
-				return ddirichlet(log_vn,Or,Pr);
-			} else {
-				return ddirichlet(log_vn,this->get_O(),_P);	
-			}
-		}
+    /**
+     * @brief Compute robust multinomial-style negative log-likelihood.
+     * @param log_vn Log effective sample size by row.
+     * @param _P Predicted composition proportions by row/bin.
+     * @return Robust objective contribution.
+     */
+    const dvariable nloglike(const dvar_vector& log_vn, const dvar_matrix& _P) const 
+    {
+      if ( m_bCompress )
+      {
+        dmatrix     Or = compress(this->get_O());
+        dvar_matrix Pr = compress(_P);
+        return sum(pdf(Or,Pr,log_vn));
+      } else {
+        return sum(pdf(this->get_O(),_P,log_vn));  
+      }
+    }
 
-		// pearson residuals
-		const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
-		{
-			return pearson_residuals(_n,this->get_O(),_P);
-		}
-		
-		const dvariable ddirichlet(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const;
+    /**
+     * @brief Baseline robust contribution from row-normalized observations.
+     * @param _n Log effective sample size by row.
+     * @return Baseline robust negative log-likelihood contribution.
+     */
+    const dvariable nll_base(const dvar_vector& _n) const
+    {
+      dmatrix O = this->get_O();
+      if (m_bCompress) O = compress(O);
+      dvar_matrix P = O;
+      for (int i = P.rowmin(); i <= P.rowmax(); i++)
+      {
+        dvariable s = sum(P(i));
+        if (value(s) > 0.0) P(i) /= s;
+      }
+      return nloglike(_n, P);
+    }
 
-		const dmatrix pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const;
-	};
+    /** @brief Compute Pearson residuals for robust model fit diagnostics. */
+    const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
+    {
+      return pearson_residuals(this->get_O(),_P,_n);
+    }
+    
+    /**
+     * @brief Internal robust objective kernel.
+     * @return Per-row negative log-likelihood contributions.
+     */
+    const dvar_vector pdf(const dmatrix& O, const dvar_matrix& P, const dvar_vector& lnN) const;
+    
+    /** @brief Internal Pearson residual kernel for robust model. */
+    const dmatrix pearson_residuals(const dmatrix& o, const dvar_matrix p, const dvar_vector& log_vn) const;
+  };
 
-	/**
-	 * @brief Class for alternative Dirichlet-multinomial negative log-likelihood using Thorson et al. (2016) "theta" parameterization.
-	 * @details This is a derived class which inherits the virtual methods in negativeLogLikelihood.
-	**/
-	class dirichlet_alt: public negativeLogLikelihood
-	{
 
-	private:
-		dvariable   m_log_th;    //input DM parameter
-    dvector     m_iss;       //input sample sizes
-		bool        m_bCompress; //flag to compress size comps
-//		dvar_matrix m_P;         //matrix of predicted proportions
+  /**
+   * @brief Class for Dirichlet negative log-likelihood.
+   * @details
+   * Dirichlet likelihood for composition data with optional tail compression.
+   * The `log_vn` argument controls concentration/dispersion according to the
+   * kernel implementation.
+  **/
+  class dirichlet: public negativeLogLikelihood
+  {
 
-	public:
-		dirichlet_alt(const dmatrix &_O, const dvariable& _log_th, const dvector& _iss, const bool bCompress=false)
-		: negativeLogLikelihood(_O), m_log_th(_log_th), m_iss(_iss), m_bCompress(bCompress) 
-		{
-			if ( m_bCompress ) tail_compression();
-		}
+  private:
+    /** @brief If true, compress observed/predicted rows before evaluation. */
+    bool        m_bCompress;
+    /** @brief Cached log concentration-like parameter(s). */
+    dvariable   m_log_vn;
+    /** @brief Cached predicted composition matrix (optional storage). */
+    dvar_matrix m_P;
 
-		// ~dirichlet_alt();
-		virtual ~dirichlet_alt() { }
+  public:
+    dirichlet(const dmatrix &_O, const bool bCompress=false)
+    : negativeLogLikelihood(_O), m_bCompress(bCompress) 
+    {
+      if ( m_bCompress ) tail_compression();
+    }
 
-		// negative log likelihood (log_effn must be supplied but is is ignored)
-		const dvariable nloglike(const dvar_vector& log_effn, const dvar_matrix& _P) const 
-		{
-			if ( m_bCompress )
-			{
-				dmatrix     Or = compress(this->get_O());
-				dvar_matrix Pr = compress(_P);
-				return ddirichlet_alt(Or,Pr);
-			} else {
-				return ddirichlet_alt(this->get_O(),_P);	
-			}
-		}
+    // ~dirichlet();
+    virtual ~dirichlet() { }
 
-		// pearson residuals
-		const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
-		{
-			return pearson_residuals(this->get_O(),_P);
-		}
-		
-		const dvariable ddirichlet_alt(const dmatrix& o, const dvar_matrix& p) const;
+    /** @brief Get cached log concentration-like parameter. */
+    dvariable get_n()      const { return m_log_vn;    }
+    /** @brief Set cached log concentration-like parameter. */
+    void      set_n(dvariable _n){ this->m_log_vn = _n;}
 
-		const dmatrix pearson_residuals(const dmatrix& o, const dvar_matrix p) const;
-	};
+    /** @brief Get cached predicted composition matrix. */
+    dvar_matrix get_P()         const { return m_P;    }
+    /** @brief Set cached predicted composition matrix. */
+    void        set_P(dvar_matrix _P) { this->m_P = _P;}
+
+    /**
+     * @brief Compute Dirichlet negative log-likelihood.
+     * @param log_vn Log concentration-like parameter by row.
+     * @param _P Predicted composition proportions by row/bin.
+     * @return Dirichlet negative log-likelihood contribution.
+     */
+    const dvariable nloglike(const dvar_vector& log_vn, const dvar_matrix& _P) const 
+    {
+      if ( m_bCompress )
+      {
+        dmatrix     Or = compress(this->get_O());
+        dvar_matrix Pr = compress(_P);
+        return sum(ddirichlet(log_vn,Or,Pr));
+      } else {
+        return sum(ddirichlet(log_vn,this->get_O(),_P));  
+      }
+    }
+
+    /**
+     * @brief Baseline Dirichlet contribution from row-normalized observations.
+     * @param _n Log concentration-like parameter by row.
+     * @return Baseline Dirichlet negative log-likelihood contribution.
+     */
+    const dvariable nll_base(const dvar_vector& _n) const
+    {
+      dmatrix O = this->get_O();
+      if (m_bCompress) O = compress(O);
+      dvar_matrix P = O;
+      for (int i = P.rowmin(); i <= P.rowmax(); i++)
+      {
+        dvariable s = sum(P(i));
+        if (value(s) > 0.0) P(i) /= s;
+      }
+      return nloglike(_n, P);
+    }
+
+    /** @brief Compute Pearson residuals for Dirichlet model fit diagnostics. */
+    const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
+    {
+      return pearson_residuals(_n,this->get_O(),_P);
+    }
+    
+    /**
+     * @brief Internal Dirichlet objective kernel.
+     * @return Per-row negative log-likelihood contributions.
+     */
+    const dvar_vector ddirichlet(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const;
+
+    /** @brief Internal Pearson residual kernel for Dirichlet model. */
+    const dmatrix pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const;
+  };
+
+  /**
+   * @brief Class for alternative Dirichlet-multinomial negative log-likelihood using Thorson et al. (2016) "theta" parameterization.
+   * @details
+   * Uses a theta-based parameterization with externally supplied input sample
+   * sizes (`m_iss`). The base-class `nloglike` signature is preserved for
+   * polymorphism; the `log_effn` argument is accepted for interface
+   * compatibility and ignored by this implementation.
+  **/
+  class dirichlet_alt: public negativeLogLikelihood
+  {
+
+  private:
+    /** @brief Log theta parameter in Thorson et al. (2016) parameterization. */
+    dvariable   m_log_th;
+    /** @brief Input sample sizes associated with each composition row. */
+    dvector     m_iss;
+    /** @brief If true, compress observed/predicted rows before evaluation. */
+    bool        m_bCompress;
+//    dvar_matrix m_P;         //matrix of predicted proportions
+
+  public:
+    dirichlet_alt(const dmatrix &_O, const dvariable& _log_th, const dvector& _iss, const bool bCompress=false)
+    : negativeLogLikelihood(_O), m_log_th(_log_th), m_iss(_iss), m_bCompress(bCompress) 
+    {
+      if ( m_bCompress ) tail_compression();
+    }
+
+    // ~dirichlet_alt();
+    virtual ~dirichlet_alt() { }
+
+    /**
+     * @brief Compute alternative Dirichlet-multinomial negative log-likelihood.
+     * @param log_effn Required by interface, ignored in this implementation.
+     * @param _P Predicted composition proportions by row/bin.
+     * @return Alternative Dirichlet-multinomial objective contribution.
+     */
+    const dvariable nloglike(const dvar_vector& log_effn, const dvar_matrix& _P) const 
+    {
+      if ( m_bCompress )
+      {
+        dmatrix     Or = compress(this->get_O());
+        dvar_matrix Pr = compress(_P);
+        return sum(ddirichlet_alt(Or,Pr));
+      } else {
+        return sum(ddirichlet_alt(this->get_O(),_P));  
+      }
+    }
+
+    /**
+     * @brief Baseline alternative Dirichlet-multinomial contribution from observations.
+     * @param _n Kept for interface compatibility (not used by this class kernel).
+     * @return Baseline alternative Dirichlet-multinomial objective contribution.
+     */
+    const dvariable nll_base(const dvar_vector& _n) const
+    {
+      dmatrix O = this->get_O();
+      if (m_bCompress) O = compress(O);
+      dvar_matrix P = O;
+      for (int i = P.rowmin(); i <= P.rowmax(); i++)
+      {
+        dvariable s = sum(P(i));
+        if (value(s) > 0.0) P(i) /= s;
+      }
+      return nloglike(_n, P);
+    }
+
+    /** @brief Compute Pearson residuals for alternative Dirichlet-multinomial fit. */
+    const   dmatrix residual(const dvar_vector& _n, const dvar_matrix& _P) const
+    {
+      return pearson_residuals(this->get_O(),_P);
+    }
+    
+    /**
+     * @brief Internal alternative Dirichlet-multinomial objective kernel.
+     * @return Per-row negative log-likelihood contributions.
+     */
+    const dvar_vector ddirichlet_alt(const dmatrix& o, const dvar_matrix& p) const;
+
+    /** @brief Internal Pearson residual kernel for alternative Dirichlet-multinomial model. */
+    const dmatrix pearson_residuals(const dmatrix& o, const dvar_matrix p) const;
+  };
 
 } // end of acl namespace
 

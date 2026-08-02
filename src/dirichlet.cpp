@@ -26,7 +26,7 @@
  * @return negative loglikelihood.
 **/
 //const dvariable acl::dirichlet::ddirichlet(const dvar_vector& alpha_o, const dvar_vector& alpha_t, const dmatrix& o, const dvar_matrix& p) const
-const dvariable acl::dirichlet::ddirichlet(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const
+const dvar_vector acl::dirichlet::ddirichlet(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix& p) const
 {
 	if ( o.colsize() != p.colsize() || o.rowsize() != p.rowsize() )
 	{
@@ -35,13 +35,14 @@ const dvariable acl::dirichlet::ddirichlet(const dvar_vector& log_vn, const dmat
 	}
 
 	dvar_vector vn = mfexp(log_vn);
-	dvariable ff = 0.0;
 	dvariable lmnB;
 	dvariable aj;
 	dvariable sj;
 	dvariable alpha0;
 	int r1 = o.rowmin();
 	int r2 = o.rowmax();
+	dvar_vector ff(r1,r2);
+	ff.initialize();
 	for ( int i = r1; i <= r2; i++ )
 	{
 		lmnB = 0.0;
@@ -59,9 +60,9 @@ const dvariable acl::dirichlet::ddirichlet(const dvar_vector& log_vn, const dmat
 			sj += (aj - 1.0) * log(1e-10 + obs(j));
 		}
 		lmnB -= gammln(alpha0);
-		ff += sj - lmnB;
+		ff(i) = -(sj - lmnB);
 	}
-	return -ff;
+	return ff;
 }
 
 const dmatrix acl::dirichlet::pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const
@@ -85,7 +86,7 @@ const dmatrix acl::dirichlet::pearson_residuals(const dvar_vector& log_vn, const
  * @param p dvar_matrix of predicted proportions
  * @return negative loglikelihood.
 **/
-const dvariable acl::dirichlet_alt::ddirichlet_alt(const dmatrix& o, const dvar_matrix& p) const
+const dvar_vector acl::dirichlet_alt::ddirichlet_alt(const dmatrix& o, const dvar_matrix& p) const
 {
   // cout<<"In dirichlet_alt::ddirichlet_alt"<<endl;
   if ( o.colsize() != p.colsize() || o.rowsize() != p.rowsize() )
@@ -94,8 +95,9 @@ const dvariable acl::dirichlet_alt::ddirichlet_alt(const dmatrix& o, const dvar_
     ad_exit(1);
   }
 
-  dvariable tot_nll = 0.0;
   dvariable theta = mfexp(m_log_th);
+	dvar_vector tot_nll(o.rowmin(), o.rowmax());
+	tot_nll.initialize();
   // cout<<"theta = "<<theta<<endl;
   for (int r = o.rowmin(); r<=o.rowmax();r++){
     //the following is from Thorson et al. 2016
@@ -132,7 +134,7 @@ const dvariable acl::dirichlet_alt::ddirichlet_alt(const dmatrix& o, const dvar_
       }
     }
     // cout<<"nll = "<<nll<<endl;
-    tot_nll += nll;
+		tot_nll(r) = nll;
   } //--r loop
   // cout<<"tot_nll = "<<tot_nll<<endl;
   return(tot_nll);

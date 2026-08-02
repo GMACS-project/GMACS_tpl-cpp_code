@@ -24,7 +24,7 @@
  * @param p predicted proportions
  * @return negative loglikelihood.
  */
-const dvariable acl::robust_multi::pdf(const dmatrix& O,
+const dvar_vector acl::robust_multi::pdf(const dmatrix& O,
 				       const dvar_matrix& P,
 				       const dvar_vector& lnN) const
  {
@@ -35,7 +35,8 @@ const dvariable acl::robust_multi::pdf(const dmatrix& O,
 		ad_exit(1);
 	}
 	RETURN_ARRAYS_INCREMENT();
-	dvariable nll = 0;
+	dvar_vector nll(O.rowmin(), O.rowmax());
+	nll.initialize();
 	// double tiny = 1.e-14;
   	double  a  = .1/size_count(O(1));
   	dvar_vector b  = exp(lnN);
@@ -56,8 +57,8 @@ const dvariable acl::robust_multi::pdf(const dmatrix& O,
 		// AEP use below
 		dvar_vector v = a  + elem_prod(o ,1.  - o );
 		dvar_vector l  =  0.5*elem_div(square(p - o), v );
-		nll -= sum(log(mfexp(-1.* b(i) * l) + .01));
-		nll += 0.5 * sum(log(v/b(i)));
+		nll(i) -= sum(log(mfexp(-1.* b(i) * l) + .01));
+		nll(i) += 0.5 * sum(log(v/b(i)));
 	}
 	RETURN_ARRAYS_DECREMENT();
 	return nll;
