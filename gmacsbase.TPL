@@ -5376,6 +5376,9 @@ PARAMETER_SECTION
   3darray d3_res_size_comps_out(1,nSizeComps_in,1,nSizeCompRows_in,1,nSizeCompCols_in); // _out is for output/plotting purposes
   3darray d3_pre_size_comps(1,nSizeComps,1,nSizeCompRows,1,nSizeCompCols);
   3darray d3_res_size_comps(1,nSizeComps,1,nSizeCompRows,1,nSizeCompCols);
+  // v2.20.44 additions to get indivdual size comp nlls and base nlls for output
+  matrix d2_nll_size_comps(1,nSizeComps,1,nSizeCompRows);
+  matrix d2_nllbase_size_comps(1,nSizeComps,1,nSizeCompRows);
 
   // Use to compute the likelihood of the tagging data
   5darray FullY(1,nsex,1,maxSizeIncVaries,1,MaxGrowTimeLib,1,nclass,1,nclass);
@@ -10975,6 +10978,8 @@ FUNCTION length_likelihood
     ECHOSTR("Starting length_likelihood")
   }
   d3_res_size_comps.initialize();
+  d2_nll_size_comps.initialize();
+  d2_nllbase_size_comps.initialize();
   if (verbose >= 6) ECHO(nSizeComps)
   for ( int ii = 1; ii <= nSizeComps; ii++ ){
     if (nSizeCompRows(ii)>0){
@@ -11039,10 +11044,12 @@ FUNCTION length_likelihood
       }
 
       if ( ploglike != NULL ){                                                                   ///> Compute the likelihood
-        dvariable nll = ploglike->nloglike(log_effn, P);
-        nloglike(3,ii) += nll;
+        // dvariable nll = ploglike->nloglike(log_effn, P);
+        d2_nll_size_comps(ii)     = ploglike->nll_vector(log_effn, P);//--vector of nlls
+        d2_nllbase_size_comps(ii) = ploglike->nll_base(log_effn);     //--vector of "base" nlls
+        nloglike(3,ii) += sum(d2_nll_size_comps(ii));
         if (verbose >= 6) ECHO(ii)
-        if (verbose >= 6) ECHO(nll)
+        if (verbose >= 6) ECHO(nloglike(3,ii))
         delete ploglike;
         if (verbose>=6) ECHOSTR("After delete")
       }
@@ -13875,6 +13882,38 @@ FUNCTION CreateOutput
     for (int iy=syr; iy<=(nyrRetro+1);iy++){
     RepFile1 << "MMOD_data              " << "mmod_data         " << iy << "  NA      NA       NA      NA " <<
                                            nloglike(7,iy) << " " << mmodLkWgt             << " " << nloglike(7,iy)                             << endl;
+    }
+  }
+  RepFile1 << ">EOD<" <<endl<<endl;
+
+  RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+  RepFile1 << "Likelihoods_ZCs: dataframe" << endl;
+  RepFile1 << "origID aggID origRw  aggRow nll_type year season fleet comp_type sex maturity shell inpSS effN nll  nll_base" << endl;
+  for (int idx=1;idx<=nMapInpToAggSizeComps;idx++){
+    int kk = mapInpToAggSizeComps(idx)(1);//--input size comp df index
+    int ii = mapInpToAggSizeComps(idx)(2);//--input size comp df row
+    int jj = mapInpToAggSizeComps(idx)(3);//--input size comp df column
+    if (jj==1){
+      int k  = mapInpToAggSizeComps(idx)(4);//--corresponding aggregated size comp df index
+      int i  = mapInpToAggSizeComps(idx)(5);//--corresponding aggregated size comp df row
+      int dt = iSizeCompType_in(kk);        //--distribution type
+      int yr  = d3_SizeComps_in(kk,ii,-7);  //--year
+      int ssn = d3_SizeComps_in(kk,ii,-6);  //--season
+      int flt = d3_SizeComps_in(kk,ii,-5);  //--fleet
+      int sex = d3_SizeComps_in(kk,ii,-4);  //--sex
+      int typ = d3_SizeComps_in(kk,ii,-3);  //--catch type
+      int shl = d3_SizeComps_in(kk,ii,-2);  //--shell state
+      int mat = d3_SizeComps_in(kk,ii,-1);  //--maturity state
+      double inSS = d3_SizeComps_in(kk,ii, 0);  //--input sample size <--TODO (20260502): need the AGGREGATED/EXTENDED sample sizes also
+      dvector effN = value(mfexp(log_vn(k)) * size_comp_sample_size(k));
+      RepFile1 << kk << " " << k << " " << ii  <<  " " << i  << " " << dt << " " << yr << " " << ssn << " " 
+              << fleetname(flt) << " " << catchtypes(typ) << " " 
+              << sexes(sex) << " " << maturestate(mat) << " " << shellstate(shl) << " "
+              << inSS << " "                         //--inpSS
+              << effN(i) << " "                      //--effective N (from length_likelihood)
+              << d2_nll_size_comps(k,i) << " "       //--nll
+              << d2_nllbase_size_comps(k,i) << " "   //--base nll
+              << endl;
     }
   }
   RepFile1 << ">EOD<" <<endl<<endl;
