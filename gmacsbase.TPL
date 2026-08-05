@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.44; ** WTS **; Compiled 2026-08-02");
+ !! TheHeader = adstring("## GMACS Version 2.20.45; ** WTS **; Compiled 2026-08-05");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -1262,8 +1262,8 @@ DATA_SECTION
       for (int ilen=1;ilen<=nSizeCompCols_in(irow);ilen++) testtotal += d3_SizeComps_in(irow,jrow,ilen);
       if (testtotal <=0)
        {
-        cout << "Error: one of your rows of length data has no data (group " << irow << "; row "<< jrow << ")" << endl;
-        exit(1);
+        cout << "WARNING: one of your rows of length data has no data (group " << irow << "; row "<< jrow << ")" << endl;
+        //exit(1);
        }
       int h = d3_SizeComps_in(irow,jrow,-4);
       if (h==0 && nSizeCompCols_in(irow) != nclass)
@@ -4774,39 +4774,43 @@ DATA_SECTION
         if (verbose>4) echoinput << d3_obs_size_comps_in(kk,ii) << endl;
         for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) TempSize(jj) = d3_obs_size_comps_in(kk,ii,jj);
         TotalSize = sum(TempSize);
-        TempSize /= TotalSize;       //--TempSize normalized to sum to 1
-        //--identify tails and do compression
-        int end = 0;
-        cumsum.initialize(); 
-        for (int jj=1;jj<=nSizeCompCols_in(kk) & end==0;jj++){
-          if (jj==1) cumsum(jj) = TempSize(jj);
-          if (jj>1) cumsum(jj) = cumsum(jj-1) + TempSize(jj);
-          TempSize(jj) = 0;
-          if (cumsum(jj) > pmin) end = jj;
+        if (TotalSize > 0) {
+          TempSize /= TotalSize;       //--TempSize normalized to sum to 1
+          //--identify tails and do compression
+          int end = 0;
+          cumsum.initialize(); 
+          for (int jj=1;jj<=nSizeCompCols_in(kk) & end==0;jj++){
+            if (jj==1) cumsum(jj) = TempSize(jj);
+            if (jj>1) cumsum(jj) = cumsum(jj-1) + TempSize(jj);
+            TempSize(jj) = 0;
+            if (cumsum(jj) > pmin) end = jj;
+          }
+          TempSize(end) = cumsum(end);
+          if (abs(sum(TempSize)-1)>1.0e-10) {
+            cout << "Normalization failed while extending size comps: " << kk << " " << ii << endl;
+            cout << TempSize << endl;
+            exit(1);
+          }
+          tailcompind(kk,ii,1) = end;
+          end = nSizeCompCols_in(kk)+1;
+          int nsizecompscols = nSizeCompCols_in(kk);
+          for (int jj=nSizeCompCols_in(kk);jj>=1;jj--){
+            if (jj==nSizeCompCols_in(kk)) cumsum(jj) = TempSize(jj);
+            if (jj<nSizeCompCols_in(kk)) cumsum(jj) = cumsum(jj+1) + TempSize(jj);
+            TempSize(jj) = 0;
+            if (cumsum(jj) > pmin) { end = jj; jj = -1; }
+          }
+          TempSize(end) = cumsum(end);
+          tailcompind(kk,ii,2) = end;
+          //--lf_catch_in(kk)>0: CATCH_COMP_DOSCL or SURVEY_COMP_DOSCL: scale to input sample size <- WTS: do this if inputs were normailzed to begin with 
+          if (lf_catch_in(kk)>0) //--WTS 20260505: was only option (this now covers CATCH_COMP_DOSCL and SURVEY_COMP_DOSCL options)
+            for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj); //--WTS: FASLE for testing--original approach, but not sure it's correct when inputs weren't normalized to begin with 
+          //--lf_catch_in(kk)<0: CATCH_COMP_NOSCL or SURVEY_COMP_NOSCL: normalize to total abundance <- WTS: do this if inputs were NOT normailzed to begin with 
+          if (lf_catch_in(kk)<0) //--WTS 20260505: new option (this covers new CATCH_COMP_NOSCL and SURVEY_COMP_NOSCL options)
+            for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = TotalSize*TempSize(jj);  //--WTS: consistent with TCSAM02 because inputs are scaled to total catch abundance
+        } else {
+          tailcompind(kk,ii)(1) = 1; tailcompind(kk,ii)(2) = nSizeCompCols_in(kk); //--WTS: should be part of an extended size comp
         }
-        TempSize(end) = cumsum(end);
-        if (abs(sum(TempSize)-1)>1.0e-10) {
-          cout << "Normalization failed while extending size comps: " << kk << " " << ii << endl;
-          cout << TempSize << endl;
-          exit(1);
-        }
-        tailcompind(kk,ii,1) = end;
-        end = nSizeCompCols_in(kk)+1;
-        int nsizecompscols = nSizeCompCols_in(kk);
-        for (int jj=nSizeCompCols_in(kk);jj>=1;jj--){
-          if (jj==nSizeCompCols_in(kk)) cumsum(jj) = TempSize(jj);
-          if (jj<nSizeCompCols_in(kk)) cumsum(jj) = cumsum(jj+1) + TempSize(jj);
-          TempSize(jj) = 0;
-          if (cumsum(jj) > pmin) { end = jj; jj = -1; }
-        }
-        TempSize(end) = cumsum(end);
-        tailcompind(kk,ii,2) = end;
-        //--lf_catch_in(kk)>0: CATCH_COMP_DOSCL or SURVEY_COMP_DOSCL: scale to input sample size <- WTS: do this if inputs were normailzed to begin with 
-        if (lf_catch_in(kk)>0) //--WTS 20260505: was only option (this now covers CATCH_COMP_DOSCL and SURVEY_COMP_DOSCL options)
-          for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = size_comp_sample_size_in(kk,ii)*TotalSize*TempSize(jj); //--WTS: FASLE for testing--original approach, but not sure it's correct when inputs weren't normalized to begin with 
-        //--lf_catch_in(kk)<0: CATCH_COMP_NOSCL or SURVEY_COMP_NOSCL: normalize to total abundance <- WTS: do this if inputs were NOT normailzed to begin with 
-        if (lf_catch_in(kk)<0) //--WTS 20260505: new option (this covers new CATCH_COMP_NOSCL and SURVEY_COMP_NOSCL options)
-          for (int jj=1;jj<=nSizeCompCols_in(kk);jj++) d3_obs_size_comps_in(kk,ii,jj) = TotalSize*TempSize(jj);  //--WTS: consistent with TCSAM02 because inputs are scaled to total catch abundance
         if (verbose>4) {
           echoinput << "kk    ii   tailcompind(1)  tailcompind(2)  d3_obs_size_comps_in(kk,ii)" << endl;
           echoinput << kk << "  " << ii << "  " << tailcompind(kk,ii) << "  " << d3_obs_size_comps_in(kk,ii) << endl;
@@ -4819,7 +4823,7 @@ DATA_SECTION
           d3_obs_size_comps_in(kk,ii) = size_comp_sample_size_in(kk,ii)*d3_obs_size_comps_in(kk,ii);
         //--lf_catch_in(kk)<0: CATCH_COMP_NOSCL or SURVEY_COMP_NOSCL: normalize to total abundance <- WTS: do this if inputs were NOT normailzed to begin with 
         if (lf_catch_in(kk)<0) //--WTS 20260505: new option (this covers new CATCH_COMP_NOSCL and SURVEY_COMP_NOSCL options)
-          d3_obs_size_comps_in(kk,ii) = d3_obs_size_comps_in(kk,ii);  //--WTS: consistent with TCSAM02 because inputs are scaled to total catch abundance
+          d3_obs_size_comps_in(kk,ii) = d3_obs_size_comps_in(kk,ii);  //--do nothing. WTS: consistent with TCSAM02 because inputs are scaled to total catch abundance
       }
     }//--ii loop (nSizeCompRows_in(kk))
   }//-- kk loop (nSizeComps_in)
@@ -13823,30 +13827,30 @@ FUNCTION CreateOutput
  
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Likelihood_summary: dataframe" << endl;
-  RepFile1 << "term                     type           year     fleet     units   sex     maturity           nll          objfun_value" << endl;
-  RepFile1 << "Catch_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(1)) << " "  << sum(elem_prod(nloglike(1),catch_emphasis))   << endl;
-  RepFile1 << "Catch_data_alt         " << " summary    NA        NA        NA    NA        NA      " << sum(nll_catch)   << " "  << sum(nll_catch)                               << endl;
-  RepFile1 << "Index_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(2)) << " "  << sum(elem_prod(nloglike(2),cpue_emphasis))    << endl;
-  RepFile1 << "Size_data              " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(3)) << " "  << sum(elem_prod(nloglike(3),lf_emphasis))      << endl;
-  RepFile1 << "Stock_recruitment      " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(4)) << " "  << sum(nloglike(4))                             << endl;
-  RepFile1 << "Tagging_data           " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(5)) << " "  << sum(nloglike(5))*tag_emphasis                << endl;
-  RepFile1 << "Growth_data            " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(6)) << " "  << sum(nloglike(6))                             << endl;
-  if (hasMMOD) RepFile1 << "MMO_data               " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(7)) << " "  << mmodLkWgt*sum(nloglike(7))                   << endl;
-  RepFile1 << "Penalties              " << " summary    NA        NA        NA    NA        NA      " << sum(nlogPenalty) << " "  << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
-  RepFile1 << "Priors                 " << " summary    NA        NA        NA    NA        NA      " << sum(priorDensity)<< " "  << sum(priorDensity)                            << endl;
-  RepFile1 << "Initial_size_structure " << " summary    NA        NA        NA    NA        NA      " << TempSS           << " "  << TempSS      << endl;
-  RepFile1 << "Positive_growth_penalty" << " summary    NA        NA        NA    NA        NA      " << grwthPosFun      << " "  << grwthPosFun << endl;
-  RepFile1 << "Total                  " << " summary    NA        NA        NA    NA        NA      " << objfun           << " "  << objfun      << endl;
-  RepFile1 << "Mean_Fbar=0            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(1)   << " " << nlogPenalty(1)*Penalty_emphasis(1) << endl;
-  RepFile1 << "Mean_Fdev              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(2)   << " " << nlogPenalty(2)*Penalty_emphasis(2) << endl;
-  RepFile1 << "Rec_dev                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(6)   << " " << nlogPenalty(6)*Penalty_emphasis(6) << endl;
-  RepFile1 << "Sex_ratio              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(7)   << " " << nlogPenalty(7)*Penalty_emphasis(7) << endl;
-  RepFile1 << "Molt_prob              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(8)   << " " << nlogPenalty(8)*Penalty_emphasis(8) << endl;
-  RepFile1 << "Smooth_select          " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(9)   << " " << nlogPenalty(9)*Penalty_emphasis(9) << endl;
-  RepFile1 << "Init_numbers           " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(10)  << " " << nlogPenalty(10)*Penalty_emphasis(10) << endl;
-  RepFile1 << "Fdevs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(11)  << " " << nlogPenalty(11)*Penalty_emphasis(11) << endl;
-  RepFile1 << "Fdovs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(12)  << " " << nlogPenalty(12)*Penalty_emphasis(12) << endl;
-  RepFile1 << "SelDevs                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(13)  << " " << nlogPenalty(13)*Penalty_emphasis(13) << endl;
+  RepFile1 << "term                     type           year     fleet     units   sex     maturity           nll          emphasis     objfun_value" << endl;
+  RepFile1 << "Catch_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(1)) << " 1 "  << sum(elem_prod(nloglike(1),catch_emphasis))   << endl;
+  RepFile1 << "Catch_data_alt         " << " summary    NA        NA        NA    NA        NA      " << sum(nll_catch)   << " 1 "  << sum(nll_catch)                               << endl;
+  RepFile1 << "Index_data             " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(2)) << " 1 "  << sum(elem_prod(nloglike(2),cpue_emphasis))    << endl;
+  RepFile1 << "Size_data              " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(3)) << " 1 "  << sum(elem_prod(nloglike(3),lf_emphasis))      << endl;
+  RepFile1 << "Stock_recruitment      " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(4)) << " 1 "  << sum(nloglike(4))                             << endl;
+  RepFile1 << "Tagging_data           " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(5)) << " 1 "  << sum(nloglike(5))*tag_emphasis                << endl;
+  RepFile1 << "Growth_data            " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(6)) << " 1 "  << sum(nloglike(6))                             << endl;
+  if (hasMMOD) RepFile1 << "MMO_data               " << " summary    NA        NA        NA    NA        NA      " << sum(nloglike(7)) << " 1 "  << mmodLkWgt*sum(nloglike(7))                   << endl;
+  RepFile1 << "Penalties              " << " summary    NA        NA        NA    NA        NA      " << sum(nlogPenalty) << " 1 "  << sum(elem_prod(nlogPenalty,Penalty_emphasis)) << endl;
+  RepFile1 << "Priors                 " << " summary    NA        NA        NA    NA        NA      " << sum(priorDensity)<< " 1 "  << sum(priorDensity)                            << endl;
+  RepFile1 << "Initial_size_structure " << " summary    NA        NA        NA    NA        NA      " << TempSS           << " 1 "  << TempSS      << endl;
+  RepFile1 << "Positive_growth_penalty" << " summary    NA        NA        NA    NA        NA      " << grwthPosFun      << " 1 "  << grwthPosFun << endl;
+  RepFile1 << "Total                  " << " summary    NA        NA        NA    NA        NA      " << objfun           << " 1 "  << objfun      << endl;
+  RepFile1 << "Mean_Fbar=0            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(1)   << " 1 " << nlogPenalty(1)*Penalty_emphasis(1) << endl;
+  RepFile1 << "Mean_Fdev              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(2)   << " 1 " << nlogPenalty(2)*Penalty_emphasis(2) << endl;
+  RepFile1 << "Rec_dev                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(6)   << " 1 " << nlogPenalty(6)*Penalty_emphasis(6) << endl;
+  RepFile1 << "Sex_ratio              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(7)   << " 1 " << nlogPenalty(7)*Penalty_emphasis(7) << endl;
+  RepFile1 << "Molt_prob              " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(8)   << " 1 " << nlogPenalty(8)*Penalty_emphasis(8) << endl;
+  RepFile1 << "Smooth_select          " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(9)   << " 1 " << nlogPenalty(9)*Penalty_emphasis(9) << endl;
+  RepFile1 << "Init_numbers           " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(10)  << " 1 " << nlogPenalty(10)*Penalty_emphasis(10) << endl;
+  RepFile1 << "Fdevs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(11)  << " 1 " << nlogPenalty(11)*Penalty_emphasis(11) << endl;
+  RepFile1 << "Fdovs_(flt)            " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(12)  << " 1 " << nlogPenalty(12)*Penalty_emphasis(12) << endl;
+  RepFile1 << "SelDevs                " << " penalty    NA        NA        NA    NA        NA      " << nlogPenalty(13)  << " 1 " << nlogPenalty(13)*Penalty_emphasis(13) << endl;
   for (int id=1; id<=nloglike(1).size();id++){
     dvector dc = dCatchData(id,1);
     RepFile1 << "Catch_data              " << catchtypes(dc(7)) << " NA      " << fleetname(dc(3)) << " " << unitstypes(dc(8)) << " " << sexes(dc(4)) << " " << "NA" << " " <<  
@@ -17732,6 +17736,11 @@ FINAL_SECTION
 //                    Incremented to v2.20.44. Changed size composition likelihood calculations using negativeLoglikelihood classes. "Internal" 
 //                    functions now return dvar_vectors (values for each individual composition) rather than a single value for the total likelihood. 
 //                    The total likelihood is calculated in the calling function.
+// 2026-08-03 ** WTS. Incremented version to 2.20.45. Added "emphasis" column explicitly to Likelihood_summary table in gmacs.rep1.
+// 2026-08-04 ** WTS. Corrected calculation of Pearson's residuals calculation for multinomial_alt class in multinomial.cpp to match TCSAM02. 
+//                    Changed m_smlVal from 0.00001 to 0.001 in multinomial_alt class to match TCSAM02.
+// 2026-08-05 ** WTS. Revised tail compression to skip compression when observed size comp is all zeros (valid as a component of an extended comp).
+//                    
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps

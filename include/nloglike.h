@@ -289,7 +289,7 @@ namespace acl
     /** @brief If true, compress observed/predicted rows before evaluation. */
     bool        m_bCompress;
     /** @brief Small positive floor used in alternative multinomial kernel. */
-    double      m_smlVal = 0.00001;
+    double      m_smlVal = 0.001; //matches TCSAM02 smlVal for multinomial_alt calculations
     /** @brief Cached log effective sample size parameter(s). */
     dvariable   m_log_vn;
     /** @brief Cached predicted composition matrix (optional storage). */

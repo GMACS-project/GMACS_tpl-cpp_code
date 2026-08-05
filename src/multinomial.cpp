@@ -68,7 +68,7 @@ const dmatrix acl::multinomial::pearson_residuals(const dvar_vector& log_vn, con
 
 
 /**
- * @brief multinomial desity function with estimated effective sample size.
+ * @brief multinomial density function with estimated effective sample size.
  *
  * @details Negative log likelihood using the multinomial distribution as referenced to the "best" fit (i.e., p_i=x_i).	
  *
@@ -97,13 +97,24 @@ const dvar_vector acl::multinomial_alt::dmultinom_alt(const dvar_vector& log_vn,
 }
 
 
+/**
+ * @brief function for multinomial Pearson's residuals with estimated effective sample size.
+ *
+ * @details Matches TCSAM02 calculations if m_smlVal matches small value smlVal in TCSAM02 and effective N is the same as sample size.
+ *
+ * @author WTS
+ * @param log_vn dvar_vector of the log of effective sample sizes.
+ * @param o dmatrix of the observed proportions.
+ * @param p dvar_matrix of the predicted proportions
+ * @return Pearson's residuals as dmatrix.
+**/
 const dmatrix acl::multinomial_alt::pearson_residuals(const dvar_vector& log_vn, const dmatrix& o, const dvar_matrix p) const
 {
   dvector vn = value(mfexp(log_vn));
   dmatrix res = o - value(p);
   for ( int i = o.rowmin(); i <= o.rowmax(); i++ ){
-    dvector var = value(elem_prod(p(i),1.0-p(i)+m_smlVal)) / vn(i);
-    res(i) = elem_div(res(i),sqrt(var+m_smlVal));
+    dvector var = value(elem_prod(p(i)+m_smlVal,1.0-(p(i)+m_smlVal))) / vn(i);
+    res(i) = elem_div(res(i),sqrt(var));
   }
   return res;
 }
