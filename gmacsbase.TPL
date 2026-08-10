@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.45; ** WTS **; Compiled 2026-08-05");
+ !! TheHeader = adstring("## GMACS Version 2.20.45; ** WTS **; Compiled 2026-08-07");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -15504,7 +15504,7 @@ FUNCTION CreateOutput
   RepFile1 << ">EOD<" << endl;
 
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
-  RepFile1 << "Mean growth: dataframe" << endl;
+  RepFile1 << "mean_growth: dataframe" << endl;
   RepFile1 << "sex block premolt_size mean_increment  mean_postmolt_size" << endl; 
   for (int h=1; h<=nsex; h++)
    for (int k =1; k<=nSizeIncVaries(h);k++)
@@ -15692,6 +15692,20 @@ FUNCTION CreateOutput
       OutFile1 << iMoltIncSex(i) <<" "<< dPreMoltSize(i) <<" "<< dPreMoltSize(i)+dMoltInc(i) <<" "<< prdPstMltSizes(i) <<" "<< nllGrowth(i) << endl;
     }
     OutFile1 << ">EOD<" <<endl;
+  }
+
+  if ((nGrowthObs>0)&&((GrowthObsType==GROWTHINC_DATA_GAMMA)||(GrowthObsType==GROWTHINC_DATA_NORMAL))){
+  if ((nGrowthObs>0)&&((GrowthObsType==GROWTHINC_DATA_GAMMA)||(GrowthObsType==GROWTHINC_DATA_NORMAL))){
+    RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
+    RepFile1 << endl << "## Fits to non-tagging growth data" << endl;
+    RepFile1 << "growth_data: dataframe" << endl;
+    RepFile1 << "sex  premolt_size  obs_postmolt_size  prd_postmolt_size  nll"<<endl;
+    for (int i=1;i<=nGrowthObs;i++){
+      RepFile1 << iMoltIncSex(i) <<" "<< dPreMoltSize(i) <<" "<< dPreMoltSize(i)+dMoltInc(i) <<" "<< prdPstMltSizes(i) <<" "<< nllGrowth(i) << endl;
+    }
+    RepFile1 << ">EOD<" <<endl;
+  }
+
   }
 
   //================================================
@@ -17740,6 +17754,8 @@ FINAL_SECTION
 // 2026-08-04 ** WTS. Corrected calculation of Pearson's residuals calculation for multinomial_alt class in multinomial.cpp to match TCSAM02. 
 //                    Changed m_smlVal from 0.00001 to 0.001 in multinomial_alt class to match TCSAM02.
 // 2026-08-05 ** WTS. Revised tail compression to skip compression when observed size comp is all zeros (valid as a component of an extended comp).
+// 2026-08-07 ** WTS. Added "growth_data" dataframe to gmacs.rep1 output to provide model-predicted growth increments for non-tagging molt increment data. 
+//                    Revised "Mean growth" to "mean_growth" dataframe name in gmacs.rep1 to parse correctly in R.
 //                    
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
