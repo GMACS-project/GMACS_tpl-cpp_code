@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.45; ** WTS **; Compiled 2026-08-07");
+ !! TheHeader = adstring("## GMACS Version 2.20.45a; ** WTS **; Compiled 2026-08-26");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -338,10 +338,10 @@ DATA_SECTION
   init_int IsJittered;
   init_int IsPin;
   init_number sdJitter;
-  !! if (jitflag) IsJittered = 1;
+  !! if (jitflag) IsJittered = 1; //--note: this uses Andre's jittering formula TODO(WTS): rewrite to keep isJittered value if not 0
   !! if (IsJittered==1) cout << "Jittering with sd: " << sdJitter << endl;
-  !! WriteFileName(IsPin);
   !! WriteFileName(IsJittered);
+  !! WriteFileName(IsPin);
   !! WriteFileName(sdJitter);
   init_int OutRefPars;
   !! WriteFileName(OutRefPars);
@@ -1695,7 +1695,7 @@ DATA_SECTION
   !! Nyears4 =(nyrRetro+nproj+1-syr+1);
    int nprojVec;
   !! nprojVec = nproj+1; if (nprojVec<2) nprojVec = 2;
-  init_int Project_type;                                   ///> Projection type (1=Fixed F; 2=Proportion of current F)
+  init_int Project_type;                                   ///> Projection type (1=Fixed F; 2=Proportion of current F; 3=Proportion of directed Fmsy)
   !! WRITEPRJ(Project_type);
   init_int prj_Nstrat;                                     ///> Account for state strategy
   !! WRITEPRJ(prj_Nstrat);
@@ -1814,7 +1814,7 @@ DATA_SECTION
   !! WRITEPRJ(Initial_eps);
 
   init_int Apply_HCR_prj;                                  ///> Use a HCR
-  !!if (Project_type==2) Apply_HCR_prj = 0;
+  !!if ((Project_type==2)||(Project_type==3)) Apply_HCR_prj = 0;
   !! WRITEPRJ(Apply_HCR_prj);
   init_int Apply_StateHCR_prj;                             ///> Use a State HCR
   !! WRITEPRJ(Apply_StateHCR_prj);
@@ -1860,7 +1860,7 @@ DATA_SECTION
     Stock_rec_ref = 1;
     if (Calc_MEY==YES) (*ad_comm::global_datafile) >> Stock_rec_ref;
     gmacs_prj << "# Options for the stock-recruitment relationship for MEY reference points" << endl;
-    gmacs_prj << "#    1: Set to mean pre-specified range of years"<< endl;
+    gmacs_prj << "#    1: Set mean to mean of pre-specified range of years"<< endl;
     gmacs_prj << "#    2: Ricker stock-recruitment relationship"<< endl;
     gmacs_prj << "#    3: Beverton-Holt stock-recruitment relationship"<< endl;
     gmacs_prj << "#    4: Pre-specified (constant) future recruitment "<< endl;
@@ -2618,7 +2618,9 @@ DATA_SECTION
       for (int m=1;m<=nmature;m++) {
         *(ad_comm::global_datafile) >> lw_alfa(h,m);
         *(ad_comm::global_datafile) >> lw_beta(h,m);
+        echoinput << setw(20) << setprecision(15) << setfixed();
         echoinput << lw_alfa(h,m) << " " << lw_beta(h,m) << " #--sex " << h << "; maturity " << m << endl;
+        gmacs_ctl << setw(20) << setprecision(15) << setfixed();
         gmacs_ctl << lw_alfa(h,m) << " " << lw_beta(h,m) << " #--sex " << h << "; maturity " << m << endl;
       }
     }
@@ -6781,7 +6783,7 @@ FUNCTION init_selectivities
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
          p3 = mfexp(S_pars(is,3));
-         p4 = S_pars(is,4);        //--NOTE: no exponentiation
+         p4 = mfexp(S_pars(is,4)); //--NOTE: was "no exponentiation" prior to version 2.20.45a, but necessary to be consistent w/ priors
          p5 = S_pars(is,5);        //--NOTE: no exponentiation, relevant parameter should not be estimated (i.e., it should be fixed)
          pSLX = new class gsm::DoubleNormal4a<dvar_vector,dvariable,dvariable>(p1,p2,p3,p4,p5);
          //echoinput << "SELEX_DOUBLENORM4a for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << " " << p5 << endl;
@@ -6950,7 +6952,7 @@ FUNCTION calc_selectivities
          p1 = mfexp(S_pars(is,1));
          p2 = mfexp(S_pars(is,2));
          p3 = mfexp(S_pars(is,3));
-         p4 = S_pars(is,4);        //--NOTE: no exponentiation
+         p4 = mfexp(S_pars(is,4)); //--NOTE: was "no exponentiation" prior to version 2.20.45a, but necessary to be consistent w/ priors
          p5 = S_pars(is,5);        //--NOTE: no exponentiation, relevant parameter should not be estimated (i.e., it should be fixed)
          ((gsm::DoubleNormal4a<dvar_vector,dvariable,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3,p4,p5);
          pSLX = ppSLX[is-1];
@@ -12710,19 +12712,19 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       spr_fofl = FF/Fmsy;
       spr_depl = ssb_pass / Bmsy;
     } else {
-       // Adjust F if below target. Since it's a function biomass, it needs to be interated
-       for( int iloop = 1; iloop <= 10; iloop++) {
-         Fmult2 = Fmsy * (ssb_pass / Bmsy - OFLalpha) / (1 - OFLalpha);
-         if (Fmult2 < 0.1*FF)
-          FF = 0.1*FF;
-         else
-          FF = Fmult2;
-         if (FF < 0.00001) FF = 0.00001;
-         for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
-	 Bproj = project_biomass_OFL(1,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar, iproj,d4_Npass);
-       }
-       spr_fofl = FF/Fmsy;
-       spr_depl = ssb_pass / Bmsy;
+      // Adjust F if below target. Since it's a function biomass, it needs to be interated
+      for( int iloop = 1; iloop <= 10; iloop++) {
+        Fmult2 = Fmsy * (ssb_pass / Bmsy - OFLalpha) / (1 - OFLalpha);
+        if (Fmult2 < 0.1*FF)
+        FF = 0.1*FF;
+        else
+        FF = Fmult2;
+        if (FF < 0.00001) FF = 0.00001;
+        for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
+        Bproj = project_biomass_OFL(1,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar, iproj,d4_Npass);
+      }
+      spr_fofl = FF/Fmsy;
+      spr_depl = ssb_pass / Bmsy;
     }
   } //--ssb_pass <= Bmsy
 
@@ -12970,7 +12972,7 @@ FUNCTION write_eval
   if (nsex==2) mcoutREC << recruits(1)+recruits(2) << endl;
   mcoutREF << NfunCall << " " << spr_rbar << " " << ssbF0 << " " << spr_bmsy << " " << spr_depl << " " << spr_cofl << " " << sd_fmsy << " " << sd_fofl << endl;
 
-  // Find the average F by fleet over the last 4 years
+  // Find the average F by fleet over spr_aveF_nyr-spr_aveF_syr+1 years
   for (int k = 1; k <= nfleet; k++){
     MeanF = 0; NF = 0;
     for (int i = spr_aveF_syr; i <= spr_aveF_nyr; i++) { MeanF += fout(k,i); NF += 1; }
@@ -13011,8 +13013,10 @@ FUNCTION write_eval
         for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log_fimpbarI(k);
         if (Project_type==1) // Fixed F
           for (int k=1;k<=nfleet;k++) {if (Ffixed(k) != 1) log_fimpbar(k) = log(Fmult);}
-        if (Project_type==2) // multilier on average F
+        if (Project_type==2) // multiplier on average F
           for (int k=1;k<=nfleet;k++) {if (Ffixed(k) != 1) log_fimpbar(k) = log_fimpbarI(k)+log(Fmult);}
+        if (Project_type==3) // multiplier on directed Fmsy NOTE: should only use when Ffixed(k) != 1 only for directed fleet
+          for (int k=1;k<=nfleet;k++) {if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*Fmult);} //--Fmult includes small umber
         mcoutDIAG << "Draw Replicate F_val ";
         for (int k=1;k<=nfleet;k++) mcoutDIAG << "f_for_fleet_" << k << " ";
         mcoutDIAG << "BMSY ";
@@ -13227,7 +13231,7 @@ FUNCTION dvector calc_Francis_weights()
    }
 // -------------------------------------------------------------------------------------------------------------------------------------------------
   /**
-  * Function to format a double using 'g'-type fprmatting in sprintf().
+  * Function to format a double using 'g'-type formatting in sprintf().
   * 
   * @param d
   * @return g-formatted adstring representation of d
@@ -13610,6 +13614,8 @@ FUNCTION writeJitterResults
   for (int i=1;i<=NEstPars;i++) if (fabs(gradientOut(i)) > fabs(MaxGrad)) MaxGrad = value(gradientOut(i));
 
   calc_spr_reference_points2(1);
+
+  JitFile <<  setw(15) << setprecision(12) << setfixed() << endl;
 
   JitFile << "rseed, objFun, maxGrad, OFL, currMMB, Bmsy, B/Bmsy, likeCatch, likeIndex, likeSizeComps, likeStockRec, likeTagging, LikeGrowth, likeMMOD, penalties, priors" << endl;
   JitFile << rseed << ", " << objfun << ", " << MaxGrad << ", " << spr_cofl << ", " << Bmsy*spr_depl << ", " << Bmsy << ", " << spr_depl << ", ";
@@ -15930,6 +15936,9 @@ FUNCTION WriteFiles
     for (int j=1;j<=blocks(ii);j++) OutInpFile1 << int(blocklimits(ii,j,1)) << " " << int(blocklimits(ii,j,2)) << " # block_group_"<< ii << "_block_" << j << endl;
    }
 
+   OutInpFile1 << endl << "# Number of environmental treatments" << endl;
+   OutInpFile1 << n_env_treat << endl << endl;
+
   OutInpFile1 << endl << "##  ------------------------------------------------------------------------------------ ##" << endl;
   OutInpFile1 << "##  OTHER  CONTROLS" << endl;
   OutInpFile1 << "##  ------------------------------------------------------------------------------------ ##" << endl;
@@ -15987,8 +15996,8 @@ FUNCTION WriteFiles
          
     OutInpFile1 << "         "; OutInpFile1<<  setw(12) << setprecision(6) << setfixed() <<T_pars_est(n_Tpar)<< " "; for (int ii=2;ii<=3;ii++) OutInpFile1<< setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
     OutInpFile1 << setw(10) << setfixed() << int(Tpar_control(n_Tpar,4)) << " ";
-    for (int ii=5;ii<=6;ii++) OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
-    for (int ii=7;ii<=13;ii++) OutInpFile1 << setw(6) << setfixed() << int(Tpar_control(n_Tpar,ii)) << " ";
+    for (int ii=5;ii<=6;ii++)  OutInpFile1 << setw(12) << setprecision(6) << setfixed() << Tpar_control(n_Tpar,ii) << " ";
+    for (int ii=7;ii<=13;ii++) OutInpFile1 << setw(6)                     << setfixed() << int(Tpar_control(n_Tpar,ii)) << " ";
     OutInpFile1 << setw(8) << setprecision(4) << setfixed() << Tpar_control(n_Tpar,14) << " # " << anystring; OutInpFile1 << endl;
    }//--ig loop
     
@@ -16041,11 +16050,22 @@ FUNCTION WriteFiles
   OutInpFile1 << "## 1 = allometry  [w_l = a*l^b]" << endl;
   OutInpFile1 << "## 2 = vector by sex" << endl;
   OutInpFile1 << "## 3 = matrix by sex" << endl;
-  OutInpFile1 << 3 << "  #--method" << endl;
-  for ( int h = 1; h <= nsex; h++ )
-   for ( int m = 1; m <= nmature; m++)
-    for ( int i = syr; i <= nyrRetro+1; i++ )
-      OutInpFile1 << setw(14) << setprecision(8) <<  setfixed() << mean_wt(h,m,i) << endl;
+  if (lw_type==LW_RELATIONSHIP){
+    OutInpFile1 << 1 << "  #--method" << endl;
+    for (int h=1;h<=nsex;h++) { 
+      for (int m=1;m<=nmature;m++) {
+        OutInpFile1 << setw(20) << setprecision(15) << setfixed();
+        OutInpFile1 << lw_alfa(h,m) << " " << lw_beta(h,m) << " #--sex " << h << "; maturity " << m << endl;
+      }
+    }
+  } else {
+    OutInpFile1 << 3 << "  #--method" << endl;
+    for ( int h = 1; h <= nsex; h++ )
+    for ( int m = 1; m <= nmature; m++)
+      for ( int i = syr; i <= nyrRetro+1; i++ )
+        OutInpFile1 << setw(14) << setprecision(8) <<  setfixed() << mean_wt(h,m,i) << endl;
+  }
+  OutInpFile1 << endl;
   OutInpFile1 << "# Proportion mature by sex and size" << endl;
   OutInpFile1 << maturity << endl;
   OutInpFile1 << "# Proportion legal by sex and size" << endl;
@@ -16218,10 +16238,10 @@ FUNCTION WriteFiles
   for (int ig=1;ig<=nsex;ig++){
     if (nmature==2 && bUseCustomMatureProbability2(ig)==FIXED_PROB_MATURE){
       OutInpFile1 << "\n# Using custom mature probability" << endl;
-      OutInpFile1 << "#Pre-specified mature probability" << endl;
+      OutInpFile1 << "#Pre-specified mature probability for sex " << ig <<endl;
       for (int i=1;i<=nMatureVaries(ig);i++){
         for (int l=1;l<= nSizeSex(ig);l++)  OutInpFile1 << setw(6) << setprecision(4) << setfixed() << CustomMatureProbabilityMatrix(ig,i,l) << " ";
-        OutInpFile1 << endl;
+        OutInpFile1 << " # block" << i << endl;
       }
     }
   }
@@ -17674,7 +17694,7 @@ FINAL_SECTION
 //                    based on average catch divided by average effort for years specified by new "avg_eff" column in new-format CatchDFs. Functions "calc_fishing_mortality" 
 //                    and "calc_predicted _catch" have been modified. If "off", the number of log_fdevs and log_fdovs for each catch dataframe depends on the number of rows of catch data 
 //                    given (whether catch was observed or not). If "on", the number of log_fdevs and log_fdovs depends only on the number of rows which contain 
-//                    non-missing catch data. Thsu, the required number of estimated fishing mortality parameters may be different between 
+//                    non-missing catch data. Thus, the required number of estimated fishing mortality parameters may be different between 
 //                    the two options and different par files would be required to switch between options if initializing model runs with a par file.
 //                    Incremented version to 2.20.35b.
 // 2026-03-27 ** WTS. Added growth transition options 9 and 10 to provide same functionality as TCSAM02, mainly for direct comparisons with results from that code.
@@ -17756,11 +17776,21 @@ FINAL_SECTION
 // 2026-08-05 ** WTS. Revised tail compression to skip compression when observed size comp is all zeros (valid as a component of an extended comp).
 // 2026-08-07 ** WTS. Added "growth_data" dataframe to gmacs.rep1 output to provide model-predicted growth increments for non-tagging molt increment data. 
 //                    Revised "Mean growth" to "mean_growth" dataframe name in gmacs.rep1 to parse correctly in R.
-//                    
+// 2026-08-17 ** WTS. Changed parameter 4 for DoubleNormal4a function to be on ln-scale. Like most selectivity parameters, it is defined 
+//                    on the arithmetic scale in the ctl file (as are the lower and upper bounds and prior parameters), 
+//                    but is converted to ln-scale for estimation. Note that this means the pin/par file values will not match the 
+//                    initial values in the ctl file. Incremented version to 2.20.45a.   
+// 2026-08-24 ** WTS. Increased precision of output to jitter.csv when jittering. Fixed couple of typos in comments. Updated compile date to 2026-08-24.
+//                    Added missing "# Number of environmental treatments" to the output ctl file. If input allometry specified by LW relationship, 
+//                    the corresponding parameters are also written to the output ctl file (and not the LW matrix).
+// 2026-08-26 ** WTS. Added Project_type =3 option to apply a multiplier on directed Fmsy (sd_msy(k) where k is the fleet id for the directed fishery). 
+//                    Updated compile date to 2026-08-26.
+//                 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
 // 2 - WTS: 2026-06-08: LOTS of redundant code in projection-related functions (e.g., re-averaging selectivity and retention functions). This redundancy should be 
 //     eliminated (by doing the averaging once or centralizing the process in one function that can be called from 
 //     multiple contexts).
+// 3 - fix jitFlag/isJitter logic.
 //
