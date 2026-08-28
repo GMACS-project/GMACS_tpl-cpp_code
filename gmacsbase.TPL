@@ -8526,7 +8526,7 @@ FUNCTION void update_population_numbers_at_length_season_new(const int i, const 
           f_mat_os = o_mat_os + o_mat_ns; //previously mature crab stay mature and do not molt (all are now old shell)
           //---previously immature
           f_imm_os = elem_prod(o_imm_ns, 1.0 - molt_prob_pass(h));            // immature crab that did not molt, stayed immature, became old shell
-          u_imm_ns = elem_prod(o_imm_ns,       molt_prob_pass(h)) + o_imm_os; // immature crab that will molted and grow and become new shell, may mature; all previous imm_os molt
+          u_imm_ns = elem_prod(o_imm_ns,       molt_prob_pass(h)) + o_imm_os; // immature crab that will molt and grow and become new shell, may mature; all previous imm_os molt
           //--evaluate terminal molt to maturity and growth for immature crab that molted
           f_mat_ns = elem_prod(u_imm_ns,     mature_prob_pass(h)) * growth_transition(h,isizeTrans);// grew, underwent terminal molt to maturity, became new shell
           f_imm_ns = elem_prod(u_imm_ns, 1.0-mature_prob_pass(h)) * growth_transition(h,isizeTrans);// grew, did not undergo terminal molt to maturity, became new shell
@@ -9171,9 +9171,9 @@ FUNCTION void project_cohort_numbers_at_length(int iyr, int mxYr, int includeFs,
     }  
     // Now for the year-update
     if (Term_molt==0)
-      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);     ///> Update the sesonal-dynamics (if terminal molt, non-Tanner-type)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case);     ///> Update the sesonal-dynamics (non-terminal molt)
     if (Term_molt>0)
-      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case); ///> Update the sesonal-dynamics (Tanner-type terminal molt)
+      for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case); ///> Update the sesonal-dynamics (terminal molt)
   } //--i loop 
    
 // --------------------------------------------------------------------------------------------------------------------------------------
@@ -12523,7 +12523,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass_2(ig,j) = numbers_proj_gytl(ig)(iyr+iproj-1)(j);
   // calculate 
-  cout << "project_biomass_OFL " << endl;
+  cout << end << "project_biomass_OFL " << endl;
   out = calc_predicted_project(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
   oflret_pass = out(1); ofltot_pass = out(2);
   OFLoutpass = out;
