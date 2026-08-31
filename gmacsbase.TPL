@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.45a; ** WTS **; Compiled 2026-08-26");
+ !! TheHeader = adstring("## GMACS Version 2.20.45a; ** WTS **; Compiled 2026-08-30");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -3735,39 +3735,6 @@ DATA_SECTION
               if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_base_";
               if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_base_";
               anystring  = addToAnystring(anystring,slx_type_in(ipnt4,k),ipar,slx_extra_in(ipnt4,k),slx_extra_in(h,k));
-              // if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
-              // if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
-              // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
-              // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
-              // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
-              // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
-              // if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
-              // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
-              // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
-              // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-              // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
-              // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 1) anystring += "Double_normala_par_1";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 2) anystring += "Double_normala_par_2";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 3) anystring += "Double_normala_par_3";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 4) anystring += "Double_normala_par_4";
-              // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 5) anystring += "Double_normala_par_5";
-              // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
-              // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k))  anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
-              // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
-              // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k))  anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
-              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
-              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
-              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
-              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
-              // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
           
               gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
               gmacs_ctl << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
@@ -3818,39 +3785,6 @@ DATA_SECTION
                   if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_";
                   if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_";
                   anystring  = addToAnystring(anystring,slx_type_in(ipnt4,k),ipar,slx_extra_in(ipnt4,k),slx_extra_in(h,k));
-                  // if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
-                  // if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
-                  // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
-                  // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
-                  // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
-                  // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
-                  // if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-                  // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
-                  // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 1) anystring += "Double_normala_par_1";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 2) anystring += "Double_normala_par_2";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 3) anystring += "Double_normala_par_3";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 4) anystring += "Double_normala_par_4";
-                  // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 5) anystring += "Double_normala_par_5";
-                  // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
-                  // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar > slx_extra_in(ipnt4,k))  anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
-                  // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
-                  // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar > slx_extra_in(ipnt4,k))  anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
-                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
-                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
-                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
-                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
-                  // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
                   anystring += "_block_group_"+str(IgBlock)+"_block_"+str(kpar); 
 
                   gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) {gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";}
@@ -3870,39 +3804,6 @@ DATA_SECTION
                 if (IgRWBlock <=0) { cout << "Error: There needs to a block for environment variables - " << seltypes(it) << " " << sexes(h) << " " << fleetname(k) << " par " << ipar << endl; exit(1); }
                 anystring = "Env_link_"+fleetname(k)+"_"+sexes(h)+"_";
                 anystring  = addToAnystring(anystring,slx_type_in(ipnt4,k),ipar,slx_extra_in(ipnt4,k),slx_extra_in(h,k));
-                // if (slx_type_in(ipnt4,k) == SELEX_PARAMETRIC) anystring += "class_"+str(ipar);
-                // if (slx_type_in(ipnt4,k) == SELEX_COEFFICIENTS) anystring += "class_"+str(ipar);
-                // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 1) anystring += "Logistic_mean";
-                // if (slx_type_in(ipnt4,k) == SELEX_STANLOGISTIC && ipar == 2) anystring += "Logistic_cv";
-                // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 1) anystring += "Logistic_mean";
-                // if (slx_type_in(ipnt4,k) == SELEX_5095LOGISTIC && ipar == 2) anystring += "Logistic_cv";
-                // if (slx_type_in(ipnt4,k) == SELEX_ONE_PAR_LOGISTIC && ipar == 1) anystring += "Dec_Logistic_mean";
-                // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 1) anystring += "Dec_Logistic_cv";
-                // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar == 2) anystring += "Dec_Logistic_cv";
-                // if (slx_type_in(ipnt4,k) == SELEX_DECLLOGISTIC && ipar  > 2) anystring += "Dec_Logistic_extra_par"+str(ipar-2);
-                // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 1) anystring += "Ascending_normal_par_1_asc_width";
-                // if (slx_type_in(ipnt4,k) == SELEX_ASCNORM && ipar == 2) anystring += "Ascending_normal_par_2_size-at-1";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 1) anystring += "Double_normal_par_1";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 2) anystring += "Double_normal_par_2";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM && ipar == 3) anystring += "Double_normal_par_3";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 1) anystring += "Double_normal_par_1";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 2) anystring += "Double_normal_par_2";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 3) anystring += "Double_normal_par_3";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4 && ipar == 4) anystring += "Double_normal_par_4";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 1) anystring += "Double_normala_par_1";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 2) anystring += "Double_normala_par_2";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 3) anystring += "Double_normala_par_3";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 4) anystring += "Double_normala_par_4";
-                // if (slx_type_in(ipnt4,k) == SELEX_DOUBLENORM4a && ipar == 5) anystring += "Double_normala_par_5";
-                // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_knot_"+str(ipar);
-                // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE && ipar >  slx_extra_in(ipnt4,k)) anystring += "Spline_value_"+str(ipar-slx_extra_in(h,k));
-                // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar <= slx_extra_in(ipnt4,k)) anystring += "Spline_2_knot_"+str(ipar);
-                // if (slx_type_in(ipnt4,k) == SELEX_CUBIC_SPLINE_FLOOR && ipar >  slx_extra_in(ipnt4,k)) anystring += "Spline_2_value_"+str(ipar-slx_extra_in(h,k));
-                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 1) anystring += "Stacked_logistic_par_1";
-                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 2) anystring += "Stacked_logistic_par_2";
-                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 3) anystring += "Stacked_logistic_par_3";
-                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 4) anystring += "Stacked_logistic_par_4";
-                // if (slx_type_in(ipnt4,k) == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
 
                 echoinput << "Environmental link specifications 0 sele" << endl;
                 for (int ienv_par=1;ienv_par<=N_env_par(IgEnvLinkVar);ienv_par++)
@@ -4099,7 +4000,7 @@ DATA_SECTION
   !!   if (slx_type_in((it-1)*nsex+h,k) == SELEX_PRESPECIFIED)
   !!    {
   !!     gmacs_ctl << "# Pre-specified values for " << seltypes(it) << " for " << sexes(h) <<"s for " <<fleetname(k) << endl;
-  !!     for (int ii=1;ii<=nclass;ii++) gmacs_ctl << setw(9) << setfixed() << ii << " "; gmacs_ctl << endl;
+  !!     for (int ii=1;ii<=nclass;ii++) gmacs_ctl << "# " <<setw(9) << setfixed() << ii << " "; gmacs_ctl << endl;
   !!     int offset = (it-1)*nfleet*nsex*(nyr+1-syr+1)+nfleet*(nyr+1-syr+1)*(h-1)+(nyr+1-syr+1)*(k-1);
   !!     for (int iyr =syr;iyr<=nyr+1;iyr++)
   !!      {
@@ -9068,7 +8969,7 @@ FUNCTION adstring getPopStateString(int ig)
    *
    * @param iyr year to use for population rates
    * @param mxYr max number of years to project cohort
-   * @param includefS flag (0/1) to include F's from iyr in projection
+   * @param includeFs flag (0/1) to include F's from iyr in projection
    * @param Case inital population case (5: smallest size bin has n = 1 for imature crab; 6: uses R_z(iyr))
  **/
 FUNCTION void project_cohort_numbers_at_length(int iyr, int mxYr, int includeFs, int Case)
@@ -11584,7 +11485,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
     }//--h loop
   }//--k loop
 
-  // computer the total mortality
+  // compute the total mortality
   ZZ1.initialize(); ZZ2.initialize(); ZZ3.initialize(); SS_pass.initialize();
   for(int m = 1; m <=nmature;m++){
     for ( int h = 1; h <= nsex; h++ ){
@@ -16317,6 +16218,8 @@ FUNCTION WriteFiles
   OutInpFile1  << "# ##      Inputs: knots (in length units << endl; values at knots (0-1) - at least one should have phase -1" << endl;
   OutInpFile1  << "# ##  13: Stacked logistic" << endl;
   OutInpFile1  << "# ##  14: Ascending normal (2 parameters: ascending width; size at mode)" << endl;
+  OutInpFile1  << "# ##  15: Alternative \"4\"-parameter double normal (need to specify 5 values [ascWdZ,ascPkZ,dscWdZ,sclInc,fsZ] but fsZ should be fixed )" << endl;
+
   OutInpFile1  << "## Selectivity specifications --" << endl;
 
   OutInpFile1  << "# ## Extra (type 1): number of selectivity parameters to estimated" << endl;
@@ -16433,7 +16336,7 @@ FUNCTION WriteFiles
       for (int k=1;k<=nfleet;k++){
         if (slx_type_in((it-1)*nsex+h,k) == SELEX_PRESPECIFIED){
           OutInpFile1 << "# Pre-specified values for " << seltypes(it) << " for " << sexes(h) <<"s for " <<fleetname(k) << endl;
-          for (int ii=1;ii<=nclass;ii++) OutInpFile1 << setw(9) << setfixed() << ii << " "; OutInpFile1 << endl;
+          for (int ii=1;ii<=nclass;ii++) OutInpFile1 << "# " << setw(9) << setfixed() << ii << " "; OutInpFile1 << endl;
           int offset = (it-1)*nfleet*nsex*(nyr+1-syr+1)+nfleet*(nyr+1-syr+1)*(h-1)+(nyr+1-syr+1)*(k-1);
           for (int iyr =syr;iyr<=nyr+1;iyr++){
             for (int ii=1;ii<=nclass;ii++) OutInpFile1 << setw(9) << setprecision(7) << setfixed() << CustomSelex(offset+iyr-syr+1,ii) << " ";
