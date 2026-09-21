@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.45a; ** WTS **; Compiled 2026-08-30");
+ !! TheHeader = adstring("## GMACS Version 2.20.45b; ** WTS **; Compiled 2026-09-17");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -5353,11 +5353,11 @@ PARAMETER_SECTION
 //  sdreport_number sd_last_ssb;
 
   vector gradientOut(1,NEstPars);
-  sdreport_matrix sd_log_recruits(1,nsex,syr,nyrRetro);
+  //sdreport_matrix sd_log_recruits(1,nsex,syr,nyrRetro); //--WTS:20260917 - equivalently reported in ParsOut
   sdreport_vector ParsOut(1,NVarPar);
-  vector sd_fmsy(1,nfleet);
-  vector sd_fofl(1,nfleet);
-  sdreport_vector sd_log_ssb(syr,nyrRetro);
+  vector sd_fmsy(1,nfleet); //--NOT an sdreport object (saved in ParsOut if requested)
+  vector sd_fofl(1,nfleet); //--NOT an sdreport object (saved in ParsOut if requested)
+  vector sd_log_ssb(syr,nyrRetro); //--WTS: 20260917 - converted from sdreport_vector to vector. Reported in ParsOut
   sdreport_number sd_last_ssb;
 
   //added eight lines by Jie
@@ -12424,7 +12424,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass_2(ig,j) = numbers_proj_gytl(ig)(iyr+iproj-1)(j);
   // calculate 
-  cout << end << "project_biomass_OFL " << endl;
+  cout << endl << "project_biomass_OFL " << endl;
   out = calc_predicted_project(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
   oflret_pass = out(1); ofltot_pass = out(2);
   OFLoutpass = out;
@@ -12960,8 +12960,8 @@ FUNCTION calc_sdreport
   ftmp = F;  ftmp2 = F2;
 
   // standard deviations of assessment outcomes
-  sd_log_recruits.initialize();
-  sd_log_recruits = log(recruits);
+  //sd_log_recruits.initialize();
+  //sd_log_recruits = log(recruits);
   
   int Ipnt = NRecPar;
   if (OutRecruit==YES)
@@ -13002,11 +13002,12 @@ FUNCTION calc_sdreport
   calc_total_mortality();
   calc_initial_numbers_at_length();
   update_population_numbers_at_length();
+  dyn_Bzero.initialize();
   dyn_Bzero = calc_ssb()(syr,nyrRetro);
 
   if (OutDynB0==YES)
    for (int y=syr;y<=nyrRetro;y++)
-    ParsOut(NB0Par+y-syr) = log(dyn_Bzero(y));
+    ParsOut(NB0Par+y-syr) = log(dyn_Bzero(y)+0.00001); //--wts 20260918: added small constant to avoid log(0)
 
   // Actual catch
   F = ftmp;
@@ -14315,6 +14316,19 @@ FUNCTION CreateOutput
       RepFile1 << "Fofl(" << k <<") " << ParsOut(NparEst+6+nfleet+k)  << " " << ParsOut.sd(NparEst+6+nfleet+k)   << " " << NparEst+6+nfleet+k << endl;
     for (int k=1;k<=nfleet;k++)
       RepFile1 << "OFL(" << k <<") "  << ParsOut(NparEst+6+2*nfleet+k)<< " " << ParsOut.sd(NparEst+6+2*nfleet+k) << " " << NparEst+6+2*nfleet+k << endl;
+    // OutFile5 << Npar << " " << NparEst << " " << devnames1(Ipar) << " " << par_devs(Ipar) << " " << ParsOut.sd(NparEst) << endl;
+    OutFile5 << 0 << " " << 0 << " " << "male_spr_rbar "   << ParsOut(NparEst+1) << " " << ParsOut.sd(NparEst+1) << " " << NparEst+1 << endl;
+    OutFile5 << 0 << " " << 0 << " " << "female_spr_rbar " << ParsOut(NparEst+2) << " " << ParsOut.sd(NparEst+2) << " " << NparEst+2 << endl;
+    OutFile5 << 0 << " " << 0 << " " << "SSSB/R(F=0) "     << ParsOut(NparEst+3) << " " << ParsOut.sd(NparEst+3) << " " << NparEst+3 << endl;
+    OutFile5 << 0 << " " << 0 << " " << "BMSY "            << ParsOut(NparEst+4) << " " << ParsOut.sd(NparEst+4) << " " << NparEst+4 << endl;
+    OutFile5 << 0 << " " << 0 << " " << "Bcurr/BMSY "      << ParsOut(NparEst+5) << " " << ParsOut.sd(NparEst+5) << " " << NparEst+5 << endl;
+    OutFile5 << 0 << " " << 0 << " " << "OFL(tot) "        << ParsOut(NparEst+6) << " " << ParsOut.sd(NparEst+6) << " " << NparEst+6 << endl;
+    for (int k=1;k<=nfleet;k++)
+      OutFile5 << 0 << " " << k << " " << "Fmsy(" << k <<") " << ParsOut(NparEst+6+k)         << " " << ParsOut.sd(NparEst+6+k)          << endl;
+    for (int k=1;k<=nfleet;k++)
+      OutFile5 << 0 << " " << k << " " << "Fofl(" << k <<") " << ParsOut(NparEst+6+nfleet+k)  << " " << ParsOut.sd(NparEst+6+nfleet+k)   << endl;
+    for (int k=1;k<=nfleet;k++)
+      OutFile5 << 0 << " " << k << " " << "OFL(" << k <<") "  << ParsOut(NparEst+6+2*nfleet+k)<< " " << ParsOut.sd(NparEst+6+2*nfleet+k) << endl;
     NparEst += 6+3*nfleet;  
    }
   
@@ -14324,7 +14338,7 @@ FUNCTION CreateOutput
     for (int h=1;h<=nsex;h++)
      for (int y=syr;y<=nyr;y++)
       {
- //      OutFile1 << "Log(rec) (" << h <<"," <<y<< ") : " << ParsOut(NRecPar+IpntOut)<< " " << ParsOut.sd(NRecPar+IpntOut) << " " << NRecPar+IpntOut << endl;
+       OutFile5 << h << " " << y << " " << "Log(rec)[" << h <<"," <<y<< "] " << ParsOut(NRecPar+IpntOut)<< " " << ParsOut.sd(NRecPar+IpntOut) << endl;
        SummaryTable(y,h) = ParsOut(NRecPar+IpntOut);
        SummaryTableSD(y,h) = ParsOut.sd(NRecPar+IpntOut);
        IpntOut += 1;
@@ -14336,7 +14350,7 @@ FUNCTION CreateOutput
    {
     for (int y=syr;y<=nyr;y++)
      {
- //     OutFile1 << "Log(ssb) (" <<y<< ") : " << ParsOut(NSSBPar+IpntOut)<< " " << ParsOut.sd(NSSBPar+IpntOut) << " " << NSSBPar+IpntOut << endl;
+      OutFile5 << y << " " << "Log(ssb)[" << y << "] " << ParsOut(NSSBPar+IpntOut)<< " " << ParsOut.sd(NSSBPar+IpntOut) << " " << endl;
       SummaryTable(y,3) = ParsOut(NSSBPar+IpntOut);
       SummaryTableSD(y,3) = ParsOut.sd(NSSBPar+IpntOut);
       IpntOut += 1;
@@ -14348,7 +14362,7 @@ FUNCTION CreateOutput
    {
     for (int y=syr;y<=nyr;y++)
      {
- //     OutFile1 << "Mean(f) (" <<y<< ") : " << ParsOut(NfbarPar+IpntOut)<< " " << ParsOut.sd(NfbarPar+IpntOut) << " " << NfbarPar+IpntOut << endl;
+      OutFile5 << 0 << " " << y << " " << "Mean(f)[" <<y<< "] " << ParsOut(NfbarPar+IpntOut)<< " " << ParsOut.sd(NfbarPar+IpntOut) << endl;
       SummaryTable(y,4) = ParsOut(NfbarPar+IpntOut);
       SummaryTableSD(y,4) = ParsOut.sd(NfbarPar+IpntOut);
       IpntOut += 1;
@@ -14360,7 +14374,7 @@ FUNCTION CreateOutput
    {
     for (int y=syr;y<=nyr;y++)
      {
- //     OutFile1 << "log(dyn ssb) (" <<y<< ") : " << ParsOut(NB0Par+IpntOut)<< " " << ParsOut.sd(NB0Par+IpntOut) << " " << NB0Par+IpntOut << endl;
+      OutFile5 << 0 << " " << y << " " << "log(dyn ssb)[" <<y<< "] " << ParsOut(NB0Par+IpntOut)<< " " << ParsOut.sd(NB0Par+IpntOut) << endl;
       SummaryTable(y,5) = ParsOut(NB0Par+IpntOut);
       SummaryTableSD(y,5) = ParsOut.sd(NB0Par+IpntOut);
       IpntOut += 1;
@@ -17612,7 +17626,7 @@ FINAL_SECTION
 //                    Added includeFs option to project_cohort_numbers_at_length. Revised namture=2, nshell=2 section of update_population_numbers_at_length_season_new
 //                    to clarify original, updated, and final numbers during update using o_, u_, and f_ to indicate such.
 //                    The version number was incremented to 2.20.35c.
-// 2026-04-09 ** WTS. Added alternative 4-parameter double normal selectivity option (SELEX_DOUBLENORM4a = 15) to match TCSAM02. The plateau is determined 
+// 2026-04-09 ** WTS. Added alternative 5-parameter double normal selectivity option (SELEX_DOUBLENORM4a = 15) to match TCSAM02. The plateau is determined 
 //                    from a scale parameter and the distance between the max possible size and the size at the ascending limb. See selex.hpp and search here for 
 //                    SELEX_DOUBLENORM4a for details.
 //                    Extracted repeated code (three times!) for construction of "anystring" labels for SELEX functions as a function 
