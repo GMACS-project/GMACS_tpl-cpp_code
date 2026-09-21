@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.45b; ** WTS **; Compiled 2026-09-17");
+ !! TheHeader = adstring("## GMACS Version 2.20.45b; ** WTS **; Compiled 2026-09-21");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -17702,6 +17702,9 @@ FINAL_SECTION
 //                    the corresponding parameters are also written to the output ctl file (and not the LW matrix).
 // 2026-08-26 ** WTS. Added Project_type =3 option to apply a multiplier on directed Fmsy (sd_msy(k) where k is the fleet id for the directed fishery). 
 //                    Updated compile date to 2026-08-26.
+// 2026-09-20 ** WTS. Added small value to calculation of log(dyn_BZero) to avoid log(0) calculations (Tanner crab). Revised all 
+//                    former sdreport variables so they are regular dvar variables instead--all were output in ParsOut anyway--speeds things up
+//                    quite a bit.
 //                 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
