@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.45b; ** WTS **; Compiled 2026-09-21");
+ !! TheHeader = adstring("## GMACS Version 2.20.46; ** WTS **; Compiled 2026-09-22");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -372,6 +372,15 @@ DATA_SECTION
     if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-stopAfterFnCall",opt))>-1 ){
       StopAfterFnCall = atoi(ad_comm::argv[on+1]);
       cout<<"#--StopAfterFnCall set to: "<<StopAfterFnCall<<endl;
+    }
+    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-rng_rseed",opt))>-1 ){
+      rng_rseed = atoi(ad_comm::argv[on+1]);
+      rng.reinitialize(rng_rseed);
+      cout<<"#--rng_rseed set to: "<<rng_rseed<<endl;
+    } else {
+      if (rng_rseed ==0) rng_rseed = start;
+      rng.reinitialize(rng_rseed);
+      cout<<"#--rng_rseed set to default: "<<rng_rseed<<endl;
     }
     if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-verbose",opt))>-1 ){
       verbose = atoi(ad_comm::argv[on+1]);
@@ -11649,7 +11658,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
         }
       }
     } //--ig loop
-   } //--i loop (1 to ninit)
+  } //--i loop (1 to ninit)
 
   // Extract the equilibrium numbers (for return)
   for ( int ig = 1; ig <= n_grp; ig++ ) equilibrium_numbers(ig) = d4_N_init(ig)(ninit-1)(ssn); //--WTS: changed to "ssn" from 1; 2026-06-01
@@ -11774,10 +11783,8 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
     // Compute the ABC and OFL
     FederalStuff = compute_OFL_and_ABC(nyrRetro+i, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, Rbar, d4_Pass);
     
-    // Should the project consuder the state TAC
-    if (Apply_StateHCR_prj==1)
-     {     
-
+    // Should the project consider the state TAC
+    if (Apply_StateHCR_prj==1){     
       // Compute the State TAC
       StateTAC = CalcStateTAC(i,iproj,YrRefGrow);
 
@@ -11787,18 +11794,16 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
       else
        { TACType = 2; TargetC = StateTAC; }                           /// > Hit the retained catc OFL
       mcoutDIAG << nyrRetro+i << " OFL " << FederalStuff(1) << " Total ABC " << FederalStuff(2) << " Retained ABC " << FederalStuff(3) << " StateTAC " << StateTAC << " Final Decision: " << TACType << " " << TargetC << endl;
-     }
-     else
-      {
-       TACType= 1; TargetC = FederalStuff(2);
-       mcoutDIAG << nyrRetro+i << " OFL " << FederalStuff(1) << " Total ABC " << FederalStuff(2) << " Retained ABC " << FederalStuff(3) << " Final Decision: " << TACType << " " << TargetC << endl;
-      }
+    } else {
+      TACType= 1; TargetC = FederalStuff(2);
+      mcoutDIAG << nyrRetro+i << " OFL " << FederalStuff(1) << " Total ABC " << FederalStuff(2) << " Retained ABC " << FederalStuff(3) << " Final Decision: " << TACType << " " << TargetC << endl;
+    }
 
-     // DO a projection for the current F
-     log_fimpbarPass = log_fimpbar;
-     mcoutDIAG << nyrRetro+i << " Default F " << exp(log_fimpbarPass) << endl;
-     project_one_year(i, iproj, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, rtt, rec_sdd, Rec_use, d4_Pass);
-     mcoutDIAG << nyrRetro+i << " Default C (ret, total, by fleet) " << catch_pass << endl;
+    // DO a projection for the current F
+    log_fimpbarPass = log_fimpbar;
+    mcoutDIAG << nyrRetro+i << " Default F " << exp(log_fimpbarPass) << endl;
+    project_one_year(i, iproj, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, rtt, rec_sdd, Rec_use, d4_Pass);
+    mcoutDIAG << nyrRetro+i << " Default C (ret, total, by fleet) " << catch_pass << endl;
 	
      int NeedToTune;
      if (Apply_HCR_prj==1) NeedToTune = YES;
@@ -12003,7 +12008,7 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
   } //--ig loop
 
   // Calculate the catch
-  cout << "project_one_year" << endl;
+  if (verbose>=3) cout << "project_one_year" << endl;
   for ( int j = 1; j <= nseason; j++ )
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass(ig,j) = numbers_proj_gytl(ig,i,j);
@@ -12161,9 +12166,9 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
   */
 FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow, 
                                          const int YrRefM1, const int YrRefM2,
-					 const int YrRefSea1, const int YrRefSea2,
+                                         const int YrRefSea1, const int YrRefSea2,
                                          const int YrRefSel1, const int YrRefSel2,
-					 dvar_vector Rbar, dvar_matrix d4_Npass)
+                                         dvar_vector Rbar, dvar_matrix d4_Npass)
   RETURN_ARRAYS_INCREMENT();
   int IsProjectSave;                                                 ///> Variable to save the projection pointer
   dvariable Bproj;                                                   ///> Projected biomass (one year)
@@ -12424,7 +12429,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass_2(ig,j) = numbers_proj_gytl(ig)(iyr+iproj-1)(j);
   // calculate 
-  cout << endl << "project_biomass_OFL " << endl;
+  if (verbose>=3)cout << endl << "project_biomass_OFL " << endl;
   out = calc_predicted_project(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
   oflret_pass = out(1); ofltot_pass = out(2);
   OFLoutpass = out;
@@ -12821,6 +12826,153 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 // =======================================================================================================================================
+// doProjections_FinalPhase
+  /** 
+  * Perform final phase projections for the stock assessment model.
+  * TODO: reset seed for rng to rng_rseed (and implement this from commandline)
+  */
+FUNCTION doProjections_FinalPhase
+  if (prj_Nstrat > 0 && prj_replicates > 0){
+    if (rng_rseed==0) rng_rseed = start;   //--need to implement this as commandline option
+    random_number_generator rng(rng_rseed);  //--NEW RNG: not same as global version (or the one used for jittering)
+    int index;                                                         ///> Counters
+    dvariable MeanF,NF,Fmult,Bmsy_out,eps1;                            ///> Temp variables
+    dvar_vector Bproj(syr,nyr+nproj);                                  ///> Biomass outout
+    dvar_vector Fave(1,nfleet);                                        ///> Average F
+    dvar_vector log_fimpbarI(1,nfleet);                                ///> Log F by fleet  
+
+    adstring_array type_cat(1,nfleet+5); //--label for catch type
+    type_cat(1) = "Retained_catch ";
+    type_cat(2) = "Total_catch ";
+    for (int k=1;k<=nfleet;k++) type_cat(k+2) = fleetname(k) + "_catch";
+    type_cat(3+nfleet) = "OFL ";
+    type_cat(4+nfleet) = "ABC ";
+    type_cat(5+nfleet) = "State_TAC ";
+
+    cout << "In doProjections_FinalPhase" << endl;
+    ofstream prj_out;
+    prj_out.open("projections_output.dat");
+    
+      prj_out << "Projection_type: "  << Project_type << endl;
+      prj_out << "SR_relationship: "  << Stock_rec_prj << endl;
+      prj_out << "HCR_type:        "  << Apply_HCR_prj << endl;
+      prj_out << "State_HCR_type:  "  << Apply_HCR_prj << endl;
+      prj_out << "settings: dataframe" << endl;
+      prj_out << "Year_for_growth M_yr_1 M_yr_2 Mprop_yr_1 Mprop_yr_2 Sexr_yr_1 Sexr_yr_2 Sel_yr_1 Sel_y2" << endl;
+      prj_out << proj_grow_yr << " " << proj_M_syr << " " << proj_M_nyr << " " << proj_Prop_syr << " " << proj_Prop_nyr << " " 
+        << proj_SexR_syr  << " " << proj_SexR_nyr << " " << proj_sel_syr << " " << proj_sel_nyr <<  endl;
+      prj_out << ">EOD<" << endl;
+
+    // calculate sd_report variables in final phase
+    //cout << "calc_spr_reference_points2(0)" << endl;
+    calc_spr_reference_points2(0);
+  
+    prj_out << "avgR: " << " " << spr_rbar << endl;
+    prj_out << "B_100:" << " " << ssbF0    << endl;
+    prj_out << "B_MSY:" << " " << spr_bmsy << endl;
+    prj_out << "Depl: " << " " << spr_depl << endl;
+    prj_out << "C_OFL:" << " " << spr_cofl << endl;
+    prj_out << "F_MSY:" << " " << sd_fmsy  << endl;
+    prj_out << "F_OFL:" << " " << sd_fofl  << endl;
+
+    dvar_vector tmp_ssb = calc_ssb();
+    prj_out << "calc_ssb: dataframe" << endl;
+    prj_out << "year  value" << endl;
+    for (int i = syr; i <= nyrRetro; i++) {prj_out << i << " " << tmp_ssb(i) << endl;}
+    prj_out << ">EOD<" << endl;
+    prj_out << "logRbar: dataframe " << endl;
+    prj_out << "year  value" << endl;
+    for (int i = syr; i <= nyrRetro+nproj+1; i++) {prj_out << i << " " << logRbar(i) << endl;}
+    prj_out << ">EOD<" << endl;
+    prj_out << "recruits: dataframe" << endl;
+    prj_out << "year  value" << endl;
+    for (int i = syr; i <= nyrRetro; i++) {prj_out << i << " ";
+      if (nsex==1) prj_out << recruits(MALES)(i) << endl;
+      if (nsex==2) prj_out << recruits(MALES)(i)+recruits(FEMALES)(i) << endl;
+    }
+    prj_out << ">EOD<" << endl;
+
+    // Find the average F by fleet over spr_aveF_nyr-spr_aveF_syr+1 years
+    for (int k = 1; k <= nfleet; k++){
+      MeanF = 0; NF = 0;
+      for (int i = spr_aveF_syr; i <= spr_aveF_nyr; i++) { MeanF += fout(k,i); NF += 1; }
+      Fave(k) = (MeanF+1.0e-10)/NF;
+    }
+    prj_out << "Fave: " <<  Fave << endl;
+
+    // Set the average Fs for the non-adjusted fleets
+    if (prj_bycatch_on==NO){
+      for (int k=1;k<=nfleet;k++) { if (Ffixed(k) == 1) log_fimpbarI(k) = log(1.0e-10); }
+    }else {
+      for (int k=1;k<=nfleet;k++) log_fimpbarI(k) = log(Fave(k)+1.0e-10);
+    }
+
+    // Should Bmsy be simulatation-specific or a pre-specified value
+    if (Fixed_prj_Bmsy < 0) Bmsy_out = spr_bmsy; else Bmsy_out = Fixed_prj_Bmsy;
+  
+    // Do projections
+    IsProject = PROJECT; //--global flag to let the model know that projections are being performed, but not flag to do projections
+    cout<<"projecting..." << endl;
+    prj_out<<"projections: dataframe" << endl;
+    prj_out << "replicate  strategy  type  year  value" << endl;
+    for (int isim=1;isim<=prj_replicates;isim++){
+      // generate future recruitment
+      if (Initial_eps < -998) eps1 = randn(rng); else eps1 = Initial_eps;
+      for (int iproj=1;iproj<=nproj;iproj++){
+        if (Stock_rec_prj==UNIFORMSR){
+          index = prj_futRec_syr+(int)floor((float(prj_futRec_nyr)-float(prj_futRec_syr)+1.0)*randu(rng));
+          fut_recruits(MALES,iproj) = recruits(MALES,index)/exp(logRbar(index));
+          if (nsex==2) fut_recruits(FEMALES,iproj) = recruits(FEMALES,index)/exp(logRbar(index)); //--WTS 2026.09.22: now dividing by exp(logRbar(index)) like for sex 1?
+        }
+        if (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT || Stock_rec_prj==MEAN_RECRUIT){
+          index = prj_futRec_syr + iproj - 1;  //--WTS 2026.09.21: assign index (not sure if this is correct way to do this)
+          fut_recruits(1,iproj) = mfexp(eps1*SigmaR_prj-SigmaR_prj*SigmaR_prj/2.0)/exp(logRbar(index));  
+          if (iproj != nproj) eps1 = Prow_prj*eps1 + sqrt(1.0-square(Prow_prj))*randn(rng);
+          if (nsex==2) fut_recruits(2,iproj) = fut_recruits(1,iproj);
+        }
+        prj_out << isim << " " << 0 << " " << "fut_recruits(MALES)   " << nyrRetro+iproj << " " << fut_recruits(MALES,iproj)*exp(logRbar(index))   << endl;
+        prj_out << isim << " " << 0 << " " << "fut_recruits(FEMALES) " << nyrRetro+iproj << " " << fut_recruits(FEMALES,iproj)*exp(logRbar(index)) << endl;
+      }//--iproj loop
+
+      for (int irun=1;irun<=prj_Nstrat;irun++){  //--WTS: want to move this outside isim loop so each run has different recruits?
+        // Set F
+        Fmult = 1.e-10 + Proj_Levels(irun);
+        for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log_fimpbarI(k);
+        if (Project_type==1) // Fixed F
+          for (int k=1;k<=nfleet;k++) {if (Ffixed(k) != 1) log_fimpbar(k) = log(Fmult);}
+        if (Project_type==2) // multiplier on average F
+          for (int k=1;k<=nfleet;k++) {if (Ffixed(k) != 1) log_fimpbar(k) = log_fimpbarI(k)+log(Fmult);}
+        if (Project_type==3) // multiplier on directed Fmsy NOTE: should only use when Ffixed(k) != 1 only for directed fleet
+          for (int k=1;k<=nfleet;k++) {if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*Fmult);} //--Fmult includes small umber
+        for (int k=1;k<=nfleet;k++) {
+          for (int i=1;i<=nproj;i++) {
+            prj_out << isim << " " << irun << " " << fleetname(k) << "_F" << " " << i+nyrRetro << " " << exp(log_fimpbar(k)) << endl;
+          }
+        }
+        // prj_out << "isim" << " " << "irun" << " " << "prj_bycatch_on" << " " << "Stock_rec_prj" << " " << "exp(log_fimpbar)" << " " << "Bmsy_out" << " " << endl;
+        // prj_out <<  isim  << " " <<  irun  << " " <<  prj_bycatch_on  << " " <<  Stock_rec_prj  << " " <<  exp(log_fimpbar)  << " "  << Bmsy_out  << " " << endl;
+
+        //cout<<"Projecting biomass..." << endl;
+        //prj_out<<"Projecting biomass..." << endl;
+        Bproj = project_biomass(proj_grow_yr,proj_M_syr,proj_M_nyr,proj_Prop_syr,proj_Prop_nyr,
+                                proj_SexR_syr, proj_SexR_nyr,proj_sel_syr,proj_sel_nyr, proj_rbar, nproj);
+        //prj_out << "replicate  strategy  type  year  value" << endl;
+        for (int i=1;i<=nproj;i++) {
+          prj_out << isim << " " << irun << " " << "proj_B" << " " << nyrRetro+i << " " << Bproj(nyrRetro+i) << endl;
+        }
+        for (int i=1;i<=nproj;i++) {
+          for (int k=1;k<=nfleet+5;k++){
+            prj_out << isim << " " << irun << " " << type_cat(k) << " " << nyrRetro+i << " " << catch_summary(k,i) << endl;
+          }
+        }
+      } //-irun (strat loop)
+    } //--isim (replicate loop)
+    prj_out << ">EOD<" << endl;
+    prj_out.close();
+  } //--if prj_Nstrat > 0 && prj_replicates > 0
+  
+//--doProjections_FinalPhase
+// =======================================================================================================================================
 // Label 700: write_eval
 FUNCTION write_eval
   int index;                                                         ///> Counters
@@ -12899,10 +13051,10 @@ FUNCTION write_eval
         if (Stock_rec_prj==UNIFORMSR){
           index = prj_futRec_syr+(int)floor((float(prj_futRec_nyr)-float(prj_futRec_syr)+1.0)*randu(rng));
           fut_recruits(1,iproj) = recruits(1,index)/exp(logRbar(index));
-          if (nsex==2) fut_recruits(2,iproj) = recruits(2,index);
+          if (nsex==2) fut_recruits(2,iproj) = recruits(2,index);         //--WTS 2026.09.21: why not dividing by exp(logRbar(index)) like for sex 1?
         }
         if (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT || Stock_rec_prj==MEAN_RECRUIT){
-          fut_recruits(1,iproj) = mfexp(eps1*SigmaR_prj-SigmaR_prj*SigmaR_prj/2.0)/exp(logRbar(index));
+          fut_recruits(1,iproj) = mfexp(eps1*SigmaR_prj-SigmaR_prj*SigmaR_prj/2.0)/exp(logRbar(index));  //--WTS 2026.09.21: index has not been assigned a value here!!
           if (iproj != nproj) eps1 = Prow_prj*eps1 + sqrt(1.0-square(Prow_prj))*randn(rng);
           if (nsex==2) fut_recruits(2,iproj) = fut_recruits(1,iproj);
         }
@@ -17092,6 +17244,7 @@ GLOBALS_SECTION
   adstring mmodLkType; //--likelihood type for MMO data
   
   // Specify random number generation
+  int rng_rseed = 0; //--default seed value (will be changed to start time); can be set from command line
   random_number_generator rng(666);
   
   // pointer to array of pointers for selectivity functions
@@ -17276,6 +17429,8 @@ FINAL_SECTION
     CreateOutput();
     cout<<"Finished CreateOutput"<<endl;
   }
+
+  if (prj_replicates>0) doProjections_FinalPhase();
 
   if (ppSLX) {
       //clean up pointer array--probably unnecessary
@@ -17705,6 +17860,11 @@ FINAL_SECTION
 // 2026-09-20 ** WTS. Added small value to calculation of log(dyn_BZero) to avoid log(0) calculations (Tanner crab). Revised all 
 //                    former sdreport variables so they are regular dvar variables instead--all were output in ParsOut anyway--speeds things up
 //                    quite a bit.
+// 2026-09-21 ** WTS. Changed version to 2.20.46 pending planned updates.
+// 2026-09-22 ** WTS. Created doProjections_FinalPhase function to allow one to run projections after estimation is complete, but without having 
+//                    having to invert the hessian, estimate standard errors, and MCMC. Output is written to "projections_output.dat", which
+//                    can easily be read into R by the wtsGMACS::readProjectionsOutputFile function. Also added commandline option "-rng_rseed" to 
+//                    set the random number generator seed for the global "rng" variablefor reproducibility. If not set, the model start time will set the seed.
 //                 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
