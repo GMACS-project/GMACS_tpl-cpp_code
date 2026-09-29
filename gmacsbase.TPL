@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.46; ** WTS **; Compiled 2026-09-22");
+ !! TheHeader = adstring("## GMACS Version 2.20.46; ** WTS **; Compiled 2026-09-23");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -475,9 +475,9 @@ DATA_SECTION
   int nlikes;                                              ///> number of likelihood components
 
   int Nyears;
-  !! Nyears =(nyrRetro-syr+1);
+  !! Nyears =(nyrRetro-syr+1);    #--number of years syr -> nyrRetro
   int Nyears2;
-  !! Nyears2 =(nyrRetro+1-syr+1);
+  !! Nyears2 =(nyrRetro+1-syr+1); #--number of years syr -> nyrRetro + 1
   int Nyears4;
 
  LOC_CALCS
@@ -2043,9 +2043,9 @@ DATA_SECTION
   !! cout << " * General controls" << endl;
   !! ECHOSTR(" * General controls");
   init_vector model_controls(1,19);
-  int rdv_syr;                                             ///> First year of estimates devs
   !! cout << model_controls << endl;
-  int rdv_eyr;                                             ///> First year of estimates devs
+  int rdv_syr;                                             ///> First year of rec devs estimates
+  int rdv_eyr;                                             ///> Last year of rec devs estimates
   int Term_molt;                                           ///> Consider terminal molting?
   int rdv_phz;                                             ///> Estimated rec_dev phase
 
@@ -2077,8 +2077,8 @@ DATA_SECTION
       cout << "Error: recruitment cannot be estimated before start year" << endl;//NOTE: could set phases to -1
       exit(1);
     }
-    model_controls(2) -= (nyr-nyrRetro);
-    rdv_eyr             = int(model_controls(2));
+    model_controls(2) -= (nyr-nyrRetro); //--just subtracting nyrRetroNo, the actual number of retrospective peels
+    rdv_eyr             = int(model_controls(2)); 
     if ( rdv_eyr < rdv_syr )
     {
       cout << "Error: end recruitment year must be AFTER start recruitment year" << endl;
@@ -2360,11 +2360,11 @@ DATA_SECTION
      if (IgBlock !=0){
        // Environmental link
        if ((IgEnvLink!=0) || (IgRW!=0))      
-        { cout << "Error: you can't have an environmental linkage with blocks and RWs at the same time - parameter " << ig << endl; exit(1); } 
+        { cout << "Error: you can't have an environmental linkage with blocks and RWs at the same time - Theta parameter " << ig << endl; exit(1); } 
        if ((IgBlock<0) || (IgBlock>nblocks)) 
-        { cout << "Error: block out of range - parameter" << ig << endl; exit(1); }        
+        { cout << "Error: block out of range - Theta parameter" << ig << endl; exit(1); }        
        if ((IgBlockFn<0) || (IgBlockFn>1))   
-        { cout << "Error: block_fn out of range - parameter " << ig << endl; exit(1); }    
+        { cout << "Error: block_fn out of range - Theta parameter " << ig << endl; exit(1); }    
        for (int kpar=1;kpar<=blocks(IgBlock);kpar++){
         iblock = kpar + 1;
         n_Tpar += 1;
@@ -3740,14 +3740,14 @@ DATA_SECTION
               StoIG(n_Spar,2) = ipar;  //--parameter index
               StoIG(n_Spar,3) = 0;     //--??
               iblock = 1;
-              for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii);
+              for (int ii=1;ii<=14;ii++) *(ad_comm::global_datafile) >> Spar_control(n_Spar,ii);  //--reading from ctl file
               if (it==1) anystring = "Sel_"+fleetname(k)+"_"+sexes(h)+"_base_";
               if (it==2) anystring = "Ret_"+fleetname(k)+"_"+sexes(h)+"_base_";
               anystring  = addToAnystring(anystring,slx_type_in(ipnt4,k),ipar,slx_extra_in(ipnt4,k),slx_extra_in(h,k));
           
               gmacs_ctl << "         "; for (int ii=1;ii<=3;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
               gmacs_ctl << setw(10) << setfixed() << int(Spar_control(n_Spar,4)) << " ";
-              for (int ii=5;ii<=6;ii++) gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
+              for (int ii=5;ii<=6;ii++)  gmacs_ctl << setw(12) << setprecision(6) << setfixed() << Spar_control(n_Spar,ii) << " ";
               for (int ii=7;ii<=13;ii++) gmacs_ctl << setw(6) << setfixed() << int(Spar_control(n_Spar,ii)) << " ";
               gmacs_ctl << setw(8) << setprecision(4) << setfixed() << Spar_control(n_Spar,14) << " # " << anystring; gmacs_ctl << endl;
               for (int ii=1;ii<=14;ii++) echoinput << Spar_control(n_Spar,ii) << " "; echoinput << "# " << anystring << endl;
@@ -4948,8 +4948,8 @@ DATA_SECTION
   int NfbarPar;
   int NB0Par;
  LOC_CALCS
-  NVarPar = 0;
   int Ipar;
+  //--turn off parameters with phases >= TurnOffPhase
   for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > TurnOffPhase) T_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > TurnOffPhase) G_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > TurnOffPhase) M_phz(Ipar) = -1;
@@ -4963,6 +4963,7 @@ DATA_SECTION
   for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > TurnOffPhase) q_phz(Ipar) = -1;
   for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase) cv_phz(Ipar) = -1;
 
+  NVarPar = 0; //--calculate the number of active parameters
   for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > 0) NVarPar += 1;
   for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > 0) NVarPar += 1;
@@ -6283,9 +6284,11 @@ FUNCTION initialize_model_parameters
       AddVarQT(is) = AddVarQT(add_cv_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
     }
   }
-  if (verbose >= 3) cout<<"--finished AddV"<<endl;
+  if (verbose >= 3) cout<<"--finished AddVarQT"<<endl;
+  if (verbose >= 3) cout<<"--finished initialize_model_parameters"<<endl;
+  exit(-1);
 
-// =======================================================================================================================================
+ // =======================================================================================================================================
 // =======================================================================================================================================
 
 FUNCTION dvar_vector timevarparV(const int itype, const int ipar, const int lyear,  const int blk, 
@@ -6694,8 +6697,12 @@ FUNCTION init_selectivities
          p2 = mfexp(S_pars(is,2));
          p3 = mfexp(S_pars(is,3));
          p4 = mfexp(S_pars(is,4)); //--NOTE: was "no exponentiation" prior to version 2.20.45a, but necessary to be consistent w/ priors
-         p5 = S_pars(is,5);        //--NOTE: no exponentiation, relevant parameter should not be estimated (i.e., it should be fixed)
+         p5 = mfexp(S_pars(is,5)); //--NOTE: was "no exponentiation" prior to version 2.20.46, but now consistent w/ other parameters. Should not be estimated (i.e., it should be fixed)
          pSLX = new class gsm::DoubleNormal4a<dvar_vector,dvariable,dvariable>(p1,p2,p3,p4,p5);
+         if (p4>10000||p5>10000) {
+          cout << "Warning: SELEX_DOUBLENORM4a parameter p4 or p5 is unusually large: " << p4 << " " << p5 << endl;
+          echoinput << "Warning: SELEX_DOUBLENORM4a parameter p4 or p5 is unusually large: " << p4 << " " << p5 << endl;
+         }
          //echoinput << "SELEX_DOUBLENORM4a for " << is << ": " << p1 << " " << p2 << " " << p3 << " " << p4 << " " << p5 << endl;
          //echoinput << pSLX->Selectivity(dvar_mid_points) << endl;
          //echoinput << pSLX->logSelectivity(dvar_mid_points) << endl;
@@ -6863,7 +6870,7 @@ FUNCTION calc_selectivities
          p2 = mfexp(S_pars(is,2));
          p3 = mfexp(S_pars(is,3));
          p4 = mfexp(S_pars(is,4)); //--NOTE: was "no exponentiation" prior to version 2.20.45a, but necessary to be consistent w/ priors
-         p5 = S_pars(is,5);        //--NOTE: no exponentiation, relevant parameter should not be estimated (i.e., it should be fixed)
+         p5 = mfexp(S_pars(is,5)); //--NOTE: was "no exponentiation" prior to version 2.20.46, but now consistent w/ other parameters. Should not be estimated (i.e., it should be fixed)
          ((gsm::DoubleNormal4a<dvar_vector,dvariable,dvariable>*) ppSLX[is-1])->SetParams(p1,p2,p3,p4,p5);
          pSLX = ppSLX[is-1];
          if (verbose>4){
@@ -6929,66 +6936,63 @@ FUNCTION calc_selectivities
   }//--is
   
   int nsel_pnt = 0;
-  for (int it=1;it<=2;it++)
-   for (int h=1;h<=nsex;h++)
-    for (int k=1;k<=nfleet;k++)
-      {
-       int ipnt2 = (it-1)*nsex+h;
-        switch ( slx_type_in(ipnt2,k) )
-        {
-         case SELEX_UNIFORM1:                                  ///> uniform 1
-          for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++)
-           {
-            if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = log(1.0-TINY);}
-            if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(1.0-TINY); log_slx_discard(k,h,iyr,i) = log(TINY); }
-           }
-          break;
-         case SELEX_UNIFORM0:                                  ///> uniform 0
-          for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++)
-           {
-            if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = -100;}
-            if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = -100; log_slx_discard(k,h,iyr,i) = log(1-TINY); }
-           }
-          break;
-         case SELEX_PRESPECIFIED:
-          for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++)
-           {
-            int offset = (it-1)*nfleet*nsex*(nyr+1-syr+1)+nfleet*(nyr+1-syr+1)*(h-1)+(nyr+1-syr+1)*(k-1)+iyr-syr+1;
-            if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = log(CustomSelex(offset,i));}
-            if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(CustomSelex(offset,i)); log_slx_discard(k,h,iyr,i) = log(1.0 - CustomSelex(offset,i) + TINY); }
-           }
-          break;
-         default:
-          if (slx_type_in(ipnt2,k) < 0){
-            // Mirror case
+  for (int it=1;it<=2;it++){
+    for (int h=1;h<=nsex;h++){
+      for (int k=1;k<=nfleet;k++){
+        int ipnt2 = (it-1)*nsex+h;
+        switch ( slx_type_in(ipnt2,k) ){
+          case SELEX_UNIFORM1:                                  ///> uniform 1
             for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
-              if (it==1) { log_slx_capture(k,h,iyr) = log_slx_capture(-slx_type_in(ipnt2,k),h,iyr);}
-              if (it==2) { log_slx_retaind(k,h,iyr) = log_slx_retaind(-slx_type_in(ipnt2,k),h,iyr); 
-                           log_slx_discard(k,h,iyr) = log_slx_discard(-slx_type_in(ipnt2,k),h,iyr); }
-            }              
-          } else {
-            //non-mirror case
-            int ipnt1 = (it-1)*nsex+h;
-            int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
-            if (h==1 || slx_bsex_in(it,k)==1){
+              if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = log(1.0-TINY);}
+              if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(1.0-TINY); log_slx_discard(k,h,iyr,i) = log(TINY); }
+            }
+            break;
+          case SELEX_UNIFORM0:                                  ///> uniform 0
+            for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
+              if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = -100;}
+              if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = -100; log_slx_discard(k,h,iyr,i) = log(1-TINY); }
+            }
+            break;
+          case SELEX_PRESPECIFIED:
+            for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
+              int offset = (it-1)*nfleet*nsex*(nyr+1-syr+1)+nfleet*(nyr+1-syr+1)*(h-1)+(nyr+1-syr+1)*(k-1)+iyr-syr+1;
+              if (it==1) for (int i=1;i<=nclass;i++) { log_slx_capture(k,h,iyr,i) = log(CustomSelex(offset,i));}
+              if (it==2) for (int i=1;i<=nclass;i++) { log_slx_retaind(k,h,iyr,i) = log(CustomSelex(offset,i)); log_slx_discard(k,h,iyr,i) = log(1.0 - CustomSelex(offset,i) + TINY); }
+            }
+            break;
+          default:
+            if (slx_type_in(ipnt2,k) < 0){
+              // Mirror case
               for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
-                int isel_vec = nsel_pnt+iYrsSelChanges(ipnt2,iyr);
-                selx = sel_store(isel_vec);
-                if (it==1) { log_slx_capture(k,h,iyr) = selx;}
-                if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
-              }
-              nsel_pnt += nSelVaries(ipnt2);
+                if (it==1) { log_slx_capture(k,h,iyr) = log_slx_capture(-slx_type_in(ipnt2,k),h,iyr);}
+                if (it==2) { log_slx_retaind(k,h,iyr) = log_slx_retaind(-slx_type_in(ipnt2,k),h,iyr); 
+                          log_slx_discard(k,h,iyr) = log_slx_discard(-slx_type_in(ipnt2,k),h,iyr); }
+                }              
             } else {
-              for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
-                if (it==1) selx = log_slx_capture(k,1,iyr);
-                if (it==2) selx = log_slx_retaind(k,1,iyr);
-                if (it==1) log_slx_capture(k,h,iyr) = selx;
-                if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
-              }
-            } //--if  
-          } //-if
+              //non-mirror case
+              int ipnt1 = (it-1)*nsex+h;
+              int ipnt2 = (it-1)*nsex*nfleet+(h-1)*nfleet+k;
+              if (h==1 || slx_bsex_in(it,k)==1){
+                for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
+                  int isel_vec = nsel_pnt+iYrsSelChanges(ipnt2,iyr);
+                  selx = sel_store(isel_vec);
+                  if (it==1) { log_slx_capture(k,h,iyr) = selx;}
+                  if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
+                }
+                nsel_pnt += nSelVaries(ipnt2);
+              } else {
+                for (int iyr=syr;iyr<=nyrRetro+nprojUse+1;iyr++){
+                  if (it==1) selx = log_slx_capture(k,1,iyr);
+                  if (it==2) selx = log_slx_retaind(k,1,iyr);
+                  if (it==1) log_slx_capture(k,h,iyr) = selx;
+                  if (it==2) { log_slx_retaind(k,h,iyr) = selx; log_slx_discard(k,h,iyr) = log(1.0 - exp(selx) + TINY); }
+                }
+              } //--if  
+            } //-if
         } //-- switch
-      } //-- it,h,k
+      } //--k loop
+    } //--h loop
+  } //--it loop
    
   // Check for one fleet inside another 
   for (int it=1;it<=1;it++){
@@ -16381,7 +16385,8 @@ FUNCTION WriteFiles
   OutInpFile1  << "# ##  10: One parameter logistic selectivity (inflection point and slope)" << endl;;
   OutInpFile1  << "# ##  11: Pre-specified selectivity (matrix by year and class)" << endl;
   OutInpFile1  << "# ##  12: Spline with 0 until one size-class and 1 after another" << endl;
-  OutInpFile1  << "# ##      Inputs: knots (in length units << endl; values at knots (0-1) - at least one should have phase -1" << endl;
+  OutInpFile1  << "# ##      Inputs: knots (in length units)" << endl;
+  OutInpFile1  << "# ##              values at knots (0-1) - at least one should have phase -1" << endl;
   OutInpFile1  << "# ##  13: Stacked logistic" << endl;
   OutInpFile1  << "# ##  14: Ascending normal (2 parameters: ascending width; size at mode)" << endl;
   OutInpFile1  << "# ##  15: Alternative \"4\"-parameter double normal (need to specify 5 values [ascWdZ,ascPkZ,dscWdZ,sclInc,fsZ] but fsZ should be fixed )" << endl;
@@ -16785,8 +16790,8 @@ FUNCTION WriteFiles
  
 // =====================================================================================================================================
 RUNTIME_SECTION
-  maximum_function_evaluations 2000,   800,   1500,  25000, 25000
-  convergence_criteria         1.e-2, 1.e-2, 1.e-3, 1.e-7, 1.e-7
+  maximum_function_evaluations 2000,   800,   1500,  25000, 25000, 25000, 25000, 25000, 25000, 25000
+  convergence_criteria         1.e-2, 1.e-2, 1.e-3, 1.e-7, 1.e-7, 1.e-7, 1.e-7, 1.e-7, 1.e-7, 1.e-7
 
 // =====================================================================================================================================
 
@@ -17848,7 +17853,7 @@ FINAL_SECTION
 // 2026-08-05 ** WTS. Revised tail compression to skip compression when observed size comp is all zeros (valid as a component of an extended comp).
 // 2026-08-07 ** WTS. Added "growth_data" dataframe to gmacs.rep1 output to provide model-predicted growth increments for non-tagging molt increment data. 
 //                    Revised "Mean growth" to "mean_growth" dataframe name in gmacs.rep1 to parse correctly in R.
-// 2026-08-17 ** WTS. Changed parameter 4 for DoubleNormal4a function to be on ln-scale. Like most selectivity parameters, it is defined 
+// 2026-08-17 ** WTS. Changed parameter 4 for DoubleNormal4a function (option SELEX_DOUBLENORMAL4a) to be on ln-scale. Like most selectivity parameters, it is defined 
 //                    on the arithmetic scale in the ctl file (as are the lower and upper bounds and prior parameters), 
 //                    but is converted to ln-scale for estimation. Note that this means the pin/par file values will not match the 
 //                    initial values in the ctl file. Incremented version to 2.20.45a.   

@@ -1,0 +1,63 @@
+---
+title: "Untitled"
+format: html
+---
+
+## Determining number of parameters
+
+The following code blocks turn off parameters with phases $\ge$ `TurnOffPhase` and determine the number of active parameters.
+
+```{r,eval=FALSE}
+  int Ipar;
+  #--turn off estimation for parameters with phase >= TurnOffPhase #<1>
+  for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > TurnOffPhase) T_phz(Ipar) = -1; 
+  for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > TurnOffPhase) G_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > TurnOffPhase) M_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > TurnOffPhase) S_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > TurnOffPhase) f_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > TurnOffPhase)     foff_phz(Ipar)     = -1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (foffdevs_phz(Ipar) > TurnOffPhase) foffdevs_phz(Ipar) = -1;
+  if (rdv_phz > TurnOffPhase) rdv_phz = -1;
+  if (rec_prop_phz > TurnOffPhase) rec_prop_phz = -1;
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > TurnOffPhase) log_vn_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > TurnOffPhase) q_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase) cv_phz(Ipar) = -1;
+
+  NVarPar = 0; #<2>
+  for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > 0) NVarPar += 1; #<3>
+  for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > 0) NVarPar += nFparams(Ipar);
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > 0)     NVarPar += 1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (foffdevs_phz(Ipar) > 0) NVarPar += nYparams(Ipar);
+  if (rdv_phz > 0)       NVarPar += (rdv_eyr-rdv_syr+1);
+  if (rec_prop_phz > 0)  NVarPar += (rdv_eyr-rdv_syr+1);
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++)       if (log_vn_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=n_qpar; Ipar++)           if (q_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=n_addcv_par; Ipar++)      if (cv_phz(Ipar) > 0) NVarPar += 1;
+  for (Ipar=1;Ipar<=n_deviations_est; Ipar++) if (deviations_phz(Ipar) > 0) NVarPar += 1;
+  
+  cout << "Number of estimated parameters: " << NVarPar << endl;
+  NEstPars = NVarPar; #<4>
+  
+  NRefPars = NVarPar; #<5>
+  if (OutRefPars==YES) NVarPar += (6 + 3*nfleet);
+  NRecPar = NVarPar+1;
+  if (OutRecruit==YES) NVarPar += nsex*(nyr-syr+1);
+  NSSBPar = NVarPar+1;
+  if (OutSSB==YES) NVarPar += (nyr-syr+1);
+  NfbarPar = NVarPar+1;
+  if (Outfbar==YES) NVarPar += (nyr-syr+1);
+  NB0Par = NVarPar+1;
+  if (OutDynB0==YES) NVarPar += (nyr-syr+1);
+  cout << "Number of std variables: " << NVarPar << endl; #<6>
+```
+
+1. section to turn off parameters with phases >= `TurnOffPhase`
+2. number of estimated parameters (after this block)
+3. number of estimated "theta" parameters
+4. total number of estimated parameters
+5. pointer to end of estimated parameters in std variables vector
+6. total number of std variables

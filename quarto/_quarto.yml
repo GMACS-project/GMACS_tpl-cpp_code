@@ -12,6 +12,8 @@ project:
     - q04-Functions.qmd
     - q05-ObjectiveFunction.qmd
     - q06-EnvCovariates.qmd
+    - qq00-GMACS-CodeNotes.qmd
+    - qq00a-GMACS-CodeNotes.NumerberOfParameters.qmd
   
 website:
   sidebar:
@@ -30,9 +32,11 @@ website:
       - file: q04-Functions.qmd
       - file: q05-ObjectiveFunction.qmd
       - file: q06-EnvCovariates.qmd
+      - file: qq00-GMACS-CodeNotes.qmd
+      - file: qq00a-GMACS-CodeNotes.NumerberOfParameters.qmd
   page-navigation: true
   page-footer: 
-    right: "v.2.20.39"
+    right: "v.2.20.46"
 
 format:
   html: 
