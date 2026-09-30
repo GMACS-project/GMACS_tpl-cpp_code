@@ -64,7 +64,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./qq00a-GMACS-CodeNotes.NumerberOfParameters.html" rel="next">
 <link href="./q06-EnvCovariates.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -235,12 +234,6 @@ window.Quarto = {
  <span class="menu-text">GMACS code notes</span></a>
   </div>
 </li>
-        <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./qq00a-GMACS-CodeNotes.NumerberOfParameters.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Untitled</span></a>
-  </div>
-</li>
     </ul>
     </div>
 </nav>
@@ -266,6 +259,7 @@ window.Quarto = {
   <li><a href="#total-numbers-at-size" id="toc-total-numbers-at-size" class="nav-link" data-scroll-target="#total-numbers-at-size">Total numbers-at-size</a></li>
   <li><a href="#outinpfile1-output-ctl-file" id="toc-outinpfile1-output-ctl-file" class="nav-link" data-scroll-target="#outinpfile1-output-ctl-file">OutInpFile1 (output ctl file)</a></li>
   </ul></li>
+  <li><a href="#determining-number-of-parameters" id="toc-determining-number-of-parameters" class="nav-link" data-scroll-target="#determining-number-of-parameters">Determining number of parameters</a></li>
   </ul>
 </nav>
     </div>
@@ -1132,9 +1126,88 @@ window.Quarto = {
 <span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    } <span class="sc">/</span><span class="er">/</span> h loop</span>
 <span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  }<span class="sc">/</span><span class="er">/</span> it loop</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-
-
 </section>
+</section>
+<section id="determining-number-of-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="determining-number-of-parameters">Determining number of parameters</h2>
+<p>The following code blocks turn off parameters with phases <span class="math inline">\(\ge\)</span> <code>TurnOffPhase</code> and determine the number of active parameters.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-21"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-21-1"><a href="#annotated-cell-21-1" aria-hidden="true" tabindex="-1"></a>  int Ipar;</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-21" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-21-2" class="code-annotation-target"><a href="#annotated-cell-21-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#--turn off estimation for parameters with phase &gt;= TurnOffPhase</span></span>
+<span id="annotated-cell-21-3"><a href="#annotated-cell-21-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Tpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">T_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">T_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>; </span>
+<span id="annotated-cell-21-4"><a href="#annotated-cell-21-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Gpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">G_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">G_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-5"><a href="#annotated-cell-21-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Mpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">M_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">M_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-6"><a href="#annotated-cell-21-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Spar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">S_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">S_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-7"><a href="#annotated-cell-21-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">f_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">f_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-8"><a href="#annotated-cell-21-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">foff_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase)     <span class="fu">foff_phz</span>(Ipar)     <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-9"><a href="#annotated-cell-21-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">foffdevs_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">foffdevs_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-10"><a href="#annotated-cell-21-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rdv_phz <span class="sc">&gt;</span> TurnOffPhase) rdv_phz <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-11"><a href="#annotated-cell-21-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rec_prop_phz <span class="sc">&gt;</span> TurnOffPhase) rec_prop_phz <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-12"><a href="#annotated-cell-21-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nSizeComps; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">log_vn_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">log_vn_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-13"><a href="#annotated-cell-21-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_qpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">q_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">q_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-14"><a href="#annotated-cell-21-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_addcv_par; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">cv_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">cv_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-15"><a href="#annotated-cell-21-15" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-21" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-21-16" class="code-annotation-target"><a href="#annotated-cell-21-16" aria-hidden="true" tabindex="-1"></a>  NVarPar <span class="ot">=</span> <span class="dv">0</span>;</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-21" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-21-17" class="code-annotation-target"><a href="#annotated-cell-21-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Tpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">T_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-18"><a href="#annotated-cell-21-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Gpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">G_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-19"><a href="#annotated-cell-21-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Mpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">M_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-20"><a href="#annotated-cell-21-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Spar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">S_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-21"><a href="#annotated-cell-21-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">f_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-22"><a href="#annotated-cell-21-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">f_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="fu">nFparams</span>(Ipar);</span>
+<span id="annotated-cell-21-23"><a href="#annotated-cell-21-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">foff_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>)     NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-24"><a href="#annotated-cell-21-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">foffdevs_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="fu">nYparams</span>(Ipar);</span>
+<span id="annotated-cell-21-25"><a href="#annotated-cell-21-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rdv_phz <span class="sc">&gt;</span> <span class="dv">0</span>)       NVarPar <span class="sc">+</span><span class="er">=</span> (rdv_eyr<span class="sc">-</span>rdv_syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-21-26"><a href="#annotated-cell-21-26" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rec_prop_phz <span class="sc">&gt;</span> <span class="dv">0</span>)  NVarPar <span class="sc">+</span><span class="er">=</span> (rdv_eyr<span class="sc">-</span>rdv_syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-21-27"><a href="#annotated-cell-21-27" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nSizeComps; Ipar<span class="sc">++</span>)       <span class="cf">if</span> (<span class="fu">log_vn_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-28"><a href="#annotated-cell-21-28" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_qpar; Ipar<span class="sc">++</span>)           <span class="cf">if</span> (<span class="fu">q_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-29"><a href="#annotated-cell-21-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_addcv_par; Ipar<span class="sc">++</span>)      <span class="cf">if</span> (<span class="fu">cv_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-30"><a href="#annotated-cell-21-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_deviations_est; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">deviations_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-21-31"><a href="#annotated-cell-21-31" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="annotated-cell-21-32"><a href="#annotated-cell-21-32" aria-hidden="true" tabindex="-1"></a>  cout <span class="sc">&lt;</span><span class="er">&lt;</span> <span class="st">"Number of estimated parameters: "</span> <span class="sc">&lt;</span><span class="er">&lt;</span> NVarPar <span class="sc">&lt;</span><span class="er">&lt;</span> endl;</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-21" data-target-annotation="4" onclick="event.preventDefault();">4</a><span id="annotated-cell-21-33" class="code-annotation-target"><a href="#annotated-cell-21-33" aria-hidden="true" tabindex="-1"></a>  NEstPars <span class="ot">=</span> NVarPar;</span>
+<span id="annotated-cell-21-34"><a href="#annotated-cell-21-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-21" data-target-annotation="5" onclick="event.preventDefault();">5</a><span id="annotated-cell-21-35" class="code-annotation-target"><a href="#annotated-cell-21-35" aria-hidden="true" tabindex="-1"></a>  NRefPars <span class="ot">=</span> NVarPar;</span>
+<span id="annotated-cell-21-36"><a href="#annotated-cell-21-36" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (OutRefPars<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> (<span class="dv">6</span> <span class="sc">+</span> <span class="dv">3</span><span class="sc">*</span>nfleet);</span>
+<span id="annotated-cell-21-37"><a href="#annotated-cell-21-37" aria-hidden="true" tabindex="-1"></a>  NRecPar <span class="ot">=</span> NVarPar<span class="sc">+</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-38"><a href="#annotated-cell-21-38" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (OutRecruit<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> nsex<span class="sc">*</span>(nyr<span class="sc">-</span>syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-21-39"><a href="#annotated-cell-21-39" aria-hidden="true" tabindex="-1"></a>  NSSBPar <span class="ot">=</span> NVarPar<span class="sc">+</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-40"><a href="#annotated-cell-21-40" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (OutSSB<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> (nyr<span class="sc">-</span>syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-21-41"><a href="#annotated-cell-21-41" aria-hidden="true" tabindex="-1"></a>  NfbarPar <span class="ot">=</span> NVarPar<span class="sc">+</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-42"><a href="#annotated-cell-21-42" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (Outfbar<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> (nyr<span class="sc">-</span>syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-21-43"><a href="#annotated-cell-21-43" aria-hidden="true" tabindex="-1"></a>  NB0Par <span class="ot">=</span> NVarPar<span class="sc">+</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-21-44"><a href="#annotated-cell-21-44" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (OutDynB0<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> (nyr<span class="sc">-</span>syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-21" data-target-annotation="6" onclick="event.preventDefault();">6</a><span id="annotated-cell-21-45" class="code-annotation-target"><a href="#annotated-cell-21-45" aria-hidden="true" tabindex="-1"></a>  cout <span class="sc">&lt;</span><span class="er">&lt;</span> <span class="st">"Number of std variables: "</span> <span class="sc">&lt;</span><span class="er">&lt;</span> NVarPar <span class="sc">&lt;</span><span class="er">&lt;</span> endl;</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-21" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-21" data-code-lines="2" data-code-annotation="1">section to turn off parameters with phases &gt;= <code>TurnOffPhase</code></span>
+</dd>
+<dt data-target-cell="annotated-cell-21" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-21" data-code-lines="16" data-code-annotation="2">number of estimated parameters (after this block)</span>
+</dd>
+<dt data-target-cell="annotated-cell-21" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-21" data-code-lines="17" data-code-annotation="3">number of estimated “theta” parameters</span>
+</dd>
+<dt data-target-cell="annotated-cell-21" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-21" data-code-lines="33" data-code-annotation="4">total number of estimated parameters</span>
+</dd>
+<dt data-target-cell="annotated-cell-21" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-21" data-code-lines="35" data-code-annotation="5">pointer to end of estimated parameters in std variables vector</span>
+</dd>
+<dt data-target-cell="annotated-cell-21" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-21" data-code-lines="45" data-code-annotation="6">total number of std variables</span>
+</dd>
+</dl>
+</div>
+</div>
+
+
 </section>
 
 </main> <!-- /main -->
@@ -1532,9 +1605,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./qq00a-GMACS-CodeNotes.NumerberOfParameters.html" class="pagination-link" aria-label="Untitled">
-        <span class="nav-page-text">Untitled</span> <i class="bi bi-arrow-right-short"></i>
-      </a>
   </div>
 </nav>
 </div> <!-- /content -->
