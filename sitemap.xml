@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/qq00a-GMACS-CodeNotes.NumerberOfParameters.html</loc>
+    <lastmod>2026-09-29T21:36:05.875Z</lastmod>
+  </url>
+  <url>
     <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q06-EnvCovariates.html</loc>
     <lastmod>2026-06-23T14:36:15.675Z</lastmod>
   </url>
@@ -39,5 +43,9 @@
   <url>
     <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/q05-ObjectiveFunction.html</loc>
     <lastmod>2026-06-23T14:28:25.975Z</lastmod>
+  </url>
+  <url>
+    <loc>https://GMACS-project.github.io/GMACS_tpl-cpp_code/qq00-GMACS-CodeNotes.html</loc>
+    <lastmod>2026-09-29T21:41:12.222Z</lastmod>
   </url>
 </urlset>

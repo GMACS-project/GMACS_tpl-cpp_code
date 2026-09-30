@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Objective Function</title>
+<title>Untitled</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -30,8 +64,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./q06-EnvCovariates.html" rel="next">
-<link href="./q04-Functions.html" rel="prev">
+<link href="./qq00-GMACS-CodeNotes.html" rel="prev">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -110,7 +143,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./q05-ObjectiveFunction.html">Objective Function</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./qq00a-GMACS-CodeNotes.NumerberOfParameters.html">Untitled</a></li></ol></nav>
         <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="" onclick="window.quartoOpenSearch();">
@@ -185,7 +218,7 @@ window.Quarto = {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./q05-ObjectiveFunction.html" class="sidebar-item-text sidebar-link active">
+  <a href="./q05-ObjectiveFunction.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Objective Function</span></a>
   </div>
 </li>
@@ -203,7 +236,7 @@ window.Quarto = {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./qq00a-GMACS-CodeNotes.NumerberOfParameters.html" class="sidebar-item-text sidebar-link">
+  <a href="./qq00a-GMACS-CodeNotes.NumerberOfParameters.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Untitled</span></a>
   </div>
 </li>
@@ -217,14 +250,7 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#objective-function" id="toc-objective-function" class="nav-link active" data-scroll-target="#objective-function">Objective function</a></li>
-  <li><a href="#data-components" id="toc-data-components" class="nav-link" data-scroll-target="#data-components">Data components</a>
-  <ul class="collapse">
-  <li><a href="#tagging-related-growth-data" id="toc-tagging-related-growth-data" class="nav-link" data-scroll-target="#tagging-related-growth-data">5. Tagging-related growth data</a></li>
-  <li><a href="#non-tagging-growth-data" id="toc-non-tagging-growth-data" class="nav-link" data-scroll-target="#non-tagging-growth-data">6. Non-tagging growth data</a></li>
-  </ul></li>
-  <li><a href="#priors" id="toc-priors" class="nav-link" data-scroll-target="#priors">Priors</a></li>
-  <li><a href="#penalties" id="toc-penalties" class="nav-link" data-scroll-target="#penalties">Penalties</a></li>
+  <li><a href="#determining-number-of-parameters" id="toc-determining-number-of-parameters" class="nav-link active" data-scroll-target="#determining-number-of-parameters">Determining number of parameters</a></li>
   </ul>
 </nav>
     </div>
@@ -233,7 +259,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Objective Function</h1>
+<h1 class="title">Untitled</h1>
 </div>
 
 
@@ -250,188 +276,84 @@ window.Quarto = {
 </header>
 
 
-<p>This section documents the objective function defined in the <code>gmacsbase.TPL</code> file that is minimized to find the “best” set of parameter values for a GMACS assessment model.</p>
-<section id="objective-function" class="level2">
-<h2 class="anchored" data-anchor-id="objective-function">Objective function</h2>
-<p>The objective function is referred to as <code>nloglike</code> in the gmacsbase.TPL file. It’s value is the result of summing negative log-likelihood components expressing the (mis)fits to the input data, priors on parameters, and penalties.</p>
-<pre><code>      objfun =  w_nloglike + 
-                sum(elem_prod(nlogPenalty,Penalty_emphasis)) + 
-                sum(priorDensity) + 
-                TempSS + 
-                grwthPosFun;
-
-      w_nloglike = sum(elem_prod(nloglike(1),catch_emphasis)) + sum(elem_prod(nloglike(2),cpue_emphasis)) + sum(elem_prod(nloglike(3),lf_emphasis));
-      w_nloglike += sum(nloglike(4));
-      w_nloglike += sum(nloglike(5))*tag_emphasis;
-      w_nloglike += sum(nloglike(6));
-      w_nloglike += sum(nloglike(7))*mmodLkWgt;</code></pre>
-</section>
-<section id="data-components" class="level2">
-<h2 class="anchored" data-anchor-id="data-components">Data components</h2>
-<ul>
-<li><ol type="1">
-<li>fishery catch : sum(nloglike(1))</li>
-</ol></li>
-<li><ol start="2" type="1">
-<li>index catch : sum(nloglike(2))</li>
-</ol></li>
-<li><ol start="3" type="1">
-<li>size comps : sum(nloglike(3))</li>
-</ol></li>
-<li><ol start="4" type="1">
-<li>recruitment : sum(nloglike(4))</li>
-</ol></li>
-<li><ol start="5" type="1">
-<li>tagging growth : sum(nloglike(5))</li>
-</ol></li>
-<li><ol start="6" type="1">
-<li>growth data : sum(nloglike(6))</li>
-</ol></li>
-<li><ol start="7" type="1">
-<li>male mat. og.s : sum(nloglike(7))</li>
-</ol></li>
-<li><ol start="8" type="1">
-<li>effort expansion: sum(nloglike(8))</li>
-</ol></li>
-</ul>
-<section id="tagging-related-growth-data" class="level3">
-<h3 class="anchored" data-anchor-id="tagging-related-growth-data">5. Tagging-related growth data</h3>
-<pre><code>      //  5) Likelihood for the tagging-related size-class change data #2
-      if (GrowthObsType==GROWTHCLASS_DATA || GrowthObsType==GROWTHCLASS_VALS){
-        dvariable Prob;
-        dvar_matrix YY(1,nclass,1,nclass);
-        nloglike(5).initialize();
-          // First find all FullY matrices
-        FullY.initialize();
-        for (int h = 1; h &lt;=nsex; h++) {
-          for (int k = 1; k&lt;=nSizeIncVaries(h);k++) {
-            // AEP: Note that the molt_probability is based on syr  
-            for (int ii=1;ii&lt;=nclass;ii++){
-              for (int jj=1;jj&lt;=nclass;jj++){
-                if (ii == jj){
-                  YY(ii,jj) = 1.0-molt_probability(h,syr,ii)+growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
-                } else {
-                  YY(ii,jj) = growth_transition(h,k,ii,jj)*molt_probability(h,syr,ii);
-                }
-              }
-            }
-            FullY(h,k,1) = YY;
-            for (int itime=2;itime&lt;=MaxGrowTimeLibSex(h);itime++) FullY(h,k,itime) = FullY(h,k,itime-1)*YY;
-          } // k loop
-        } // h loop
-    
-        for (int i=1;i&lt;=nGrowthObs;i++) {
-          int h = iMoltIncSex(i);
-          int k = iMoltTrans(i);
-          int iclassRel = iMoltInitSizeClass(i);
-          int iclassRec = iMoltEndSizeClass(i);
-          int itimeLib = iMoltTimeAtLib(i);
-          int ifleetRec = iMoltFleetRecap(i);
-          int iyearRec = iMoltYearRecap(i);
-          double freq = float(iMoltSampSize(i));
-          Prob = FullY(h,k,itimeLib,iclassRel,iclassRec)*exp(log_slx_capture(ifleetRec,h,iyearRec,iclassRec))+1.0e-20;
-          dvariable total = 0;
-          for (int i=1;i&lt;=nSizeSex(h);i++) total += FullY(h,k,itimeLib,iclassRel,i)*exp(log_slx_capture(ifleetRec,h,iyearRec,i));
-          nloglike(5,h) -= log(Prob/total+0.00001)*freq;
-        } // i loop
-      } // Tagging-related growth data
-      if ( verbose &gt;= 3 ) cout &lt;&lt; "Ok after tagging-related increment likelihood ..." &lt;&lt; endl;
-      </code></pre>
-</section>
-<section id="non-tagging-growth-data" class="level3">
-<h3 class="anchored" data-anchor-id="non-tagging-growth-data">6. Non-tagging growth data</h3>
-<pre><code>    FUNCTION growth_likelihood
-      if (verbose&gt;=3) ECHOSTR("Strarting growth likelihood")
-    
-      // 6) Likelihood for non-tagging growth increment data
-      if (GrowthObsType==GROWTHINC_DATA_NORMAL){  
-        nloglike(6).initialize(); grwthPosFun.initialize();
-        if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
-          // normal-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
-          dvar_vector MoltIncPred = calc_growth_increments_linear(dPreMoltSize, iMoltIncSex,1);
-          for (int i=MoltIncPred.indexmin();i&lt;=MoltIncPred.indexmax();i++)
-            nloglike(6,iMoltIncSex(i)) += dnorm(log(dMoltInc(i)) - log(MoltIncPred(i)), dMoltIncCV(i));//negative log likelihood
-        } 
-      } else if (GrowthObsType==GROWTHINC_DATA_GAMMA){
-        nloglike(6).initialize();
-        if (bUseGrowthIncrementModel2(1)==LINEAR_GROWTHMODEL){
-          // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
-          nloglike(6) = calc_like_gamma_linear_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
-        } 
-        if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODEL){
-          // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
-          nloglike(6) = calc_like_gamma_pwrlaw_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
-        } else 
-        if (bUseGrowthIncrementModel2(1)==PWRLAW_GROWTHMODELALT){
-          // gamma-distribution likelihood -- NOTE: only including growth matrix 1 (no time variation)
-          nloglike(6) = calc_like_gamma_pwrlawalt_growth(dMoltInc, dPreMoltSize, iMoltIncSex,1);
-        } 
-      }</code></pre>
-</section>
-</section>
-<section id="priors" class="level2">
-<h2 class="anchored" data-anchor-id="priors">Priors</h2>
-</section>
-<section id="penalties" class="level2">
-<h2 class="anchored" data-anchor-id="penalties">Penalties</h2>
-<p>Most penalties are assigned in the <code>nlogPenalty</code> vector, which has 13 components:</p>
-<ul>
-<li><p>1: A penalty on <code>log_fdev</code> (male+combined; female) to ensure the fishing mortality devs sum to zero</p>
-<pre><code>   dvariable s     = mean(log_fdev(k));
-   nlogPenalty(1) += Penalty_fdevs(k,1)*s*s;
-   if (nsex &gt; 1){
-     dvariable r     = mean(log_fdov(k));
-     nlogPenalty(1) += Penalty_fdevs(k,2)*r*r;
-   }</code></pre></li>
-<li><p>2: A penalty on mean F’s to regularize the solution</p>
-<pre><code> int irow = 1;
- if ( last_phase() ) irow = 2;
- dvariable fbar;
- dvariable ln_fbar;
- for ( int k = 1; k &lt;= nfleet; k++ ){
-  for ( int j = 1; j &lt;= nseason; j++ ){
-    fbar = mean( trans(ft(k,1))(j) );
-    if ( init_fbar(k) &gt; 0 &amp;&amp; fbar != 0 ){
-      ln_fbar = log(fbar);
-      nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
-    }
-    if (nsex==2){
-      fbar = mean( trans(ft(k,2))(j) );
-      if ( fbar != 0 ){
-        ln_fbar = log(fbar);
-        nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
-      }
-    } 
-  } #--j loop
- } #--k loop</code></pre></li>
-<li><p>3:</p></li>
-<li><p>4:</p></li>
-<li><p>5:</p></li>
-<li><p>6: A smoothness penalty on recruitment deviations implemented as a <span class="math inline">\(N(x,1.0)\)</span> normal penalty where <span class="math inline">\(x\)</span> is the first difference in the recruitment deviations.</p>
-<pre><code>   nlogPenalty(6) = dnorm(first_difference(rec_dev),1.0)</code></pre></li>
-<li><p>7: A penalty on mean sex ratio:</p>
-<pre><code> if (nsex &gt; 1) {
-   SumRecF = 0; SumRecM = 0;
-   for ( int i = syr; i &lt;= nyrRetro; i++ )
-    { SumRecF += recruits(2)(i); SumRecM += recruits(1)(i); }
-   nlogPenalty(7) = square(log(SumRecF) - log(SumRecM));
- }</code></pre></li>
-<li><p>8: A smoothness penalty on molting probability:</p>
-<pre><code> for (int h=1;h&lt;=nsex;h++)
-  if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)
-   for (int igrow=1;igrow&lt;=nMoltVaries(h);igrow++)
-    nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
- if (verbose &gt;= 3) cout&lt;&lt;"finished Smoothness penalty on molting probability"&lt;&lt;endl;</code></pre></li>
-<li><p>9: Smoothness penalty on selectivity patterns with class-specific coefficients</p>
-<pre><code> nlogPenalty(9) = selex_smooth_pen;</code></pre></li>
-<li><p>10: Smoothness penalty on initial numbers at length:</p>
-<pre><code>  nlogPenalty(10) += dnorm(first_difference(logN0(k)), 1.0);</code></pre></li>
-<li><p>11: Penalty on annual F-devs for males by fleet</p></li>
-<li><p>12: Penalty on annual F-devs for females by fleet</p></li>
-<li><p>13: Penalty on deviation parameters other than rec devs and F devs</p></li>
-</ul>
-<p>The penalties listed above are scaled by <code>Penalty_emphasis</code>, a 13-element vector of scale factors.</p>
-<p>Another penalty, <code>grwthPosFun</code>, is intended to keep mean growth estimates positive.</p>
+<section id="determining-number-of-parameters" class="level2">
+<h2 class="anchored" data-anchor-id="determining-number-of-parameters">Determining number of parameters</h2>
+<p>The following code blocks turn off parameters with phases <span class="math inline">\(\ge\)</span> <code>TurnOffPhase</code> and determine the number of active parameters.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-1"><pre class="sourceCode r code-annotation-code code-with-copy code-annotated"><code class="sourceCode r"><span id="annotated-cell-1-1"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a>  int Ipar;</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-1-2" class="code-annotation-target"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#--turn off estimation for parameters with phase &gt;= TurnOffPhase</span></span>
+<span id="annotated-cell-1-3"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Tpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">T_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">T_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>; </span>
+<span id="annotated-cell-1-4"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Gpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">G_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">G_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-5"><a href="#annotated-cell-1-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Mpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">M_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">M_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-6"><a href="#annotated-cell-1-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Spar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">S_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">S_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-7"><a href="#annotated-cell-1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">f_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">f_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-8"><a href="#annotated-cell-1-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">foff_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase)     <span class="fu">foff_phz</span>(Ipar)     <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-9"><a href="#annotated-cell-1-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">foffdevs_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">foffdevs_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-10"><a href="#annotated-cell-1-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rdv_phz <span class="sc">&gt;</span> TurnOffPhase) rdv_phz <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-11"><a href="#annotated-cell-1-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rec_prop_phz <span class="sc">&gt;</span> TurnOffPhase) rec_prop_phz <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-12"><a href="#annotated-cell-1-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nSizeComps; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">log_vn_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">log_vn_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-13"><a href="#annotated-cell-1-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_qpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">q_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">q_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-14"><a href="#annotated-cell-1-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_addcv_par; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">cv_phz</span>(Ipar) <span class="sc">&gt;</span> TurnOffPhase) <span class="fu">cv_phz</span>(Ipar) <span class="ot">=</span> <span class="sc">-</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-15"><a href="#annotated-cell-1-15" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-1-16" class="code-annotation-target"><a href="#annotated-cell-1-16" aria-hidden="true" tabindex="-1"></a>  NVarPar <span class="ot">=</span> <span class="dv">0</span>;</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-1-17" class="code-annotation-target"><a href="#annotated-cell-1-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Tpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">T_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-18"><a href="#annotated-cell-1-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Gpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">G_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-19"><a href="#annotated-cell-1-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Mpar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">M_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-20"><a href="#annotated-cell-1-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_Spar; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">S_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-21"><a href="#annotated-cell-1-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">f_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-22"><a href="#annotated-cell-1-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">f_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="fu">nFparams</span>(Ipar);</span>
+<span id="annotated-cell-1-23"><a href="#annotated-cell-1-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">foff_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>)     NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-24"><a href="#annotated-cell-1-24" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nfleet; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">foffdevs_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="fu">nYparams</span>(Ipar);</span>
+<span id="annotated-cell-1-25"><a href="#annotated-cell-1-25" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rdv_phz <span class="sc">&gt;</span> <span class="dv">0</span>)       NVarPar <span class="sc">+</span><span class="er">=</span> (rdv_eyr<span class="sc">-</span>rdv_syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-1-26"><a href="#annotated-cell-1-26" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rec_prop_phz <span class="sc">&gt;</span> <span class="dv">0</span>)  NVarPar <span class="sc">+</span><span class="er">=</span> (rdv_eyr<span class="sc">-</span>rdv_syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-1-27"><a href="#annotated-cell-1-27" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>nSizeComps; Ipar<span class="sc">++</span>)       <span class="cf">if</span> (<span class="fu">log_vn_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-28"><a href="#annotated-cell-1-28" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_qpar; Ipar<span class="sc">++</span>)           <span class="cf">if</span> (<span class="fu">q_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-29"><a href="#annotated-cell-1-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_addcv_par; Ipar<span class="sc">++</span>)      <span class="cf">if</span> (<span class="fu">cv_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-30"><a href="#annotated-cell-1-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="at">Ipar=</span><span class="dv">1</span>;Ipar<span class="sc">&lt;=</span>n_deviations_est; Ipar<span class="sc">++</span>) <span class="cf">if</span> (<span class="fu">deviations_phz</span>(Ipar) <span class="sc">&gt;</span> <span class="dv">0</span>) NVarPar <span class="sc">+</span><span class="er">=</span> <span class="dv">1</span>;</span>
+<span id="annotated-cell-1-31"><a href="#annotated-cell-1-31" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="annotated-cell-1-32"><a href="#annotated-cell-1-32" aria-hidden="true" tabindex="-1"></a>  cout <span class="sc">&lt;</span><span class="er">&lt;</span> <span class="st">"Number of estimated parameters: "</span> <span class="sc">&lt;</span><span class="er">&lt;</span> NVarPar <span class="sc">&lt;</span><span class="er">&lt;</span> endl;</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="4" onclick="event.preventDefault();">4</a><span id="annotated-cell-1-33" class="code-annotation-target"><a href="#annotated-cell-1-33" aria-hidden="true" tabindex="-1"></a>  NEstPars <span class="ot">=</span> NVarPar;</span>
+<span id="annotated-cell-1-34"><a href="#annotated-cell-1-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="5" onclick="event.preventDefault();">5</a><span id="annotated-cell-1-35" class="code-annotation-target"><a href="#annotated-cell-1-35" aria-hidden="true" tabindex="-1"></a>  NRefPars <span class="ot">=</span> NVarPar;</span>
+<span id="annotated-cell-1-36"><a href="#annotated-cell-1-36" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (OutRefPars<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> (<span class="dv">6</span> <span class="sc">+</span> <span class="dv">3</span><span class="sc">*</span>nfleet);</span>
+<span id="annotated-cell-1-37"><a href="#annotated-cell-1-37" aria-hidden="true" tabindex="-1"></a>  NRecPar <span class="ot">=</span> NVarPar<span class="sc">+</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-38"><a href="#annotated-cell-1-38" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (OutRecruit<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> nsex<span class="sc">*</span>(nyr<span class="sc">-</span>syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-1-39"><a href="#annotated-cell-1-39" aria-hidden="true" tabindex="-1"></a>  NSSBPar <span class="ot">=</span> NVarPar<span class="sc">+</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-40"><a href="#annotated-cell-1-40" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (OutSSB<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> (nyr<span class="sc">-</span>syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-1-41"><a href="#annotated-cell-1-41" aria-hidden="true" tabindex="-1"></a>  NfbarPar <span class="ot">=</span> NVarPar<span class="sc">+</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-42"><a href="#annotated-cell-1-42" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (Outfbar<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> (nyr<span class="sc">-</span>syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<span id="annotated-cell-1-43"><a href="#annotated-cell-1-43" aria-hidden="true" tabindex="-1"></a>  NB0Par <span class="ot">=</span> NVarPar<span class="sc">+</span><span class="dv">1</span>;</span>
+<span id="annotated-cell-1-44"><a href="#annotated-cell-1-44" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (OutDynB0<span class="sc">==</span>YES) NVarPar <span class="sc">+</span><span class="er">=</span> (nyr<span class="sc">-</span>syr<span class="sc">+</span><span class="dv">1</span>);</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="6" onclick="event.preventDefault();">6</a><span id="annotated-cell-1-45" class="code-annotation-target"><a href="#annotated-cell-1-45" aria-hidden="true" tabindex="-1"></a>  cout <span class="sc">&lt;</span><span class="er">&lt;</span> <span class="st">"Number of std variables: "</span> <span class="sc">&lt;</span><span class="er">&lt;</span> NVarPar <span class="sc">&lt;</span><span class="er">&lt;</span> endl;</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="2" data-code-annotation="1">section to turn off parameters with phases &gt;= <code>TurnOffPhase</code></span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="16" data-code-annotation="2">number of estimated parameters (after this block)</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="17" data-code-annotation="3">number of estimated “theta” parameters</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="33" data-code-annotation="4">total number of estimated parameters</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="35" data-code-annotation="5">pointer to end of estimated parameters in std variables vector</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="45" data-code-annotation="6">total number of std variables</span>
+</dd>
+</dl>
+</div>
+</div>
 
 
 </section>
@@ -826,14 +748,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="./q04-Functions.html" class="pagination-link  aria-label=" functions"="">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Functions</span>
+      <a href="./qq00-GMACS-CodeNotes.html" class="pagination-link  aria-label=" gmacs="" code="" notes"="">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">GMACS code notes</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./q06-EnvCovariates.html" class="pagination-link" aria-label="Environmental covariates">
-        <span class="nav-page-text">Environmental covariates</span> <i class="bi bi-arrow-right-short"></i>
-      </a>
   </div>
 </nav>
 </div> <!-- /content -->
