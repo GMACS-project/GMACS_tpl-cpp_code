@@ -97,7 +97,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.46; ** WTS **; Compiled 2026-09-23");
+ !! TheHeader = adstring("## GMACS Version 2.20.46; ** WTS **; Compiled 2026-09-30");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -475,9 +475,9 @@ DATA_SECTION
   int nlikes;                                              ///> number of likelihood components
 
   int Nyears;
-  !! Nyears =(nyrRetro-syr+1);    #--number of years syr -> nyrRetro
+  !! Nyears =(nyrRetro-syr+1);    //--number of years syr -> nyrRetro
   int Nyears2;
-  !! Nyears2 =(nyrRetro+1-syr+1); #--number of years syr -> nyrRetro + 1
+  !! Nyears2 =(nyrRetro+1-syr+1); //--number of years syr -> nyrRetro + 1
   int Nyears4;
 
  LOC_CALCS
@@ -17870,6 +17870,8 @@ FINAL_SECTION
 //                    having to invert the hessian, estimate standard errors, and MCMC. Output is written to "projections_output.dat", which
 //                    can easily be read into R by the wtsGMACS::readProjectionsOutputFile function. Also added commandline option "-rng_rseed" to 
 //                    set the random number generator seed for the global "rng" variablefor reproducibility. If not set, the model start time will set the seed.
+// 2026-09-30 ** WTS. Updated compile date to 2026-09-30. Fixed issue with recruitment levels in projections. Added some comments and 
+//                    identified some code that might need to be revised (see TODOs).
 //                 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
