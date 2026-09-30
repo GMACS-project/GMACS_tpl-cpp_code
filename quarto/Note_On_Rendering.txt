@@ -1,8 +1,9 @@
 NOTE on rendering the website:
 
-1. Open the "quarto" R project
-2. In Terminal, run:
-quarto publish gh-pages
+1. make sure you're not on the gh-pages branch of the repository
+2. In Terminal, cd to the "quarto" folder
+3. run: quarto publish gh-pages
+4. Answer "Y" to prompt to update website
 
 This updates the website on the gh-pages branch of the repo and then publishes 
-it to https://GMACS-project.github.io/GMACS_tpl-cpp_code/
+it to https://gmacs-project.github.io/GMACS_tpl-cpp_code/

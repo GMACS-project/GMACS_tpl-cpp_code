@@ -2,10 +2,7 @@
 /_site/
 /.Rproj.user/
 .DS_Store
-/q04-Functions_files/
-q04-Functions.html
-/q05-ObjectiveFunction_files/
-q05-ObjectiveFunction.html
-/q06-EnvCovariates_files/
-q06-EnvCovariates.html
+EnvCovariates_AEP.docx
+/*_files/
+*.html
 

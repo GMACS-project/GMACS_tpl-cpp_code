@@ -35,13 +35,11 @@ testing/wtsGMACS/model_comparisons/*.md
 testing/wtsGMACS/model_comparisons/*.pdf
 testing/wtsGMACS/model_comparisons/*.RData
 
-SizeCompsIssue.docx
 /model_archive/
-GMACS_SelFcns.xlsx
 gmacsbase.2026.04.15.TPL
 gmacsbase.Grant.TPL
 .positai
 /quarto/0eec70f5
+*.docx
 *.xlsx
-notes/GMACS_VersionUpdates.docx
-/quarto/qq00-GMACS-CodeNotes_files
+

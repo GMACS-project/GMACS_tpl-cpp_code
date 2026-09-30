@@ -12948,8 +12948,8 @@ FUNCTION doProjections_FinalPhase
           for (int k=1;k<=nfleet;k++) {if (Ffixed(k) != 1) log_fimpbar(k) = log_fimpbarI(k)+log(Fmult);}
         if (Project_type==3) // multiplier on directed Fmsy NOTE: should only use when Ffixed(k) != 1 only for directed fleet
           for (int k=1;k<=nfleet;k++) {if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*Fmult);} //--Fmult includes small umber
-        for (int k=1;k<=nfleet;k++) {
-          for (int i=1;i<=nproj;i++) {
+        for (int k=1;k<=nfleet;k++) { //--TODO: check looping here--seems reversed (i should be outer loop?)
+          for (int i=1;i<=nproj;i++) {  
             prj_out << isim << " " << irun << " " << fleetname(k) << "_F" << " " << i+nyrRetro << " " << exp(log_fimpbar(k)) << endl;
           }
         }
@@ -13099,8 +13099,8 @@ FUNCTION write_eval
           if (k==3+nfleet || k==4+nfleet || k==5+nfleet) for (int i=syr;i<=nyr;i++) mcoutPROJCAT << "-1 ";
           if (k <=2+nfleet) mcoutPROJCAT << histcat(k);
           mcoutPROJCAT << catch_summary(k) << endl;
-        }
-      } //-natrial
+        } //--k loop
+      } //-irun
     } //--isim
   }
   if (NfunCall == max_prj) exit(1);
@@ -15193,7 +15193,7 @@ FUNCTION CreateOutput
   for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
    OutFile2 << syr << " " << h << " " << j << " " << mfexp(log_slx_capture(j,h,syr)) << endl; 
   for ( int h = 1; h <= nsex; h++ ) for ( int j = 1; j <= nfleet; j++ )
-   OutFile2 << nyr << " " << h << " " << j << " " << mfexp(log_slx_capture(j,h,nyrRetro)) << endl; 
+   OutFile2 << nyr << " " << h << " " << j << " " << mfexp(log_slx_capture(j,h,nyrRetro)) << endl;  //--TODO: change nyr to nyrRetro??
   OutFile2 << "retained" << endl; 
   OutFile2 << syr << " " << "1" << " " << "1" << " " << mfexp(log_slx_retaind(1,1,syr)) << endl;  
   OutFile2 << nyrRetro << " " << "1" << " " << "1" << " " << mfexp(log_slx_retaind(1,1,nyrRetro)) << endl;               
