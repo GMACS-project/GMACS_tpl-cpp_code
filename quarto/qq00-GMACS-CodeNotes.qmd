@@ -732,5 +732,5 @@ All dimensioned syr:(nyrRetro+1) to include start of "next" year:
   }// it loop
 ```
 
-```{r CodeNotes-NumberOfParams, child=file.path("./qq00a-GMACS-CodeNotes.NumerberOfParameters.qmd"),eval=TRUE}
+```{r CodeNotes-NumberOfParams, child=file.path("./qq00a-GMACS-CodeNotes.NumberOfParameters.qmd"),eval=TRUE}
 ```

@@ -1,0 +1,14 @@
+---
+title: "Untitled"
+format: html
+---
+
+## Handling retrospectives and projections
+
+The nminal model time dimensions are 
+
+  * `syr` - model start year
+  * `nyr` - terminal year corresponding to "current" crab year (e.g., 2025 would correspond to 2025/26)
+
+Survey-related quantities typically have dimensions `syr`:(`nyr`+1) because the XXXX survey occurs at the start of 
+crab year XXXX/XX+1 (e.g., the 2026 survey occurs at the start of 2026/27). Additionally, we need the population at the start of the "next" year, so we need `N` at the beginning of season 1 in `nyr`+1.
