@@ -62,6 +62,7 @@
 // Submodels labeling
 // ************************************************************************************ //
 // Label 130: Projection inputs
+// Label 140: MSE Projection inputs
 // Label 200: INITIALIZATION_SECTION
 // Label 400: calc_objective_function
 // Label 401: catch_likelihood
@@ -76,10 +77,14 @@
 // Label 504: project_biomass
 // Label 505: compute_OFL_and_ABC
 // Label 506: project_one_year
+// Label 50x: MSE-related stuff
 // Label 600: CreateOutput
 // Label 700: write_eval
-// ************************************************************************************ //
+// Label 801: InitializeData
+// Label 802: GenerateData
+// Label 803: ApplyMP
 
+// ************************************************************************************ //
 // Commandline options
 // ************************************************************************************ //
 // -testing : run testing section
@@ -97,7 +102,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 2.20.46; ** WTS **; Compiled 2026-09-30");
+ !! TheHeader = adstring("## GMACS Version 3.00.00; ** WTS **; Compiled 2026-09-30");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -321,17 +326,21 @@ DATA_SECTION
   // create a random number generator for projections
 
   // |------------------------|
-  // | DATA AND CONTROL FILES |
+  // | DAT FILE               |
   // |------------------------|
   //--read gmacs.dat file
   !!WriteFileName(TheHeader);
   init_adstring datafile;
   init_adstring controlfile;
   init_adstring projectfile;
+  init_adstring MSEfile;
   init_adstring weightunit;
   init_adstring numbersunit;
   init_adstring StockName;
-  !!WriteFileName(datafile); WriteFileName(controlfile); WriteFileName(projectfile);
+  !!WriteFileName(datafile); 
+  !!WriteFileName(controlfile); 
+  !!WriteFileName(projectfile); 
+  !!WriteFileName(MSEfile);
   !!WriteFileName(weightunit);
   !!WriteFileName(numbersunit);
   !!WriteFileName(StockName);
@@ -365,7 +374,7 @@ DATA_SECTION
   init_int usepinfile                                       ///> Read in a special file (0=normal;1=pin file)
   init_int verbose;                                         ///> Flag to print to screen
   !! if (IsJittered==1) verbose = 0;//--turn off diagnostic output
-
+  init_int Do_MSE;
 
   //check for commandline overide of pinfile use (if set, overrides value from gmacs.dat)
  LOCAL_CALCS
@@ -1573,6 +1582,7 @@ DATA_SECTION
 
  
 // ================================================================================================
+// Projection file (.prj) inputs section
 // ================================================================================================
 
   // Label 130: Projection inputs
@@ -1892,6 +1902,7 @@ DATA_SECTION
   int IsProject;                                           ///> Are we in projection mode
   
 // ================================================================================================
+// Control file (.ctl) inputs section
 // ================================================================================================
   //--read control file
   // |----------------------------|
@@ -5011,9 +5022,110 @@ DATA_SECTION
   !! mxYrsCohortProgression = 21;
 
 // ================================================================================================
+// MSE (Management Strategy Evaluation) file (.mse) inputs
+// ================================================================================================
+  // Label 140: MSE inputs
+  !! ad_comm::change_datafile_name(MSEfile);
+  !! cout << "+------------------+" << endl;
+  !! cout << "| Reading MSE file |" << endl;
+  !! cout << "+------------------+" << endl;
+  !! ECHOSTR("+------------------+");
+  !! ECHOSTR("| Reading MSE file |");
+  !! ECHOSTR("+------------------+");
+
+  // required inpur
+  init_vector fut_disc_mort(1,nfleet);
+  
+  int nfut_catch_series;
+  !! nfut_catch_series = 1;
+  !! if (Do_MSE == YES) *(ad_comm::global_datafile) >> nfut_catch_series;
+  ivector catch_fleet(1,nfut_catch_series);
+  ivector catch_seas(1,nfut_catch_series);
+  ivector catch_sex(1,nfut_catch_series);
+  ivector catch_type(1,nfut_catch_series);
+  ivector catch_unit(1,nfut_catch_series);
+  vector catch_disc_mort(1,nfut_catch_series);
+  vector catch_CV(1,nfut_catch_series);
+
+  int nfut_surveys;
+  !! nfut_surveys = 1;
+  !! if (Do_MSE == YES) *(ad_comm::global_datafile) >> nfut_surveys;
+  ivector survey_fleet(1,nfut_surveys);
+  ivector survey_freq(1,nfut_surveys);
+  ivector survey_seas(1,nfut_surveys);
+  ivector survey_sex(1,nfut_surveys);
+  ivector survey_mat(1,nfut_surveys);
+  ivector survey_unit(1,nfut_surveys);
+  ivector survey_rai_id(1,nfut_surveys);
+  vector survey_CV(1,nfut_surveys);
+
+  int nfut_comps;
+  !! nfut_comps = 1;
+  !! if (Do_MSE == YES) *(ad_comm::global_datafile) >> nfut_comps;
+  ivector comp_fleet(1,nfut_comps);
+  ivector comp_lf_catch(1,nfut_comps)
+  ivector comp_freq(1,nfut_comps);
+  ivector comp_seas(1,nfut_comps);
+  ivector comp_sex(1,nfut_comps);
+  ivector comp_type(1,nfut_comps);
+  ivector comp_shell(1,nfut_comps);
+  ivector comp_mat(1,nfut_comps);
+  vector comp_SS(1,nfut_comps);
+
+  !! cout << nfut_catch_series << " " << nfut_surveys << " " << nfut_comps << endl;
+
+  int eof_mse;
+ 
+  !! if (Do_MSE == YES)
+  !!  {
+  !!   *(ad_comm::global_datafile) >> catch_fleet;
+  !!   cout << catch_fleet << endl;
+  !!   *(ad_comm::global_datafile) >> catch_seas;
+  !!   *(ad_comm::global_datafile) >> catch_sex;
+  !!   *(ad_comm::global_datafile) >> catch_type;
+  !!   *(ad_comm::global_datafile) >> catch_unit;
+  !!   *(ad_comm::global_datafile) >> catch_disc_mort;
+  !!   *(ad_comm::global_datafile) >> catch_CV;
+  !!   cout << catch_CV << endl;
+
+  !!   *(ad_comm::global_datafile) >> survey_fleet;
+  !!   *(ad_comm::global_datafile) >> survey_freq;
+  !!   *(ad_comm::global_datafile) >> survey_seas;
+  !!   *(ad_comm::global_datafile) >> survey_sex;
+  !!   *(ad_comm::global_datafile) >> survey_mat;
+  !!   *(ad_comm::global_datafile) >> survey_unit;
+  !!   *(ad_comm::global_datafile) >> survey_rai_id;
+  !!   *(ad_comm::global_datafile) >> survey_CV;
+
+  !!   *(ad_comm::global_datafile) >> comp_fleet;
+  !!   *(ad_comm::global_datafile) >> comp_lf_catch;
+  !!   *(ad_comm::global_datafile) >> comp_freq;
+  !!   *(ad_comm::global_datafile) >> comp_seas;
+  !!   *(ad_comm::global_datafile) >> comp_sex;
+  !!   *(ad_comm::global_datafile) >> comp_type;
+  !!   *(ad_comm::global_datafile) >> comp_shell;
+  !!   *(ad_comm::global_datafile) >> comp_mat;
+  !!   *(ad_comm::global_datafile) >> comp_SS;
+  
+  !!   *(ad_comm::global_datafile) >> eof_mse;
+  !!   if ( eof_mse != 9999 ){cout << "Error reading mse file" << endl; exit(1);}
+  !!   cout << "end of mse section" << endl;
+  !!  }
+
+  number TAC_used;
+  
+  // Generated data for MSE
+  matrix dCatchData_Gen(1,10000,1,11);
+  int n_dCatchData_Gen;
+  matrix dIndexData_Gen(1,10000,0,10);
+  int n_dIndexData_Gen;
+  matrix dCompData_Gen(1,10000,-7,nclass);
+  int n_dCompData_Gen;
 
 // Label 200: INITIALIZATION_SECTION
+// ================================================================================================
 INITIALIZATION_SECTION
+// ================================================================================================
    G_pars_est          G_ival;
    M_pars_est          M_ival;
    S_pars_est          S_ival;
@@ -5027,8 +5139,8 @@ INITIALIZATION_SECTION
    par_devs            deviations_ival;
 
 // ================================================================================================
-
 PARAMETER_SECTION
+// ================================================================================================
   !! cout << "+----------------------+" << endl;
   !! cout << "| Parameter section    |" << endl;
   !! cout << "+----------------------+" << endl;
@@ -5257,12 +5369,12 @@ PARAMETER_SECTION
   vector Mmult(1,nclass);                                                   ///> size-class-specific multiplier
   matrix fout(1,nfleet,syr,nyrRetro);                                       ///> Fishing mortality output
   vector finit(1,nfleet);                                                   ///> Initial F
-  4darray ft(1,nfleet,1,nsex,syr,nyrRetro,1,nseason);                       ///> Fully-selected fishing mortality by gear
-  4darray F(1,nsex,syr,nyrRetro,1,nseason,1,nclass);                        ///> Fishing mortality actual
-  4darray F2(1,nsex,syr,nyrRetro,1,nseason,1,nclass);                       ///> Fishing mortality with full selection
-  5darray Z(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass);              ///> Total mortality actual
-  5darray Z2(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass);             ///> Total mortality with full selection
-  6darray S(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass,1,nclass);     ///> Survival Rate (S=exp(-Z))
+  4darray ft(1,nfleet,1,nsex,syr,nyrRetro+nproj,1,nseason);                 ///> Fully-selected fishing mortality by gear
+  4darray F(1,nsex,syr,nyrRetro+nproj,1,nseason,1,nclass);                  ///> Fishing mortality actual
+  4darray F2(1,nsex,syr,nyrRetro+nproj,1,nseason,1,nclass);                 ///> Fishing mortality with full selection
+  5darray Z(1,nsex,1,nmature,syr,nyrRetro+nproj,1,nseason,1,nclass);        ///> Total mortality actual
+  5darray Z2(1,nsex,1,nmature,syr,nyrRetro+nproj,1,nseason,1,nclass);       ///> Total mortality with full selection
+  6darray S(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass,1,nclass);     ///> Survival Rate (S=exp(-Z)) TODO: why not +nproj??
   5darray SS_pass(1,nsex,1,nmature,1,nseason,1,nclass,1,nclass);            ///> Survival Rate
   
   4darray d4_N(1,n_grp,syr,nyrRetro+1,1,nseason,1,nclass);          ///> Numbers-at-sex/mature/shell/year/season/length.
@@ -5312,8 +5424,8 @@ PARAMETER_SECTION
   vector log_fimpbar(1,nfleet);                            ///> Vector of Fs
   vector log_fimpbarOFL(1,nfleet);                         ///> Vector of Fs for computing OFL
   vector log_fimpbarPass(1,nfleet);                        ///> Vector of Fs
-  vector catch_pass(1,4+nfleet);                           ///> Various catch outputs
-  vector catch_pass_eqn(1,4+nfleet);                       ///> Various catch outputs (in equilibrium)
+  vector catch_pass(1,4+4*nfleet);                           ///> Various catch outputs
+  vector catch_pass_eqn(1,4+4*nfleet);                       ///> Various catch outputs (in equilibrium)
   matrix catch_summary(1,nfleet+5,1,nproj)                 ///> Various catch outputs for projections
   vector dvar_mid_points(1,nclass);                        ///>dvar version of size class midpoints
   !!dvar_mid_points = mid_points;
@@ -5346,7 +5458,7 @@ PARAMETER_SECTION
   matrix spr_yield(0,100,1,4);                             ///> Yield function
   matrix fut_recruits(1,nsex,1,nproj);                     ///> Projected recruitment
   4darray numbers_proj_gytl(1,n_grp,1,nprojVec,1,nseason,1,nclass);      ///> The N matrix for the projection
-  vector OFLoutpass(1,4+nfleet);                           ///> Output of OFLs
+  vector OFLoutpass(1,4+4*nfleet);                         ///> Output of OFLs
 
   // Extra sd variables
 //  vector sd_fbar(syr,nyr-1);
@@ -5386,8 +5498,8 @@ PARAMETER_SECTION
   //friend_class population_model;
 
 // ================================================================================================
-
 PRELIMINARY_CALCS_SECTION
+// ================================================================================================
   dvector rands(1,1000);
   dvector randu(1,1000);
   cout << "+----------------------+" << endl;
@@ -5556,19 +5668,20 @@ PRELIMINARY_CALCS_SECTION
   calc_selectivities();                     if ( verbose >= 3 ) cout << "Ok after calc_selectivities in Prelim ..." << endl;
 
   cout<<"Finished PRELIMINARY_CALCS_SECTION"<<endl;
-// =============================================================================
+
 // =============================================================================
 BETWEEN_PHASES_SECTION
+// =============================================================================
     cout<<endl;
     cout<<"#--BETWEEN_PHASES_SECTION---------------------"<<endl;
     adstring msg = "#----Starting phase "+str(current_phase())+" of "+str(initial_params::max_number_phases);
     cout<<msg<<endl;
     cout<<"Finished BETWEEN_PHASES_SECTION"<<endl;
     cout<<"----------------------------------------------"<<endl;
-// ================================================================================================
-// ================================================================================================
 
+// ================================================================================================
 PROCEDURE_SECTION
+// ================================================================================================
   int Ipnt,ii,jj;
 
   nprojUse = 0; 
@@ -6286,7 +6399,7 @@ FUNCTION initialize_model_parameters
   }
   if (verbose >= 3) cout<<"--finished AddVarQT"<<endl;
   if (verbose >= 3) cout<<"--finished initialize_model_parameters"<<endl;
-  exit(-1);
+  //exit(-1);
 
  // =======================================================================================================================================
 // =======================================================================================================================================
@@ -8978,7 +9091,7 @@ FUNCTION adstring getPopStateString(int ig)
   /**
    * @brief Project cohort numbers-at-length
    * @author WTS
-   * @details Simulate cohort ptogression
+   * @details Simulate cohort progression
    *
    * @param iyr year to use for population rates
    * @param mxYr max number of years to project cohort
@@ -9195,6 +9308,144 @@ FUNCTION update_population_numbers_at_length
   **/
 // =================================================================================================================================================
 
+/**
+   * @brief Calculate predicted catch observations
+   * @details The function uses the Baranov catch equation to predict the retained and discarded catch.
+   *
+   * Assumptions:
+   *  1) retained (landed catch) is assume to be newshell male only. (WTS 2025-06: is this still true??)
+   *  2) discards are all females (new and old) and male only crab.  (WTS 2025-06: "male old shell only"??)
+   *  3) Natural and fishing mortality occur simultaneously.
+   *  4) discard is the total number of crab caught and discarded.
+  **/
+
+FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const int k, const int h, 
+                                              const int type, const int unit, const int kk, dvariable effort,
+                                              dvariable cobs)
+  RETURN_ARRAYS_INCREMENT();
+
+  dvar_vector sel(1,nclass);                                         ///> capture selectivity
+  dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
+  dvar_vector tempZ1(1,nclass);                                      ///> total mortality
+  dvariable tmp_ft,obs_catch_effort,pre_catch;                       ///> temp variables
+  dvar_vector out(1,2);                                              ///> Passing
+ 
+  obs_catch_effort = 0;
+  pre_catch = 0;
+  if ( h!=UNDET_SEX ) {// sex specific
+    sel = log_slx_capture(k,h,i);                                    ///> Capture selectivity
+    switch ( type ) {
+    case RETAINED:                                                   ///> retained catch
+      sel = mfexp(sel + log_slx_retaind(k,h,i));
+      break;
+    case DISCARDED:                                                  ///> discarded catch
+      sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+      break;
+    case TOTALCATCH:                                                 ///> total catch
+      sel = mfexp(sel);
+      break;
+     }
+    // sum of nals
+    nal.initialize();                                                ///> Computer numbers
+    for ( int m = 1; m <= nmature; m++ ){
+     for ( int o = 1; o <= nshell; o++ ){ 
+      int ig = pntr_hmo(h,m,o); 
+      if (i < nyrRetro+1 || (i==nyrRetro & j==1))
+       {
+        nal = d4_N(ig,i,j);
+        nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+       }
+      else
+       {
+        nal = numbers_proj_gytl(ig,i-nyrRetro,j);
+        nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,nyrRetro+1)) : nal;
+       }
+      if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);//--consistent
+              
+      // predict catch
+      tmp_ft = ft(k,h,i,j);                                       /// > Extract F
+      if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F|| season_type(j)==TCSAM02_F) {
+        pre_catch += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+        if (cobs == 0 && effort > 0.0)
+         if (doTCSAM02EffExp)
+          obs_catch_effort += nal * elem_div(elem_prod(art_q_catch(kk,h) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+         else
+          obs_catch_effort += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+      }
+      if (season_type(j)==EXPLOIT_F) {
+        pre_catch += nal * tmp_ft * sel;
+        if (cobs == 0 && effort > 0.0)
+         if (doTCSAM02EffExp)
+          obs_catch_effort += nal * art_q_catch(kk,h) * effort * sel;
+         else
+          obs_catch_effort += nal * mfexp(log_q_catch(kk)) * effort * sel;
+      }
+      }//--o loop
+     }//--m loop
+    } else {  
+     // sexes combined
+     for ( int h1 = 1; h1 <= nsex; h1++ ){
+      sel = log_slx_capture(k)(h1)(i);
+      switch( type ){
+       case RETAINED: // retained catch
+         sel = mfexp(sel + log_slx_retaind(k,h,i));
+         break;
+       case DISCARDED: // discarded catch
+         sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+         break;
+       case TOTALCATCH: // total catch
+         sel = mfexp(sel);
+         break;
+      }
+      // sum of nals
+      nal.initialize();
+      for ( int m = 1; m <= nmature; m++ ){
+       for ( int o = 1; o <= nshell; o++ ){ 
+        int ig = pntr_hmo(h,m,o);
+        if (i < nyrRetro+1 || (i==nyrRetro & j==1))
+         {
+          nal = d4_N(ig,i,j);
+          nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,i)) : nal;
+         }
+        else
+         {
+          nal = numbers_proj_gytl(ig,i-nyrRetro,j);
+          nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,nyrRetro+1)) : nal;
+         }
+               
+        tmp_ft = ft(k,h,i,j);                                      /// > Extract F
+        if (season_type(j)==INSTANT_F) tempZ1 = Z2(h1,m,i,j); else tempZ1 = Z(h1,m,i,j); //consistent
+        if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F){
+        pre_catch += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+        if (cobs == 0 && effort > 0.0)
+         if (doTCSAM02EffExp)
+          obs_catch_effort +=  nal * elem_div(elem_prod(art_q_catch(kk,h1) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+         else
+          obs_catch_effort +=  nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+        }
+        if (season_type(j)==EXPLOIT_F) {
+         pre_catch += nal * tmp_ft * sel;
+         if (cobs == 0 && effort > 0.0)
+           if (doTCSAM02EffExp)
+            obs_catch_effort +=  nal * art_q_catch(kk,h1) * effort * sel;
+           else 
+            obs_catch_effort +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
+         }
+        }//--o
+       }//--m
+       } //--h1
+      } // sex-specific
+ 
+  out(1) = pre_catch;
+  out(2) = obs_catch_effort;
+ 
+  RETURN_ARRAYS_DECREMENT();
+  return(out);
+
+//-calc_predicted_catch_one_year
+ 
+// =================================================================================================================================================
+
   /**
    * @brief Calculate predicted catch observations
    * @details The function uses the Baranov catch equation to predict the retained and discarded catch.
@@ -9216,6 +9467,7 @@ FUNCTION calc_predicted_catch
   dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
   dvar_vector tempZ1(1,nclass);                                      ///> total mortality
   dvariable xi;                                                      ///> Discard mortality rate
+  dvar_vector out(1,2);
 
   // First need to calculate a catchability (q) for each catch data frame if there is any catch and effort (must be both)
   log_q_catch.initialize(); // log-scale average cpue ("q") for effort extrapolation (standard gmacs)
@@ -9313,95 +9565,10 @@ FUNCTION calc_predicted_catch
         effort   =     dCatchData(kk,jj,10);                           ///> Effort data
         cobs     =        obs_catch(kk,jj);                            ///> catch data
 
-        if ( h!=UNDET_SEX ) {// sex specific
-          sel = log_slx_capture(k,h,i);                                  ///> Capture selectivity
-          //ret = log_slx_retaind(k,h,i);                                ///> Retention probability
-          //dis = log_slx_discard(k,h,i);                                ///> Discard fraction
-          switch ( type ) {
-           case RETAINED:                                             ///> retained catch
-            sel = mfexp(sel + log_slx_retaind(k,h,i));
-            break;
-           case DISCARDED:                                            ///> discarded catch
-            sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
-            break;
-           case TOTALCATCH:                                           ///> total catch
-            sel = mfexp(sel);
-            break;
-          }
-          // sum of nals
-          nal.initialize();                                            ///> Computer numbers
-          for ( int m = 1; m <= nmature; m++ ){
-            for ( int o = 1; o <= nshell; o++ ){ 
-              int ig = pntr_hmo(h,m,o); 
-              nal = d4_N(ig,i,j);
-              nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-              if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);//--consistent
-              
-              // predict catch
-              tmp_ft = ft(k,h,i,j);                                       /// > Extract F
-              if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F|| season_type(j)==TCSAM02_F) {
-                pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-                if (cobs == 0 && effort > 0.0)
-                  if (doTCSAM02EffExp)
-                    obs_catch_effort(kk,jj) += nal * elem_div(elem_prod(art_q_catch(kk,h) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-                  else
-                    obs_catch_effort(kk,jj) += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-              }
-              if (season_type(j)==EXPLOIT_F) {
-                pre_catch(kk,jj) += nal * tmp_ft * sel;
-                if (cobs == 0 && effort > 0.0)
-                  if (doTCSAM02EffExp)
-                    obs_catch_effort(kk,jj) += nal * art_q_catch(kk,h) * effort * sel;
-                  else
-                    obs_catch_effort(kk,jj) += nal * mfexp(log_q_catch(kk)) * effort * sel;
-              }
-            }//--o loop
-          }//--m loop
-        } else {  
-          // sexes combined
-          for ( h = 1; h <= nsex; h++ ){
-            sel = log_slx_capture(k)(h)(i);
-            switch( type ){
-              case RETAINED: // retained catch
-                sel = mfexp(sel + log_slx_retaind(k,h,i));
-                break;
-              case DISCARDED: // discarded catch
-                sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
-                break;
-              case TOTALCATCH: // total catch
-                sel = mfexp(sel);
-                break;
-            }
-            // sum of nals
-            nal.initialize();
-            for ( int m = 1; m <= nmature; m++ ){
-              for ( int o = 1; o <= nshell; o++ ){ 
-                int ig = pntr_hmo(h,m,o);
-                nal = d4_N(ig,i,j);
-                nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-                
-                tmp_ft = ft(k,h,i,j);                                      /// > Extract F
-                if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j); //consistent
-                if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F){
-                  pre_catch(kk,jj) += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-                  if (cobs == 0 && effort > 0.0)
-                    if (doTCSAM02EffExp)
-                      obs_catch_effort(kk,jj) +=  nal * elem_div(elem_prod(art_q_catch(kk,h) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-                    else
-                      obs_catch_effort(kk,jj) +=  nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-                }
-                if (season_type(j)==EXPLOIT_F) {
-                  pre_catch(kk,jj) += nal * tmp_ft * sel;
-                  if (cobs == 0 && effort > 0.0)
-                    if (doTCSAM02EffExp)
-                      obs_catch_effort(kk,jj) +=  nal * art_q_catch(kk,h) * effort * sel;
-                    else 
-                      obs_catch_effort(kk,jj) +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
-                }
-              }//--o
-            }//--m
-          }//--h
-        } // sex-specific
+        // AEPCALLING HERE  
+        out = predicted_catch_one_year(i, j, k, h,type, unit, kk, effort, cobs);
+        pre_catch(kk,jj) = out(1);
+        obs_catch_effort(kk,jj) = out(2);
               
         // Catch residuals (TODO: why here? Recalculated in catch_likelihood--WTS)
         // In first case (obs_catch > 0) then if there is only catch data, calculate the residual as per usual; 
@@ -9563,40 +9730,32 @@ FUNCTION calc_predicted_capture_abdbio
 //--calc_predicted_capture_abdbio
 
 // =================================================================================================================================================
-
   /**
-   * @brief Calculate predicted relative abundance and residuals (accommodates q blocks)
-   * @author Steve Martell, D'Arcy Webber, William Stockhausen
+   * @brief Calculate predicted relative abundance
+   * @author Steve Martell, D'Arcy Webber, William Stockhausen, Andre Punt
    *
-   * @details Calculates predicted relative abudance and a residuals for each row in dSurveyData
+   * @details Calculates predicted relative abudance for one index 
+   * @        This function is needed to generate future survey daa
    * 
   **/
-FUNCTION calc_relative_abundance
-  int unit;
+FUNCTION dvariable calc_predicted_rel_abund_one(const int i, const int q_id, const int j, const int g, const int h1, 
+                                                  const int m1, const int unit, const int rai_id, const int jj)
+  RETURN_ARRAYS_INCREMENT();
+  
   dvar_vector sel(1,nclass);                                         ///> capture selectivity
   dvar_vector ret(1,nclass);                                         ///> retention
   dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
   dvar_vector tempZ1(1,nclass);                                      ///> total mortality
-  dvar_vector V(1,nSurveyRows);                                      ///> Predicted survey index
+  dvariable V;                                                        ///> Predicted survey index
   dvar_matrix mat_sel(1,nSurveyRows,1,nclass);                       ///> selectivity applied, by survey row
   dvar_matrix mat_ret(1,nSurveyRows,1,nclass);                       ///> retention applied, by survey row
     
-  V.initialize();
+  V = 0;
+  nal.initialize();
   mat_sel.initialize();
   mat_ret.initialize();
-  for ( int jj = 1; jj <= nSurveyRows; jj++ ){
-    int q_id = dSurveyData(jj,0); // q parameter index
-    int i    = dSurveyData(jj,1); // year
-    int j    = dSurveyData(jj,2); // season index
-    if ((syr <= i) && ((i <= nyrRetro) || ((i == nyrRetro+1) && (j == 1)))) {
-      nal.initialize();
-      int g  = dSurveyData(jj,3);                                    ///> fleet/gear index
-      int h1 = dSurveyData(jj,4);                                    ///> sex index
-      int m1 = dSurveyData(jj,5);                                    ///> maturity index
-      int unit = dSurveyData(jj,8);                                  ///> units 1 = biomass 2 = numbers
-      int rai_id = dSurveyData(jj,10);//relative abundance index id
 
-      if (nmature == 1) {
+  if (nmature == 1) {
         //=========================================================================
         //==============Calculate index for NO TERMINAL MOLT cases=================
         //=========maturity state is summed over in index============
@@ -9610,10 +9769,13 @@ FUNCTION calc_relative_abundance
               for ( int m = 1; m <= nmature; m++ ){        //this doesn't really need to be here (nmature=1)
                 for ( int o = 1; o <= nshell; o++ ) {
                   int ig = pntr_hmo(h,m,o);
-                  nal += ( unit == 1 ) ? elem_prod(d4_N(ig,i,j), mean_wt(h,m,i)) : d4_N(ig,i,j);
+                  if (i <= nyrRetro+1)
+                   nal += ( unit == 1 ) ? elem_prod(d4_N(ig,i,j), mean_wt(h,m,i)) : d4_N(ig,i,j);
+                  else 
+                   nal += ( unit == 1 ) ? elem_prod(numbers_proj_gytl(ig,i-nyrRetro,j), mean_wt(h,m,nyrRetro+1)) : numbers_proj_gytl(ig,i-nyrRetro,j);
                 }//--o loop
               }//--m loop
-              // V(jj) = nal * sel;
+              // V = nal * sel;
               tempZ1.initialize();
               if (cpue_time(jj) > 0){
                 if (season_type(j)==INSTANT_F) 
@@ -9622,12 +9784,12 @@ FUNCTION calc_relative_abundance
                   tempZ1 = Z(h,1,i,j)*cpue_time(jj)+1.0e-10;
               }
               if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
               }
               if (season_type(j)==EXPLOIT_F) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                 cout << "not coded yet" << endl; exit(1);
               }
             } /// end if(h==h1 || h== UNDET_SEX)
@@ -9649,7 +9811,7 @@ FUNCTION calc_relative_abundance
                   nal += ( unit == 1 ) ? elem_prod(maturity(h),elem_prod(d4_N(ig,i,j), mean_wt(h,m,i))) : elem_prod(d4_N(ig,i,j),maturity(h));
                 }//--o loop
               }//--m loop
-              // V(jj) = nal * sel;
+              // V) = nal * sel;
               tempZ1.initialize();
               if (cpue_time(jj) > 0){
                 if (season_type(j)==INSTANT_F) 
@@ -9658,12 +9820,12 @@ FUNCTION calc_relative_abundance
                   tempZ1 = Z(h,1,i,j)*cpue_time(jj)+1.0e-10;
               }
               if ((season_type(j)==INSTANT_F) || (season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F)){
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
               }
               if (season_type(j)==EXPLOIT_F) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                 cout << "not coded yet" << endl; exit(1);
               }
             } /// end if(h==h1 || h== UNDET_SEX)
@@ -9675,10 +9837,10 @@ FUNCTION calc_relative_abundance
           cout<<"there is no case for immature-only indices currently"<<endl;
           exit(1);
         }        
-      }// nmature == 1
+  }// nmature == 1
 
-      //==============================================================================
-      if (nmature == 2) {
+  //==============================================================================
+  if (nmature == 2) {
         //================calculate index for TERMINAL MOLT cases=======================
         if (m1 == UNDET_MATURE){
           //=========maturity state is summed over in index============
@@ -9694,7 +9856,7 @@ FUNCTION calc_relative_abundance
                   nal += ( unit == 1 ) ? elem_prod(d4_N(ig,i,j), mean_wt(h,m,i)) : d4_N(ig,i,j);//--this is WRONG if h1==UNDET_SEX but sel or ret is sex-specific (wts)
                 }//--o loop
               }//--m loop  
-              // V(jj) = nal * sel;
+              // V = nal * sel;
               tempZ1.initialize();
               if (cpue_time(jj) > 0){
                 if (season_type(j)==INSTANT_F) 
@@ -9703,12 +9865,12 @@ FUNCTION calc_relative_abundance
                   tempZ1 = Z(h,1,i,j)*cpue_time(jj)+1.0e-10;
               }
               if ((season_type(j)==INSTANT_F) || (season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F)) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
               }
               if (season_type(j)==EXPLOIT_F) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                 cout << "not coded yet" << endl; exit(1);
               }
             } /// end if(h==h1 || h== UNDET_SEX)
@@ -9731,7 +9893,7 @@ FUNCTION calc_relative_abundance
                   nal += ( unit == 1 ) ? elem_prod(d4_N(ig,i,j), mean_wt(h,m,i)) : d4_N(ig,i,j);//--this is WRONG if h1==UNDET_SEX but sel or ret is sex-specific (wts)
                 }//--o loop
               }//--m loop
-              // V(jj) = nal * sel;
+              // V = nal * sel;
               tempZ1.initialize();
               if (cpue_time(jj) > 0){
                 if (season_type(j)==INSTANT_F) 
@@ -9740,12 +9902,12 @@ FUNCTION calc_relative_abundance
                   tempZ1 = Z(h,1,i,j)*cpue_time(jj)+1.0e-10;
               }
               if ((season_type(j)==INSTANT_F) || (season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F)) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
               }
               if (season_type(j)==EXPLOIT_F) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                 cout << "not coded yet" << endl; exit(1);
               }            
             } /// end if(h==h1 || h== UNDET_SEX)
@@ -9765,7 +9927,7 @@ FUNCTION calc_relative_abundance
                   nal += ( unit == 1 ) ? elem_prod(d4_N(ig,i,j), mean_wt(h,m,i)) : d4_N(ig,i,j);//--TODO: this is WRONG if h1==UNDET_SEX but sel or ret is sex-specific (wts)
                 }//--o loop
               }//--m loop
-              // V(jj) = nal * sel;
+              // V = nal * sel;
               tempZ1.initialize();
               if (cpue_time(jj) > 0){
                 if (season_type(j)==INSTANT_F) 
@@ -9774,19 +9936,49 @@ FUNCTION calc_relative_abundance
                   tempZ1 = Z(h,1,i,j)*cpue_time(jj)+1.0e-10;
               }
               if ((season_type(j)==INSTANT_F) || (season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F)) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
               }
               if (season_type(j)==EXPLOIT_F) {
-                if (SurveyType(rai_id)==1) V(jj) = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
-                if (SurveyType(rai_id)==2) V(jj) = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+                if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
                 cout << "not coded yet" << endl; exit(1);
               }            
             } /// end if(h==h1 || h== UNDET_SEX)
           }//--h loop
         }// m1==2
 
-      }// nmature==2
+  }// nmature==2
+  
+
+  RETURN_ARRAYS_DECREMENT();
+  return(V);
+//--calc_predicted_rel_abund_one
+
+// =================================================================================================================================================
+  /**
+   * @brief Calculate predicted relative abundance and residuals (accommodates q blocks)
+   * @author Steve Martell, D'Arcy Webber, William Stockhausen
+   *
+   * @details Calculates predicted relative abudance and a residuals for each row in dSurveyData
+   * 
+  **/
+FUNCTION calc_relative_abundance
+  int unit;
+  dvar_vector V(1,nSurveyRows);                                      ///> Predicted survey index
+
+  V.initialize();
+  for ( int jj = 1; jj <= nSurveyRows; jj++ ){
+    int q_id = dSurveyData(jj,0); // q parameter index
+    int i    = dSurveyData(jj,1); // year
+    int j    = dSurveyData(jj,2); // season index
+    if ((syr <= i) && ((i <= nyrRetro) || ((i == nyrRetro+1) && (j == 1)))) {
+      int g  = dSurveyData(jj,3);                                    ///> fleet/gear index
+      int h1 = dSurveyData(jj,4);                                    ///> sex index
+      int m1 = dSurveyData(jj,5);                                    ///> maturity index
+      int unit = dSurveyData(jj,8);                                  ///> units 1 = biomass 2 = numbers
+      int rai_id = dSurveyData(jj,10);//relative abundance index id
+      V(jj) = calc_predicted_rel_abund_one(i, q_id, j, g, h1, m1, unit, rai_id, jj);
     }// ((dSurveyData(jj,1) <= nyrRetro) || ((dSurveyData(jj,1) == nyrRetro+1 && dSurveyData(jj,2) == 1))) && (dSurveyData(jj,1) >= syr)
   }//--jj loop
 
@@ -9846,7 +10038,173 @@ FUNCTION calc_relative_abundance
     }
   }//--jj loop
 
+// =================================================================================================================================================
 
+FUNCTION dvar_vector calc_predicted_comp_one(const int i, const int j, const int k,  const int h, 
+                                                  const int type, const int shell, const int bmature, const int ii)
+  RETURN_ARRAYS_INCREMENT();
+  
+  dvar_vector dNtmp(1,nclass);                                      ///> temporary Ns
+  dvar_vector nal(1,nclass);                                        ///> numbers or biomass at length.
+  dvar_vector nal2(1,nclass);                                       ///> numbers or biomass at length.
+  dvar_vector tempZ1(1,nclass);                                     ///> total mortality
+  dvariable tempF;
+ 
+  if (verbose>3) {
+    cout<<"------Processing size comp for "<< i << " season = "<< j <<" fleet = "<< k;
+    cout<<" sex = "<< h <<" type = "<< type <<" shell = "<< shell <<" bmature = "<< bmature << endl;
+  }
+
+  if ( h != UNDET_SEX ) {                                          ///> sex specific
+   dvar_vector sel = mfexp(log_slx_capture(k,h,i));
+   if (std::isnan(value(sum(sel)))) cout<< "NaNs in log_slx_capture" <<endl;
+   dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
+   if (std::isnan(value(sum(ret)))) cout<< "NaNs in log_slx_retaind" <<endl;
+   dvar_vector dis = mfexp(log_slx_discard(k,h,i));
+   if (std::isnan(value(sum(dis)))) cout<< "NaNs in log_slx_discard" <<endl;
+
+   // AEPCAL--check the maturity index for Z2 and Z1
+
+   dNtmp.initialize();
+   if (abs(lf_catch_in(ii))==CATCH_COMP_DOSCL) {
+    //if (verbose>3) cout <<"----catch comp: sex-specific"<< endl;
+    // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
+    // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+    if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
+
+    if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F) {
+      tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+    }
+    if (season_type(j)==EXPLOIT_F) {
+     tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+     cout << "not coded yet" << endl; exit(1);
+    }
+   }//--lf_catch_in(ii)==CATCH_COMP_DOSCL or CATCH_COMP_NOSCL
+
+   if (abs(lf_catch_in(ii))==SURVEY_COMP_DOSCL) {
+    //if (verbose>3) cout << "----survey comp" << endl;
+    tempF = 1.0;                                               //--WTS  20260505
+    for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
+   } else {
+     tempF = ft(k,h,i,j);//fully-selected fishery capture rate  //--WTS  20260505
+   }
+
+   nal.initialize();                                           ///> Numbers by sex
+
+   // need cases for when maturity changes and when shell condition changes
+   if (nmature == 1){
+    for ( int m = 1; m <= nmature; m++ ){
+     for ( int o = 1; o <= nshell; o++ ) {
+      int ig = pntr_hmo(h,m,o);
+      //if (i < nyrRetro+1 || (i==nyrRetro & j==1)) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j);
+      if (i < nyrRetro+1) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j);
+      if (std::isnan(value(sum(nal2)))){
+       cout << "d4_N(ig,i,j) is NaN for h,m,o,i,j: "<<h<<" "<<m<<" "<<o<<" "<<i<<" "<<j<<endl;
+       cout << nal2 <<endl;
+      }
+      if ( shell == 0 ) nal += nal2;
+      if ( shell == o ) nal += nal2;
+     }//--o loop
+    }//--m loop
+   }//--nmature == 1
+
+   if (nmature == 2) {
+    for ( int m = 1; m <= nmature; m++ ){
+     for ( int o = 1; o <= nshell; o++ ) {
+      int ig = pntr_hmo(h,m,o);
+      //if (i < nyrRetro+1 || (i==nyrRetro & j==1)) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j);
+      if (i < nyrRetro+1) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j);
+      if (std::isnan(value(sum(nal2)))){
+       cout << "d4_N(ig,i,j) is NaN for h,m,o,i,j: "<<h<<" "<<m<<" "<<o<<" "<<i<<" "<<j<<endl;
+       cout << nal2 <<endl;
+      }
+      if ( bmature == 0 ) nal += nal2;
+      if ( bmature == m ) nal += nal2;
+     }//--o loop
+    }//--m loop
+   }//--nmature == 2
+ 
+   switch ( type ) {
+     case RETAINED:                                            ///> retained
+       dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1); //WTS 20260505: added tempF
+       if (std::isnan(value(sum(dNtmp)))) cout<< "NaNs in RETAINED dNtmp " << dNtmp << endl;
+       break;
+     case DISCARDED:                                           ///> discarded
+       dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1); //WTS 20260505: added tempF
+       if (std::isnan(value(sum(dNtmp)))) cout<< "NaNs in DISCARDED dNtmp " << dNtmp << endl;
+       break;
+     case TOTALCATCH:                                          ///> both retained and discarded
+       dNtmp += tempF*elem_prod(elem_prod(nal, sel),tempZ1);                 //--WTS  20260505: added tempF
+       if (std::isnan(value(sum(dNtmp)))) {
+        cout<< "NaNs in TOTALCATCH dNtmp " << dNtmp << endl;
+        cout<< "nal: " << nal << endl;
+        cout<< "sel: " << sel << endl;
+        cout<< "tempZ1: " << tempZ1 << endl;
+       }
+       break;
+   }//--switch(type)
+   //end of sex-specific: h != UNDET_SEX
+  } else {
+    // sexes combined in the observations
+    if (verbose>3) cout <<"----sexes combined in the observations"<< endl;
+    for ( int h = 1; h <= nsex; h++ ){
+     //if (verbose>3) cout <<"------h = " << h << endl;
+     dvar_vector sel = mfexp(log_slx_capture(k,h,i));
+     if (std::isnan(value(sum(sel)))) cout<< "NaNs in log_slx_capture" <<endl;
+     dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
+     if (std::isnan(value(sum(ret)))) cout<< "NaNs in log_slx_retaind" <<endl;
+     dvar_vector dis = mfexp(log_slx_discard(k,h,i));
+     if (std::isnan(value(sum(dis)))) cout<< "NaNs in log_slx_discard" <<endl;
+     // AEPCAL--check the maturity index
+     if (abs(lf_catch_in(ii))==CATCH_COMP_DOSCL) {
+      //if (verbose>3) cout <<"------catch comp: sexes combined"<< endl;
+      // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
+      // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+      if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
+
+      if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F) {
+        tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+      }
+      if (season_type(j)==EXPLOIT_F) {
+        tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+        cout << "not coded yet" << endl; exit(1);
+      }
+      if (std::isnan(value(sum(tempZ1)))) cout<< "NaNs in tempZ1" <<endl;
+     }//--abs(lf_catch_in(ii))==CATCH_COMP_DOSCL or CATCH_COMP_NOSCL
+
+     if (abs(lf_catch_in(ii))==SURVEY_COMP_DOSCL) {
+      //if (verbose>3) cout << "----survey comp" << endl;
+      tempF = 1.0;                                               //--WTS  20260505
+      for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
+     } else {
+       tempF = ft(k,h,i,j);//fully-selected fishery capture rate  //--WTS  20260505
+     }
+
+     nal.initialize();                                         ///> Numbers by sex
+     for ( int m = 1; m <= nmature; m++ ){
+      for ( int o = 1; o <= nshell; o++ ) {
+       int ig = pntr_hmo(h,m,o);
+       if ( shell == 0 ) nal += d4_N(ig,i,j);
+       if ( shell == o ) nal += d4_N(ig,i,j);
+      }//--o loop
+     }//--m loop
+
+     switch ( type ) {
+       case RETAINED:                                            ///> retained
+        dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1); //WTS 20260505: added tempF
+        break;
+       case DISCARDED:                                           ///> discarded
+        dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1); //WTS 20260505: added tempF
+        break;
+       case TOTALCATCH:                                          ///> both retained and discarded
+        dNtmp += tempF*elem_prod(elem_prod(nal, sel),tempZ1);                 //WTS 20260505: added tempF
+        break;
+     }//--switch(type)
+    }//--h loop
+  }//--else sexes combined
+   
+  RETURN_ARRAYS_DECREMENT();
+  return(dNtmp);
 
 // =================================================================================================================================================
   /**
@@ -9892,9 +10250,6 @@ FUNCTION calc_predicted_composition
       cout<<"--Starting calc_predicted_composition"<<endl;
     }
     dvar_vector dNtmp(1,nclass);                                      ///> temporary Ns
-    dvar_vector nal(1,nclass);                                        ///> numbers or biomass at length.
-    dvar_vector tempZ1(1,nclass);                                     ///> total mortality
-    dvariable   tempF;                                                ///> fully-selected capture rate (or 1 for surveys)
     dvariable qmult;                                                  ///> Q multiplier for comps
     dvariable cumsum;                                                 ///> used for tail compression
 
@@ -9926,147 +10281,8 @@ FUNCTION calc_predicted_composition
               cout <<"year: "<< i <<" seas: " << j << "fleet: " << k << "sex: "<<h<< endl; 
               cout <<"d3_size_comps_in: " << d3_SizeComps_in(ii)(jj) << endl;
             }
-            dvar_vector sel = mfexp(log_slx_capture(k,h,i));
-            if (std::isnan(value(sum(sel)))) cout<< "NaNs in log_slx_capture" <<endl;
-            dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
-            if (std::isnan(value(sum(ret)))) cout<< "NaNs in log_slx_retaind" <<endl;
-            dvar_vector dis = mfexp(log_slx_discard(k,h,i));
-            if (std::isnan(value(sum(dis)))) cout<< "NaNs in log_slx_discard" <<endl;
-
-            // AEPCAL--check the maturity index for Z2 and Z1
-
-            if (abs(lf_catch_in(ii))==CATCH_COMP_DOSCL) {
-              //if (verbose>3) cout <<"----catch comp: sex-specific"<< endl;
-              // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-              // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-              if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-
-              if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F) {
-                tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-              }
-              if (season_type(j)==EXPLOIT_F) {
-                tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-                cout << "not coded yet" << endl; exit(1);
-              }
-            }//--lf_catch_in(ii)==CATCH_COMP_DOSCL or CATCH_COMP_NOSCL
-
-            if (abs(lf_catch_in(ii))==SURVEY_COMP_DOSCL) {
-              //if (verbose>3) cout << "----survey comp" << endl;
-              tempF = 1.0;                                               //--WTS  20260505
-              for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
-            } else {
-              tempF = ft(k,h,i,j);//fully-selected fishery capture rate  //--WTS  20260505
-            }
-
-            nal.initialize();                                           ///> Numbers by sex
-
-            // need cases for when maturity changes and when shell condition changes
-            if(nmature == 1){
-              for ( int m = 1; m <= nmature; m++ ){
-                for ( int o = 1; o <= nshell; o++ ) {
-                  int ig = pntr_hmo(h,m,o);
-                  if ( shell == 0 ) nal += d4_N(ig,i,j);
-                  if ( shell == o ) nal += d4_N(ig,i,j);
-                  if (std::isnan(value(sum(d4_N(ig,i,j))))){
-                    cout << "d4_N(ig,i,j) is NaN for h,m,o,i,j: "<<h<<" "<<m<<" "<<o<<" "<<i<<" "<<j<<endl;
-                    cout << d4_N(ig,i,j) <<endl;
-                  }
-                }//--o loop
-              }//--m loop
-            }//--nmature == 1
-
-            if(nmature == 2) {
-              for ( int m = 1; m <= nmature; m++ ){
-                for ( int o = 1; o <= nshell; o++ ) {
-                  int ig = pntr_hmo(h,m,o);
-                  if (std::isnan(value(sum(d4_N(ig,i,j))))){
-                    cout << "d4_N(ig,i,j) is NaN for h,m,o,i,j: "<<h<<" "<<m<<" "<<o<<" "<<i<<" "<<j<<endl;
-                    cout << d4_N(ig,i,j) <<endl;
-                  }
-                  if ( bmature == 0 ) nal += d4_N(ig,i,j);
-                  if ( bmature == m ) nal += d4_N(ig,i,j);
-                }//--o loop
-              }//--m loop
-            }//--nmature == 2
-
-            switch ( type ) {
-              case RETAINED:                                            ///> retained
-                dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1); //WTS 20260505: added tempF
-                if (std::isnan(value(sum(dNtmp)))) cout<< "NaNs in RETAINED dNtmp " << dNtmp << endl;
-                break;
-              case DISCARDED:                                           ///> discarded
-                dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1); //WTS 20260505: added tempF
-                if (std::isnan(value(sum(dNtmp)))) cout<< "NaNs in DISCARDED dNtmp " << dNtmp << endl;
-                break;
-              case TOTALCATCH:                                          ///> both retained and discarded
-                dNtmp += tempF*elem_prod(elem_prod(nal, sel),tempZ1);                 //--WTS  20260505: added tempF
-                if (std::isnan(value(sum(dNtmp)))) {
-                  cout<< "NaNs in TOTALCATCH dNtmp " << dNtmp << endl;
-                  cout<< "nal: " << nal << endl;
-                  cout<< "sel: " << sel << endl;
-                  cout<< "tempZ1: " << tempZ1 << endl;
-                }
-                break;
-            }//--switch(type)
-            //end of sex-specific: h != UNDET_SEX
-          } else {
-            // sexes combined in the observations
-            if (verbose>3) cout <<"----sexes combined in the observations"<< endl;
-            for ( int h = 1; h <= nsex; h++ ){
-              //if (verbose>3) cout <<"------h = " << h << endl;
-              dvar_vector sel = mfexp(log_slx_capture(k,h,i));
-              if (std::isnan(value(sum(sel)))) cout<< "NaNs in log_slx_capture" <<endl;
-              dvar_vector ret = mfexp(log_slx_retaind(k,h,i));
-              if (std::isnan(value(sum(ret)))) cout<< "NaNs in log_slx_retaind" <<endl;
-              dvar_vector dis = mfexp(log_slx_discard(k,h,i));
-              if (std::isnan(value(sum(dis)))) cout<< "NaNs in log_slx_discard" <<endl;
-              // AEPCAL--check the maturity index
-              if (abs(lf_catch_in(ii))==CATCH_COMP_DOSCL) {
-                //if (verbose>3) cout <<"------catch comp: sexes combined"<< endl;
-                // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-                // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-                if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-
-                if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F) {
-                  tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-                }
-                if (season_type(j)==EXPLOIT_F) {
-                  tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-                  cout << "not coded yet" << endl; exit(1);
-                }
-                if (std::isnan(value(sum(tempZ1)))) cout<< "NaNs in tempZ1" <<endl;
-              }//--abs(lf_catch_in(ii))==CATCH_COMP_DOSCL or CATCH_COMP_NOSCL
-
-              if (abs(lf_catch_in(ii))==SURVEY_COMP_DOSCL) {
-                //if (verbose>3) cout << "----survey comp" << endl;
-                tempF = 1.0;                                               //--WTS  20260505
-                for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
-              } else {
-                tempF = ft(k,h,i,j);//fully-selected fishery capture rate  //--WTS  20260505
-              }
-
-              nal.initialize();                                         ///> Numbers by sex
-              for ( int m = 1; m <= nmature; m++ ){
-                for ( int o = 1; o <= nshell; o++ ) {
-                  int ig = pntr_hmo(h,m,o);
-                  if ( shell == 0 ) nal += d4_N(ig,i,j);
-                  if ( shell == o ) nal += d4_N(ig,i,j);
-                }//--o loop
-              }//--m loop
-
-              switch ( type ) {
-                case RETAINED:                                            ///> retained
-                  dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, ret)),tempZ1); //WTS 20260505: added tempF
-                  break;
-                case DISCARDED:                                           ///> discarded
-                  dNtmp += tempF*elem_prod(elem_prod(nal, elem_prod(sel, dis)),tempZ1); //WTS 20260505: added tempF
-                  break;
-                case TOTALCATCH:                                          ///> both retained and discarded
-                  dNtmp += tempF*elem_prod(elem_prod(nal, sel),tempZ1);                 //WTS 20260505: added tempF
-                  break;
-              }//--switch(type)
-            }//--h loop
-          }//--else sexes combined
+          }
+          dNtmp = calc_predicted_comp_one(i, j, k, h, type, shell, bmature, ii);
 
           d3_pre_size_comps_in(ii)(jj)        = dNtmp(1,nbins);
           d3_pre_size_comps_in(ii)(jj)(nbins) = sum(dNtmp(nbins,nclass));
@@ -11444,7 +11660,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
   dvar_vector Mbar(1,nclass);                                              ///> Natural mortality
   dvariable Mprop;                                                         ///> Season before removals
   dvar_vector tempZ1(1,nclass);                                            ///> Total mortality
-  dvar_vector out(1,4+nfleet);
+  dvar_vector out(1,4+4*nfleet);
 
   // Initialize
   d4_N_init.initialize();
@@ -11815,21 +12031,9 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
      if (TACType==1 && catch_pass(2)-1.0e-5 < TargetC) NeedToTune = NO;
      if (TACType==2 && catch_pass(1)-1.0e-5 < TargetC) NeedToTune = NO;
 
-     ofstream manage_strat1("quota.inp");
-     manage_strat1 << catch_pass << endl;
-     manage_strat1 << "Here" << endl;
-     manage_strat1 << catch_pass << endl;
-     manage_strat1 << i << endl;
-     manage_strat1.close();
-     
-     // Call the management startegy
-     //int xx = system("dir");
-     //cout << xx << endl;
-     ifstream manage_strat2("quota.inp");
-     float TAC_used;
-     manage_strat2 >> TAC_used;
-     cout << TAC_used << endl;
-     manage_strat2.close();
+     cout << TargetC << endl;
+     if (Do_MSE==YES) ApplyMP(i);
+     TargetC = TAC_used;
 
      // Apply bisection to find the target F for the directed fishery
      if (NeedToTune==YES)
@@ -11862,6 +12066,9 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
      catch_summary(nfleet+5,i) = StateTAC;
      ssb_prj(nyrRetro+i) = ssb_pass;
 
+     // Now generate future data
+     if (Do_MSE==YES) GenerateData(i,nyrRetro+i);
+
     } // i
 
   // return
@@ -11871,6 +12078,232 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
   return(ssb_prj);
 //--project_biomass
 // -----------------------------------------------------------------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+// Label 801: Generate data for use by the MP
+FUNCTION InitializeData
+
+ // Save the historical catch data
+ n_dCatchData_Gen = 0;
+ for ( int k = 1; k <= nCatchDF; k++ ){  
+  for ( int jj = 1; jj <= nCatchRows(k); jj++ ){
+   n_dCatchData_Gen++;
+   for (int kk=1; kk<=11;kk++) dCatchData_Gen(n_dCatchData_Gen,kk) = dCatchData(k,jj,kk);
+   } // k
+  } // jj
+  
+ // Save the historical index data
+ n_dIndexData_Gen = 0;
+ for ( int k = 1; k <= nSurveyRows; k++ ){ 
+   n_dIndexData_Gen++;
+   for (int kk=0; kk<=10;kk++) dIndexData_Gen(n_dIndexData_Gen,kk) = dSurveyData(k,kk);
+  }
+
+ // Save the historical index data
+ n_dCompData_Gen = 0;
+ for (int irow=1;irow<=nSizeComps_in; irow++)
+  for (int jrow=1;jrow<=nSizeCompRows_in(irow);jrow++) {
+   n_dCompData_Gen++;
+   for (int kk=-7; kk<=nclass;kk++) dCompData_Gen(n_dCompData_Gen,kk) = d3_SizeComps_in(irow,jrow,kk);
+  }
+
+ cout << "Initialize data" << endl;
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------------------------------------------
+// Label 802: Generate data for use by the MP
+FUNCTION void GenerateData(const int iproj, const int iyr)
+ cout << "Generate data " << iproj << " " << iyr << endl;
+ 
+ int q_id,i,j,k,h,g,h1,m1,type,unit,rai_id, shell,mat;
+ int rseed;
+ dvariable V, Index_True,Index_val, effort, cobs, CV, pred_catch;
+ dvar_vector out(1,2);
+ dvar_vector Vec(1,nclass);
+ float eps1, tau, NSS;
+
+ // Generate futue catches  
+ for (int icatch=1;icatch<=nfut_catch_series;icatch++)
+  {
+   effort = 0; 
+   cobs = 1;
+   n_dCatchData_Gen++;
+   cout << "Generate catch " << icatch << " " << iproj << " " << n_dCatchData_Gen << endl;
+   
+   i = iyr;
+   j = catch_seas(icatch);
+   k = catch_fleet(icatch);
+   h = catch_sex(icatch);
+   type = catch_type(icatch);
+   unit = catch_unit(icatch);
+   CV = catch_CV(icatch);
+   
+   dCatchData_Gen(n_dCatchData_Gen,1) = i;
+   dCatchData_Gen(n_dCatchData_Gen,2) = j;
+   dCatchData_Gen(n_dCatchData_Gen,3) = k;
+   dCatchData_Gen(n_dCatchData_Gen,4) = h;
+   dCatchData_Gen(n_dCatchData_Gen,6) = value(CV);
+   dCatchData_Gen(n_dCatchData_Gen,7) = type;
+   dCatchData_Gen(n_dCatchData_Gen,8) = unit;
+   dCatchData_Gen(n_dCatchData_Gen,9) = 1; 
+   dCatchData_Gen(n_dCatchData_Gen,10) = 0;
+   dCatchData_Gen(n_dCatchData_Gen,11) = catch_disc_mort(icatch);
+
+   out = predicted_catch_one_year(i,j,k,h,type,unit,1,effort,cobs);
+   pred_catch = out(1);
+   //cout << "catch " << out << endl;
+   
+   // Add random error to the prediction
+   eps1 = randn(rng_catch);
+   pred_catch = pred_catch*exp(eps1*CV-CV*CV/2.0);
+
+   dCatchData_Gen(n_dCatchData_Gen,5) = value(pred_catch);
+  }
+ 
+ 
+ for (int isurvey=1;isurvey<=nfut_surveys;isurvey++)
+  if ((iproj-1) % survey_freq(isurvey) == 0)
+   {
+    n_dIndexData_Gen++;
+    cout << "Generate survey " << isurvey << " " << iproj << " " << n_dIndexData_Gen << endl;
+    
+    q_id = isurvey;
+    j = survey_seas(isurvey);
+    g = survey_fleet(isurvey);
+    h1 = survey_sex(isurvey);
+    m1 = survey_mat(isurvey);
+    rai_id = survey_rai_id(isurvey);
+    unit = survey_unit(isurvey);
+    
+    dIndexData_Gen(n_dIndexData_Gen,0) = q_id;
+    dIndexData_Gen(n_dIndexData_Gen,1) = iyr;
+    dIndexData_Gen(n_dIndexData_Gen,2) = j;
+    dIndexData_Gen(n_dIndexData_Gen,3) = g;
+    dIndexData_Gen(n_dIndexData_Gen,4) = h1;
+    dIndexData_Gen(n_dIndexData_Gen,5) = m1;
+    dIndexData_Gen(n_dIndexData_Gen,8) = unit;
+    dIndexData_Gen(n_dIndexData_Gen,9) = 0;
+    dIndexData_Gen(n_dIndexData_Gen,10) = rai_id;
+    
+    V = calc_predicted_rel_abund_one(iyr, q_id, j, g, h1, m1, unit, rai_id, 1);
+    Index_True = SurveyQT(q_id,nyrRetro+1) * V;
+    //cout << V << endl;
+    //cout << Index_True << endl;
+   
+    // Add random error
+    eps1 = randn(rng_index);
+    Index_val = Index_True*exp(eps1*survey_CV(isurvey)-survey_CV(isurvey)*survey_CV(isurvey)/2.0);
+    //cout << Index_val << endl;
+
+    // Store the generated value and the CV
+    dIndexData_Gen(n_dIndexData_Gen,6) = value(Index_val);
+    dIndexData_Gen(n_dIndexData_Gen,7) = survey_CV(isurvey);
+   }
+   
+ for (int icomp=1;icomp<=nfut_comps;icomp++)
+  if ((iproj-1) % comp_freq(icomp) == 0)
+  {
+   k = comp_fleet(icomp);
+   j = comp_seas(icomp);
+   h = comp_sex(icomp);
+   type = comp_type(icomp);
+   shell = comp_shell(icomp);
+   mat= comp_mat(icomp);
+   NSS = comp_SS(icomp);
+   cout << "Generate comp " << icomp << " " << iyr << " " << k << " " << j << " " << h << " " << type << " " << shell << " " << mat << " " << NSS << endl;
+ 
+   Vec = calc_predicted_comp_one(iyr,j,k,h,type,shell,mat,icomp);
+   //cout << Vec << endl;
+   
+   rseed = randn(rng_comp)*10000;
+   tau = sqrt(1.0 / NSS);
+   dvector p = value(Vec);
+   dvector Vec2 = rmvlogistic(p,tau,rseed);
+   //cout << Vec2 << endl;
+ 
+   // Store the generated data
+   n_dCompData_Gen++;
+   dCompData_Gen(n_dCompData_Gen,-7) = iyr;
+   dCompData_Gen(n_dCompData_Gen,-6) = j;
+   dCompData_Gen(n_dCompData_Gen,-5) = k;
+   dCompData_Gen(n_dCompData_Gen,-4) = h;
+   dCompData_Gen(n_dCompData_Gen,-3) = type;
+   dCompData_Gen(n_dCompData_Gen,-2) = shell;
+   dCompData_Gen(n_dCompData_Gen,-2) = mat;
+   dCompData_Gen(n_dCompData_Gen, 0) = NSS;
+   for (int l=1;l<=nclass;l++) dCompData_Gen(n_dCompData_Gen,l) = Vec2(l);
+
+  }
+  cout << "Generated data" << endl;
+
+// -----------------------------------------------------------------------------------------------------------------------------------
+// Label 803: Run the MPS
+FUNCTION void ApplyMP(const int iyr)
+
+  cout << "In Apply MP: " << iyr << " " << nyrRetro+iyr << endl;
+
+  ofstream manage_strat1("MP.dat");
+  
+  manage_strat1 << syr << " " << nyrRetro+iyr << " # Year Range" << endl;
+  manage_strat1 << nfleet << " # Number of distinct data groups (fleet, among fishing fleets and surveys)" << endl;
+  manage_strat1 << nsex << " # Number of sexes" << endl;
+  manage_strat1 << nshell << " # Number of shell condition types" << endl;
+  manage_strat1 << nmature << " # Number of maturity types" << endl;
+  manage_strat1 << nclass << " # Number of size-classes in the model" << endl;
+  manage_strat1 << "# maximum size-class (males then females)" << endl;
+  manage_strat1 << nSizeSex << endl;
+  
+  // Catch data
+  manage_strat1 <<"# Catch Data" << endl;
+  manage_strat1 <<"# Number of lines" << endl;
+  manage_strat1 << n_dCatchData_Gen << endl;
+  manage_strat1 <<"## Sex: 1 = male, 2 = female, 0 = both" << endl;
+  manage_strat1 <<"## Type of catch: 1 = retained, 2 = discard, 0 = total" << endl;
+  manage_strat1 <<"## Units of catch: 1 = biomass, 2 = numbers" << endl;
+  manage_strat1 <<"## Mult: 1= use data as they are, 2 = multiply by this number (e.g., lbs to kg)" << endl;
+  manage_strat1 <<"# Year Season Fleet Sex Obs CV Type Units Mult Effort Discard_mortality" << endl;
+  for (int iline=1; iline<=n_dCatchData_Gen; iline++) manage_strat1 << dCatchData_Gen(iline) << endl;
+  manage_strat1 << endl;
+  
+  // Index data
+  manage_strat1 <<"# Index Data" << endl;
+  manage_strat1 <<"# Number of lines" << endl;
+  manage_strat1 << n_dIndexData_Gen << endl;
+  manage_strat1 << "## Q_index: index of associated q. Multiple q's (e.g., in time blocks) can now be estimated for each relative abundance index/survey." << endl;
+  manage_strat1 << "## Sex: 1 = male, 2 = female, 0 = both" << endl;
+  manage_strat1 << "## Maturity: 1 = mature, 2 = immature, 0 = both" << endl;
+  manage_strat1 << "## Units of survey: 1 = biomass, 2 = numbers" << endl;
+  manage_strat1 << "## Time: CPUE timing within season" << endl;
+  manage_strat1 << "## RAI_id: integer id for the associated survey" << endl;
+  manage_strat1 << "# Q_index Year Season Fleet Sex Maturity Obs CV Units CPUE_time  RAI_id" << endl;
+  for (int iline=1;iline<=n_dIndexData_Gen; iline++) manage_strat1 << dIndexData_Gen(iline) <<endl;
+  manage_strat1 << endl;
+  
+  // Index data
+  manage_strat1 <<"# Compostion data Data" << endl;
+  manage_strat1 <<"# Number of lines" << endl;
+  manage_strat1 << n_dCompData_Gen << endl;
+  manage_strat1 << "##  Sex:  1 = male, 2 = female, 0 = both  sexes combined" << endl;
+  manage_strat1 << "##  Type  of  composition:  1 = retained, 2 = discard,  0 = total composition" << endl;
+  manage_strat1 << "##  Maturity  state:  1 = immature, 2 = mature, 0 = both  states  combined" << endl;
+  manage_strat1 << "##  Shell condition:  1 = new shell,  2 = old shell,  0 = both  shell types combined" << endl;
+  manage_strat1 << "##length  proportions of  pot discarded males" << endl;
+  for (int iline=1;iline<=n_dCompData_Gen; iline++) manage_strat1 << dCompData_Gen(iline) <<endl;
+  manage_strat1 << endl;
+
+  // Close the data file
+  manage_strat1.close();
+     
+  // Call the management startegy
+  cout << "Calling the MP" << endl;;
+  int xx = system("MP.exe -est > a.a");
+  //cout << xx << endl;
+  cout << "Reading the MP output" << endl;;
+  ifstream manage_strat2("MP.rep");
+  manage_strat2 >> TAC_used;
+  cout << "Done with the MP" << endl;;
+  cout << TAC_used << endl;
+  manage_strat2.close();
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // Label 506: project_one_year
@@ -11921,43 +12354,52 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
   // Initialize the Fs
   _F1.initialize();
   for ( int h = 1; h <= nsex; h++ )
-   for ( int j = 1; j <= nseason; j++ )
-    for ( int l = 1; l <= nclass; l++)
-     _F2(h,j,l) = 1.0e-10;
+    for ( int j = 1; j <= nseason; j++ )
+      for ( int l = 1; l <= nclass; l++){
+        _F2(h,j,l) = 1.0e-10;
+        F(h,nyrRetro+i,j,l) = 0;
+        F2(h,nyrRetro+i,j,l) = 1.0e-10;
+      }
 
   _ft.initialize();
-  for ( int k = 1; k <= nfleet; k++ )
-   for ( int h = 1; h <= nsex; h++ )
-    for ( int j = 1; j <= nseason; j++ )
-     if ( fhitfut(j,k)==1 )
-     {
-       log_ftmp = log_fimpbarPass(k);
-       if (h==2) log_ftmp += log_foff(k);
-       _ft(k,h,j) = mfexp(log_ftmp);
-        sel.initialize(); ret.initialize(); vul.initialize();_xi=0;
-       for (int iy=YrRefSel1Use; iy<=YrRefSel2Use;iy++)
-        {
-         sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
-         ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
-         if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
-         sel += sel1;                                                            // will be averaged selectivity
-         ret += ret1;                                                            // will be averaged retention
-         vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // will be averaged vulnerability
-         _xi += xi1;                                                             // will be averaged discard mortality rate
-        }
-       sel /= float(YrRefSel2Use-YrRefSel1Use+1);
-       ret /= float(YrRefSel2Use-YrRefSel1Use+1);
-       vul /= float(YrRefSel2Use-YrRefSel1Use+1);
-       _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
-       _F1(h,j) += _ft(k,h,j) * vul;
-       _F2(h,j) += _ft(k,h,j) * sel;
-       _F3(h,j) += _ft(k,h,j) * elem_prod(sel, ret + (1.0 - ret) * _xi);
-       if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Sel " << sel << endl;  
-       if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Ret " << ret << endl;  
-       if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Vul " << vul << endl;  
-     }
+  for ( int k = 1; k <= nfleet; k++ ){
+    for ( int h = 1; h <= nsex; h++ ){
+      for ( int j = 1; j <= nseason; j++ ){
+        if ( fhitfut(j,k)==1 ){
+          log_ftmp = log_fimpbarPass(k);
+          if (h==2) log_ftmp += log_foff(k);
+          _ft(k,h,j) = mfexp(log_ftmp);
+          ft(k,h,nyrRetro+i,j) = _ft(k,h,j);
+
+          sel.initialize(); ret.initialize(); vul.initialize();_xi=0;
+          for (int iy=YrRefSel1Use; iy<=YrRefSel2Use;iy++){
+            sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
+            ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
+            if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
+            if (Do_MSE==YES & i> 0) xi1  = fut_disc_mort(k);
+            sel += sel1;                                                            // will be averaged selectivity
+            ret += ret1;                                                            // will be averaged retention
+            vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // will be averaged vulnerability
+            _xi += xi1;                                                             // will be averaged discard mortality rate
+          }
+          sel /= float(YrRefSel2Use-YrRefSel1Use+1);
+          ret /= float(YrRefSel2Use-YrRefSel1Use+1);
+          vul /= float(YrRefSel2Use-YrRefSel1Use+1);
+          _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
+          _F1(h,j) += _ft(k,h,j) * vul;
+          _F2(h,j) += _ft(k,h,j) * sel;
+          _F3(h,j) += _ft(k,h,j) * elem_prod(sel, ret + (1.0 - ret) * _xi);
+          if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Sel " << sel << endl;  
+          if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Ret " << ret << endl;  
+          if (full_prj_diag==1) mcoutDIAG << nyrRetro+i << " " << k << " " << h << " " << j << " " << "Vul " << vul << endl;  
+          F(h,nyrRetro+i,j)  += ft(k,h,nyrRetro+i,j) * vul;                            ///> Sex/year/season/size-specific fishing mortality rate (summed over fleet)
+          F2(h,nyrRetro+i,j) += ft(k,h,nyrRetro+i,j) * sel; 
+        }//--if
+      }//--j
+    }//--h
+  }//--k
 	 
-  // computer the total mortality
+  // compute the total mortality
   _Z1.initialize();  _Z2.initialize(); _Z3.initialize(); SS_pass.initialize();
   for( int m =1; m <= nmature; m++){
     for ( int h = 1; h <= nsex; h++ ){
@@ -11972,6 +12414,8 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
         _Z1(h,m,j) = Mprop * Mbar + _F1(h,j);
         _Z2(h,m,j) = Mprop * Mbar + _F2(h,j);
         _Z3(h,m,j) = Mprop * Mbar + _F3(h,j);
+        Z(h,m,nyrRetro+i,j) = _Z1(h,m,j);
+        Z2(h,m,nyrRetro+i,j) = _Z2(h,m,j);
         if (season_type(j) == INSTANT_F)    for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-_Z1(h,m,j,l)/_Z2(h,m,j,l)*(1.0-mfexp(-_Z2(h,m,j,l)));
         if (season_type(j) == CONTINUOUS_F) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-_Z1(h,m,j,l));
         if (season_type(j) == TCSAM02_F)    for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-_Z3(h,m,j,l));
@@ -12046,7 +12490,7 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
   
   double xi1;                                                              ///> discard mortality rate
   double _xi;                                                              ///> averaged discard mortality rate
-  dvar_vector out(1,4+nfleet);                                             ///> Output
+  dvar_vector out(1,4+4*nfleet);                                             ///> Output
   dvariable tmp_ft,out2;                                                   ///> Temp
   dvar_vector sel(1,nclass);                                               ///> Capture selectivity
   dvar_vector sel1(1,nclass);                                              ///> Capture selectivity
@@ -12055,6 +12499,8 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
   dvar_vector ret1(1,nclass);                                              ///> Retained probability
   dvar_vector vul(1,nclass);                                               ///> Total vulnerability
   dvar_vector nal(1,nclass);                                               ///> Numbers-at-length
+  dvar_vector nal1(1,nclass);                                              ///> Numbers-at-length x weight
+  dvar_vector nal2(1,nclass);                                              ///> Numbers-at-length
   dvar_vector tempZ1(1,nclass);                                            ///> total mortality
   dvar_vector ret_catch_at_length(1,nclass);                               ///> Retained catch-at-length (in weight)
 
@@ -12076,15 +12522,16 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
     for ( int h = 1; h <= nsex; h++ ) {
       for ( int j = 1; j <= nseason; j++ ){
         nal.initialize();
-        
         for ( int o = 1; o <= nshell; o++ ){ int ig = pntr_hmo(h,m,o); nal += d4_Npass(ig)(j); }
-        nal = elem_prod(nal, mean_wt(h,m)(abs(YrRefGrow))); //--biomass!!
+        nal1 = elem_prod(nal, mean_wt(h,m)(abs(YrRefGrow))); //--biomass!!
+        nal2 = nal;
         for ( int k = 1; k <= nfleet; k++ ){
           sel.initialize(); ret.initialize(); vul.initialize(); _xi=0;
           for (int iy=YrRefSel1Use; iy<=YrRefSel2Use;iy++){
             sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
             ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
             if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
+            if (Do_MSE==YES & i > 0) xi1  = fut_disc_mort(k);
             sel += sel1;                                                            // Selectivity
             ret += ret1;                                                            // Retention
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // Vulnerability
@@ -12096,21 +12543,27 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
           _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
           selret = elem_prod(sel,ret);
 
-          if (season_type(j)==INSTANT_F)    tempZ1 = _Z1(h,m,j); 
-          if (season_type(j)==CONTINUOUS_F) tempZ1 = _Z2(h,m,j);// consistent with previous??
+          if (season_type(j)==INSTANT_F)    tempZ1 = _Z2(h,m,j); 
+          if (season_type(j)==CONTINUOUS_F) tempZ1 = _Z1(h,m,j);// consistent with previous??
           if (season_type(j)==TCSAM02_F)    tempZ1 = _Z3(h,m,j);// TCSAM02-like
           if (_ft(k,h,j) > 0){
-            ret_catch_at_length = elem_prod(nal, elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1));// Total retained catch biomass
+            ret_catch_at_length = elem_prod(nal1, elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1));// Total retained catch biomass
             out(1)        += sum(ret_catch_at_length);
             out(3+nfleet) += sum(elem_prod(ret_catch_at_length, Price));
             if (season_type(j)!=TCSAM02_F){
-              out(2)   += nal * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
-              out(2+k) += nal * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific fishery mortality as biomass
+              out(2)            += nal1 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
+              out(2+k)          += nal1 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as biomass
+              out(4+nfleet+k)   += nal1 * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as biomass
+              out(4+2*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as numbers
+              out(4+3*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained fishery mortality as numbers
             } else {
               // TCSAM02-like
               dvar_vector new_vul = elem_prod(sel, ret + _xi * (1-ret));
-              out(2)   += nal * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
-              out(2+k) += nal * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific fishery mortality as biomass
+              out(2)            += nal1 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
+              out(2+k)          += nal1 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as biomass
+              out(4+nfleet+k)   += nal2 * elem_div(elem_prod(_ft(k,h,j) * selret,  1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as biomass
+              out(4+2*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as numbers
+              out(4+3*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * selret,  1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as numbers
             }
           }
         }//--k loop
@@ -12348,6 +12801,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
             sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                // selectivity
             ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);   // retention
             if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
+            if (Do_MSE==YES & iyr > nyrRetro) xi1  = fut_disc_mort(k);
             sel += sel1;                                                  // will be average selectivity
             ret += ret1;                                                  // will be average retention
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);            // will be average vulnerability
@@ -13045,9 +13499,10 @@ FUNCTION write_eval
   // Should Bmsy be simulatation-specific or a pre-specified value
   if (Fixed_prj_Bmsy < 0) Bmsy_out = spr_bmsy; else Bmsy_out = Fixed_prj_Bmsy;
  
- // Do projections
- IsProject = PROJECT;
- if (prj_Nstrat > 0 && prj_replicates > 0){
+  // Do projections
+  IsProject = PROJECT;
+  if (Do_MSE==YES) InitializeData();
+  if (prj_Nstrat > 0 && prj_replicates > 0){
     for (int isim=1;isim<=prj_replicates;isim++){
       // generate future recruitment
       if (Initial_eps < -998) eps1 = randn(rng); else eps1 = Initial_eps;
@@ -13055,7 +13510,7 @@ FUNCTION write_eval
         if (Stock_rec_prj==UNIFORMSR){
           index = prj_futRec_syr+(int)floor((float(prj_futRec_nyr)-float(prj_futRec_syr)+1.0)*randu(rng));
           fut_recruits(1,iproj) = recruits(1,index)/exp(logRbar(index));
-          if (nsex==2) fut_recruits(2,iproj) = recruits(2,index);         //--WTS 2026.09.21: why not dividing by exp(logRbar(index)) like for sex 1?
+          if (nsex==2) fut_recruits(2,iproj) = recruits(2,index)/exp(logRbar(index));         //--WTS 2026.09.30: now dividing by exp(logRbar(index)) as for sex 1?
         }
         if (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT || Stock_rec_prj==MEAN_RECRUIT){
           fut_recruits(1,iproj) = mfexp(eps1*SigmaR_prj-SigmaR_prj*SigmaR_prj/2.0)/exp(logRbar(index));  //--WTS 2026.09.21: index has not been assigned a value here!!
@@ -13064,7 +13519,9 @@ FUNCTION write_eval
         }
       }
     
-      for (int irun=1;irun<=prj_Nstrat;irun++){
+      int Nstrategies = prj_Nstrat;
+      if (Do_MSE==YES) Nstrategies = 1;  
+      for (int irun=1;irun<=Nstrategies;irun++){
         // Set F
         Fmult = 1.e-10 + Proj_Levels(irun);
         for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log_fimpbarI(k);
@@ -13108,8 +13565,8 @@ FUNCTION write_eval
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
 FUNCTION calc_sdreport
-  dvar4_array ftmp(1,nsex,syr,nyrRetro,1,nseason,1,nclass);           ///> Fishing mortality
-  dvar4_array ftmp2(1,nsex,syr,nyrRetro,1,nseason,1,nclass);          ///> Fishing mortality
+  dvar4_array ftmp(1,nsex,syr,nyrRetro+nproj,1,nseason,1,nclass);           ///> Fishing mortality
+  dvar4_array ftmp2(1,nsex,syr,nyrRetro+nprojVec,1,nseason,1,nclass);          ///> Fishing mortality
   ftmp.initialize(); ftmp2.initialize();
 
   // save the fishing mortality rates
@@ -17252,7 +17709,12 @@ GLOBALS_SECTION
   int rng_rseed = 0; //--default seed value (will be changed to start time); can be set from command line
   random_number_generator rng(666);
   
-  // pointer to array of pointers for selectivity functions
+    // Random number generators for MSE
+  random_number_generator rng_catch(1666) ;
+  random_number_generator rng_index(2666) ;
+  random_number_generator rng_comp(3666) ;
+
+// pointer to array of pointers for selectivity functions
   class gsm::Selex<dvar_vector>** ppSLX = 0;//initialized to NULL
 // --------------------------------------------------------------------------------------------------
 
@@ -17872,7 +18334,7 @@ FINAL_SECTION
 //                    set the random number generator seed for the global "rng" variablefor reproducibility. If not set, the model start time will set the seed.
 // 2026-09-30 ** WTS. Updated compile date to 2026-09-30. Fixed issue with recruitment levels in projections. Added some comments and 
 //                    identified some code that might need to be revised (see TODOs).
-//                 
+// 2026-09-30 ** WTS. Updated version to 3.0.0. Merged Andre's MSE code into v2.20.47.
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
