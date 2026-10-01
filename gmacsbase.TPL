@@ -387,7 +387,7 @@ DATA_SECTION
       rng.reinitialize(rng_rseed);
       cout<<"#--rng_rseed set to: "<<rng_rseed<<endl;
     } else {
-      if (rng_rseed ==0) rng_rseed = start;
+      if (rng_rseed==0) rng_rseed = start;
       rng.reinitialize(rng_rseed);
       cout<<"#--rng_rseed set to default: "<<rng_rseed<<endl;
     }
@@ -6419,10 +6419,12 @@ FUNCTION initialize_model_parameters
   }
    
   // Additional variance
-  cout<<"--starting additional variance"<<endl;
-  echoinput<<"--starting additional variance"<<endl;
+  if (verbose>2){
+    cout<<"--starting additional variance"<<endl;
+    echoinput<<"--starting additional variance"<<endl;
+  }
   for (int is=1;is<=nSurveys;is++){
-    echoinput<<"Processing additional variance for survey " << is << endl;
+    if (verbose>3) echoinput<<"Processing additional variance for survey " << is << endl;
     if (add_cv_mirror(is)==0){
       AddVarQT(is) = timevarparV2(2,is, nyrRetro+1, add_cv_relative(is), add_cv_block(is), add_cv_block_fn(is), add_cv_env_link(is), add_cv_env_var(is), 
                                  add_cv_RW(is), add_cv_RW_blk(is), n_addcv_par, AddcvToSurv, log_add_cv); 
@@ -6430,10 +6432,14 @@ FUNCTION initialize_model_parameters
       AddVarQT(is) = AddVarQT(add_cv_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
     }
   }
-  if (verbose >= 3) cout<<"--finished AddVarQT"<<endl;
-  echoinput<<"--finished additional variance"<<endl;
-  if (verbose >= 3) cout<<"--finished initialize_model_parameters"<<endl;
-  echoinput<<"--finished initialize_model_parameters"<<endl;
+  if (verbose>2) {
+    cout<<"--finished AddVarQT"<<endl;
+    echoinput<<"--finished AddVarQT"<<endl;
+  }
+  if (verbose>2) {
+    cout<<"--finished initialize_model_parameters"<<endl;
+    echoinput<<"--finished initialize_model_parameters"<<endl;
+  }
   //exit(-1);
 
  // =======================================================================================================================================
@@ -12344,7 +12350,7 @@ FUNCTION void ApplyMP(const int iyr)
   // Call the management strategy
   if (verbose>2) cout << "Calling the MP" << endl;;
   //int xx = system("MP.exe -est > a.a");
-  int xx = system("MP -est > a.a");
+  int xx = system("./MP -est > a.a");
   //cout << xx << endl;
   if (verbose>2) cout << "Reading the MP output" << endl;;
   ifstream manage_strat2("MP.rep");
@@ -18404,9 +18410,11 @@ FINAL_SECTION
 //                    set the random number generator seed for the global "rng" variablefor reproducibility. If not set, the model start time will set the seed.
 // 2026-09-30 ** WTS. Updated compile date to 2026-09-30. Fixed issue with recruitment levels in projections. Added some comments and 
 //                    identified some code that might need to be revised (see TODOs).
-// 2026-09-30 ** WTS. Updated version to 3.00.00. Merging Andre's MSE code into v2.20.47. This version provides exact 
-//                    reproducibility of Gmacsall.out for the EAG_26_0a test case when compared with results from Andre's MSE code. However, 
-//                    results running under the MSE have not been tested yet. MP executable must be in same folder as the GMACS executable when model is run.
+// 2026-10-01 ** WTS. Updated version to 3.00.00. Merging Andre's MSE code into v2.20.47. This version provides exact 
+//                    reproducibility of Gmacsall.out for the EAG_26_0a test case when compared with results from AEP's MSE code. 
+//                    Also getting exact reproducibility when running MSE for one replicate when running with rng_rseed=666 (same as in AEP's code). 
+//                    IMPORTANT: MP executable must be in same folder as the GMACS executable when model is run.
+//                    
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
