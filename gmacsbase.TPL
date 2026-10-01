@@ -13488,7 +13488,7 @@ FUNCTION write_eval
           if (k <=2+nfleet) mcoutPROJCAT << histcat(k);
           mcoutPROJCAT << catch_summary(k) << endl;
         }
-       exit(1); 
+       //exit(1); 
       } //-natrial
     } //--isim
   }
