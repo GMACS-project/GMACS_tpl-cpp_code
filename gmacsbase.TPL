@@ -102,7 +102,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 3.00.0; ** WTS **; Compiled 2026-09-30");
+ !! TheHeader = adstring("## GMACS Version 3.00.00; ** WTS **; Compiled 2026-10-01");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -10074,6 +10074,7 @@ FUNCTION calc_relative_abundance
         echoinput << dSurveyData(jj,3) << " " << dSurveyData(jj,4) << " " << dSurveyData(jj,5) << " ";
         echoinput << SurveyQT(ir,iy) << "  " << obs_cpue(jj) << " " << pre_cpue(jj) << " " << res_cpue(jj) << " ";
         //echoinput << mat_sel(jj) << endl;
+        echoinput << endl;
       }
     }
   }//--jj loop
@@ -10655,7 +10656,7 @@ FUNCTION mmos_likelihood_pop
    * 
   **/
 FUNCTION mmos_likelihood_survey
-  if (verbose > 3) cout << "--Starting mmos_likelihood_survey" << endl;
+  if (verbose > 2) cout << "--Starting mmos_likelihood_survey" << endl;
   nloglike(7).initialize();
   if (hasMMOD){
     if (verbose > 3) cout << "calculate nlls" << endl;
@@ -10695,13 +10696,13 @@ FUNCTION mmos_likelihood_survey
           cout<< "Error in  mmos_likelihood_survey. Unknown likelihood type '"<< mmodLkType <<"'. Exiting."<<endl;
           ad_exit(1);
         }
-        if (verbose > 3) cout << "got here" << endl;
+        if (verbose > 2) cout << "got here" << endl;
       }//if ((syr<=y_n)&&(y_n<=nyrRetro+1))
     }//loop over n
-    if (verbose > 3) cout<<"nlls_y = "<< nlls_y <<endl;
+    if (verbose > 2) cout<<"nlls_y = "<< nlls_y <<endl;
     nloglike(7) = nlls_y; //--note: not yet multiplied by multiplier
   }
-  if (verbose > 3) cout << "--Finished mmos_likelihood_survey" << endl;
+  if (verbose > 2) cout << "--Finished mmos_likelihood_survey" << endl;
 
 // =================================================================================================================================================
 
@@ -11964,6 +11965,7 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
                                      const int YrRefSea1, const int YrRefSea2, const int YrRefSexR1, const int YrRefSexR2, 
                                      const int YrRefSel1, const int YrRefSel2, dvar_vector Rbar, const int iproj)
   RETURN_ARRAYS_INCREMENT();
+  if (verbose>2) cout << "Starting project_biomass" << endl;
   double lam,TACType;
   int isizeTrans;
   dvariable TargetC,StateTAC;                                             ///> Various temps
@@ -12111,9 +12113,11 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
      if (Do_MSE==YES) GenerateData(i,nyrRetro+i);
 
     } // i
+    if (verbose>2) cout << "Finished loop over projection years" << endl;
 
   // return
   ssb_pass = ssb_prj(nyrRetro+iproj);
+  if (verbose>2) cout << "Finished project_biomass" << endl;
 
   RETURN_ARRAYS_DECREMENT();
   return(ssb_prj);
@@ -12123,6 +12127,7 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
 // -----------------------------------------------------------------------------------------------------------------------------------
 // Label 801: Generate data for use by the MP
 FUNCTION InitializeData
+  if (verbose>2) cout << "Starting InitializeData" << endl;
 
  // Save the historical catch data
  n_dCatchData_Gen = 0;
@@ -12132,6 +12137,7 @@ FUNCTION InitializeData
    for (int kk=1; kk<=11;kk++) dCatchData_Gen(n_dCatchData_Gen,kk) = dCatchData(k,jj,kk);
    } // k
   } // jj
+  if (verbose>2) cout << "n_dCatchData_Gen = " << n_dCatchData_Gen << endl;
   
  // Save the historical index data
  n_dIndexData_Gen = 0;
@@ -12148,57 +12154,57 @@ FUNCTION InitializeData
    for (int kk=-7; kk<=nclass;kk++) dCompData_Gen(n_dCompData_Gen,kk) = d3_SizeComps_in(irow,jrow,kk);
   }
 
- cout << "Initialize data" << endl;
+ if (verbose>2) cout << "Finished InitializeData" << endl;
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------------------------------------
 // Label 802: Generate data for use by the MP
 FUNCTION void GenerateData(const int iproj, const int iyr)
- cout << "Generate data " << iproj << " " << iyr << endl;
- 
- int q_id,i,j,k,h,g,h1,m1,type,unit,rai_id, shell,mat;
- int rseed;
- dvariable V, Index_True,Index_val, effort, cobs, CV, pred_catch;
- dvar_vector out(1,2);
- dvar_vector Vec(1,nclass);
- float eps1, tau, NSS;
+  if (verbose>2) cout << "Starting GenerateData " << iproj << " " << iyr << endl;
 
- // Generate futue catches  
- for (int icatch=1;icatch<=nfut_catch_series;icatch++)
-  {
-   effort = 0; 
-   cobs = 1;
-   n_dCatchData_Gen++;
-   cout << "Generate catch " << icatch << " " << iproj << " " << n_dCatchData_Gen << endl;
-   
-   i = iyr;
-   j = catch_seas(icatch);
-   k = catch_fleet(icatch);
-   h = catch_sex(icatch);
-   type = catch_type(icatch);
-   unit = catch_unit(icatch);
-   CV = catch_CV(icatch);
-   
-   dCatchData_Gen(n_dCatchData_Gen,1) = i;
-   dCatchData_Gen(n_dCatchData_Gen,2) = j;
-   dCatchData_Gen(n_dCatchData_Gen,3) = k;
-   dCatchData_Gen(n_dCatchData_Gen,4) = h;
-   dCatchData_Gen(n_dCatchData_Gen,6) = value(CV);
-   dCatchData_Gen(n_dCatchData_Gen,7) = type;
-   dCatchData_Gen(n_dCatchData_Gen,8) = unit;
-   dCatchData_Gen(n_dCatchData_Gen,9) = 1; 
-   dCatchData_Gen(n_dCatchData_Gen,10) = 0;
-   dCatchData_Gen(n_dCatchData_Gen,11) = catch_disc_mort(icatch);
+  int q_id,i,j,k,h,g,h1,m1,type,unit,rai_id, shell,mat;
+  int rseed;
+  dvariable V, Index_True,Index_val, effort, cobs, CV, pred_catch;
+  dvar_vector out(1,2);
+  dvar_vector Vec(1,nclass);
+  float eps1, tau, NSS;
 
-   out = predicted_catch_one_year(i,j,k,h,type,unit,1,effort,cobs);
-   pred_catch = out(1);
-   //cout << "catch " << out << endl;
-   
-   // Add random error to the prediction
-   eps1 = randn(rng_catch);
-   pred_catch = pred_catch*exp(eps1*CV-CV*CV/2.0);
+  // Generate futue catches  
+  if (verbose>2) cout << "Starting catch series generation " << iproj << " year " << iyr << " " << n_dCatchData_Gen << endl;
+  for (int icatch=1;icatch<=nfut_catch_series;icatch++){
+    effort = 0; 
+    cobs = 1;
+    n_dCatchData_Gen++;
+    if (verbose>2) cout << "Generate catch " << icatch << " " << iproj << " " << n_dCatchData_Gen << endl;
 
-   dCatchData_Gen(n_dCatchData_Gen,5) = value(pred_catch);
+    i = iyr;
+    j = catch_seas(icatch);
+    k = catch_fleet(icatch);
+    h = catch_sex(icatch);
+    type = catch_type(icatch);
+    unit = catch_unit(icatch);
+    CV = catch_CV(icatch);
+
+    dCatchData_Gen(n_dCatchData_Gen,1) = i;
+    dCatchData_Gen(n_dCatchData_Gen,2) = j;
+    dCatchData_Gen(n_dCatchData_Gen,3) = k;
+    dCatchData_Gen(n_dCatchData_Gen,4) = h;
+    dCatchData_Gen(n_dCatchData_Gen,6) = value(CV);
+    dCatchData_Gen(n_dCatchData_Gen,7) = type;
+    dCatchData_Gen(n_dCatchData_Gen,8) = unit;
+    dCatchData_Gen(n_dCatchData_Gen,9) = 1; 
+    dCatchData_Gen(n_dCatchData_Gen,10) = 0;
+    dCatchData_Gen(n_dCatchData_Gen,11) = catch_disc_mort(icatch);
+
+    out = predicted_catch_one_year(i,j,k,h,type,unit,1,effort,cobs);
+    pred_catch = out(1);
+    //cout << "catch " << out << endl;
+
+    // Add random error to the prediction
+    eps1 = randn(rng_catch);
+    pred_catch = pred_catch*exp(eps1*CV-CV*CV/2.0);
+
+    dCatchData_Gen(n_dCatchData_Gen,5) = value(pred_catch);
   }
  
  
@@ -12206,7 +12212,7 @@ FUNCTION void GenerateData(const int iproj, const int iyr)
   if ((iproj-1) % survey_freq(isurvey) == 0)
    {
     n_dIndexData_Gen++;
-    cout << "Generate survey " << isurvey << " " << iproj << " " << n_dIndexData_Gen << endl;
+    if (verbose>2) cout << "Generate survey " << isurvey << " " << iproj << " " << n_dIndexData_Gen << endl;
     
     q_id = isurvey;
     j = survey_seas(isurvey);
@@ -12251,7 +12257,7 @@ FUNCTION void GenerateData(const int iproj, const int iyr)
    shell = comp_shell(icomp);
    mat= comp_mat(icomp);
    NSS = comp_SS(icomp);
-   cout << "Generate comp " << icomp << " " << iyr << " " << k << " " << j << " " << h << " " << type << " " << shell << " " << mat << " " << NSS << endl;
+   if (verbose>2) cout << "Generate comp " << icomp << " " << iyr << " " << k << " " << j << " " << h << " " << type << " " << shell << " " << mat << " " << NSS << endl;
  
    Vec = calc_predicted_comp_one(iyr,j,k,h,type,shell,mat,icomp);
    //cout << Vec << endl;
@@ -12275,13 +12281,13 @@ FUNCTION void GenerateData(const int iproj, const int iyr)
    for (int l=1;l<=nclass;l++) dCompData_Gen(n_dCompData_Gen,l) = Vec2(l);
 
   }
-  cout << "Generated data" << endl;
+  if (verbose>2) cout << "Finished GenerateData" << endl;
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // Label 803: Run the MPS
 FUNCTION void ApplyMP(const int iyr)
 
-  cout << "In Apply MP: " << iyr << " " << nyrRetro+iyr << endl;
+  if (verbose>2) cout << "In Apply MP: " << iyr << " " << nyrRetro+iyr << endl;
 
   ofstream manage_strat1("MP.dat");
   
@@ -12336,16 +12342,17 @@ FUNCTION void ApplyMP(const int iyr)
   manage_strat1.close();
      
   // Call the management strategy
-  cout << "Calling the MP" << endl;;
+  if (verbose>2) cout << "Calling the MP" << endl;;
   //int xx = system("MP.exe -est > a.a");
   int xx = system("../../MP -est > a.a");
   //cout << xx << endl;
-  cout << "Reading the MP output" << endl;;
+  if (verbose>2) cout << "Reading the MP output" << endl;;
   ifstream manage_strat2("MP.rep");
   manage_strat2 >> TAC_used;
-  cout << "Done with the MP" << endl;;
-  cout << TAC_used << endl;
+  if (verbose>2) cout << "Done with the MP" << endl;;
+  if (verbose>2) cout << TAC_used << endl;
   manage_strat2.close();
+  if (verbose>2) cout << "Finished ApplyMP" << endl;
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 // Label 506: project_one_year
@@ -12669,6 +12676,7 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
                                          const int YrRefSel1, const int YrRefSel2,
                                          dvar_vector Rbar, dvar_matrix d4_Npass)
   RETURN_ARRAYS_INCREMENT();
+  if (verbose>2) cout << "--Starting compute_OFL_and_ABC" << endl;
   int IsProjectSave;                                                 ///> Variable to save the projection pointer
   dvariable Bproj;                                                   ///> Projected biomass (one year)
   dvar_vector return_vec(1,4);                                       ///> Material to return
@@ -12715,6 +12723,7 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
   return_vec(4) = oflret_pass; //--calculated in project_biomass_OFL
   IsProject = IsProjectSave;                                         ///> Return back to normal
 
+  if (verbose>2) cout << "--Finished compute_OFL_and_ABC" << endl;
   RETURN_ARRAYS_DECREMENT();
   return(return_vec);
 //--compute_OFL_and_ABC
@@ -12796,7 +12805,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
   dvar_vector Mbar(1,nclass);                                              ///> Natural mortality
   dvariable Mprop;                                                         ///> time before  catch
   dvar_vector nal(1,nclass);                                               ///> Numbers-at-length
-  dvar_vector out(1,4+nfleet);                                             ///> Output
+  dvar_vector out(1,4+4*nfleet);                                             ///> Output
 
   // Projection could be average or year-specific
   if (YrRefSel1 < 0)
@@ -12929,8 +12938,9 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass_2(ig,j) = numbers_proj_gytl(ig)(iyr+iproj-1)(j);
   // calculate 
-  if (verbose>=3)cout << endl << "project_biomass_OFL " << endl;
+  if (verbose>2) cout << endl << "starting calc_predicted_project " << endl;
   out = calc_predicted_project(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
+  if (verbose>2) cout << endl << "finished calc_predicted_project " << endl;
   oflret_pass = out(1); ofltot_pass = out(2);
   OFLoutpass = out;
 
@@ -13332,6 +13342,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   * TODO: reset seed for rng to rng_rseed (and implement this from commandline)
   */
 FUNCTION doProjections_FinalPhase
+  if (verbose>2) cout<< endl << "Starting doProjections_FinalPhase"<<endl;
   if (prj_Nstrat > 0 && prj_replicates > 0){
     if (rng_rseed==0) rng_rseed = start;   //--need to implement this as commandline option
     random_number_generator rng(rng_rseed);  //--NEW RNG: not same as global version (or the one used for jittering)
@@ -13349,7 +13360,6 @@ FUNCTION doProjections_FinalPhase
     type_cat(4+nfleet) = "ABC ";
     type_cat(5+nfleet) = "State_TAC ";
 
-    cout << "In doProjections_FinalPhase" << endl;
     ofstream prj_out;
     prj_out.open("projections_output.dat");
     
@@ -13364,8 +13374,9 @@ FUNCTION doProjections_FinalPhase
       prj_out << ">EOD<" << endl;
 
     // calculate sd_report variables in final phase
-    //cout << "calc_spr_reference_points2(0)" << endl;
+    if (verbose>2) cout << "starting calc_spr_reference_points2(0)" << endl;
     calc_spr_reference_points2(0);
+    if (verbose>2) cout << "finished calc_spr_reference_points2(0)" << endl;
   
     prj_out << "avgR: " << " " << spr_rbar << endl;
     prj_out << "B_100:" << " " << ssbF0    << endl;
@@ -13412,7 +13423,7 @@ FUNCTION doProjections_FinalPhase
   
     // Do projections
     IsProject = PROJECT; //--global flag to let the model know that projections are being performed, but not flag to do projections
-    cout<<"projecting..." << endl;
+    if (verbose>2) cout<<"projecting..." << endl;
     prj_out<<"projections: dataframe" << endl;
     prj_out << "replicate  strategy  type  year  value" << endl;
     for (int isim=1;isim<=prj_replicates;isim++){
@@ -13431,8 +13442,9 @@ FUNCTION doProjections_FinalPhase
           if (nsex==2) fut_recruits(2,iproj) = fut_recruits(1,iproj);
         }
         prj_out << isim << " " << 0 << " " << "fut_recruits(MALES)   " << nyrRetro+iproj << " " << fut_recruits(MALES,iproj)*exp(logRbar(index))   << endl;
-        prj_out << isim << " " << 0 << " " << "fut_recruits(FEMALES) " << nyrRetro+iproj << " " << fut_recruits(FEMALES,iproj)*exp(logRbar(index)) << endl;
+        if (nsex==2) prj_out << isim << " " << 0 << " " << "fut_recruits(FEMALES) " << nyrRetro+iproj << " " << fut_recruits(FEMALES,iproj)*exp(logRbar(index)) << endl;
       }//--iproj loop
+      if (verbose>2) cout<<"finished generating future recruits for replicate " << isim << endl;
 
       for (int irun=1;irun<=prj_Nstrat;irun++){  //--WTS: want to move this outside isim loop so each run has different recruits?
         // Set F
@@ -13449,14 +13461,15 @@ FUNCTION doProjections_FinalPhase
             prj_out << isim << " " << irun << " " << fleetname(k) << "_F" << " " << i+nyrRetro << " " << exp(log_fimpbar(k)) << endl;
           }
         }
+        if (verbose>2) cout<<"finished setting F for replicate " << isim << " strategy " << irun << endl;
         // prj_out << "isim" << " " << "irun" << " " << "prj_bycatch_on" << " " << "Stock_rec_prj" << " " << "exp(log_fimpbar)" << " " << "Bmsy_out" << " " << endl;
         // prj_out <<  isim  << " " <<  irun  << " " <<  prj_bycatch_on  << " " <<  Stock_rec_prj  << " " <<  exp(log_fimpbar)  << " "  << Bmsy_out  << " " << endl;
 
-        //cout<<"Projecting biomass..." << endl;
-        //prj_out<<"Projecting biomass..." << endl;
+        if (verbose>2) cout<<"starting project_biomass for replicate " << isim << " strategy " << irun << endl;
         Bproj = project_biomass(proj_grow_yr,proj_M_syr,proj_M_nyr,proj_Prop_syr,proj_Prop_nyr,
                                 proj_SexR_syr, proj_SexR_nyr,proj_sel_syr,proj_sel_nyr, proj_rbar, nproj);
-        //prj_out << "replicate  strategy  type  year  value" << endl;
+        if (verbose>2) cout<<"finished project_biomass" << endl;
+
         for (int i=1;i<=nproj;i++) {
           prj_out << isim << " " << irun << " " << "proj_B" << " " << nyrRetro+i << " " << Bproj(nyrRetro+i) << endl;
         }
@@ -13470,8 +13483,9 @@ FUNCTION doProjections_FinalPhase
     prj_out << ">EOD<" << endl;
     prj_out.close();
   } //--if prj_Nstrat > 0 && prj_replicates > 0
-  
+  if (verbose>2) cout<<"Finished doProjections_FinalPhase"<<endl;
 //--doProjections_FinalPhase
+
 // =======================================================================================================================================
 // Label 700: write_eval
 FUNCTION write_eval
@@ -13607,8 +13621,9 @@ FUNCTION write_eval
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
 FUNCTION calc_sdreport
+  if (verbose>2) cout<<"Starting calc_sdreport"<<endl;
   dvar4_array ftmp(1,nsex,syr,nyrRetro+nproj,1,nseason,1,nclass);           ///> Fishing mortality
-  dvar4_array ftmp2(1,nsex,syr,nyrRetro+nprojVec,1,nseason,1,nclass);          ///> Fishing mortality
+  dvar4_array ftmp2(1,nsex,syr,nyrRetro+nproj,1,nseason,1,nclass);          ///> Fishing mortality
   ftmp.initialize(); ftmp2.initialize();
 
   // save the fishing mortality rates
@@ -13630,11 +13645,13 @@ FUNCTION calc_sdreport
   if (OutSSB==YES) 
     for (int y=syr;y<=nyrRetro;y++)
       { ParsOut(NSSBPar+y-syr) = sd_log_ssb(y); }
+  if (verbose>2) cout<<"Finished setting sd_log_ssb"<<endl;
 
   //Added 13 lines by Jie
   sd_last_ssb = spr_depl * Bmsy;
   if (Outfbar==YES)
    for ( int y = syr; y <= nyrRetro; y++ )  ParsOut(NfbarPar+y-syr) = mean(F(1,y));
+  if (verbose>2) cout<<"Finished setting mean(F(1,y))"<<endl;
 
   // projection outcomes
   if (OutRefPars==YES)
@@ -13646,6 +13663,7 @@ FUNCTION calc_sdreport
     ParsOut(NRefPars+5) = spr_depl;
     ParsOut(NRefPars+6) = spr_cofl;
    }
+   if (verbose>2) cout<<"Finished setting projection outcomes"<<endl;
 
   // Zero catch
   F.initialize();
@@ -13654,11 +13672,16 @@ FUNCTION calc_sdreport
     for ( int j = 1; j <= nseason; j++ )
      for ( int l = 1; l <= nclass; l++)
       F2(h,i,j,l) = 1.0e-10;
+  if (verbose>2) cout<<"Starting calc_total_mortality 1 for zero catch"<<endl;
   calc_total_mortality();
+  if (verbose>2) cout<<"Starting calc_initial_numbers_at_length 1 for zero catch"<<endl;
   calc_initial_numbers_at_length();
+  if (verbose>2) cout<<"Starting update_population_numbers_at_length 1 for zero catch"<<endl;
   update_population_numbers_at_length();
+  if (verbose>2) cout<<"Finished update_population_numbers_at_length 1 for zero catch"<<endl;
   dyn_Bzero.initialize();
   dyn_Bzero = calc_ssb()(syr,nyrRetro);
+  if (verbose>2) cout<<"Finished calculating dyn_Bzero"<<endl;
 
   if (OutDynB0==YES)
    for (int y=syr;y<=nyrRetro;y++)
@@ -13667,9 +13690,14 @@ FUNCTION calc_sdreport
   // Actual catch
   F = ftmp;
   F2 = ftmp2;
+  if (verbose>2) cout<<"Starting calc_total_mortality 2 for actual catch"<<endl;
   calc_total_mortality();
+  if (verbose>2) cout<<"Starting calc_initial_numbers_at_length 2 for actual catch"<<endl;
   calc_initial_numbers_at_length();
+  if (verbose>2) cout<<"Finished calc_initial_numbers_at_length 2 for actual catch"<<endl;
   update_population_numbers_at_length();
+  if (verbose>2) cout<<"Finished update_population_numbers_at_length 2 for actual catch"<<endl;
+  if (verbose>2) cout<<"Finished calc_sdreport"<<endl;
 //--calc_sdreport
 // -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -17939,7 +17967,7 @@ FINAL_SECTION
     cout<<"Finished CreateOutput"<<endl;
   }
 
-  if (prj_replicates>0) doProjections_FinalPhase();
+  if ((!Do_MSE)&&(prj_replicates>0)) doProjections_FinalPhase();
 
   if (ppSLX) {
       //clean up pointer array--probably unnecessary
@@ -18376,7 +18404,10 @@ FINAL_SECTION
 //                    set the random number generator seed for the global "rng" variablefor reproducibility. If not set, the model start time will set the seed.
 // 2026-09-30 ** WTS. Updated compile date to 2026-09-30. Fixed issue with recruitment levels in projections. Added some comments and 
 //                    identified some code that might need to be revised (see TODOs).
-// 2026-09-30 ** WTS. Updated version to 3.0.0. Merged Andre's MSE code into v2.20.47.
+// 2026-09-30 ** WTS. Updated version to 3.00.00. Merging Andre's MSE code into v2.20.47. This version provides exact 
+//                    reproducibility of Gmacsall.out for the EAG_26_0a test case when compared with results from Andre's MSE code. However, 
+//                    results running under the MSE have not been tested yet.
+
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
 //     to have it equal the number of aggregated size comps
