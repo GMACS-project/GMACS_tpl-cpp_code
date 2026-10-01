@@ -12348,9 +12348,15 @@ FUNCTION void ApplyMP(const int iyr)
   manage_strat1.close();
      
   // Call the management strategy
-  if (verbose>2) cout << "Calling the MP" << endl;;
-  //int xx = system("MP.exe -est > a.a");
-  int xx = system("./MP -est > a.a");
+  if (verbose>2) cout << "Calling the MP" << endl;
+  int xx = 0;
+  if (isWindows()) {
+      // Windows-specific command
+      xx = system("MP.exe -est > a.a");
+  } else {
+      // Non-Windows command
+      xx = system("./MP -est > a.a");
+  }
   //cout << xx << endl;
   if (verbose>2) cout << "Reading the MP output" << endl;;
   ifstream manage_strat2("MP.rep");
@@ -17792,6 +17798,26 @@ GLOBALS_SECTION
 
 // pointer to array of pointers for selectivity functions
   class gsm::Selex<dvar_vector>** ppSLX = 0;//initialized to NULL
+
+  // function to check if the operating system is Windows
+  bool isWindows(){
+      #ifdef _WIN32
+      return true;
+      #elif _WIN64
+      return true;
+      #elif __APPLE__ || __MACH__
+      return false;
+      #elif __linux__
+      return false;
+      #elif __FreeBSD__
+      return false;
+      #elif __unix || __unix__
+      return false;
+      #else
+      return false;
+      #endif
+  }                      
+
 // --------------------------------------------------------------------------------------------------
 
  double GenJitter(int JitterType, int IsPin, double Initial1, double lower, double upper, int Phase, double sdJitter, dvector& rands, dvector& randu, dvariable Initial2)
@@ -18414,6 +18440,7 @@ FINAL_SECTION
 //                    reproducibility of Gmacsall.out for the EAG_26_0a test case when compared with results from AEP's MSE code. 
 //                    Also getting exact reproducibility when running MSE for one replicate when running with rng_rseed=666 (same as in AEP's code). 
 //                    IMPORTANT: MP executable must be in same folder as the GMACS executable when model is run.
+//                    Added isWindows() function to check if the operating system is Windows in order to call MP executable correctly.
 //                    
 
 // To-do list
