@@ -12373,8 +12373,9 @@ FUNCTION void ApplyMP(const int iyr)
   manage_strat1.close();
      
   // Call the management startegy
-  cout << "Calling the MP" << endl;;
-  int xx = system("MP.exe -est > a.a");
+  cout << "Calling the MP (must be in same folder as gmacs executable)" << endl;;
+  // int xx = system("MP.exe -est > a.a"); // Windows version
+  int xx = system("./MP -est > a.a"); // OSX version
   //cout << xx << endl;
   cout << "Reading the MP output" << endl;;
   ifstream manage_strat2("MP.rep");
