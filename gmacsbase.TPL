@@ -102,7 +102,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 3.00.00; ** WTS **; Compiled 2026-09-30");
+ !! TheHeader = adstring("## GMACS Version 3.00.0; ** WTS **; Compiled 2026-09-30");
 
 //-------------------------------
 // Sandbox for testing functions |
@@ -5025,93 +5025,122 @@ DATA_SECTION
 // MSE (Management Strategy Evaluation) file (.mse) inputs
 // ================================================================================================
   // Label 140: MSE inputs
-  !! ad_comm::change_datafile_name(MSEfile);
-  !! cout << "+------------------+" << endl;
-  !! cout << "| Reading MSE file |" << endl;
-  !! cout << "+------------------+" << endl;
-  !! ECHOSTR("+------------------+");
-  !! ECHOSTR("| Reading MSE file |");
-  !! ECHOSTR("+------------------+");
-
-  // required inpur
-  init_vector fut_disc_mort(1,nfleet);
+  vector fut_disc_mort(1,nfleet);
   
   int nfut_catch_series;
-  !! nfut_catch_series = 1;
-  !! if (Do_MSE == YES) *(ad_comm::global_datafile) >> nfut_catch_series;
-  ivector catch_fleet(1,nfut_catch_series);
-  ivector catch_seas(1,nfut_catch_series);
-  ivector catch_sex(1,nfut_catch_series);
-  ivector catch_type(1,nfut_catch_series);
-  ivector catch_unit(1,nfut_catch_series);
-  vector catch_disc_mort(1,nfut_catch_series);
-  vector catch_CV(1,nfut_catch_series);
+  ivector catch_fleet;
+  ivector catch_seas;
+  ivector catch_sex;
+  ivector catch_type;
+  ivector catch_unit;
+  vector catch_disc_mort;
+  vector catch_CV;
 
   int nfut_surveys;
-  !! nfut_surveys = 1;
-  !! if (Do_MSE == YES) *(ad_comm::global_datafile) >> nfut_surveys;
-  ivector survey_fleet(1,nfut_surveys);
-  ivector survey_freq(1,nfut_surveys);
-  ivector survey_seas(1,nfut_surveys);
-  ivector survey_sex(1,nfut_surveys);
-  ivector survey_mat(1,nfut_surveys);
-  ivector survey_unit(1,nfut_surveys);
-  ivector survey_rai_id(1,nfut_surveys);
-  vector survey_CV(1,nfut_surveys);
+  ivector survey_fleet;
+  ivector survey_freq;
+  ivector survey_seas;
+  ivector survey_sex;
+  ivector survey_mat;
+  ivector survey_unit;
+  ivector survey_rai_id;
+  vector survey_CV;
 
   int nfut_comps;
-  !! nfut_comps = 1;
-  !! if (Do_MSE == YES) *(ad_comm::global_datafile) >> nfut_comps;
-  ivector comp_fleet(1,nfut_comps);
-  ivector comp_lf_catch(1,nfut_comps)
-  ivector comp_freq(1,nfut_comps);
-  ivector comp_seas(1,nfut_comps);
-  ivector comp_sex(1,nfut_comps);
-  ivector comp_type(1,nfut_comps);
-  ivector comp_shell(1,nfut_comps);
-  ivector comp_mat(1,nfut_comps);
-  vector comp_SS(1,nfut_comps);
-
-  !! cout << nfut_catch_series << " " << nfut_surveys << " " << nfut_comps << endl;
+  ivector comp_fleet;
+  ivector comp_lf_catch
+  ivector comp_freq;
+  ivector comp_seas;
+  ivector comp_sex;
+  ivector comp_type;
+  ivector comp_shell;
+  ivector comp_mat;
+  vector comp_SS;
 
   int eof_mse;
- 
-  !! if (Do_MSE == YES)
-  !!  {
-  !!   *(ad_comm::global_datafile) >> catch_fleet;
-  !!   cout << catch_fleet << endl;
-  !!   *(ad_comm::global_datafile) >> catch_seas;
-  !!   *(ad_comm::global_datafile) >> catch_sex;
-  !!   *(ad_comm::global_datafile) >> catch_type;
-  !!   *(ad_comm::global_datafile) >> catch_unit;
-  !!   *(ad_comm::global_datafile) >> catch_disc_mort;
-  !!   *(ad_comm::global_datafile) >> catch_CV;
-  !!   cout << catch_CV << endl;
-
-  !!   *(ad_comm::global_datafile) >> survey_fleet;
-  !!   *(ad_comm::global_datafile) >> survey_freq;
-  !!   *(ad_comm::global_datafile) >> survey_seas;
-  !!   *(ad_comm::global_datafile) >> survey_sex;
-  !!   *(ad_comm::global_datafile) >> survey_mat;
-  !!   *(ad_comm::global_datafile) >> survey_unit;
-  !!   *(ad_comm::global_datafile) >> survey_rai_id;
-  !!   *(ad_comm::global_datafile) >> survey_CV;
-
-  !!   *(ad_comm::global_datafile) >> comp_fleet;
-  !!   *(ad_comm::global_datafile) >> comp_lf_catch;
-  !!   *(ad_comm::global_datafile) >> comp_freq;
-  !!   *(ad_comm::global_datafile) >> comp_seas;
-  !!   *(ad_comm::global_datafile) >> comp_sex;
-  !!   *(ad_comm::global_datafile) >> comp_type;
-  !!   *(ad_comm::global_datafile) >> comp_shell;
-  !!   *(ad_comm::global_datafile) >> comp_mat;
-  !!   *(ad_comm::global_datafile) >> comp_SS;
-  
-  !!   *(ad_comm::global_datafile) >> eof_mse;
-  !!   if ( eof_mse != 9999 ){cout << "Error reading mse file" << endl; exit(1);}
-  !!   cout << "end of mse section" << endl;
-  !!  }
-
+ LOCAL_CALCS
+  if (Do_MSE == YES){
+    ad_comm::change_datafile_name(MSEfile);
+    cout << "+------------------+" << endl;
+    cout << "| Reading MSE file |" << endl;
+    cout << "+------------------+" << endl;
+    ECHOSTR("+------------------+");
+    ECHOSTR("| Reading MSE file |");
+    ECHOSTR("+------------------+");
+    
+    // required inpur
+    fut_disc_mort.allocate(1,nfleet);
+    *(ad_comm::global_datafile) >> fut_disc_mort;
+    
+    nfut_catch_series = 1;
+    *(ad_comm::global_datafile) >> nfut_catch_series;
+    catch_fleet.allocate(1,nfut_catch_series);
+    catch_seas.allocate(1,nfut_catch_series);
+    catch_sex.allocate(1,nfut_catch_series);
+    catch_type.allocate(1,nfut_catch_series);
+    catch_unit.allocate(1,nfut_catch_series);
+    catch_disc_mort.allocate(1,nfut_catch_series);
+    catch_CV.allocate(1,nfut_catch_series);
+    
+    nfut_surveys = 1;
+    *(ad_comm::global_datafile) >> nfut_surveys;
+    survey_fleet.allocate(1,nfut_surveys);
+    survey_freq.allocate(1,nfut_surveys);
+    survey_seas.allocate(1,nfut_surveys);
+    survey_sex.allocate(1,nfut_surveys);
+    survey_mat.allocate(1,nfut_surveys);
+    survey_unit.allocate  (1,nfut_surveys);
+    survey_rai_id.allocate(1,nfut_surveys);
+    survey_CV.allocate(1,nfut_surveys);
+    
+    nfut_comps = 1;
+    *(ad_comm::global_datafile) >> nfut_comps;
+    comp_fleet.allocate(1,nfut_comps);
+    comp_lf_catch.allocate(1,nfut_comps);
+    comp_freq.allocate(1,nfut_comps);
+    comp_seas.allocate(1,nfut_comps);
+    comp_sex.allocate(1,nfut_comps);
+    comp_type.allocate(1,nfut_comps);
+    comp_shell.allocate(1,nfut_comps);
+    comp_mat.allocate(1,nfut_comps);
+    comp_SS.allocate(1,nfut_comps);
+    
+    cout << nfut_catch_series << " " << nfut_surveys << " " << nfut_comps << endl;
+    
+    *(ad_comm::global_datafile) >> catch_fleet;
+    cout << catch_fleet << endl;
+    *(ad_comm::global_datafile) >> catch_seas;
+    *(ad_comm::global_datafile) >> catch_sex;
+    *(ad_comm::global_datafile) >> catch_type;
+    *(ad_comm::global_datafile) >> catch_unit;
+    *(ad_comm::global_datafile) >> catch_disc_mort;
+    *(ad_comm::global_datafile) >> catch_CV;
+    cout << catch_CV << endl;
+    
+    *(ad_comm::global_datafile) >> survey_fleet;
+    *(ad_comm::global_datafile) >> survey_freq;
+    *(ad_comm::global_datafile) >> survey_seas;
+    *(ad_comm::global_datafile) >> survey_sex;
+    *(ad_comm::global_datafile) >> survey_mat;
+    *(ad_comm::global_datafile) >> survey_unit;
+    *(ad_comm::global_datafile) >> survey_rai_id;
+    *(ad_comm::global_datafile) >> survey_CV;
+    
+    *(ad_comm::global_datafile) >> comp_fleet;
+    *(ad_comm::global_datafile) >> comp_lf_catch;
+    *(ad_comm::global_datafile) >> comp_freq;
+    *(ad_comm::global_datafile) >> comp_seas;
+    *(ad_comm::global_datafile) >> comp_sex;
+    *(ad_comm::global_datafile) >> comp_type;
+    *(ad_comm::global_datafile) >> comp_shell;
+    *(ad_comm::global_datafile) >> comp_mat;
+    *(ad_comm::global_datafile) >> comp_SS;
+    
+    *(ad_comm::global_datafile) >> eof_mse;
+    if ( eof_mse != 9999 ){cout << "Error reading mse file" << endl; exit(1);}
+    cout << "end of mse section" << endl;
+  }
+ END_CALCS
   number TAC_used;
   
   // Generated data for MSE
@@ -6380,6 +6409,7 @@ FUNCTION initialize_model_parameters
   }
   if (verbose >= 3) {
     cout<<"--finished survey Q"<<endl;
+    echoinput<<"--finished survey Q"<<endl;
     echoinput<<"SurveyQT " << endl << "year   surveys" << endl;
     for (int iy=syr;iy<=nyrRetro+1;iy++){
       echoinput << iy << "  ";
@@ -6389,7 +6419,10 @@ FUNCTION initialize_model_parameters
   }
    
   // Additional variance
+  cout<<"--starting additional variance"<<endl;
+  echoinput<<"--starting additional variance"<<endl;
   for (int is=1;is<=nSurveys;is++){
+    echoinput<<"Processing additional variance for survey " << is << endl;
     if (add_cv_mirror(is)==0){
       AddVarQT(is) = timevarparV2(2,is, nyrRetro+1, add_cv_relative(is), add_cv_block(is), add_cv_block_fn(is), add_cv_env_link(is), add_cv_env_var(is), 
                                  add_cv_RW(is), add_cv_RW_blk(is), n_addcv_par, AddcvToSurv, log_add_cv); 
@@ -6398,7 +6431,9 @@ FUNCTION initialize_model_parameters
     }
   }
   if (verbose >= 3) cout<<"--finished AddVarQT"<<endl;
+  echoinput<<"--finished additional variance"<<endl;
   if (verbose >= 3) cout<<"--finished initialize_model_parameters"<<endl;
+  echoinput<<"--finished initialize_model_parameters"<<endl;
   //exit(-1);
 
  // =======================================================================================================================================
@@ -6509,6 +6544,8 @@ FUNCTION dvar_vector timevarparV2(const int itype, const int ipar, const int lye
   jpnt = 1; OK = 0;
   for (int kpnt=jpnt;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
   for (int i=syr;i<=lyear;i++) tpar(i) = pars(jpnt);
+  echoinput<<"Processing baseline parameter for type " << itype << " and parameter " << ipar << endl;
+  echoinput<<"Initial value for tpar: " << syr << " " << lyear << " " << tpar << endl;
   
   // Handle block parameters
   if (blk>0)
@@ -6704,6 +6741,7 @@ FUNCTION dvar_matrix timevarparM(const int itype, const int ipar, const int lyea
 
 // =======================================================================================================================================
 // =======================================================================================================================================
+
   /**
    * @brief Instantiate and initialize selectivities for each gear as an array of pointers.
    * @author William Stockhausen
@@ -9308,7 +9346,7 @@ FUNCTION update_population_numbers_at_length
   **/
 // =================================================================================================================================================
 
-/**
+  /**
    * @brief Calculate predicted catch observations
    * @details The function uses the Baranov catch equation to predict the retained and discarded catch.
    *
@@ -9730,6 +9768,7 @@ FUNCTION calc_predicted_capture_abdbio
 //--calc_predicted_capture_abdbio
 
 // =================================================================================================================================================
+
   /**
    * @brief Calculate predicted relative abundance
    * @author Steve Martell, D'Arcy Webber, William Stockhausen, Andre Punt
@@ -9956,6 +9995,7 @@ FUNCTION dvariable calc_predicted_rel_abund_one(const int i, const int q_id, con
 //--calc_predicted_rel_abund_one
 
 // =================================================================================================================================================
+
   /**
    * @brief Calculate predicted relative abundance and residuals (accommodates q blocks)
    * @author Steve Martell, D'Arcy Webber, William Stockhausen
@@ -10033,7 +10073,7 @@ FUNCTION calc_relative_abundance
         echoinput << jj << " " << ir << " " << iq << " " << iy << " " << " " ;
         echoinput << dSurveyData(jj,3) << " " << dSurveyData(jj,4) << " " << dSurveyData(jj,5) << " ";
         echoinput << SurveyQT(ir,iy) << "  " << obs_cpue(jj) << " " << pre_cpue(jj) << " " << res_cpue(jj) << " ";
-        echoinput << mat_sel(jj) << endl;
+        //echoinput << mat_sel(jj) << endl;
       }
     }
   }//--jj loop
@@ -11294,6 +11334,7 @@ FUNCTION growth_likelihood
   if ( verbose >= 3 ) ECHOSTR("Ok after non-tagging-related growth increment likelihood ...")
 
 // --------------------------------------------------------------------------------------------------
+
   /**
    * @brief calculate objective function
    * @details
@@ -11918,7 +11959,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
   *   @param Rbar 
   *   @param iproj 
   *   @return ssb_prj - projected ssb
-  */
+  **/
 FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, const int YrRefM2, 
                                      const int YrRefSea1, const int YrRefSea2, const int YrRefSexR1, const int YrRefSexR2, 
                                      const int YrRefSel1, const int YrRefSel2, dvar_vector Rbar, const int iproj)
@@ -12294,9 +12335,10 @@ FUNCTION void ApplyMP(const int iyr)
   // Close the data file
   manage_strat1.close();
      
-  // Call the management startegy
+  // Call the management strategy
   cout << "Calling the MP" << endl;;
-  int xx = system("MP.exe -est > a.a");
+  //int xx = system("MP.exe -est > a.a");
+  int xx = system("../../MP -est > a.a");
   //cout << xx << endl;
   cout << "Reading the MP output" << endl;;
   ifstream manage_strat2("MP.rep");
@@ -12480,7 +12522,7 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
   * @param _Z2 4D array of total mortality for non-instantaneous fisheries.
   * @param _Z3 4D array of total mortality for TCSAM02-like fisheries.
   * @return dvar_vector A vector of projected fishery mortality as biomass for the projection.
-  */
+  **/
 FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, const int YrRefSel1, const int YrRefSel2,
                                             dvar3_array d4_Npass, dvar3_array _ft, dvar4_array _Z1, dvar4_array _Z2, dvar4_array _Z3)
   RETURN_ARRAYS_INCREMENT();
@@ -12620,7 +12662,7 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
   * @param Rbar Vector of mean recruitment values by sex.
   * @param d4_Npass Matrix of numbers-at-length/sex/state to pass into the projection.
   * @return dvar_vector A vector containing the calculated OFL, ABC, and associated reference points.
-  */
+  **/
 FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow, 
                                          const int YrRefM1, const int YrRefM2,
                                          const int YrRefSea1, const int YrRefSea2,
@@ -12934,7 +12976,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
   * 
   * @param doProfile
   * @return none.
-  */
+  **/
 FUNCTION void calc_spr_reference_points2(const int DoProfile)
   int iproj;
   dvar_matrix equilibrium_numbers(1,n_grp,1,nclass);
@@ -13284,7 +13326,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 // =======================================================================================================================================
-// doProjections_FinalPhase
+
   /** 
   * Perform final phase projections for the stock assessment model.
   * TODO: reset seed for rng to rng_rseed (and implement this from commandline)
