@@ -12344,7 +12344,7 @@ FUNCTION void ApplyMP(const int iyr)
   // Call the management strategy
   if (verbose>2) cout << "Calling the MP" << endl;;
   //int xx = system("MP.exe -est > a.a");
-  int xx = system("../../MP -est > a.a");
+  int xx = system("MP -est > a.a");
   //cout << xx << endl;
   if (verbose>2) cout << "Reading the MP output" << endl;;
   ifstream manage_strat2("MP.rep");
@@ -18406,7 +18406,7 @@ FINAL_SECTION
 //                    identified some code that might need to be revised (see TODOs).
 // 2026-09-30 ** WTS. Updated version to 3.00.00. Merging Andre's MSE code into v2.20.47. This version provides exact 
 //                    reproducibility of Gmacsall.out for the EAG_26_0a test case when compared with results from Andre's MSE code. However, 
-//                    results running under the MSE have not been tested yet.
+//                    results running under the MSE have not been tested yet. MP executable must be in same folder as the GMACS executable when model is run.
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
