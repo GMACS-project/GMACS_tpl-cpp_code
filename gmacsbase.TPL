@@ -36,7 +36,7 @@
 //
 //  COMMANDLINE OPTIONS
 //    The following specify using an ascii pin file fnPin to set parameter values, 
-//    and set usepinfile=1 regardless of the value in gmacs.dat. Pinfile usage can 
+//    and set usePin=1 regardless of the value in gmacs.dat. Pinfile usage can 
 //    also be turned "on" in the gmacs.dat file (in which case the commandline options 
 //    are only useful for specifying a non-default pinfile name). 
 //    If fnPin not given, then fnPin = "gmacs.pin" (the ADMB default).
@@ -89,25 +89,69 @@
 // ************************************************************************************ //
 // -testing : run testing section
 // -sim : simulate data
-// -jitter seed : jitter initial parameter values (if seed=0, RNG is initialized using current time)
-//                 overrides gmacs.dat setting
 // -i : print info
-// -retro x : do retrospective run with 'x' peels
-// -verbose : set verbose level (overrides gmacs.dat setting)
+// -verbose x : set verbose level to "x" (overrides gmacs.dat setting)
 // -ainp fn : use pin file fn (or gmacs.pin if fn is missing)
 // -apin fn : use pin file fn (or gmacs.pin if fn is missing)
 // -pin fn : use pin file fn (or gmacs.pin if fn is missing)
-// -stopAfterFnCall x: stop after "x" objective function calls
-// -verbose x: print out with verbose level "x"
+// -maxFnCalls x: stop after "x" objective function calls
+// -jitter seed : jitter initial parameter values (if seed=0, RNG is initialized using current time)
+//                 overrides gmacs.dat setting
+// -retro n : do retrospective run with 'n' peels
+// -nproj n: do projections ahead for 'n' years
+// -MSE : do Management Strategy Evaluations
 // ************************************************************************************ //
 DATA_SECTION
 
- !! TheHeader = adstring("## GMACS Version 3.00.00; ** WTS **; Compiled 2026-10-01");
+  !! TheHeader = adstring("## GMACS Version 3.00.01; ** WTS **; Compiled 2026-10-05");
+
+ LOCAL_CALCS
+  int opt,on;
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-i",opt))>-1 )
+  {
+    cout << "\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | CONTRIBUTIONS (code and intellectual)                    |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | Name:                        Organization:               |\n";
+    cout << "  | James Ianelli                NOAA-NMFS                   |\n";
+    cout << "  | D'Arcy Webber                Quantifish                  |\n";
+    cout << "  | Steven Martell               SeaState                    |\n";
+    cout << "  | Jack Turnock                 NOAA-NMFS                   |\n";
+    cout << "  | Jie Zheng                    ADF&G                       |\n";
+    cout << "  | Hamachan Hamazaki            ADF&G                       |\n";
+    cout << "  | Athol Whitten                University of Washington    |\n";
+    cout << "  | Andre Punt                   University of Washington    |\n";
+    cout << "  | Dave Fournier                Otter Research              |\n";
+    cout << "  | John Levitt                  Mathemetician               |\n";
+    cout << "  | William Stockhausen          NOAA-NMFS                   |\n";
+    cout << "  | Tyler Jackson                ADF&G                       |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | FINANCIAL SUPPORT                                        |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | Financial support for this project was provided by the   |\n";
+    cout << "  | National Marine Fisheries Service, the Bering Sea        |\n";
+    cout << "  | Fisheries Research Foundation, ...                       |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | DOCUMENTATION                                            |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | online api: http://seacode.github.io/gmacs/index.html    |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "\n";
+    exit(1);
+   }
+ END_CALCS
+
+  !! echoinput.open("Checkfile.rep");
+  !! echoinput << TheHeader << endl;
 
 //-------------------------------
 // Sandbox for testing functions |
 //-------------------------------
-
  LOCAL_CALCS
   {
     //
@@ -199,22 +243,10 @@ DATA_SECTION
    }//--end local scope
  END_CALCS
 
-  //friend_class gmacs_comm;
-  // |---------------------|
-  // | SIMULATION CONTROLS |
-  // |---------------------|
-
-  int jitflag;//--jitter indicator from commandline 
-  int simflag;
-  int rseed;
-  int nyrRetro1; //--number of retrospective peels from commandline (overrides value from gmacs.dat file)
+  // |---------------------------|
+  // | DIMENSIONS & OTHER LABELS |
+  // |---------------------------|
  LOCAL_CALCS
-  jitflag = 0;
-  simflag = 0;
-  rseed = 0;
-  nyrRetro1 = -1;//--dummy value at this point
-  int opt,on;
-
   sexes(0) = "undetermined";
   sexes(1) = "male";
   sexes(2) = "female";
@@ -236,33 +268,248 @@ DATA_SECTION
 
   seltypes += "selectivity";
   seltypes += "retention";
-  
+ END_CALCS
 
+  // |----------------------------------------------|
+  // | COMMANDLINE OPTIONS                          |
+  // | * most commandline values start with "clv_". | 
+  // | * RNG seeds start with "rng_".               |
+  // |----------------------------------------------|
+  int clv_MaxFnCalls; //--commandline value for -maxFnCalls, the maximum number of function calls allowed
+  int clv_Verbose;    //--commandline value for -verbose, the verbosity level
+  int clv_DoJittering;//--commandline flag to do parameter jittering (-doJtrs)
+  int clv_DoPrjs;     //--commandline flag to do projections (-doPrjs)
+  int clv_NumPrj;     //--commandline input for -doPrjs, the number of projections
+  int clv_DoRetro;    //--commandline flag to do retrospective analysis (-doRetro)
+  int clv_NumPeels;    //--commandline value for -doRetro, the number of retrospective peels from commandline (overrides value from gmacs.dat file)
+  int clv_DoSims;     //--commandline flag to do simulations (-doSims)
+  int clv_NumSims;    //--commandline value for -doSims, the number of simulations
+  int clv_DoMSE;      //--commandline flag to do management strategy evaluation (-doMSE)
+  int clv_NumMSE;     //--commandline value for -doMSE, the number of MSE runs
+  int rseed_jtr;      //--commandline value for -doJtr, the RNG seed for jittering
+  int rseed_prj;      //--commandline value for -rseed_prj, the RNG seed for projections
+  int rseed_sim;      //--commandline value for -rseed_sim, the RNG seed for simulations
+  int rseed_mse;      //--commandline value for -rseed_mse, the RNG seed for MSE runs
+  int clv_UsePin;     //--commandline flag to use a pin file (-usePin)
+  int clv_UsePinForJtrs; //--commandline flag to use a pin file for jittering (-usePinForJtrs)
+ LOCAL_CALCS
+  clv_MaxFnCalls = -1;  //--default: no max
+  clv_Verbose = -1;     //--default: minimum verbosity
+  clv_DoJittering = FALSE; //--default: do not jitter parameters
+  clv_DoRetro = FALSE;     //--default: do not perform retrospective analysis
+  clv_DoPrjs  = FALSE;     //--default: do not perform projections
+  clv_DoSims  = FALSE;     //--default: do not perform simulations
+  clv_NumPeels = -1;       //--dummy value at this point
+  clv_NumPrj   = -1;       //--dummy value at this point
+  clv_NumSims  = -1;       //--dummy value at this point
+  rseed_jtr = 0;        //--default: use start time for RNG seed for jittering
+  rseed_prj = 0;        //--default: use start time for RNG seed for projections
+  rseed_sim = 0;        //--default: use start time for RNG seed for simulations
+  rseed_mse = 0;        //--default: use start time for RNG seed for MSE runs
+  clv_UsePin = FALSE;   //--default: do not use a pin file
+  clv_UsePinForJtrs = FALSE; //--default: do not use a pin file for jittering
 
   /**
-  * @brief command line option for simulating data.
+  * @brief command line option for setting the maximum number of function calls.
+  * @param clv_MaxFnCalls Maximum number of function calls allowed.
   **/
-  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-sim",opt))>-1 )
-  {
-    simflag = 1;
-    rseed = atoi(ad_comm::argv[on+1]);
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-maxFnCalls",opt))>-1 ){
+    clv_MaxFnCalls = atoi(ad_comm::argv[on+1]);
+    cout<<"#--maxFnCalls set to: "<<clv_MaxFnCalls<<endl;
   }
+
+  /**
+   * @brief command line option for setting the verbosity level.
+   * @param clv_Verbose Verbosity level.
+   **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-verbose",opt))>-1 ){
+    clv_Verbose = atoi(ad_comm::argv[on+1]);
+    cout<<"#--verbose level set to: "<<clv_Verbose<<endl;
+  }
+
   /**
   * @brief command line option for jittering parameter values (overrides gmacs.dat setting).
+  * @param clv_DoJittering Flag indicating whether to perform jittering.
+  * @param rseed_jtr RNG seed specifically for jittering.
   **/
-  echoinput.open("Checkfile.rep");
-  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-jitter",opt))>-1 )
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-doJitter",opt))>-1 )
   {
-    jitflag = 1;
-    rseed = atoi(ad_comm::argv[on+1]);//set rseed to 0 to use start time
+    clv_DoJittering = TRUE;
+    rseed_jtr = atoi(ad_comm::argv[on+1]);//set rseed_jtr to 0 to use start time
+    if (rseed_jtr == 0) {
+      rseed_jtr = start;
+    }
+    rng_jtr.reinitialize(rseed_jtr);
   } else {
-  // These ones for compatibility with ADMB (# comment included)
+  // These ones for compatibility with ADMB (# comment included) 
+  // TODO: why are these files being opened here?
     gmacs_files.open("gmacs_files_in.dat");
     gmacs_data.open("gmacs_in.dat");
     gmacs_ctl.open("gmacs_in.ctl");
     gmacs_prj.open("gmacs_in.prj");
   }
+  /**
+  * @brief command line option for specifying the initial parameter values from a pin file.
+  * @param usePinForJtrs flag indicating whether to use a pin file for jittering.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-usePinForJtrs",opt))>-1 ){
+    clv_UsePinForJtrs = TRUE;
+    adstring fnPin = ad_comm::argv[on+1];
+    if (std::fstream(fnPin)){
+        ad_comm::change_pinfile_name(fnPin);
+        cout<<"#Initial parameter values from pin file for jittering: "<<fnPin<<endl;
+    } else {
+        cout<<"#Initial parameter values from pin file for jittering: "<< fnPin << endl;
+    }
+  }
 
+  /**
+  * @brief Command line option to do retrospective analysis.
+  * @param clv_DoRetro Flag indicating whether to perform retrospective analysis.
+  * @param clv_NumPeels Number of recent years to remove for the retrospective analysis.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv, "-doRetro", opt))>-1 )
+   {
+    cout << "\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | Running retrospective model with " << ad_comm::argv[on+1] << " recent yrs removed |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    clv_DoRetro = TRUE;
+    clv_NumPeels = atoi(ad_comm::argv[on+1]);
+  }
+
+  /**
+  * @brief Command line option to do projections.
+  * @param clv_DoPrjs Flag indicating whether to perform projections.
+  * @param clv_NumPrj Number of projection years to perform.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv, "-doPrjs", opt))>-1 )
+   {
+    cout << "\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | Running projection model with " << ad_comm::argv[on+1] << " projection yrs |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    clv_DoPrjs = TRUE;
+    clv_NumPrj = atoi(ad_comm::argv[on+1]);
+  }
+  /** 
+   * @brief Command line option for setting the RNG seed for projections.
+   * @param rseed_prj RNG seed specifically for projections.
+   */
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-rseed_prj",opt))>-1 ){
+    rseed_prj = atoi(ad_comm::argv[on+1]);
+    rng_prj.reinitialize(rseed_prj);
+    cout<<"#--rseed_prj set to: "<<rseed_prj<<endl;
+  } else if (clv_DoPrjs){
+    rseed_prj = start;
+    rng_prj.reinitialize(rseed_prj);
+    cout<<"#--rseed_prj set to default: "<<rseed_prj<<endl;
+  }
+
+  /**
+  * @brief command line option for specifying the number of simulations to perform.
+  * @param clv_NumSims the number of simulations to perform.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-doSims",opt))>-1 )
+  {
+    cout << "\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | Running simulation model with " << ad_comm::argv[on+1] << " simulation yrs |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    clv_DoSims = TRUE;
+    clv_NumSims = atoi(ad_comm::argv[on+1]);
+  }
+  /**
+  * @brief command line option for simulating data.
+  * @param rseed_sim RNG seed specifically for simulations.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-rseed_sim",opt))>-1 )
+  {
+    rseed_sim  = atoi(ad_comm::argv[on+1]);
+    rng_sim.reinitialize(rseed_sim);
+    cout<<"#--rseed_sim set to: "<<rseed_sim<<endl;
+  } else if (clv_DoSims){
+    if (rseed_sim==0) rseed_sim = start;
+    rng_sim.reinitialize(rseed_sim);
+    cout<<"#--rseed_sim set to default: "<<rseed_sim<<endl;
+  }
+
+  /**
+  * @brief command line option for specifying the number of MSE runs to perform.
+  * @param clv_DoMSE flag indicating whether to perform MSE runs.
+  * @param clv_NumMSE the number of MSE runs to perform.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-doMSE",opt))>-1 )
+  {
+    cout << "\n";
+    cout << "  +----------------------------------------------------------+\n";
+    cout << "  | Running MSE with " << ad_comm::argv[on+1] << " MSEs |\n";
+    cout << "  +----------------------------------------------------------+\n";
+    clv_DoMSE = TRUE;
+    clv_NumMSE = atoi(ad_comm::argv[on+1]);
+  }
+  /**
+  * @brief command line option for specifying the RNG seed for MSE runs.
+  * @param rseed_mse RNG seed specifically for MSE runs.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-rseed_mse",opt))>-1 )
+  {
+    rseed_mse  = atoi(ad_comm::argv[on+1]);
+    rng_mse.reinitialize(rseed_mse);
+    cout<<"#--rseed_mse set to: "<<rseed_mse<<endl;
+  } else if (clv_DoMSE){
+    if (rseed_mse==0) rseed_mse = start;
+    rng_mse.reinitialize(rseed_mse);
+    cout<<"#--rseed_mse set to default: "<<rseed_mse<<endl;
+  }
+
+  /**
+  * @brief command line option for specifying the initial parameter values from a pin file.
+  * @param usePin flag indicating whether to use a pin file.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-ainp",opt))>-1 ){
+    usePin = TRUE;
+    adstring fnPin = ad_comm::argv[on+1];
+    if (std::fstream(fnPin)){
+        ad_comm::change_pinfile_name(fnPin);
+        cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
+    } else {
+        cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
+    }
+  }
+  /**
+  * @brief command line option for specifying the initial parameter values from a pin file.
+  * @param usePin flag indicating whether to use a pin file.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-apin",opt))>-1 ){
+    usePin = TRUE;
+    adstring fnPin = ad_comm::argv[on+1];
+    if (std::fstream(fnPin)){
+        ad_comm::change_pinfile_name(fnPin);
+        cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
+    } else {
+        cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
+    }
+  }
+  /**
+  * @brief command line option for specifying the initial parameter values from a pin file.
+  * @param usePin flag indicating whether to use a pin file.
+  **/
+  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-pin",opt))>-1 ){
+    usePin = TRUE;
+    adstring fnPin = ad_comm::argv[on+1];
+    if (std::fstream(fnPin)){
+        ad_comm::change_pinfile_name(fnPin);
+        cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
+    } else {
+        cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
+    }
+  }
+
+  /**
+  * @brief command line option for specifying MCMC or MCEVAL runs.
+  * @param mcmc flag indicating whether to perform MCMC runs.
+  **/
   if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-mcmc",opt))>-1 || (on=option_match(ad_comm::argc,ad_comm::argv,"-mceval",opt))>-1 )
   {
     mcout.open("mcout.rep");
@@ -273,174 +520,184 @@ DATA_SECTION
     mcoutPROJCAT.open("mcoutPROJCAT.rep");
     mcoutDIAG.open("mcoutDIAG.rep");
   }
-
-
-  if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-i",opt))>-1 )
-  {
-    cout << "\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "  | CONTRIBUTIONS (code and intellectual)                    |\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "  | Name:                        Organization:               |\n";
-    cout << "  | James Ianelli                NOAA-NMFS                   |\n";
-    cout << "  | D'Arcy Webber                Quantifish                  |\n";
-    cout << "  | Steven Martell               SeaState                    |\n";
-    cout << "  | Jack Turnock                 NOAA-NMFS                   |\n";
-    cout << "  | Jie Zheng                    ADF&G                       |\n";
-    cout << "  | Hamachan Hamazaki            ADF&G                       |\n";
-    cout << "  | Athol Whitten                University of Washington    |\n";
-    cout << "  | Andre Punt                   University of Washington    |\n";
-    cout << "  | Dave Fournier                Otter Research              |\n";
-    cout << "  | John Levitt                  Mathemetician               |\n";
-    cout << "  | William Stockhausen          NOAA-NMFS                   |\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "  | FINANCIAL SUPPORT                                        |\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "  | Financial support for this project was provided by the   |\n";
-    cout << "  | National Marine Fisheries Service, the Bering Sea        |\n";
-    cout << "  | Fisheries Research Foundation, ...                       |\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "  | DOCUMENTATION                                            |\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "  | online api: http://seacode.github.io/gmacs/index.html    |\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "\n";
-    exit(1);
-   }
-
-  // Command line option here to do retrospective analysis
-  if ( (on=option_match(ad_comm::argc,ad_comm::argv, "-retro", opt))>-1 )
-   {
-    cout << "\n";
-    cout << "  +----------------------------------------------------------+\n";
-    cout << "  | Running retrospective model with " << ad_comm::argv[on+1] << " recent yrs removed |\n";
-    cout << "  +----------------------------------------------------------+\n";
-    nyrRetro1 = atoi(ad_comm::argv[on+1]);
-  }
  END_CALCS
-
-  // create a random number generator for projections
 
   // |------------------------|
   // | DAT FILE               |
   // |------------------------|
   //--read gmacs.dat file
-  !!WriteFileName(TheHeader);
+  !!cout << "Reading GMACS.DAT file" << endl << endl;
+  !!echoinput<< "Reading GMACS.DAT file" << endl << endl;
+  !!ECHO(TheHeader);
+  init_adstring StockName;
+  !!gmacs_files << StockName << "  #--Stock name\n";
+
+  //--principal input files
+  !!gmacs_files << endl << "#--principal input files" << endl;
   init_adstring datafile;
   init_adstring controlfile;
   init_adstring projectfile;
-  init_adstring MSEfile;
+  !!gmacs_files << datafile << "  #--Data file" << endl;
+  !!gmacs_files << controlfile << "  #--Control file" << endl;
+  !!gmacs_files << projectfile << "  #--Project file" << endl;
+
+  // |------------------|
+  // | MODEL DIMENSIONS |
+  // |------------------|
+  !!gmacs_files << endl << "#--model dimensions" << endl;
+  !! WRITEDAT(TheHeader);
+  init_int syr;                                            ///> initial year
+  init_int nyr;                                            ///> terminal year
+  init_int nseason;                                        ///> time step (years)
+  init_int nsex;                                           ///> number of sexes
+  !! if (nsex != 1 && nsex != 2)
+  !!  { cout << "nsex can only be 1 or 2; STOPPING" << endl; exit(1); }
+  init_int nshell;                                         ///> number of shell conditions
+  init_int nmature;                                        ///> number of maturity types
+  init_int nclass;                                         ///> number of size-classes
+  init_vector size_breaks(1,nclass+1);
+  init_ivector nSizeSex(1,nsex);   
+  vector mid_points(1,nclass);
+ LOCAL_CALCS                         ///> Number of size-classes by sex
+  gmacs_files << syr      << " # Model start year" << endl;
+  gmacs_files << nyr      << " # Model end year (does not include adjustment for retrospective peels or projections)" << endl;
+  gmacs_files << nseason  << " # Number of seasons" << endl;
+  gmacs_files << nsex     << " # Number of sexes" << endl;
+  gmacs_files << nshell   << " # Number of shell condition types" << endl;
+  gmacs_files << nmature  << " # Number of maturity types" << endl;
+  gmacs_files << nclass   << " # Number of size-classes in the model" << endl;
+  gmacs_files << "# size_breaks (a vector giving the break points between size intervals with dimension nclass+1)" << endl;
+  gmacs_files << size_breaks << endl;
+  gmacs_files << "# maximum size-class (by sex)" << endl;
+  gmacs_files << nSizeSex(1) << " #-males" << endl;
+  if (nsex == 2)
+    gmacs_files << nSizeSex(2) << " #--females" << endl;
+  mid_points = size_breaks(1,nclass)+0.5*first_difference(size_breaks);
+ END_CALCS 
+
+  // |-------------|
+  // | FLEETS      |
+  // |-------------|
+  !!gmacs_files << endl << "#--fleets" << endl;
+  init_int nfleet;   ///> number of gears (including surveys and fisheries)
+ LOCAL_CALCS         
+  gmacs_files << nfleet << "  # Number of distinct fleets (fishing fleets and survey \"fleets\")" << endl;
+  for (int ifleet=1;ifleet<=nfleet;ifleet++){
+    *(ad_comm::global_datafile) >> anystring;
+    fleetname += anystring;
+    gmacs_files << anystring << "  # Fleet " << ifleet << " name" << endl;
+  }
+ END_CALCS
+
+  // |-------------|
+  // | FLEET TYPES |
+  // |-------------|
+  !!gmacs_files << endl << "#--fleet types" << endl;
+  init_ivector season_type(1,nseason);                     ///> Set to 0 for discrete; 1 for continuous
+  !! gmacs_files << "#Season type: Set to 1 for continuous F and 0 for instantanous F" << endl;
+  !! gmacs_files << season_type << endl;
+
+  //--season characteristics
+  !!gmacs_files << endl <<"#--season characteristics" << endl;
+  init_int season_recruitment;                             ///> Season that recruitment occurs (end of year before growth)
+  init_int season_growth;                                  ///> Season that growth occurs (end of year after recruitment)
+  init_int season_ssb;                                     ///> Season to calculate SSB (end of year)
+  init_int season_N;                                       ///> Season to output N
+ LOCAL_CALCS
+  gmacs_files << season_recruitment << " # Season recruitment occurs" << endl;
+  gmacs_files << season_growth <<      " # Season molting and growth occurs" << endl;
+  gmacs_files << season_ssb <<         " # Season to calculate SSB (changed to match Feb mating)" << endl;
+  gmacs_files << season_N <<           " # Season for N output" << endl;
+ END_CALCS
+
+  //--units for weight and numbers
+  !!gmacs_files << endl << "#--units for weight and numbers" << endl;
   init_adstring weightunit;
   init_adstring numbersunit;
-  init_adstring StockName;
-  !!WriteFileName(datafile); 
-  !!WriteFileName(controlfile); 
-  !!WriteFileName(projectfile); 
-  !!WriteFileName(MSEfile);
-  !!WriteFileName(weightunit);
-  !!WriteFileName(numbersunit);
-  !!WriteFileName(StockName);
-  init_int IsJittered;
-  init_int IsPin;
-  init_number sdJitter;
-  !! if (jitflag) IsJittered = 1; //--note: this uses Andre's jittering formula TODO(WTS): rewrite to keep isJittered value if not 0
-  !! if (IsJittered==1) cout << "Jittering with sd: " << sdJitter << endl;
-  !! WriteFileName(IsJittered);
-  !! WriteFileName(IsPin);
-  !! WriteFileName(sdJitter);
-  init_int OutRefPars;
-  !! WriteFileName(OutRefPars);
-  init_int OutRecruit;
-  !! WriteFileName(OutRecruit);
-  init_int OutSSB;
-  !! WriteFileName(OutSSB);
-  init_int Outfbar;
-  !! WriteFileName(Outfbar);
-  init_int OutDynB0;
-  !! WriteFileName(OutDynB0);
-  init_int nyrRetro;                                        ///> Retrospective end year
- LOCAL_CALCS
-  if (nyrRetro1 > -1) nyrRetro = nyrRetro1;//--override value from gmacs.dat
-  WriteFileName(nyrRetro);
- END_CALCS
-  
-  init_int TurnOffPhase;                                    ///> Maximum phase
-  init_int StopAfterFnCall                                  ///> Number of function calls to stop after
-  init_int CalcRefPoints;                                   ///> Set this to zero not to compute reference points
-  init_int usepinfile                                       ///> Read in a special file (0=normal;1=pin file)
-  init_int verbose;                                         ///> Flag to print to screen
-  !! if (IsJittered==1) verbose = 0;//--turn off diagnostic output
-  init_int Do_MSE;
+  !!gmacs_files << weightunit  << "  #--Weight unit" << endl;
+  !!gmacs_files << numbersunit << "  #--Numbers unit" << endl;
 
-  //check for commandline overide of pinfile use (if set, overrides value from gmacs.dat)
+  //--model run options
+  !!gmacs_files << endl << "#--model run options" << endl;
+  init_int maxEstPhs;
+  !!gmacs_files << maxEstPhs << "  #--Maximum phase (parameters with phases > maxEstPhs are not estimated) (maxEstPhs)" << endl;
+  init_int maxFnCalls;
+  !!gmacs_files << maxFnCalls << "  #--Number of function calls to stop after (if > 0, model stops after maxFnCalls)" << endl;
+  init_int usePin;
  LOCAL_CALCS
-    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-stopAfterFnCall",opt))>-1 ){
-      StopAfterFnCall = atoi(ad_comm::argv[on+1]);
-      cout<<"#--StopAfterFnCall set to: "<<StopAfterFnCall<<endl;
-    }
-    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-rng_rseed",opt))>-1 ){
-      rng_rseed = atoi(ad_comm::argv[on+1]);
-      rng.reinitialize(rng_rseed);
-      cout<<"#--rng_rseed set to: "<<rng_rseed<<endl;
-    } else {
-      if (rng_rseed==0) rng_rseed = start;
-      rng.reinitialize(rng_rseed);
-      cout<<"#--rng_rseed set to default: "<<rng_rseed<<endl;
-    }
-    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-verbose",opt))>-1 ){
-      verbose = atoi(ad_comm::argv[on+1]);
-      cout<<"#--verbose level set to: "<<verbose<<endl;
-    }
-    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-ainp",opt))>-1 ){
-      usepinfile = 1;
-      adstring fnPin = ad_comm::argv[on+1];
-      if (std::fstream(fnPin)){
-          ad_comm::change_pinfile_name(fnPin);
-          cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
-      } else {
-          cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
-      }
-    }
-    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-apin",opt))>-1 ){
-      usepinfile = 1;
-      adstring fnPin = ad_comm::argv[on+1];
-      if (std::fstream(fnPin)){
-          ad_comm::change_pinfile_name(fnPin);
-          cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
-      } else {
-          cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
-      }
-    }
-    if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-pin",opt))>-1 ){
-      usepinfile = 1;
-      adstring fnPin = ad_comm::argv[on+1];
-      if (std::fstream(fnPin)){
-          ad_comm::change_pinfile_name(fnPin);
-          cout<<"#Initial parameter values from pin file: "<<fnPin<<endl;
-      } else {
-          cout<<"#Initial parameter values from pin file: gmacs.pin"<<endl;
-      }
-    }
+  gmacs_files << usePin << "  #--Flag to use pin file for input parameter values (0: false; 1: true) (usePin)" << endl;
+  if (clv_UsePin) usePin = TRUE;
  END_CALCS
-  !!gmacs_files << TurnOffPhase << " # Maximum phase (stop the estimation after this phase)" << endl;
-  !!gmacs_files << StopAfterFnCall << " # Maximum number of function calls" << endl;
-  !!gmacs_files << CalcRefPoints << " # Calculate reference points (0=no)" << endl;
-  !!gmacs_files << usepinfile << " # use pin file (0=no, 1=yes)" << endl;
-  !!gmacs_files << verbose << " # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)" << endl;
-  !!echoinput << TurnOffPhase << " # Maximum phase (stop the estimation after this phase)" << endl;
-  !!echoinput << StopAfterFnCall << " # Maximum number of function calls" << endl;
-  !!echoinput << CalcRefPoints  << " # Calculate reference points (0=no)" << endl;
-  !!echoinput << usepinfile << " # use pin file (0=no, 1=yes)" << endl;
-  !!echoinput << verbose << " # VERBOSE FLAG (0 = off, 1 = on, 2 = objective func; 3 diagnostics)" << endl;
- 
-  init_int dataeof;
-  !! WriteFileName(dataeof);
-  !! if ( dataeof != 9999 ) {cout << "Error reading GMACS.DAT" << endl; exit(1);}
-  !! cout << "end of GMACS.DAT" << endl;
+  init_int verbose;
+  !!if (clv_Verbose > -1) verbose = clv_Verbose; //--override value from gmacs.dat with commandline value
+  !!gmacs_files << verbose << "  #--Flag for verbose output (0=off; 1=on; 2=objective func; 3=diagnostics) (verbose)" << endl;
+  !!echoinput   << verbose << "  #--Flag for verbose output (0=off; 1=on; 2=objective func; 3=diagnostics) (verbose)" << endl;
+  !!cout        << verbose << "  #--Flag for verbose output (0=off; 1=on; 2=objective func; 3=diagnostics) (verbose)" << endl;
+
+  //--retrospective analysis, projections, MSE options
+  !!gmacs_files << endl << "#--retrospective analysis, projections, MSE options" << endl;
+  int doRetro;
+  int nyrRetro;
+  init_int numPeels;
+  !!if (clv_NumPeels > -1) numPeels = clv_NumPeels;//--override value from gmacs.dat with commandline value
+  !!if (numPeels>0) doRetro = TRUE; else doRetro = FALSE;
+  !!nyrRetro = nyr-numPeels; //--calculate the number of years for retrospective analysis
+  !!gmacs_files << numPeels << "  #--Number of retrospective peels to remove (numPeels). End year for retrospective analysis is " << nyrRetro << endl;
+  !!cout        << "# " << nyrRetro << "  #--End year for retrospective analysis (nyrRetro)" << endl;
+  !!echoinput   << "# " << nyrRetro << "  #--End year for retrospective analysis (nyrRetro)" << endl;
+  int doPrjs;
+  init_int numPrj;
+  !!if (clv_NumPrj > -1) numPrj = clv_NumPrj;//--override value from gmacs.dat with commandline value
+  !!if (numPrj>0) doPrjs = TRUE; else doPrjs = FALSE;
+  !!gmacs_files << numPrj   << "  #--Number of years to project forward (numPrj)" << endl;
+  !!cout        << "# " << numPrj << "  #--Number of years to project forward (numPrj)" << endl;
+  !!echoinput   << "# " << numPrj << "  #--Number of years to project forward (numPrj)" << endl;
+  init_int doMSE;
+  !!adstring MSEfile;
+ LOCAL_CALCS
+  if (clv_DoMSE) {
+    doMSE = TRUE;
+    (*ad_comm::global_datafile) >> MSEfile;
+  } else {
+    MSEfile = "#--<no file>";
+  }
+  gmacs_files << doMSE   << "  #--Flag to perform MSE (0: false; 1: true) (doMSE)" << endl;
+  gmacs_files << MSEfile << "  #--MSE file" << endl;
+ END_CALCS
+
+  //--parameter jittering specifications
+  !!gmacs_files << endl << "#--parameter jittering specifications" << endl;
+  init_int doJittering;
+  !!gmacs_files << doJittering << "  #--Flag to jitter initial parameter values (0: false; 1: true) (doJittering)" << endl;
+  init_int usePinForJittering;
+  !!gmacs_files << usePinForJittering << "  #--Flag to center jittering on pin file values (0: false; 1: true) (usePinForJittering)" << endl;
+  init_number sdJitter;
+  !!gmacs_files << sdJitter << "  #--Standard deviation for parameter jittering (sdJitter)" << endl;
+  !! if (doJittering) verbose = 0;//--turn off diagnostic output
+
+  //--output options
+  !!gmacs_files << endl << "#--output options (0: false; 1: true) " << endl;                    
+  init_int calcRefPts;
+  !!gmacs_files << calcRefPts << "  #--Flag to calculate reference points (0: false; 1: true) (calcRefPts)" << endl;
+  init_int outRefPts;
+  !!gmacs_files << outRefPts << "  #--Flag to output reference points (0: false; 1: true) (outRefPts)" << endl;
+  init_int outRec;
+  !!gmacs_files << outRec << "  #--Flag to output recruitment (0: false; 1: true) (outRec)" << endl;
+  init_int outSSB;
+  !!gmacs_files << outSSB << "  #--Flag to output SSB (0: false; 1: true) (outSSB)" << endl;
+  init_int outFbar;
+  !!gmacs_files << outFbar << "  #--Flag to output Fbar (0: false; 1: true) (outFbar)" << endl;
+  init_int outDynB0;
+  !!gmacs_files << outDynB0 << "  #--Flag to output dynamic B0 (0: false; 1: true) (outDynB0)" << endl;
+  
+  init_int dateof;
+ LOCAL_CALCS
+  gmacs_files << endl << dateof << "  #end-of-file marker" << endl;
+  if ( dateof != 9999 ) {cout << "Error reading GMACS.DAT" << endl; exit(1);}
+  cout << "end of GMACS.DAT" << endl;
+  echoinput << "end of GMACS.DAT" << endl;
+  //exit(1);
+ END_CALCS
   //----------------------------------------------------------------------------
   
   //--read data file
@@ -455,30 +712,6 @@ DATA_SECTION
   !! gmacs_data << "# weight = 1.0/(2*sigma^2)" << endl;
   !! gmacs_data << "# CV = sqrt(exp(1/(2*Weight))-1)" << endl;
   !! gmacs_data << "# =========================================" << endl << endl;
-  // |------------------|
-  // | MODEL DIMENSIONS |
-  // |------------------|
-  !! cout << " * Model dimensions" << endl;
-  !! WRITEDAT(TheHeader);
-  init_int syr;                                            ///> initial year
-  init_int nyr;                                            ///> terminal year
-  int nyrRetroNo; 
-  !! nyrRetroNo = nyrRetro;
-  !! nyrRetro = nyr-nyrRetro;                              ///> Adjust to nyear_retro
-  init_int nseason;                                        ///> time step (years)
-  init_int nfleet;                                         ///> number of gears (including surveys and fisheries)
-  init_int nsex;                                           ///> number of sexes
-  !! if (nsex != 1 && nsex != 2)
-  !!  { cout << "nsex can only be 1 or 2; STOPPING" << endl; exit(1); }
-  init_int nshell;                                         ///> number of shell conditions
-  init_int nmature;                                        ///> number of maturity types
-  init_int nclass;                                         ///> number of size-classes
-
-  init_int season_recruitment;                             ///> Season that recruitment occurs (end of year before growth)
-  init_int season_growth;                                  ///> Season that growth occurs (end of year after recruitment)
-  init_int season_ssb;                                     ///> Season to calculate SSB (end of year)
-  init_int season_N;                                       ///> Season to output N
-  init_ivector nSizeSex(1,nsex);                           ///> Number of size-classes by sex
   
   int n_grp;                                               ///> number of sex/newshell/oldshell groups
   int nlikes;                                              ///> number of likelihood components
@@ -492,20 +725,6 @@ DATA_SECTION
  LOC_CALCS
   n_grp = nsex * nshell * nmature;
   nlikes = 8;          ///> catch, cpue, size comps, recruits, growth data from tagging, non-tagging molt increments, male maturity ogives, effort extrapolation
-  gmacs_data << syr << " # Start year" << endl;
-  gmacs_data << nyrRetro << " # End year (retro)" << endl;
-  gmacs_data << nseason << " # Number of seasons" << endl;
-  gmacs_data << nfleet << " # Number of distinct data groups (fleet, among fishing fleets and surveys)" << endl;
-  gmacs_data << nsex << " # Number of sexes" << endl;
-  gmacs_data << nshell << " # Number of shell condition types" << endl;
-  gmacs_data << nmature << " # Number of maturity types" << endl;
-  gmacs_data << nclass << " # Number of size-classes in the model" << endl;
-  gmacs_data << season_recruitment << " # Season recruitment occurs" << endl;
-  gmacs_data << season_growth << " # Season molting and growth occurs" << endl;
-  gmacs_data << season_ssb << " # Season to calculate SSB (changed to match Feb mating)" << endl;
-  gmacs_data << season_N << " # Season for N output" << endl;
-  gmacs_data << "# maximum size-class (males then females)" << endl;
-  gmacs_data << nSizeSex << endl;
   
   // Check at least one matches nclass
   if (max(nSizeSex)!=nclass) { cout << "One of the maximum size-classes needs to match nclass; STOPPING" << endl; exit(1); }
@@ -537,70 +756,6 @@ DATA_SECTION
       gmacs_data << pntr_hmo(h,m,o) << endl;
      }
  END_CALCS
-  init_vector size_breaks(1,nclass+1);
-  vector mid_points(1,nclass);
-  !! gmacs_data << "# size_breaks (a vector giving the break points between size intervals with dimension nclass+1)" << endl;
-  !! gmacs_data << size_breaks << endl;
-
-  // |-------------------------------|
-  // | NATURAL MORTALITY             |
-  // |-------------------------------|
-  !! cout << " * Natural mortality" << endl;
-  init_int m_prop_type;                                    ///> 1 for vector by season; 2 for matrix by year and season
-  !! if (m_prop_type != 1 && m_prop_type != 2)
-  !!  { cout << "m_prop_type can only be 1 or 2; STOPPING" << endl; exit(1); }
-  int m_dim;
- LOC_CALCS
-   m_dim = 1;
-   if ( m_prop_type == 2 ) m_dim = nyr - syr + 1;
- END_CALCS
-  init_matrix m_prop_in(1,m_dim,1,nseason);
-  !! gmacs_data << "# Natural mortality per season input type (1 = vector by season, 2 = matrix by season/year)" << endl << " 2" << endl;
-  matrix m_prop(syr,nyrRetro,1,nseason);
-  LOC_CALCS
-   switch ( m_prop_type )
-    {
-     // vector by season
-     case 1:
-      for ( int i = syr; i <= nyrRetro; i++ )
-       for ( int j = 1; j <= nseason; j++ )
-         m_prop(i,j) = m_prop_in(1,j);
-      break;
-     // matrix by year and season
-     case 2:
-      for ( int i = syr; i <= nyrRetro; i++ )
-       for ( int j = 1; j <= nseason; j++ )
-         m_prop(i,j) = m_prop_in(i-syr+1,j);
-      break;
-    }
-    for ( int i = syr; i <= nyrRetro; i++ )
-     if ( sum(m_prop(i)) > 1.0000001 || sum(m_prop(i)) < 0.999999 )
-      {
-       cout << "Error: the proportion of natural mortality applied each season (in the .dat file) does not sum to 1! It sums to " << sum(m_prop(i)) << endl;
-        exit(1);
-      }
-   gmacs_data << "# Proportion of the total natural mortality to be applied each season" << endl;
-   for (int i=syr;i<=nyrRetro;i++)
-    gmacs_data << setw(14) << setprecision(11) << setfixed() << m_prop(i) << " # " << i << endl;
- END_CALCS
-
-  // |-------------|
-  // | FLEET NAMES |
-  // |-------------|
-  
-  !! for (int ifleet=1;ifleet<=nfleet;ifleet++)
-  !!  {
-  !!      *(ad_comm::global_datafile) >> anystring;
-  !!      fleetname+=anystring;
-  !!  }
-  !! WRITEDAT(fleetname)
- 
-  // |-------------|
-  // | FLEET TYPES |
-  // |-------------|
-  init_ivector season_type(1,nseason);                     ///> Set to 0 for discrete; 1 for continuous
-  !! gmacs_data << "#Season type: Set to 1 for continuous F and 0 for instantanous F" << endl;
-  !! gmacs_data << season_type << endl;
 
   // |---------------|
   // |--CLASS Subst--|
@@ -1607,84 +1762,84 @@ DATA_SECTION
   !!  if (Ffixed(k) != NO && Ffixed(k) != YES) { cout << "Future F indicator = "<< Ffixed(k) <<" for "<<fleetname(k)<<". Must be 0 or 1" << endl; exit(1); }
 
   init_int spr_syr;
+  init_int spr_nyr;
   !! if (spr_syr==0) spr_syr = syr;
   !! if (spr_syr==-1) spr_syr = syr+1;
-  !! WRITEPRJ(spr_syr);
   !! if (spr_syr < syr) { cout << "First year for computing Rbar must be syr or later: STOPPING. spr_syr = " << spr_syr << " syr = " << syr << endl; exit(1); }
-  init_int spr_nyr;
   !! if (spr_nyr==0) spr_nyr = nyr;
-  !! WRITEPRJ(spr_nyr);
   !! if (spr_nyr > nyr) { cout << "Last year for computing Rbar must be nyr or earlier: STOPPING. spr_nyr = " << spr_nyr << "nyr = " << nyr << endl; exit(1); }
   !! if( spr_nyr < spr_syr)  { cout << "Last year for computing Rbar must be later than the first year: STOPPING. spr_syr = " << spr_syr << "spr_nyr = " << spr_nyr << endl; exit(1); }
-  !! spr_nyr = spr_nyr - nyrRetroNo;
+  !! spr_nyr = spr_nyr - numPeels;
   !! if (spr_syr > spr_nyr) spr_syr = spr_nyr;
+  !! WRITEPRJ(spr_syr);
+  !! WRITEPRJ(spr_nyr);
 
   init_int spr_SexR_syr;
-  !! if (spr_SexR_syr==0) spr_SexR_syr = syr;
-  !! WRITEPRJ(spr_SexR_syr);
-  !! if (spr_SexR_syr < syr) { cout << "First year for computing sex ratio ("<<spr_SexR_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   init_int spr_SexR_nyr;
+  !! if (spr_SexR_syr==0) spr_SexR_syr = syr;
+  !! if (spr_SexR_syr < syr) { cout << "First year for computing sex ratio ("<<spr_SexR_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   !! if (spr_SexR_nyr==0) spr_SexR_nyr = nyr;
-  !! WRITEPRJ(spr_SexR_nyr);
   !! if (spr_SexR_nyr > nyr) { cout << "Last year for computing sex ratio ("<<spr_SexR_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
   !! if( spr_SexR_nyr < spr_SexR_syr)  { cout << "Last year for computing sex ratio ("<<spr_SexR_nyr<<") must be later than the first year ("<<spr_SexR_syr<<") " << endl; exit(1); }
-  !! spr_SexR_nyr = spr_SexR_nyr - nyrRetroNo;
+  !! spr_SexR_nyr = spr_SexR_nyr - numPeels;
   !! if (spr_SexR_syr > spr_SexR_nyr) spr_SexR_syr = spr_SexR_nyr;
+  !! WRITEPRJ(spr_SexR_syr);
+  !! WRITEPRJ(spr_SexR_nyr);
 
   init_int spr_aveF_syr;
-  !! if (spr_aveF_syr==0) spr_aveF_syr = syr;
-  !! WRITEPRJ(spr_aveF_syr);
-  !! if (spr_aveF_syr < syr) { cout << "First year for computing AveF  (spr_AveF_syr = "<<spr_aveF_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   init_int spr_aveF_nyr;
+  !! if (spr_aveF_syr==0) spr_aveF_syr = syr;
+  !! if (spr_aveF_syr < syr) { cout << "First year for computing AveF  (spr_AveF_syr = "<<spr_aveF_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   !! if (spr_aveF_nyr==0) spr_aveF_nyr = nyr;
-  !! WRITEPRJ(spr_aveF_nyr);
   !! if (spr_aveF_nyr > nyr) { cout << "Last year for computing AveF  (spr_Ave_nyr = "<<spr_aveF_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
   !! if( spr_aveF_nyr < spr_aveF_syr)  { cout << "Last year for computing AveF ("<<spr_aveF_nyr<<")  must be later than the first year ("<<spr_aveF_syr<<") " << endl; exit(1); }
-  !! spr_aveF_nyr = spr_aveF_nyr - nyrRetroNo;
+  !! spr_aveF_nyr = spr_aveF_nyr - numPeels;
   !! if (spr_aveF_syr > spr_aveF_nyr) spr_aveF_syr = spr_aveF_nyr;
+  !! WRITEPRJ(spr_aveF_syr);
+  !! WRITEPRJ(spr_aveF_nyr);
 
   init_int spr_M_syr;
-  !! if (spr_M_syr==0) spr_M_syr = nyr;
-  !! WRITEPRJ(spr_M_syr);
-  !! if (spr_M_syr < syr) { cout << "First year for computing M  (spr_M_syr = "<<spr_M_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   init_int spr_M_nyr;
+  !! if (spr_M_syr==0) spr_M_syr = nyr;
+  !! if (spr_M_syr < syr) { cout << "First year for computing M  (spr_M_syr = "<<spr_M_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   !! if (spr_M_nyr==0) spr_M_nyr = nyr;
-  !! WRITEPRJ(spr_M_nyr);
   !! if (spr_M_nyr > nyr) { cout << "Last year for computing M  (spr_M_nyr = "<<spr_M_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
   !! if( spr_M_nyr < spr_M_syr)  { cout << "Last year for computing M (spr_M_nyr = "<<spr_M_nyr<<") must be later than the first year (spr_M_syr = "<<spr_M_syr<<") " << endl; exit(1); }
-  !! spr_M_nyr = spr_M_nyr - nyrRetroNo;
+  !! spr_M_nyr = spr_M_nyr - numPeels;
   !! if (spr_M_syr > spr_M_nyr) spr_M_syr = spr_M_nyr;
+  !! WRITEPRJ(spr_M_syr);
+  !! WRITEPRJ(spr_M_nyr);
 
   init_int spr_Prop_syr;
+  init_int spr_Prop_nyr;
   !! if (spr_Prop_syr==0) spr_Prop_syr = nyr;
   !! WRITEPRJ(spr_Prop_syr);
   !! if (spr_Prop_syr < syr) { cout << "First year for computing season lengths (spr_Prop_syr = "<<spr_Prop_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
-  init_int spr_Prop_nyr;
   !! if (spr_Prop_nyr==0) spr_Prop_nyr = nyr;
   !! WRITEPRJ(spr_Prop_nyr);
   !! if (spr_Prop_nyr > nyr) { cout << "Last year for computing season lengths (spr_Prop_nyr = "<<spr_Prop_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
   !! if( spr_Prop_nyr < spr_Prop_syr)  { cout << "Last year for computing season lengths (spr_Prop_nyr = "<<spr_Prop_nyr<<") must be later than the first year (spr_Prop_syr = "<<spr_Prop_syr<<") " << endl; exit(1); }
-  !! spr_Prop_nyr = spr_Prop_nyr - nyrRetroNo;
+  !! spr_Prop_nyr = spr_Prop_nyr - numPeels;
   !! if (spr_Prop_syr > spr_Prop_nyr) spr_Prop_syr = spr_Prop_nyr;
 
   init_int spr_grow_yr;
   !! if (spr_grow_yr==0) spr_grow_yr = nyr;
   !! if (spr_grow_yr < syr) { cout << "Year for computing growth (spr_grow_yr = "<<spr_grow_yr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   !! if (spr_grow_yr > nyr) { cout << "Year for computing growth (spr_grow_yr = "<<spr_grow_yr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
+  !! spr_grow_yr = spr_grow_yr - numPeels;
   !! WRITEPRJ(spr_grow_yr);
-  !! spr_grow_yr = spr_grow_yr - nyrRetroNo;
 
   init_int spr_sel_syr;
-  !! if (spr_sel_syr==0) spr_sel_syr = nyr;
-  !! WRITEPRJ(spr_sel_syr);
-  !! if (spr_sel_syr < syr) { cout << "First year for computing selex (spr_sel_syr = "<<spr_sel_syr<<") must be syr ("<<syr<<")  or later: STOPPING" << endl; exit(1); }
   init_int spr_sel_nyr;
+  !! if (spr_sel_syr==0) spr_sel_syr = nyr;
+  !! if (spr_sel_syr < syr) { cout << "First year for computing selex (spr_sel_syr = "<<spr_sel_syr<<") must be syr ("<<syr<<")  or later: STOPPING" << endl; exit(1); }
   !! if (spr_sel_nyr==0) spr_sel_nyr = nyr;
-  !! WRITEPRJ(spr_sel_nyr);
   !! if (spr_sel_nyr > nyr) { cout << "Last year for computing selex  (spr_sel_nyr = "<<spr_sel_nyr<<") must be nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
   !! if( spr_sel_nyr < spr_sel_syr)  { cout << "Last year for computing selex ("<<spr_sel_nyr<<") must be later than the first year ("<<spr_sel_syr<<") " << endl; exit(1); }
-  !! spr_sel_nyr = spr_sel_nyr - nyrRetroNo;
+  !! spr_sel_nyr = spr_sel_nyr - numPeels;
   !! if (spr_sel_syr > spr_sel_nyr) spr_sel_syr = spr_sel_nyr;
+  !! WRITEPRJ(spr_sel_syr);
+  !! WRITEPRJ(spr_sel_nyr);
  
   init_number spr_target;
   !! WRITEPRJ(spr_target);
@@ -1729,82 +1884,82 @@ DATA_SECTION
   !! WRITEPRJ(Fixed_prj_Bmsy);
   
   init_int proj_syr;
-  !! if (proj_syr==0) proj_syr = syr;
-  !! WRITEPRJ(proj_syr);
-  !! if (proj_syr < syr) { cout << "First year for Rbar calc (proj_syr = "<<proj_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   init_int proj_nyr;
+  !! if (proj_syr==0) proj_syr = syr;
+  !! if (proj_syr < syr) { cout << "First year for Rbar calc (proj_syr = "<<proj_syr<<") must be syr ("<<syr<<") or later: STOPPING" << endl; exit(1); }
   !! if (proj_nyr==0) proj_nyr = nyr;
-  !! WRITEPRJ(proj_nyr);
   !! if (proj_nyr > nyr) { cout << "Last year for Rbar calc (proj_nyr = "<<proj_nyr<<") nyr ("<<nyr<<") or earlier: STOPPING" << endl; exit(1); }
   !! if( proj_nyr < proj_syr)  { cout << "Last year for Rbar calc (proj_nyr = "<<proj_nyr<<") must be later than the first year (proj_syr = "<<proj_syr<<") "<< endl; exit(1); }
-  !! proj_nyr = proj_nyr - nyrRetroNo;
+  !! proj_nyr = proj_nyr - numPeels;
+  !! WRITEPRJ(proj_syr);
+  !! WRITEPRJ(proj_nyr);
 
   init_int proj_SexR_syr;
-  !! if (proj_SexR_syr==0) proj_SexR_syr = syr;
-  !! WRITEPRJ(proj_SexR_syr);
-  !! if (proj_SexR_syr < syr) { cout << "First year for computing sex ratio (proj_SexR_syr="<<proj_SexR_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
   init_int proj_SexR_nyr;
+  !! if (proj_SexR_syr==0) proj_SexR_syr = syr;
+  !! if (proj_SexR_syr < syr) { cout << "First year for computing sex ratio (proj_SexR_syr="<<proj_SexR_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
   !! if (proj_SexR_nyr==0) proj_SexR_nyr = nyr;
-  !! WRITEPRJ(proj_SexR_nyr);
   !! if (proj_SexR_nyr > nyr) { cout << "Last year for computing sex ratio (proj_SexR_nyr="<<proj_SexR_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
   !! if( proj_SexR_nyr < proj_SexR_syr)  { cout << "Last year for computing sex ratio (proj_SexR_nyr="<<proj_SexR_nyr<<") must be later than the first year (proj_SexR_syr="<<proj_SexR_syr<<") " << endl; exit(1); }
-  !! proj_SexR_nyr = proj_SexR_nyr - nyrRetroNo;
+  !! proj_SexR_nyr = proj_SexR_nyr - numPeels;
   !! if (proj_SexR_syr > proj_SexR_nyr) proj_SexR_syr = proj_SexR_nyr;
+  !! WRITEPRJ(proj_SexR_syr);
+  !! WRITEPRJ(proj_SexR_nyr);
 
   init_int proj_aveF_syr;
-  !! if (proj_aveF_syr==0) proj_aveF_syr = syr;
-  !! WRITEPRJ(proj_aveF_syr);
-  !! if (proj_aveF_syr < syr) { cout << "First year for computing AveF (proj_aveF_syr="<<proj_aveF_syr<<") must be syr ("<<syr<<")or later: STOPPING" << endl; exit(1); }
   init_int proj_aveF_nyr;
+  !! if (proj_aveF_syr==0) proj_aveF_syr = syr;
+  !! if (proj_aveF_syr < syr) { cout << "First year for computing AveF (proj_aveF_syr="<<proj_aveF_syr<<") must be syr ("<<syr<<")or later: STOPPING" << endl; exit(1); }
   !! if (proj_aveF_nyr==0) proj_aveF_nyr = nyr;
-  !! WRITEPRJ(proj_aveF_nyr);
   !! if (proj_aveF_nyr > nyr) { cout << "Last year for computing AveF (proj_aveF_syr="<<proj_aveF_nyr<<")must be nyr or earlier: STOPPING" << endl; exit(1); }
   !! if( proj_aveF_nyr < proj_aveF_syr)  { cout << "Last year for computing AveF  (proj_aveF_nyr="<<proj_aveF_nyr<<") must be later than the first year (proj_aveF_syr="<<proj_aveF_syr<<")" << endl; exit(1); }
-  !! proj_aveF_nyr = proj_aveF_nyr - nyrRetroNo;
+  !! proj_aveF_nyr = proj_aveF_nyr - numPeels;
   !! if (proj_aveF_syr > proj_aveF_nyr) proj_aveF_syr = proj_aveF_nyr;
+  !! WRITEPRJ(proj_aveF_syr);
+  !! WRITEPRJ(proj_aveF_nyr);
 
   init_int proj_M_syr;
-  !! if (proj_M_syr==0) proj_M_syr = syr;
-  !! WRITEPRJ(proj_M_syr);
-  !! if (abs(proj_M_syr) < syr) { cout << "First year for computing M (proj_M_syr="<<proj_M_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
   init_int proj_M_nyr;
+  !! if (proj_M_syr==0) proj_M_syr = syr;
+  !! if (abs(proj_M_syr) < syr) { cout << "First year for computing M (proj_M_syr="<<proj_M_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
   !! if (proj_M_nyr==0) proj_M_nyr = nyr;
-  !! WRITEPRJ(proj_M_nyr);
   !! if (proj_M_nyr > nyr) { cout << "Last year for computing M (proj_SexR_nyr="<<proj_SexR_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
   !! if( proj_M_nyr < proj_M_syr)  { cout << "Last year for computing M (proj_SexR_nyr="<<proj_SexR_nyr<<") must be later than the first year (proj_SexR_syr="<<proj_SexR_syr<<") " << endl; exit(1); }
-  !! proj_M_nyr = proj_M_nyr - nyrRetroNo;
+  !! proj_M_nyr = proj_M_nyr - numPeels;
   !! if (proj_M_syr > proj_M_nyr) proj_M_syr = proj_M_nyr;
+  !! WRITEPRJ(proj_M_syr);
+  !! WRITEPRJ(proj_M_nyr);
 
   init_int proj_Prop_syr;
-  !! if (proj_Prop_syr==0) proj_Prop_syr = syr;
-  !! WRITEPRJ(proj_Prop_syr);
-  !! if (proj_Prop_syr < syr) { cout << "First year for computing season lengths (proj_Prop_syr="<<proj_Prop_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
   init_int proj_Prop_nyr;
+  !! if (proj_Prop_syr==0) proj_Prop_syr = syr;
+  !! if (proj_Prop_syr < syr) { cout << "First year for computing season lengths (proj_Prop_syr="<<proj_Prop_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
   !! if (proj_Prop_nyr==0) proj_Prop_nyr = nyr;
-  !! WRITEPRJ(proj_Prop_nyr);
   !! if (proj_Prop_nyr > nyr) { cout << "Last year for computing season lengths (proj_Prop_nyr="<<proj_Prop_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
   !! if( proj_Prop_nyr < proj_Prop_syr)  { cout << "Last year for computing season lengths (proj_Prop_nyr="<<proj_Prop_nyr<<") must be later than the first year (proj_Prop_syr="<<proj_Prop_syr<<") " << endl; exit(1); }
-  !! proj_Prop_nyr = proj_Prop_nyr - nyrRetroNo;
+  !! proj_Prop_nyr = proj_Prop_nyr - numPeels;
   !! if (proj_Prop_syr > proj_Prop_nyr) proj_Prop_syr = proj_Prop_nyr;
+  !! WRITEPRJ(proj_Prop_syr);
+  !! WRITEPRJ(proj_Prop_nyr);
 
   init_int proj_grow_yr;
   !! if (proj_grow_yr==0) proj_grow_yr = nyr;
-  !! WRITEPRJ(proj_grow_yr);
   !! if (abs(proj_grow_yr) < syr) { cout << "Year for computing growth (proj_grow_yr="<<proj_grow_yr<<") must be syr or later: STOPPING" << endl; exit(1); }
   !! if (proj_grow_yr > nyr) { cout << "Year for computing growth (proj_grow_yr="<<proj_grow_yr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! proj_grow_yr = proj_grow_yr - nyrRetroNo;
+  !! proj_grow_yr = proj_grow_yr - numPeels;
+  !! WRITEPRJ(proj_grow_yr);
 
   init_int proj_sel_syr;
-  !! if (proj_sel_syr==0) proj_sel_syr = syr;
-  !! WRITEPRJ(proj_sel_syr);
-  !! if (abs(proj_sel_syr) < syr) { cout << "First year for computing selex (proj_sel_syr="<<proj_sel_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
   init_int proj_sel_nyr;
+  !! if (proj_sel_syr==0) proj_sel_syr = syr;
+  !! if (abs(proj_sel_syr) < syr) { cout << "First year for computing selex (proj_sel_syr="<<proj_sel_syr<<") must be syr or later: STOPPING" << endl; exit(1); }
   !! if (proj_sel_nyr==0) proj_sel_nyr = nyr;
-  !! WRITEPRJ(proj_sel_nyr);
   !! if (proj_sel_nyr > nyr) { cout << "Last year for computing selex (proj_sel_nyr="<<proj_sel_nyr<<") must be nyr or earlier: STOPPING" << endl; exit(1); }
   !! if( proj_sel_nyr < proj_sel_syr)  { cout << "Last year for computing selex (proj_sel_nyr="<<proj_sel_nyr<<") must be later than the first year (proj_sel_syr="<<proj_sel_syr<<") " << endl; exit(1); }
-  !! proj_sel_nyr = proj_sel_nyr - nyrRetroNo;
+  !! proj_sel_nyr = proj_sel_nyr - numPeels;
   !! if (proj_sel_syr > proj_sel_nyr) proj_sel_syr = proj_sel_nyr;
+  !! WRITEPRJ(proj_sel_syr);
+  !! WRITEPRJ(proj_sel_nyr);
 
   init_int Stock_rec_prj;                                  ///> Stock-recruitment relationship
   !! gmacs_prj << "# Options for the stock-recruitment relationship" << endl;
@@ -1814,15 +1969,15 @@ DATA_SECTION
   !! gmacs_prj << "#    4: Pre-specified (constant) future recruitment "<< endl;
   !! gmacs_prj << Stock_rec_prj << endl;
   init_int Age_at_rec_prj;                                 ///> Age-at-recruitment
-  !! WRITEPRJ(Age_at_rec_prj);
   init_int prj_futRec_syr;
-  !! WRITEPRJ(prj_futRec_syr);
-  !! if (prj_futRec_syr < syr) { cout << "First year for generating recruitment must be syr or later: STOPPING" << endl; exit(1); }
   init_int prj_futRec_nyr;
-  !! WRITEPRJ(prj_futRec_nyr);
+  !! if (prj_futRec_syr < syr) { cout << "First year for generating recruitment must be syr or later: STOPPING" << endl; exit(1); }
   !! if (prj_futRec_nyr > nyrRetro) prj_futRec_nyr = nyrRetro;
-  !! if (prj_futRec_nyr > nyrRetro){ cout << "Last year for generating recruitment must be nyr or earlier: STOPPING" << endl; exit(1); }
-  !! if(prj_futRec_nyr < prj_futRec_syr)  { cout << "Last year for generating recruitment must be later than the first year" << endl; exit(1); }
+  !! if (prj_futRec_nyr > nyrRetro)       { cout << "Last year for generating recruitment must be nyr or earlier: STOPPING" << endl; exit(1); }
+  !! if (prj_futRec_nyr < prj_futRec_syr) { cout << "Last year for generating recruitment must be later than the first year" << endl; exit(1); }
+  !! WRITEPRJ(Age_at_rec_prj);
+  !! WRITEPRJ(prj_futRec_syr);
+  !! WRITEPRJ(prj_futRec_nyr);
   init_number mean_rec_prj;
   !! WRITEPRJ(mean_rec_prj);
   init_number SigmaR_prj                                   ///> Sigma(R)
@@ -1973,17 +2128,17 @@ DATA_SECTION
   !! echoinput << n_env_treat << endl;
   !! gmacs_ctl << n_env_treat << endl;
   ivector Env_link_nums(1,n_env_treat+1);
-  !! if (n_env_treat>0)
-  !! {
-  !!  echoinput << "# Number of links for each treatment" << endl;
-  !!  gmacs_ctl << "# Number of links for each treatment" << endl;
-  !!  for (int ii=1;ii<=n_env_treat;ii++)
-  !!   {
-  !!    *(ad_comm::global_datafile) >> Env_link_nums(ii);
-  !!    echoinput << Env_link_nums(ii) << endl;
-  !!    gmacs_ctl << Env_link_nums(ii) << endl;
-  !!   }
-  !! }
+ LOCAL_CALCS
+  if (n_env_treat>0){
+    echoinput << "# Number of links for each treatment" << endl;
+    gmacs_ctl << "# Number of links for each treatment" << endl;
+    for (int ii=1;ii<=n_env_treat;ii++){
+      *(ad_comm::global_datafile) >> Env_link_nums(ii);
+      echoinput << Env_link_nums(ii) << endl;
+      gmacs_ctl << Env_link_nums(ii) << endl;
+    }
+  }
+ END_CALCS
   int max_env_vars;
   int Num_env_vars;
   !! max_env_vars = max(Env_link_nums);
@@ -1997,42 +2152,39 @@ DATA_SECTION
   ivector N_env_par(1,n_env_treat);
   
   int Env_index;
-  !! Env_point = 1;
-  !! N_env_par.initialize();
-  !! if (n_env_treat > 0)
-  !! for (int ii=1;ii<=n_env_treat;ii++)
-  !!  {
-  !!   echoinput << "# Treatment #" << ii << endl;
-  !!   gmacs_ctl << "# Treatment #" << ii << endl;
-  !!   echoinput << "# Var power Zscore" << endl;
-  !!   gmacs_ctl << "# Var power Zscore" << endl;
-  !!   for (int jj=1;jj<=Env_link_nums(ii);jj++)
-  !!    {
-  !!     *(ad_comm::global_datafile) >> Env_specs(ii,jj,1)>> Env_specs(ii,jj,2)>> Env_specs(ii,jj,3)>> Env_specs(ii,jj,4);
-  !!     Env_specs(ii,jj,5) = Env_point;
-  !!     cout << Env_specs(ii,jj) << endl;
-  !!     echoinput << Env_specs(ii,jj) << endl;
-  !!     gmacs_ctl << Env_specs(ii,jj) << endl;
-  !!     Env_index = Env_specs(ii,jj,1);
-  !!     if (Env_specs(ii,jj,1) <=0 || Env_specs(ii,jj,1) > NenvIndics) { cout << "env variable out of bounds" << endl; exit(1); }
-  !!     N_env_par(ii) += int(Env_specs(ii,jj,2));
-  !!     if (int(Env_specs(ii,jj,3)) != int(Env_specs(ii,jj,4)))
-  !!      {
-  !!       ave_env_scale = 0; num_env_scale = 0; sd_env_scale = 0; 
-  !!       for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
-  !!        { ave_env_scale += EnvData(iy,Env_index); num_env_scale += 1; }
-  !!       ave_env_scale /= num_env_scale;
-  !!       for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
-  !!        { sd_env_scale += square(EnvData(iy,Env_index)-ave_env_scale); }
-  !!       sd_env_scale = sqrt(sd_env_scale/num_env_scale);
-  !!      }
-  !!     else
-  !!      {ave_env_scale= 0; sd_env_scale= 1; }
-  !!     for (int iy=syr;iy<=nyr+nproj;iy++) Env_vars_used(iy,Env_point) = (EnvData(iy,Env_index) - ave_env_scale)/sd_env_scale; 
-  !!     Env_point += 1;
-  !!    }
-  !!  }
-
+ LOCAL_CALCS
+  Env_point = 1;
+  N_env_par.initialize();
+  if (n_env_treat > 0){
+    for (int ii=1;ii<=n_env_treat;ii++){
+      echoinput << "# Treatment #" << ii << endl;
+      gmacs_ctl << "# Treatment #" << ii << endl;
+      echoinput << "# Var power Zscore" << endl;
+      gmacs_ctl << "# Var power Zscore" << endl;
+      for (int jj=1;jj<=Env_link_nums(ii);jj++){
+        *(ad_comm::global_datafile) >> Env_specs(ii,jj,1)>> Env_specs(ii,jj,2)>> Env_specs(ii,jj,3)>> Env_specs(ii,jj,4);
+        Env_specs(ii,jj,5) = Env_point;
+        cout << Env_specs(ii,jj)(1,4) << "  # " << Env_point << endl;
+        echoinput << Env_specs(ii,jj)(1,4) << "  # " << Env_point << endl;
+        gmacs_ctl << Env_specs(ii,jj)(1,4) << "  # " << Env_point << endl;
+        Env_index = Env_specs(ii,jj,1);
+        if (Env_specs(ii,jj,1) <=0 || Env_specs(ii,jj,1) > NenvIndics) { cout << "env variable out of bounds" << endl; exit(1); }
+        N_env_par(ii) += int(Env_specs(ii,jj,2));
+        if (int(Env_specs(ii,jj,3)) != int(Env_specs(ii,jj,4)))  {
+          ave_env_scale = 0; num_env_scale = 0; sd_env_scale = 0; 
+          for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
+          { ave_env_scale += EnvData(iy,Env_index); num_env_scale += 1; }
+          ave_env_scale /= num_env_scale;
+          for (int iy=int(Env_specs(ii,jj,3));iy<=int(Env_specs(ii,jj,4));iy++) 
+          { sd_env_scale += square(EnvData(iy,Env_index)-ave_env_scale); }
+          sd_env_scale = sqrt(sd_env_scale/num_env_scale);
+        } else {ave_env_scale= 0; sd_env_scale= 1;}
+        for (int iy=syr;iy<=nyr+nproj;iy++) Env_vars_used(iy,Env_point) = (EnvData(iy,Env_index) - ave_env_scale)/sd_env_scale; 
+        Env_point += 1;
+      } //--jj loop
+    } //--ii loop 
+  } // if (n_env_treat > 0) 
+ END_CALCS
   // |---------------------------------------------------------|
   // | GENERAL CTL DECLARATION                                 |
   // |---------------------------------------------------------|
@@ -2057,9 +2209,7 @@ DATA_SECTION
   !! cout << model_controls << endl;
   int rdv_syr;                                             ///> First year of rec devs estimates
   int rdv_eyr;                                             ///> Last year of rec devs estimates
-  int Term_molt;                                           ///> Consider terminal molting?
   int rdv_phz;                                             ///> Estimated rec_dev phase
-
   int bInitializeUnfished;                                 ///> Flag to initialize population size structure
   int Refclass;                                            ///> Reference class for calculation of initial conditions
   int bSteadyState;                                        ///> Variable to store option related to initial state
@@ -2076,54 +2226,71 @@ DATA_SECTION
   int bias3;                                               ///> Last full bias-correction
   int bias4;                                               ///> Last year of bias-correction
   int recZ_flag;                                           ///> recruitment size distribution option (0: standard way; 1: Tanner crab approach)
+  int Term_molt;                                           ///> Consider terminal molting?
   int IsTyler;                                             ///> Kluge for "2 area" model
   vector Rec_bias(syr,nyr);
  
- LOC_CALCS
+ LOCAL_CALCS
   {
-    rdv_syr             = int(model_controls(1));
+    int itmp = 1;
+    rdv_syr             = int(model_controls(itmp++));
     if (rdv_syr == 0) rdv_syr = syr;                         ///> Default value for start year
+    echoinput << "Start recruitment year: " << rdv_syr << "  " << model_controls(itmp-1) << "  itmp: " << itmp << endl;
     if ( rdv_syr < syr )
     {
       cout << "Error: recruitment cannot be estimated before start year" << endl;//NOTE: could set phases to -1
+      echoinput << "Error: recruitment cannot be estimated before start year" << endl;//NOTE: could set phases to -1
+      gmacs_ctl << "Error: recruitment cannot be estimated before start year" << endl;//NOTE: could set phases to -1
       exit(1);
     }
-    model_controls(2) -= (nyr-nyrRetro); //--just subtracting nyrRetroNo, the actual number of retrospective peels
-    rdv_eyr             = int(model_controls(2)); 
-    if ( rdv_eyr < rdv_syr )
-    {
+    echoinput << "End recruitment year (before retro adjustment): " << model_controls(itmp) << "  itmp: " << itmp << endl;
+    model_controls(itmp++) -= numPeels; // (nyr-nyrRetro); //--just subtracting clv_NumPeels, the actual number of retrospective peels
+    echoinput << "End recruitment year (after retro adjustment): " << model_controls(itmp-1) << "  numPeels: " << numPeels << endl;
+    rdv_eyr                 = int(model_controls(itmp-1)); 
+    if ( rdv_eyr < rdv_syr ){
       cout << "Error: end recruitment year must be AFTER start recruitment year" << endl;
+      echoinput << "Error: end recruitment year must be AFTER start recruitment year" << endl;
+      gmacs_ctl << "Error: end recruitment year must be AFTER start recruitment year" << endl;
       exit(1);
     }
-    if ( rdv_eyr > nyr )
-    {
+    if ( rdv_eyr > nyr ){
       cout << "Error: recruitment cannot be estimated after end year" << endl;//NOTE: could set phases to -1
+      echoinput << "Error: recruitment cannot be estimated after end year" << endl;//NOTE: could set phases to -1
+      gmacs_ctl << "Error: recruitment cannot be estimated after end year" << endl;//NOTE: could set phases to -1
       exit(1);
     }
-    Term_molt           = int(model_controls(3));	
-    if (Term_molt>0 && nmature==1)
-    {
-      cout << "Error: terminal molt requires two maturity partitions" << endl;
-      exit(1);
-    }
-    rdv_phz             = int(model_controls(4));
-    if (nsex==1) rec_prop_phz = -1; else rec_prop_phz = int(model_controls(5));
-    init_sex_ratio = model_controls(6);
+    rdv_phz             = int(model_controls(itmp++));
+    rec_prop_phz = int(model_controls(itmp++));
+    if (nsex==1) rec_prop_phz = -1; //--can't estimate sex-specific recruitment proportion if only one sex
+    init_sex_ratio = model_controls(itmp++);
     init_sex_ratio = -1.0*log((1.0-init_sex_ratio)/init_sex_ratio);
 
-    bInitializeUnfished = int(model_controls(7));
-    Refclass            = int(model_controls(8));
-    spr_lambda          = model_controls(9);
-    nSRR_flag           = int(model_controls(10));
-    BRP_rec_sexR        = int(model_controls(11));
-    NyrEquil            = int(model_controls(12));
-    devParPhase         = int(model_controls(13));  
-    bias1               = int(model_controls(14));  
-    bias2               = int(model_controls(15));  
-    bias3               = int(model_controls(16));  
-    bias4               = int(model_controls(17));  
-    recZ_flag           = int(model_controls(18));  
-    IsTyler             = int(model_controls(19));  
+    bInitializeUnfished = int(model_controls(itmp++));
+    Refclass            = int(model_controls(itmp++));
+    spr_lambda          = model_controls(itmp++);
+    nSRR_flag           = int(model_controls(itmp++));
+    BRP_rec_sexR        = int(model_controls(itmp++));
+    NyrEquil            = int(model_controls(itmp++));
+    devParPhase         = int(model_controls(itmp++));  
+    bias1               = int(model_controls(itmp++));  
+    bias2               = int(model_controls(itmp++));  
+    bias3               = int(model_controls(itmp++));  
+    bias4               = int(model_controls(itmp++));  
+    recZ_flag           = int(model_controls(itmp++));  
+    Term_molt           = int(model_controls(itmp++));	
+    if (Term_molt>0 && nmature==1){
+      cout << "Error: terminal molt requires two maturity partitions" << endl;
+      echoinput << "Error: terminal molt requires two maturity partitions" << endl;
+      gmacs_ctl << "Error: terminal molt requires two maturity partitions" << endl;
+      exit(1);
+    }
+    IsTyler             = int(model_controls(itmp++));  //--itmp = 19
+    if (itmp!=20) {
+      cout << "Error: itmp does not equal 20 after reading model controls. itmp = " << itmp << endl;
+      echoinput << "Error: itmp does not equal 20 after reading model controls. itmp = " << itmp << endl;
+      gmacs_ctl << "Error: itmp does not equal 20 after reading model controls. itmp = " << itmp << endl;
+      exit(1);
+    }
     
     for (int Iy=syr;Iy<=nyr;Iy++){
       if (Iy <= bias1){
@@ -2141,46 +2308,48 @@ DATA_SECTION
     gmacs_ctl << endl << "##  ------------------------------------------------------------------------------------ ##" << endl;
     gmacs_ctl << "##  OTHER  CONTROLS" << endl;
     gmacs_ctl << "##  ------------------------------------------------------------------------------------ ##" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
-    gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised)), 5 = zero population" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(8)) << " # Reference size-class for initial conditons = 3" << endl;
-    gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(11)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(12)) << " # Years to compute equilibria" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(13)) << " # Phase for deviation parameters" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(14)) << " # First year of bias-correction" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(18)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
-    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(19)) << " # Set to 1 to copy growth from males to females)" << endl;
+    itmp = 1;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # First year of recruitment estimation" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++  )) << " # Last year of recruitment estimation" << endl;
+   gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Phase for recruitment estimation" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Phase for recruitment sex-ratio estimation" << endl;
+    gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(itmp++) << " # Initial value for recruitment sex-ratio" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised)), 5 = zero population" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Reference size-class for initial conditons = 3" << endl;
+    gmacs_ctl << setw(4) << setprecision(2) << setfixed()<< model_controls(itmp++) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Years to compute equilibria" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Phase for deviation parameters" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # First year of bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # First full bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Last full bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Last year of bias-correction" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+    gmacs_ctl << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Set to 1 to copy growth from males to females)" << endl;
     gmacs_ctl << endl;
     echoinput << endl << "# Extra controls" << endl;
-    echoinput << model_controls(1) << " # First year of recruitment estimation" << endl;
-    echoinput << model_controls(2) << " # Last year of recruitment estimation" << endl;
-    echoinput << model_controls(3) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
-    echoinput << model_controls(4) << " # Phase for recruitment estimation" << endl;
-    echoinput << model_controls(5) << " # Phase for recruitment sex-ratio estimation" << endl;
-    echoinput << model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-    echoinput << model_controls(7) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised)), 5 = zero population" << endl;
-    echoinput << model_controls(8) << " # Reference size-class for initial conditons = 3" << endl;
-    echoinput << model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-    echoinput << model_controls(10) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-    echoinput << model_controls(11) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-    echoinput << model_controls(12) << " # Years to compute equilibria" << endl;
-    echoinput << model_controls(13) << " # Phase for deviation parameters" << endl;
-    echoinput << model_controls(14) << " # First year of bias-correction" << endl;
-    echoinput << model_controls(15) << " # First full bias-correction" << endl;
-    echoinput << model_controls(16) << " # Last full bias-correction" << endl;
-    echoinput << model_controls(17) << " # Last year of bias-correction" << endl;
-    echoinput << model_controls(18) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
-    echoinput << model_controls(19) << " # Set to 1 to copy growth from males to females)" << endl;
+    itmp = 1;
+    echoinput << model_controls(itmp++) << " # First year of recruitment estimation" << endl;
+    echoinput << model_controls(itmp++) << " # Last year of recruitment estimation" << endl;
+    echoinput << model_controls(itmp++) << " # Phase for recruitment estimation" << endl;
+    echoinput << model_controls(itmp++) << " # Phase for recruitment sex-ratio estimation" << endl;
+    echoinput << model_controls(itmp++) << " # Initial value for recruitment sex-ratio" << endl;
+    echoinput << model_controls(itmp++) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised)), 5 = zero population" << endl;
+    echoinput << model_controls(itmp++) << " # Reference size-class for initial conditons = 3" << endl;
+    echoinput << model_controls(itmp++) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+    echoinput << model_controls(itmp++) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+    echoinput << model_controls(itmp++) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+    echoinput << model_controls(itmp++) << " # Years to compute equilibria" << endl;
+    echoinput << model_controls(itmp++) << " # Phase for deviation parameters" << endl;
+    echoinput << model_controls(itmp++) << " # First year of bias-correction" << endl;
+    echoinput << model_controls(itmp++) << " # First full bias-correction" << endl;
+    echoinput << model_controls(itmp++) << " # Last full bias-correction" << endl;
+    echoinput << model_controls(itmp++) << " # Last year of bias-correction" << endl;
+    echoinput << model_controls(itmp++) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
+    echoinput << model_controls(itmp++) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+    echoinput << model_controls(itmp++) << " # Set to 1 to copy growth from males to females)" << endl;
     echoinput << endl;
 
     // Default number of parameters
@@ -2263,22 +2432,8 @@ DATA_SECTION
     } // - bInitializeUnfished == FREEPARSSCALED
     // initial numbers are zeros
     if ( bInitializeUnfished == ZEROPOP ){
-      // int Ipnt = 0;
-      // for ( int h = 1; h <= nsex; h++ ){
-      //   for ( int m = 1; m <= nmature; m++ ){
-      //     for ( int o = 1; o <= nshell; o++ ){
-      //       int Ihmo = pntr_hmo(h,m,o);
-      //       for ( int l = 1; l <= nclass; l++ ) {
-      //         Ipnt += 1;
-      //         anystring = "Initial_logN_for_sex_"+sexes(h)+"_mature_"+maturestate(m)+"_"+shellstate(o)+"shell_class_"+str(l);
-      //         parname1(Jpnt+Ipnt) = anystring;
-      //       }// - l
-      //     }// - o
-      //   }// - m
-      // }// - h
-      // PPnt += Ipnt;
-    }// - bInitializeUnfished == ZEROPOP
-    
+      //--nothing to do
+    }// - bInitializeUnfished == ZEROPOP    
   }
  END_CALCS
  
@@ -3435,15 +3590,14 @@ DATA_SECTION
         // Block adjustment
         if (M_block(ig)<0 && M_block(ig)>nblocks) { cout << "Error: block out of range - sex*maturity state " << h << " & " << m <<  endl; exit(1); }        
         if (M_block_fn(ig)<0 && M_block(ig)>1) { cout << "Error: block_fn out of range - sex*maturity state " << h << " & " << m <<  endl; exit(1); }        
-        if (M_block(ig)>0) 
-         {
+        if (M_block(ig)>0) {
           n_Mpar += blocks(M_block(ig));
           for (int iblock=1;iblock<=blocks(M_block(ig));iblock++)
            {
-            PPnt += 1;
-	    parname1(PPnt) = "M"+anystring+"_block_group_"+str(M_block(ig))+"_block_"+str(iblock);
-	   }
-	 } //-- if M_block  
+             PPnt += 1;
+             parname1(PPnt) = "M"+anystring+"_block_group_"+str(M_block(ig))+"_block_"+str(iblock);
+            }
+        } //-- if M_block  
         
         // Environmental link
         if (M_env_link(ig)!=0) 
@@ -3564,9 +3718,51 @@ DATA_SECTION
      { prior_M_p1(k) = M_lb(k); prior_M_p2(k) = M_ub(k); }
    }
   ECHO(prior_Mtype); ECHO(prior_M_p1); ECHO(prior_M_p2); ECHO(M_phz);
-
  END_CALCS
  
+  // |-------------------------------|
+  // | NATURAL MORTALITY SEASONALITY|
+  // |-------------------------------|
+  !! cout << " * Seasonality of Natural Mortality" << endl;
+  init_int m_prop_type;                                    ///> 1 for vector by season; 2 for matrix by year and season
+  !! if (m_prop_type != 1 && m_prop_type != 2)
+  !!  { cout << "m_prop_type can only be 1 or 2; STOPPING" << endl; exit(1); }
+  int m_dim;
+ LOC_CALCS
+   m_dim = 1;
+   if ( m_prop_type == 2 ) m_dim = nyr - syr + 1;
+ END_CALCS
+  init_matrix m_prop_in(1,m_dim,1,nseason);
+  !! gmacs_data << "# Natural mortality per season input type (1 = vector by season, 2 = matrix by season/year)" << endl << " 2" << endl;
+  matrix m_prop(syr,nyrRetro,1,nseason);
+  LOC_CALCS
+   switch ( m_prop_type )
+    {
+     // vector by season
+     case 1:
+      for ( int i = syr; i <= nyrRetro; i++ )
+       for ( int j = 1; j <= nseason; j++ )
+         m_prop(i,j) = m_prop_in(1,j);
+      break;
+     // matrix by year and season
+     case 2:
+      for ( int i = syr; i <= nyrRetro; i++ )
+       for ( int j = 1; j <= nseason; j++ )
+         m_prop(i,j) = m_prop_in(i-syr+1,j);
+      break;
+    }
+    for ( int i = syr; i <= nyrRetro; i++ )
+     if ( sum(m_prop(i)) > 1.0000001 || sum(m_prop(i)) < 0.999999 )
+      {
+       cout << "Error: the proportion of natural mortality applied each season (in the .dat file) does not sum to 1! It sums to " << sum(m_prop(i)) << endl;
+        exit(1);
+      }
+   gmacs_ctl << "# Proportion of the total natural mortality to be applied each season" << endl;
+   for (int i=syr;i<=nyrRetro;i++)
+    gmacs_ctl << setw(14) << setprecision(11) << setfixed() << m_prop(i) << " # " << i << endl;
+ END_CALCS
+
+
   // --------------------------------------------------------------------------------------------------------------------------------------
   // |--------------------------------|
   // | SELECTIVITY PARAMETER CONTROLS |
@@ -4960,19 +5156,19 @@ DATA_SECTION
   int NB0Par;
  LOC_CALCS
   int Ipar;
-  //--turn off parameters with phases >= TurnOffPhase
-  for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > TurnOffPhase) T_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > TurnOffPhase) G_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > TurnOffPhase) M_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > TurnOffPhase) S_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > TurnOffPhase) f_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > TurnOffPhase)     foff_phz(Ipar)     = -1;
-  for (Ipar=1;Ipar<=nfleet; Ipar++) if (foffdevs_phz(Ipar) > TurnOffPhase) foffdevs_phz(Ipar) = -1;
-  if (rdv_phz > TurnOffPhase) rdv_phz = -1;
-  if (rec_prop_phz > TurnOffPhase) rec_prop_phz = -1;
-  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > TurnOffPhase) log_vn_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > TurnOffPhase) q_phz(Ipar) = -1;
-  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > TurnOffPhase) cv_phz(Ipar) = -1;
+  //--turn off parameters with phases >= maxEstPhs
+  for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > maxEstPhs) T_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_Gpar; Ipar++) if (G_phz(Ipar) > maxEstPhs) G_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_Mpar; Ipar++) if (M_phz(Ipar) > maxEstPhs) M_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_Spar; Ipar++) if (S_phz(Ipar) > maxEstPhs) S_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (f_phz(Ipar) > maxEstPhs) f_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (foff_phz(Ipar) > maxEstPhs)     foff_phz(Ipar)     = -1;
+  for (Ipar=1;Ipar<=nfleet; Ipar++) if (foffdevs_phz(Ipar) > maxEstPhs) foffdevs_phz(Ipar) = -1;
+  if (rdv_phz > maxEstPhs) rdv_phz = -1;
+  if (rec_prop_phz > maxEstPhs) rec_prop_phz = -1;
+  for (Ipar=1;Ipar<=nSizeComps; Ipar++) if (log_vn_phz(Ipar) > maxEstPhs) log_vn_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_qpar; Ipar++) if (q_phz(Ipar) > maxEstPhs) q_phz(Ipar) = -1;
+  for (Ipar=1;Ipar<=n_addcv_par; Ipar++) if (cv_phz(Ipar) > maxEstPhs) cv_phz(Ipar) = -1;
 
   NVarPar = 0; //--calculate the number of active parameters
   for (Ipar=1;Ipar<=n_Tpar; Ipar++) if (T_phz(Ipar) > 0) NVarPar += 1;
@@ -4994,15 +5190,15 @@ DATA_SECTION
   NEstPars = NVarPar;
   
   NRefPars = NVarPar;
-  if (OutRefPars==YES) NVarPar += (6 + 3*nfleet);
+  if (outRefPts==YES) NVarPar += (6 + 3*nfleet);
   NRecPar = NVarPar+1;
-  if (OutRecruit==YES) NVarPar += nsex*(nyr-syr+1);
+  if (outRec==YES) NVarPar += nsex*(nyr-syr+1);
   NSSBPar = NVarPar+1;
-  if (OutSSB==YES) NVarPar += (nyr-syr+1);
+  if (outSSB==YES) NVarPar += (nyr-syr+1);
   NfbarPar = NVarPar+1;
-  if (Outfbar==YES) NVarPar += (nyr-syr+1);
+  if (outFbar==YES) NVarPar += (nyr-syr+1);
   NB0Par = NVarPar+1;
-  if (OutDynB0==YES) NVarPar += (nyr-syr+1);
+  if (outDynB0==YES) NVarPar += (nyr-syr+1);
   cout << "Number of std variables: " << NVarPar << endl;
  END_CALCS
 
@@ -5059,7 +5255,7 @@ DATA_SECTION
 
   int eof_mse;
  LOCAL_CALCS
-  if (Do_MSE == YES){
+  if (doMSE == YES){
     ad_comm::change_datafile_name(MSEfile);
     cout << "+------------------+" << endl;
     cout << "| Reading MSE file |" << endl;
@@ -5564,7 +5760,7 @@ PRELIMINARY_CALCS_SECTION
     for(int j=1; j<=nclass; j++)
      l1_vec(h,j,i) = ((xg(i) + 1)/2)*(size_breaks(j+1)-size_breaks(j)) + size_breaks(j);
 
-  if ( simflag )
+  if ( clv_DoSims )
    {
     if ( !global_parfile )
      {
@@ -5572,92 +5768,92 @@ PRELIMINARY_CALCS_SECTION
       ad_exit(1);
      }
     cout << "|-------------------------------------------|" << endl;
-    cout << "|*** RUNNING SIMULATION WITH RSEED = " << rseed << " ***|" << endl;
+    cout << "|*** RUNNING SIMULATION WITH RSEED = " << rseed_sim << " ***|" << endl;
     cout << "|-------------------------------------------|" << endl;
     simulation_model();
     //exit(1);
     cout<<"done"<<endl;
    }
 
-  if (rseed==0) rseed = start;
-  random_number_generator rng2( rseed ) ;
-  if (IsJittered!=0) {
+  if (doJittering) {
     cout << "+------------------------------+" << endl;
     cout << "| Jittering                    |" << endl;
     cout << "+------------------------------+" << endl;
+    if (rseed_jtr==0) rseed_jtr = start;
+    random_number_generator rng_jtr(rseed_jtr) ;
     {
       ofstream JitFile;
       JitFile.open("jitter.txt");
-      JitFile << rseed << endl;
+      JitFile << rseed_jtr << endl;
       JitFile.close();
     }
     for (int ipar=1;ipar<=n_Tpar;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      T_pars_est(ipar) = GenJitter(IsJittered,IsPin,T_ival(ipar),T_lb(ipar),T_ub(ipar),T_phz(ipar),sdJitter,rands,randu,T_pars_est(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      T_pars_est(ipar) = GenJitter(doJittering,usePinForJittering,T_ival(ipar),T_lb(ipar),T_ub(ipar),T_phz(ipar),sdJitter,rands,randu,T_pars_est(ipar));
      }
     for (int ipar=1;ipar<=n_Gpar;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      G_pars_est(ipar) = GenJitter(IsJittered,IsPin,G_ival(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu,G_pars_est(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      G_pars_est(ipar) = GenJitter(doJittering,usePinForJittering,G_ival(ipar),G_lb(ipar),G_ub(ipar),G_phz(ipar),sdJitter,rands,randu,G_pars_est(ipar));
      }
     for (int ipar=1;ipar<=n_Spar;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      S_pars_est(ipar) = GenJitter(IsJittered,IsPin,S_ival(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu,S_pars_est(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      S_pars_est(ipar) = GenJitter(doJittering,usePinForJittering,S_ival(ipar),S_lb(ipar),S_ub(ipar),S_phz(ipar),sdJitter,rands,randu,S_pars_est(ipar));
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nFparams(ipar); jpar++)
       {
-       rands.fill_randn(rng2);
-       randu.fill_randn(rng2);
-       log_fdev(ipar,jpar) = GenJitter(IsJittered,IsPin,(fdev_ub(ipar)+fdev_lb(ipar))/2.0,fdev_lb(ipar),fdev_ub(ipar),f_phz(ipar),sdJitter,rands,randu,log_fdev(ipar,jpar));
+       rands.fill_randn(rng_jtr);
+       randu.fill_randn(rng_jtr);
+       log_fdev(ipar,jpar) = GenJitter(doJittering,usePinForJittering,(fdev_ub(ipar)+fdev_lb(ipar))/2.0,fdev_lb(ipar),fdev_ub(ipar),f_phz(ipar),sdJitter,rands,randu,log_fdev(ipar,jpar));
       }
     for (int ipar=1;ipar<=nfleet;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      log_foff(ipar) = GenJitter(IsJittered,IsPin,(foff_ub(ipar)+foff_lb(ipar))/2.0,foff_lb(ipar),foff_ub(ipar),foff_phz(ipar),sdJitter,rands,randu,log_foff(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      log_foff(ipar) = GenJitter(doJittering,usePinForJittering,(foff_ub(ipar)+foff_lb(ipar))/2.0,foff_lb(ipar),foff_ub(ipar),foff_phz(ipar),sdJitter,rands,randu,log_foff(ipar));
      }
     for (int ipar=1;ipar<=nfleet;ipar++)
      for (int jpar=1;jpar<=nYparams(ipar); jpar++)
       {
-       rands.fill_randn(rng2);
-       randu.fill_randn(rng2);
-       log_fdov(ipar,jpar) = GenJitter(IsJittered,IsPin,0.0,-10.0,10.0,foffdevs_phz(ipar),sdJitter,rands,randu,log_fdov(ipar,jpar));
+       rands.fill_randn(rng_jtr);
+       randu.fill_randn(rng_jtr);
+       log_fdov(ipar,jpar) = GenJitter(doJittering,usePinForJittering,0.0,-10.0,10.0,foffdevs_phz(ipar),sdJitter,rands,randu,log_fdov(ipar,jpar));
       }
     for (int ipar=rdv_syr;ipar<=rdv_eyr;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      rec_dev_est(ipar) = GenJitter(IsJittered,IsPin,0.0,-8.0,8.0,rdv_phz,sdJitter,rands,randu,rec_dev_est(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      rec_dev_est(ipar) = GenJitter(doJittering,usePinForJittering,0.0,-8.0,8.0,rdv_phz,sdJitter,rands,randu,rec_dev_est(ipar));
      }
     for (int ipar=rdv_syr;ipar<=rdv_eyr;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      logit_rec_prop_est(ipar) = GenJitter(IsJittered,IsPin,init_sex_ratio,-100.0,100.0,rec_prop_phz,sdJitter,rands,randu,logit_rec_prop_est(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      logit_rec_prop_est(ipar) = GenJitter(doJittering,usePinForJittering,init_sex_ratio,-100.0,100.0,rec_prop_phz,sdJitter,rands,randu,logit_rec_prop_est(ipar));
      }
     for (int ipar=1;ipar<=nSizeComps;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      log_vn(ipar) = GenJitter(IsJittered,IsPin,log_vn_ival(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu,log_vn(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      log_vn(ipar) = GenJitter(doJittering,usePinForJittering,log_vn_ival(ipar),log_vn_lb(ipar),log_vn_ub(ipar),log_vn_phz(ipar),sdJitter,rands,randu,log_vn(ipar));
      }
     for (int ipar=1;ipar<=n_qpar;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      survey_q(ipar) = GenJitter(IsJittered,IsPin,q_ival(ipar),q_lb(ipar),q_ub(ipar),q_phz(ipar),sdJitter,rands,randu,survey_q(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      survey_q(ipar) = GenJitter(doJittering,usePinForJittering,q_ival(ipar),q_lb(ipar),q_ub(ipar),q_phz(ipar),sdJitter,rands,randu,survey_q(ipar));
      }
     for (int ipar=1;ipar<=n_addcv_par;ipar++)
      {
-      rands.fill_randn(rng2);
-      randu.fill_randn(rng2);
-      log_add_cv(ipar) = GenJitter(IsJittered,IsPin,log_add_cv_ival(ipar),log_add_cv_lb(ipar),log_add_cv_ub(ipar),cv_phz(ipar),sdJitter,rands,randu,log_add_cv(ipar));
+      rands.fill_randn(rng_jtr);
+      randu.fill_randn(rng_jtr);
+      log_add_cv(ipar) = GenJitter(doJittering,usePinForJittering,log_add_cv_ival(ipar),log_add_cv_lb(ipar),log_add_cv_ub(ipar),cv_phz(ipar),sdJitter,rands,randu,log_add_cv(ipar));
      }
    }
 
@@ -5724,7 +5920,7 @@ PROCEDURE_SECTION
   }
 
   // Initialize model parameters
-  if (!IsJittered){
+  if (!doJittering){
     popprog.open("gmacs_popprog.csv", ios::trunc); popprog.width(15); popprog.precision(12);
     popprog<<"y,  ssn,  x,   m,   s"; for (int l=1;l<=nclass;l++) {popprog<<", "<<mid_points(l);} popprog<<endl;
   }
@@ -5754,7 +5950,7 @@ PROCEDURE_SECTION
   calc_recruitment_size_distribution();                    if ( verbose >= 3 ) cout << "Ok after calc_recruitment_size_distribution ..." << endl;
   calc_initial_numbers_at_length();                        if ( verbose >= 3 ) cout << "Ok after calc_initial_numbers_at_length ..." << endl;
   update_population_numbers_at_length();                   if ( verbose >= 3 ) cout << "Ok after update_population_numbers_at_length ..." << endl;
-  if (!IsJittered) popprog.close();
+  if (!doJittering) popprog.close();
   if (Term_molt == 0){
     calc_stock_recruitment_relationship();                 if ( verbose >= 3 ) cout << "Ok after calc_stock_recruitment_relationship ..." << endl;
   } else {
@@ -5779,7 +5975,7 @@ PROCEDURE_SECTION
   calc_objective_function();                               if ( verbose >= 3 ) cout << "Ok after calc_objective_function ..." << endl;
 
   // sd_report variables
-  if ( sd_phase() || NfunCall==StopAfterFnCall){
+  if ( sd_phase() || NfunCall==maxFnCalls){
     if ( verbose >= 3 ) cout<<"Starting sd_phase"<<endl;
     // Save the estimates parameters to ParsOut (used for variance estimation)
     ParsOut.initialize();
@@ -5807,7 +6003,7 @@ PROCEDURE_SECTION
     for (ii=1;ii<=n_deviations_est; ii++) if (deviations_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = par_devs(ii); }
 
     // AEP need to look at this
-    if (CalcRefPoints!=0 && nyrRetroNo==0) calc_spr_reference_points2(1);
+    if (calcRefPts!=0 && clv_NumPeels==0) calc_spr_reference_points2(1);
     if ( verbose >= 3 ) cout << "Ok after calc_spr_reference_points ..." << endl;
     calc_sdreport();
     if ( verbose >= 3 ) cout << "Ok after calc_sdreport ..." << endl;
@@ -5815,13 +6011,13 @@ PROCEDURE_SECTION
 
   // General outputs
   if ( mceval_phase() ) write_eval();
-  if ( NfunCall == StopAfterFnCall ) {
+  if ( NfunCall == maxFnCalls ) {
     cout<<"Stopping after "<<NfunCall<<" function calls--creating par file"<<endl;
     save_params();
     cout<<"Stopping after "<<NfunCall<<" function calls--creating output"<<endl;
     CreateOutput();
     cout<<"--------------------------------------"<<endl;
-    cout<<"Stopping after "<<StopAfterFnCall<<" function calls"<<endl;
+    cout<<"Stopping after "<<maxFnCalls<<" function calls"<<endl;
     cout<<"--------------------------------------"<<endl;
     exit(1);
 	}
@@ -5838,7 +6034,7 @@ PROCEDURE_SECTION
 FUNCTION initialize_model_parameters
   int Ipnt, Jpnt, Kpnt, Ihmo;
 
-  if (verbose >= 3) cout<<"starting initialize_model_parameters";
+  if (verbose > 2) cout<<"starting initialize_model_parameters";
 
  
  // Get initial parameters
@@ -6399,6 +6595,10 @@ FUNCTION initialize_model_parameters
   }
  
   // SurveyQ
+  if (verbose > 2) {
+    cout<<"--initialize_model_parameters: starting survey Q"<<endl;
+    echoinput<<"--initialize_model_parameters: starting survey Q"<<endl;
+  }
   for (int is=1;is<=nSurveys;is++){
     if (q_mirror(is)==0){
       SurveyQT(is) = timevarparV2(1,is, nyrRetro+1, q_relative(is), q_block(is), q_block_fn(is),q_env_link(is), q_env_var(is), 
@@ -6407,9 +6607,9 @@ FUNCTION initialize_model_parameters
       SurveyQT(is) = SurveyQT(q_mirror(is));//--NOTE: index of survey that is mirrored must come before index of mirroring survey
     }
   }
-  if (verbose >= 3) {
-    cout<<"--finished survey Q"<<endl;
-    echoinput<<"--finished survey Q"<<endl;
+  if (verbose > 2) {
+    cout<<"--initialize_model_parameters: finished survey Q"<<endl;
+    echoinput<<"--initialize_model_parameters: finished survey Q"<<endl;
     echoinput<<"SurveyQT " << endl << "year   surveys" << endl;
     for (int iy=syr;iy<=nyrRetro+1;iy++){
       echoinput << iy << "  ";
@@ -6420,8 +6620,8 @@ FUNCTION initialize_model_parameters
    
   // Additional variance
   if (verbose>2){
-    cout<<"--starting additional variance"<<endl;
-    echoinput<<"--starting additional variance"<<endl;
+    cout<<"--initialize_model_parameters: starting additional variance"<<endl;
+    echoinput<<"--initialize_model_parameters: starting additional variance"<<endl;
   }
   for (int is=1;is<=nSurveys;is++){
     if (verbose>3) echoinput<<"Processing additional variance for survey " << is << endl;
@@ -6433,8 +6633,8 @@ FUNCTION initialize_model_parameters
     }
   }
   if (verbose>2) {
-    cout<<"--finished AddVarQT"<<endl;
-    echoinput<<"--finished AddVarQT"<<endl;
+    cout<<"--initialize_model_parameters: finished AddVarQT"<<endl;
+    echoinput<<"--initialize_model_parameters: finished AddVarQT"<<endl;
   }
   if (verbose>2) {
     cout<<"--finished initialize_model_parameters"<<endl;
@@ -6534,11 +6734,13 @@ FUNCTION dvar_vector timevarparV(const int itype, const int ipar, const int lyea
 // =======================================================================================================================================
 // =======================================================================================================================================
 
-FUNCTION dvar_vector timevarparV2(const int itype, const int ipar, const int lyear,  const int isrel, const int blk, const int block_fn, 
-                                const int env_link, const int env_var,
-                                const int RW, const int RW_blk, 
-                                const int npars, imatrix parpoints, dvar_vector pars)
+FUNCTION dvar_vector timevarparV2(const int itype, const int ipar, const int lyear,  
+                                  const int isrel, const int blk, const int block_fn, 
+                                  const int env_link, const int env_var,
+                                  const int RW, const int RW_blk, 
+                                  const int npars, imatrix parpoints, dvar_vector pars)
   RETURN_ARRAYS_INCREMENT();
+  echoinput<<"Starting timevarparV2 for type " << itype << " and parameter " << ipar << endl;
   dvar_vector tpar(syr,lyear);
   dvariable envpar, dev;
   int OK, jpnt, devpnt;
@@ -6554,71 +6756,72 @@ FUNCTION dvar_vector timevarparV2(const int itype, const int ipar, const int lye
   echoinput<<"Initial value for tpar: " << syr << " " << lyear << " " << tpar << endl;
   
   // Handle block parameters
-  if (blk>0)
-   for (int iblk=1;iblk<=blocks(blk);iblk++)
-    {
-     OK = 0;
-     for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
-     for (int i=blocklimits(blk,iblk,1);i<=min(lyear,int(blocklimits(blk,iblk,2)));i++) {
-       if (block_fn==0) tpar(i) = pars(jpnt);
-       if (block_fn==1) tpar(i) *= exp(pars(jpnt));
+  if (blk>0){
+    for (int iblk=1;iblk<=blocks(blk);iblk++){
+      OK = 0;
+      for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
+      for (int i=blocklimits(blk,iblk,1);i<=min(lyear,int(blocklimits(blk,iblk,2)));i++) {
+        if (block_fn==0) tpar(i) = pars(jpnt);
+        if (block_fn==1) tpar(i) *= exp(pars(jpnt));
       }//--i loop 
     }
+  }
+  echoinput<<"Processed block parameters for type " << itype << " and parameter " << ipar << endl;
    
-   // Handle environmental link parameters 
-   if (env_link != 0)
-    {
-     OK = 0;
-     for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
-      int jjpnt = jpnt;
-     int ienv_par2;
-     for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
-      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++)
-       {
+  // Handle environmental link parameters 
+  if (env_link != 0){
+    OK = 0;
+    for (int kpnt=jpnt+1;kpnt<=npars && OK==0;kpnt++) if (parpoints(kpnt,1)==ipar) { jpnt = kpnt; OK = 1; }
+    int jjpnt = jpnt;
+    int ienv_par2;
+    for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
+      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++){
         envpar = 0;
-        for (int ienv_par=1;ienv_par<=Env_link_nums(env_var);ienv_par++)
-         for (int jenv_par=1; jenv_par<=int(Env_specs(env_var,ienv_par,2));jenv_par++)
-          {
-           ienv_par2 = int(Env_specs(env_var,ienv_par,5));
-           envpar += pars(jpnt)*pow(Env_vars_used(i,ienv_par2),float(jenv_par));
-           jpnt += 1;
+        for (int ienv_par=1;ienv_par<=Env_link_nums(env_var);ienv_par++){
+          for (int jenv_par=1; jenv_par<=int(Env_specs(env_var,ienv_par,2));jenv_par++){
+            ienv_par2 = int(Env_specs(env_var,ienv_par,5));
+            envpar += pars(jpnt)*pow(Env_vars_used(i,ienv_par2),float(jenv_par));
+            jpnt += 1;
           }
-         if (env_link==1) tpar(i) += envpar;
-         if (env_link==2) tpar(i) *= envpar;
-         if (env_link==3) tpar(i) *= exp(envpar);
-         jpnt = jjpnt;
-       } // i
+        }
+        if (env_link==1) tpar(i) += envpar;
+        if (env_link==2) tpar(i) *= envpar;
+        if (env_link==3) tpar(i) *= exp(envpar);
+        jpnt = jjpnt;
+      } // i
            
-      } // iblk
+    } // iblk
          
-    }//--if (env_link != 0)
+  }//--if (env_link != 0)
+  echoinput<<"Processed environmental link parameters for type " << itype << " and parameter " << ipar << endl;
    
-   // Handle random walk parameters
-   if (RW != 0) 
-    {
-     OK = 0;
-     for (int kpnt=1;kpnt<=100 && OK==0;kpnt++) if (devpoints(kpnt,1)==itype && devpoints(kpnt,2)==ipar) { jpnt = kpnt; OK = 1; }
-     
-     // Find the deviations and implement
-     devpnt = devpoints(jpnt,3);
-     for (int iblk=1;iblk<=blocks(RW_blk);iblk++)
-      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++)
-       {
+  // Handle random walk parameters
+  if (RW != 0) {
+    OK = 0;
+    for (int kpnt=1;kpnt<=100 && OK==0;kpnt++) if (devpoints(kpnt,1)==itype && devpoints(kpnt,2)==ipar) { jpnt = kpnt; OK = 1; }
+    
+    // Find the deviations and implement
+    devpnt = devpoints(jpnt,3);
+    for (int iblk=1;iblk<=blocks(RW_blk);iblk++){
+      for (int i=blocklimits(RW_blk,iblk,1);i<=min(lyear,int(blocklimits(RW_blk,iblk,2)));i++){
         // annual or random walk
         if (i==blocklimits(RW_blk,iblk,1)) {
           dev = par_devs(devpnt); 
         } else {
           if (RW < 10) dev = par_devs(devpnt); 
           if (RW > 10) dev += par_devs(devpnt); 
-         }
+        }
         // Additive or multiplicative 
         if (RW==1 || RW==11) tpar(i) += dev;
         if (RW==2 || RW==12) tpar(i) *= dev;
         if (RW==3 || RW==13) tpar(i) *= exp(dev);
         devpnt += 1;
-       }
-    }
-  
+      } // i
+    } // iblk
+  }
+  echoinput<<"Processed random walk parameters for type " << itype << " and parameter " << ipar << endl;
+
+  echoinput<<"Finished processing timevarparV2 for type " << itype << " and parameter " << ipar << endl;
   RETURN_ARRAYS_DECREMENT();
   return(tpar);
 
@@ -8283,7 +8486,7 @@ FUNCTION calc_initial_numbers_at_length
       }
     }
   }
-  if ((!IsJittered)&&((verbose>3)||last_phase())) 
+  if ((!doJittering)&&((verbose>3)||last_phase())) 
     writeToPopProg(popprog,syr,1,d2_N_gz); //--pop abundance at START of start year, season 1
 
 // --------------------------------------------------------------------------------------------------------------------------------------
@@ -8364,7 +8567,7 @@ FUNCTION void updateNumbersAtLengthByCase(const dvar_matrix& next, const int i, 
     }
   }
 
-  if ((Case==1)&&(!IsJittered)&&((verbose>3)||last_phase())){
+  if ((Case==1)&&(!doJittering)&&((verbose>3)||last_phase())){
     if (j==nseason){
       writeToPopProg(popprog,i+1,1,next); //--pop abundance at START of year i+1, season 1
     } else {
@@ -11272,7 +11475,7 @@ FUNCTION recruitment_likelihood
 // --------------------------------------------------------------------------------------------------
 // Label 405: growth_likelihood
 FUNCTION growth_likelihood
-  if (verbose>=3) ECHOSTR("Strarting growth likelihood")
+  if (verbose>=3) ECHOSTR("Starting growth likelihood")
   //  5) Likelihood for the tagging-related size-class change data #2
   if (GrowthObsType==GROWTHCLASS_DATA || GrowthObsType==GROWTHCLASS_VALS){
     dvariable Prob;
@@ -11380,53 +11583,49 @@ FUNCTION calc_objective_function
   nlogPenalty.initialize();
 
   // 1) Penalty on log_fdev (male+combined; female) to ensure they sum to zero
-  for ( int k = 1; k <= nfleet; k++ )
-   {
+  if (verbose >= 3) cout<<"starting penalties on log_fdev"<<endl;
+  for ( int k = 1; k <= nfleet; k++ ){
     dvariable s     = mean(log_fdev(k));
     nlogPenalty(1) += Penalty_fdevs(k,1)*s*s;
-    if (nsex > 1)
-     {
+    if (nsex > 1){
       dvariable r     = mean(log_fdov(k));
       nlogPenalty(1) += Penalty_fdevs(k,2)*r*r;
-     }
-   }
-   if (verbose >= 3) cout<<"finished penalties on log_fdev"<<endl;
+    }
+  }
+  if (verbose >= 3) cout<<"finished penalties on log_fdev"<<endl;
 
   // 2) Penalty on mean F to regularize the solution.
+  if (verbose >= 3) cout<<"starting penalties on mean F"<<endl;
   int irow = 1;
   if ( last_phase() ) irow = 2;
   dvariable fbar;
   dvariable ln_fbar;
-  for ( int k = 1; k <= nfleet; k++ )
-   for ( int j = 1; j <= nseason; j++ )
-    {
-     fbar = mean( trans(ft(k,1))(j) );
-     if ( init_fbar(k) > 0 && fbar != 0 )
-      {
-       ln_fbar = log(fbar);
-       nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
+  for ( int k = 1; k <= nfleet; k++ ){
+    for ( int j = 1; j <= nseason; j++ ){
+      fbar = mean( trans(ft(k,1))(j) );
+      if ( init_fbar(k) > 0 && fbar != 0 ){
+        ln_fbar = log(fbar);
+        nlogPenalty(2) += dnorm(ln_fbar, log(init_fbar(k)), pen_fstd(irow,k));
       }
-     if (nsex==2)
-      {
-       fbar = mean( trans(ft(k,2))(j) );
-       if ( fbar != 0 )
-        {
-         ln_fbar = log(fbar);
-         nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
+      if (nsex==2){
+        fbar = mean( trans(ft(k,2))(j) );
+        if ( fbar != 0 ){
+          ln_fbar = log(fbar);
+          nlogPenalty(2) += dnorm(ln_fbar, log_init_fbar_foff(k), pen_fstd(irow,k));
         }
       } 
     }
+  }
    
-   if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
+  if (verbose >= 3) cout<<"finished penalties on mean F"<<endl;
 
   // 6) Smoothness penalty on recruitment devs.
-  //if ( !last_phase() )
-   {
-    if ( active(rec_dev_est) ) nlogPenalty(6) = dnorm(first_difference(rec_dev), 1.0);
-   }
-   if (verbose >= 3) cout<<"finished penalties on rec_devs"<<endl;
+  if (verbose >= 3) cout<<"starting penalties on rec_devs"<<endl;
+  if ( active(rec_dev_est) ) nlogPenalty(6) = dnorm(first_difference(rec_dev), 1.0);
+  if (verbose >= 3) cout<<"finished penalties on rec_devs"<<endl;
 
   // 7) Penalty on sex ratio
+  if (verbose >= 3) cout<<"starting penalties on sex-specific recruitment"<<endl;
   if (nsex > 1) {
     SumRecF = 0; SumRecM = 0;
     for ( int i = syr; i <= nyrRetro; i++ )
@@ -11435,11 +11634,16 @@ FUNCTION calc_objective_function
   }
   if (verbose >= 3) cout<<"finished penalties on sex-specific recruitment"<<endl;
 
+
   // 8) Smoothness penalty on molting probability
-  for (int h=1;h<=nsex;h++)
-   if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT)
-    for (int igrow=1;igrow<=nMoltVaries(h);igrow++)
-     nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
+  if (verbose >= 3) cout<<"starting smoothness penalty on molting probability"<<endl;
+  for (int h=1;h<=nsex;h++){
+    if (bUseCustomMoltProbability2(h)==FREE_PROB_MOLT){
+      for (int igrow=1;igrow<=nMoltVaries(h);igrow++){
+        nlogPenalty(8) += dnorm(first_difference(molt_probability_in(1,igrow)), 1.0);  
+      }
+    }
+  }
   if (verbose >= 3) cout<<"finished Smoothness penalty on molting probability"<<endl;
    
   // 9) Smoothness penalty on selectivity patterns with class-specific coefficients
@@ -11501,7 +11705,7 @@ FUNCTION calc_objective_function
     cout << "6. growth data     : " << sum(nloglike(6)) << " : " << nloglike(6) << endl;
     cout << "7. male mat. og.s  : " << sum(nloglike(7)) << " : " << nloglike(7) << endl;
     cout << "8. effort expansion: " << sum(nloglike(8)) << " : " << nloglike(8) << endl;
-    if (!IsJittered) writeRepPar();
+    if (!doJittering) writeRepPar();
   }
 
 // ==================================================================================================================================================
@@ -11513,17 +11717,21 @@ FUNCTION calc_objective_function
   **/
 FUNCTION simulation_model
   // random number generator
-  random_number_generator rng(rseed);
+  random_number_generator rng_sim(rseed_sim);
 
   // Initialize model parameters
+  if (verbose>2) cout << "simulation_model: starting - initialize_model_parameters " << endl;
   initialize_model_parameters();
-
-  // Fishing fleet dynamics ...
+  if (verbose>2) cout << "simulation_model: finished - initialize_model_parameters " << endl;
+  if (verbose>2) cout << "simulation_model: starting - calc_selectivities " << endl;
   calc_selectivities();
+  if (verbose>2) cout << "simulation_model: finished - calc_selectivities " << endl;
+  if (verbose>2) cout << "simulation_model: starting - calc_fishing_mortality " << endl;
   calc_fishing_mortality();
+  if (verbose>2) cout << "simulation_model: finished - calc_fishing_mortality " << endl;
 
   dvector drec_dev(syr+1,nyrRetro);
-  drec_dev.fill_randn(rng);
+  drec_dev.fill_randn(rng_sim);
   rec_dev = mfexp(logSigmaR) * drec_dev;
 
   // Population dynamics ...
@@ -11544,7 +11752,7 @@ FUNCTION simulation_model
 
   // add observation errors to catch.
   dmatrix err_catch(1,nCatchDF,1,nCatchRows);
-  err_catch.fill_randn(rng);
+  err_catch.fill_randn(rng_sim);
   dmatrix catch_sd(1,nCatchDF,1,nCatchRows);
   for ( int k = 1; k <= nCatchDF; k++ )
    {
@@ -11566,7 +11774,7 @@ FUNCTION simulation_model
   // add observation errors to cpue && fill in dSurveyData column 5
   dvector err_cpue(1,nSurveyRows);
   dvector cpue_sd_sim = sqrt(log(1.0 + square(cpue_cv))); // Note if this should include add_cv
-  err_cpue.fill_randn(rng);
+  err_cpue.fill_randn(rng_sim);
   obs_cpue = value(pre_cpue);
   err_cpue = elem_prod(cpue_sd_sim,err_cpue) - 0.5*square(cpue_sd_sim);
   obs_cpue = elem_prod(obs_cpue,mfexp(err_cpue));
@@ -11580,7 +11788,7 @@ FUNCTION simulation_model
     {
      tau = sqrt(1.0 / size_comp_sample_size(k)(i));
      dvector p = value(d3_pre_size_comps(k)(i));
-     d3_obs_size_comps(k)(i) = rmvlogistic(p,tau,rseed+k+i);
+     d3_obs_size_comps(k)(i) = rmvlogistic(p,tau,rseed_sim+k+i);
     }
 
 // ==========================================================================================================================================
@@ -12081,7 +12289,7 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
      if (TACType==2 && catch_pass(1)-1.0e-5 < TargetC) NeedToTune = NO;
 
      cout << TargetC << endl;
-     if (Do_MSE==YES) ApplyMP(i);
+     if (doMSE==YES) ApplyMP(i);
      TargetC = TAC_used;
 
      // Apply bisection to find the target F for the directed fishery
@@ -12116,7 +12324,7 @@ FUNCTION dvar_vector project_biomass(const int YrRefGrow, const int YrRefM1, con
      ssb_prj(nyrRetro+i) = ssb_pass;
 
      // Now generate future data
-     if (Do_MSE==YES) GenerateData(i,nyrRetro+i);
+     if (doMSE==YES) GenerateData(i,nyrRetro+i);
 
     } // i
     if (verbose>2) cout << "Finished loop over projection years" << endl;
@@ -12437,7 +12645,7 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
             sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
             ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
             if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
-            if (Do_MSE==YES & i> 0) xi1  = fut_disc_mort(k);
+            if (doMSE==YES & i> 0) xi1  = fut_disc_mort(k);
             sel += sel1;                                                            // will be averaged selectivity
             ret += ret1;                                                            // will be averaged retention
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // will be averaged vulnerability
@@ -12592,7 +12800,7 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
             sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                          // Selectivity
             ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);             // Retention
             if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
-            if (Do_MSE==YES & i > 0) xi1  = fut_disc_mort(k);
+            if (doMSE==YES & i > 0) xi1  = fut_disc_mort(k);
             sel += sel1;                                                            // Selectivity
             ret += ret1;                                                            // Retention
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // Vulnerability
@@ -12864,7 +13072,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
             sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                // selectivity
             ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);   // retention
             if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
-            if (Do_MSE==YES & iyr > nyrRetro) xi1  = fut_disc_mort(k);
+            if (doMSE==YES & iyr > nyrRetro) xi1  = fut_disc_mort(k);
             sel += sel1;                                                  // will be average selectivity
             ret += ret1;                                                  // will be average retention
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);            // will be average vulnerability
@@ -13000,6 +13208,8 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
   * @return none.
   **/
 FUNCTION void calc_spr_reference_points2(const int DoProfile)
+  int verbose1;
+  verbose1 = 1;  //--WTS CODING: Added initialization for verbose1 to control debug output. Set to verbose after testing.
   int iproj;
   dvar_matrix equilibrium_numbers(1,n_grp,1,nclass);
   dvariable FF;
@@ -13027,26 +13237,38 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   // Find mean recruitment
   if (nsex==1)  spr_rbar(1) = mean(recruits(1)(spr_syr,spr_nyr));
   if (nsex==2) {spr_rbar(1) = mean(recruits(1)(spr_syr,spr_nyr)); spr_rbar(2) = mean(recruits(2)(spr_syr,spr_nyr));}
+  if (verbose1) cout<<"got here 0"<<endl;
   
   // Find mean recruitment for projections
   if (nsex==1)  proj_rbar(1) = mean(recruits(1)(proj_syr,proj_nyr));
   if (nsex==2) {proj_rbar(1) = mean(recruits(1)(proj_syr,proj_nyr)); proj_rbar(2) = mean(recruits(2)(proj_syr,proj_nyr));}
+  if (verbose1) cout<<"got here 1"<<endl;
   
   // Find the average F by fleet over the last spr_aveF_nyr-spr_aveF_syr+1 years
   for (int k = 1; k <= nfleet; k++){
     MeanF = 0; NF = 0;
-    for (int i = spr_aveF_syr; i <= spr_aveF_nyr; i++) { MeanF += fout(k,i); NF += 1; }
+    cout << "Calculating mean F for fleet " << k << " from year " << spr_aveF_syr << " to " << spr_aveF_nyr << endl;
+    for (int i = spr_aveF_syr; i <= spr_aveF_nyr; i++) { 
+      cout << "k=" << k << " i=" << i << " fout=" << fout(k,i) << endl;
+      MeanF += fout(k,i); 
+      NF += 1; 
+    }
     Fave(k) = (MeanF+1.0e-10)/NF;
   }
+  if (verbose1) cout<<"got here 2"<<endl;
 
   // Find SSB for F=0 for all fleets
   for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
+  if (verbose1) cout << "calc_spr_reference_points2: calculating eq_N_F0" << endl; 
+  if (verbose1) cout << "spr_SexR_syr" << ";" << "spr_SexR_nyr" << ";" << "spr_grow_yr" << ";" << "spr_grow_yr" << ";" << "spr_M_syr" << ";" << "spr_M_nyr" << ";" << "spr_Prop_syr" << ";" << "spr_Prop_nyr" << ";" << "spr_sel_syr" << ";" << "spr_sel_nyr" << ";" << "NyrEquil" << endl;
+  if (verbose1) cout << spr_SexR_syr << ";" << spr_SexR_nyr << ";" << spr_grow_yr << ";" << spr_grow_yr << ";" << spr_M_syr << ";" << spr_M_nyr << ";" << spr_Prop_syr << ";" << spr_Prop_nyr << ";" << spr_sel_syr << ";" << spr_sel_nyr << ";" << NyrEquil << endl;
   equilibrium_numbers_F0 = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
-  if (verbose>5) cout << "eq_N_F0 = " << equilibrium_numbers_F0 << endl;
+  if (verbose1) cout << "calc_spr_reference_points2: eq_N_F0 = " << equilibrium_numbers_F0 << endl;
   for (int ig=1;ig<=n_grp;ig++) equilibrium_biomass_F0(ig) = elem_prod(mean_wt(isex(ig),imature(ig),spr_grow_yr),equilibrium_numbers_F0(ig));
-  if (verbose>5) cout << "eq_B_0 = " << equilibrium_biomass_F0 << endl;
+  if (verbose1) cout << "calc_spr_reference_points2: eq_B_0 = " << equilibrium_biomass_F0 << endl;
   ssbF0 = ssb_pass;
-  if (verbose>=3) cout << ssbF0 << endl;
+  if (verbose1) cout << "ssbF0 = " << ssbF0 << endl;
+  if (verbose1) cout<<"got here 3"<<endl;
 
   // Solve for F35% and hence the Fmsy proxy (Tier 3 analysis)
   if (OFLTier==3){
@@ -13058,18 +13280,24 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);
       // AEP:AEP Why 1 and not season_ssb
+      if (verbose1) cout<<"got here 4"<<endl;
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      if (verbose1) cout<<"got here 5"<<endl;
       SSBV0 = ssb_pass/ssbF0-spr_target;
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult+0.001));
+      if (verbose1) cout<<"got here 6"<<endl;
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
+      if (verbose1) cout<<"got here 7"<<endl;
       SSBV1a = ssb_pass/ssbF0-spr_target;
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult-0.001));
+      if (verbose1) cout<<"got here 8"<<endl;
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
       SSBV1b = ssb_pass/ssbF0-spr_target;
+      if (verbose1) cout<<"got here 9"<<endl;
 
       Deriv = (SSBV1a-SSBV1b)/0.002;
       Fmult2 = Fmult - SSBV0/Deriv;
@@ -13080,6 +13308,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
         Fmult = Fmult2;
       }
     } //--i loop (10 iterations): calculates Fmult: F35% = Fave(k)*Fmult when done
+    if (verbose1) cout<<"got here 10"<<endl;
   	 
     //--F35% = Fave(k)*Fmult for
     for (int k=1;k<=nfleet;k++)
@@ -13090,6 +13319,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     if (verbose>5) cout << "eq_B_FM = " << equilibrium_biomass_FM<< endl;
     Bmsy = ssb_pass;
   } //--Tier 3 control rule
+  if (verbose1) cout<<"got here 11"<<endl;
   
   // Tier 4 control rule
   if (OFLTier==4){
@@ -13106,12 +13336,14 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     for (int k=1;k<=nfleet;k++)
       if (Ffixed(k) != 1) log_fimpbar(k) = log(Fmsy*Fave(k)/TotalF);
   } //--Tier 4 control rule
+  if (verbose1) cout<<"got here 12"<<endl;
 
   // Save FMSY
   for (int k=1;k<=nfleet;k++) sd_fmsy(k) = mfexp(log_fimpbar(k)); //Fmsy = sd_fmsy(k) where Ffixed(k) != 1
-  if (OutRefPars==YES)
+  if (outRefPts==YES)
     for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+k) = sd_fmsy(k);
   if (verbose >=3) cout << sd_fmsy << endl;
+  if (verbose1) cout<<"got here 13"<<endl;
 
   // Store reference points
   Fmsy = 1;
@@ -13120,6 +13352,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   // Store the N from the last year
   for ( int ig = 1; ig <= n_grp; ig++ ) d4_Npass(ig) = d4_N(ig)(nyrRetro+1)(1);
   if (verbose >=3) cout << d4_Npass << endl;
+  if (verbose1) cout<<"got here 14"<<endl;
   
   // Check if above Bmsy when F=FOFL 
   log_fimpbarOFL = log(sd_fmsy);
@@ -13155,20 +13388,23 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       spr_depl = ssb_pass / Bmsy;
     }
   } //--ssb_pass <= Bmsy
+  if (verbose1) cout<<"got here 15"<<endl;  
 
   // save fofl
   for (int k=1;k<=nfleet;k++) sd_fofl(k) = mfexp(log_fimpbarOFL(k));
-  if (OutRefPars==YES)
+  if (outRefPts==YES)
     for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+nfleet+k) = sd_fofl(k);
   if (verbose >=3) cout << sd_fofl << endl;
+  if (verbose1) cout<<"got here 16"<<endl;
 
   // save the OFL
   spr_cofl = ofltot_pass;
   spr_cofl_ret = oflret_pass;
-  if (OutRefPars==YES)
+  if (outRefPts==YES)
     for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+k+2*nfleet) = OFLoutpass(k+2);
   if (verbose >=3) cout << NRefPars+6+2*nfleet << endl;
   if (verbose >=3) cout << OFLoutpass << endl;
+  if (verbose1) cout<<"got here 17"<<endl;
  
   // Continue only calc_MSY is YES
   if (Calc_MSY == YES && (Stock_rec_ref==RICKER || Stock_rec_ref==BEVHOLT)){
@@ -13209,8 +13445,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
      }
   
     //SteepMin = 0.2; SteepMax = 5.0;
-    for (int ii=1;ii<=30;ii++)
-     {
+    for (int ii=1;ii<=30;ii++){
       Steepness = (SteepMin+SteepMax)/2.0;
       if (Stock_rec_ref==RICKER){
         SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
@@ -13222,11 +13457,13 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       }
 
       for (int k=1;k<=nfleet;k++)
-      if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
+        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
+      if (verbose>2) cout << "Calculating equilibrium with slightly increased F values" << endl;
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
       SSBV1a = oflret_pass;
       for (int k=1;k<=nfleet;k++)
        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*0.999);
+      if (verbose>2) cout << "Calculating equilibrium with slightly decreased F values" << endl;
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
       SSBV1b = oflret_pass;
       Deriv = (SSBV1a-SSBV1b)/0.002;
@@ -13243,8 +13480,10 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       SR_beta_prj = (1.0-Steepness)*ssbF0/(5*Steepness-1.0);
     }
     log_fimpbar = log(sd_fmsy);
+    if (verbose>2) cout << "Calculating equilibrium with current F values" << endl;
     equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
-  
+    if (verbose>2) cout << "Finished calculating equilibrium with current F values" << endl;
+
     Adjust = spr_bmsy/ssb_pass;
     if (Stock_rec_ref==RICKER){
       SR_alpha_prj = spr_rbar(1)/ssbF0*exp(log(5.0*Steepness)/0.8);
@@ -13256,10 +13495,12 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     }
 
     // Find SSB for F=0 for all fleets
+    if (verbose>2) cout << "Starting to find SSB for F=0 for all fleets" << endl;
     for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
     //--might want to use season_ssb instead of 1 in next
     equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,Stock_rec_ref);
     ssbF0 = ssb_pass;
+    if (verbose>2) cout << "Finished finding SSB for F=0 for all fleets" << endl;
 
     // Check derivative
     log_fimpbar = log(sd_fmsy);
@@ -13278,6 +13519,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     cout << "Final Yield" << ssb_pass/ssbF0 << " " << ssb_pass/spr_bmsy << " " << exp(log_fimpbar) << " " << oflret_pass << " " << Steepness << " " << Deriv << " " << ssbF0 << " " << spr_bmsy << endl;
 
     if (Compute_yield_prj==YES && DoProfile==YES){
+      if (verbose>2) cout << "Starting yield projection calculations" << endl;
       for (int ii=0;ii<=100;ii++){
         if (ii==0) FF = 1.0e-10; else FF = float(ii)/20;
         for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*FF);
@@ -13289,11 +13531,16 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
         cout << ii << " " << spr_yield(ii) << endl;
       } //--ii
     }
+    if (verbose>2) cout << "Finished yield projection calculations" << endl;
+    cout << "Exiting after MSY calculations" << endl;
+    echoinput << "Exiting after MSY calculations" << endl;
     exit(1);  //--WTS: why exit here?!!
   }  //--(Calc_MSY == YES && (Stock_rec_ref==RICKER || Stock_rec_ref==BEVHOLT))
+  cout<<"got here 18"<<endl;
     
   // Solve for FMEY and hence the Fmey proxy
   if (Calc_MEY==1){
+    if (verbose>2) cout << "Starting MEY calculations" << endl;
     // Find Fmey when adjusting the Fs for some fleets
     Eqn_basis = STOCKRECREC;
     for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log(Fave(k));
@@ -13339,11 +13586,10 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
      //cout << i << " " << Fmult << " " << Profit0 << " " << Deriv << " " << ssb_pass/ssbF0 << endl;
     } //--i loop (10 iterations): calculates Fmult: FMEY = Fave(k)*Fmult when done
    
-   Bmey_out = ssb_pass;
-   Fmey_out = Fmult;
+    Bmey_out = ssb_pass;
+    Fmey_out = Fmult;
+    if (verbose>2) cout << "Finished MEY calculations" << endl;
   } // Calculate FMEY
-  
-  
 //--calc_spr_reference_points2
 // -----------------------------------------------------------------------------------------------------------------------------------
 
@@ -13351,13 +13597,12 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 
   /** 
   * Perform final phase projections for the stock assessment model.
-  * TODO: reset seed for rng to rng_rseed (and implement this from commandline)
   */
 FUNCTION doProjections_FinalPhase
   if (verbose>2) cout<< endl << "Starting doProjections_FinalPhase"<<endl;
-  if (prj_Nstrat > 0 && prj_replicates > 0){
-    if (rng_rseed==0) rng_rseed = start;   //--need to implement this as commandline option
-    random_number_generator rng(rng_rseed);  //--NEW RNG: not same as global version (or the one used for jittering)
+  if (doPrjs&&(!doMSE)){
+    if (rseed_prj==0) rseed_prj = start;   //--need to implement this as commandline option
+    random_number_generator rng_prj(rseed_prj);  //--NEW RNG: not same as global version (or the one used for jittering)
     int index;                                                         ///> Counters
     dvariable MeanF,NF,Fmult,Bmsy_out,eps1;                            ///> Temp variables
     dvar_vector Bproj(syr,nyr+nproj);                                  ///> Biomass outout
@@ -13386,9 +13631,9 @@ FUNCTION doProjections_FinalPhase
       prj_out << ">EOD<" << endl;
 
     // calculate sd_report variables in final phase
-    if (verbose>2) cout << "starting calc_spr_reference_points2(0)" << endl;
+    if (verbose>2) cout << "starting doProjections_FinalPhase: calc_spr_reference_points2(0)" << endl;
     calc_spr_reference_points2(0);
-    if (verbose>2) cout << "finished calc_spr_reference_points2(0)" << endl;
+    if (verbose>2) cout << "finished doProjections_FinalPhase: calc_spr_reference_points2(0)" << endl;
   
     prj_out << "avgR: " << " " << spr_rbar << endl;
     prj_out << "B_100:" << " " << ssbF0    << endl;
@@ -13440,17 +13685,17 @@ FUNCTION doProjections_FinalPhase
     prj_out << "replicate  strategy  type  year  value" << endl;
     for (int isim=1;isim<=prj_replicates;isim++){
       // generate future recruitment
-      if (Initial_eps < -998) eps1 = randn(rng); else eps1 = Initial_eps;
+      if (Initial_eps < -998) eps1 = randn(rng_prj); else eps1 = Initial_eps;
       for (int iproj=1;iproj<=nproj;iproj++){
         if (Stock_rec_prj==UNIFORMSR){
-          index = prj_futRec_syr+(int)floor((float(prj_futRec_nyr)-float(prj_futRec_syr)+1.0)*randu(rng));
+          index = prj_futRec_syr+(int)floor((float(prj_futRec_nyr)-float(prj_futRec_syr)+1.0)*randu(rng_prj));
           fut_recruits(MALES,iproj) = recruits(MALES,index)/exp(logRbar(index));
           if (nsex==2) fut_recruits(FEMALES,iproj) = recruits(FEMALES,index)/exp(logRbar(index)); //--WTS 2026.09.22: now dividing by exp(logRbar(index)) like for sex 1?
         }
         if (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT || Stock_rec_prj==MEAN_RECRUIT){
           index = prj_futRec_syr + iproj - 1;  //--WTS 2026.09.21: assign index (not sure if this is correct way to do this)
           fut_recruits(1,iproj) = mfexp(eps1*SigmaR_prj-SigmaR_prj*SigmaR_prj/2.0)/exp(logRbar(index));  
-          if (iproj != nproj) eps1 = Prow_prj*eps1 + sqrt(1.0-square(Prow_prj))*randn(rng);
+          if (iproj != nproj) eps1 = Prow_prj*eps1 + sqrt(1.0-square(Prow_prj))*randn(rng_prj);
           if (nsex==2) fut_recruits(2,iproj) = fut_recruits(1,iproj);
         }
         prj_out << isim << " " << 0 << " " << "fut_recruits(MALES)   " << nyrRetro+iproj << " " << fut_recruits(MALES,iproj)*exp(logRbar(index))   << endl;
@@ -13544,8 +13789,10 @@ FUNCTION write_eval
   MCout(T_pars_est);
 
   // calculate sd_report variables in final phase
+  if (verbose>2) cout << "starting write_eval: calc_spr_reference_points2(0)" << endl;
   calc_spr_reference_points2(0);
- 
+  if (verbose>2) cout << "finished write_eval: calc_spr_reference_points2(0)" << endl;
+  
   mcoutSSB << calc_ssb() << endl;
   if (nsex==1) mcoutREC << recruits(1) << endl;
   if (nsex==2) mcoutREC << recruits(1)+recruits(2) << endl;
@@ -13569,26 +13816,26 @@ FUNCTION write_eval
  
   // Do projections
   IsProject = PROJECT;
-  if (Do_MSE==YES) InitializeData();
+  if (doMSE==YES) InitializeData();
   if (prj_Nstrat > 0 && prj_replicates > 0){
     for (int isim=1;isim<=prj_replicates;isim++){
       // generate future recruitment
-      if (Initial_eps < -998) eps1 = randn(rng); else eps1 = Initial_eps;
+      if (Initial_eps < -998) eps1 = randn(rng_prj); else eps1 = Initial_eps;
       for (int iproj=1;iproj<=nproj;iproj++){
         if (Stock_rec_prj==UNIFORMSR){
-          index = prj_futRec_syr+(int)floor((float(prj_futRec_nyr)-float(prj_futRec_syr)+1.0)*randu(rng));
+          index = prj_futRec_syr+(int)floor((float(prj_futRec_nyr)-float(prj_futRec_syr)+1.0)*randu(rng_prj));
           fut_recruits(1,iproj) = recruits(1,index)/exp(logRbar(index));
           if (nsex==2) fut_recruits(2,iproj) = recruits(2,index)/exp(logRbar(index));         //--WTS 2026.09.30: now dividing by exp(logRbar(index)) as for sex 1?
         }
         if (Stock_rec_prj==RICKER || Stock_rec_prj==BEVHOLT || Stock_rec_prj==MEAN_RECRUIT){
           fut_recruits(1,iproj) = mfexp(eps1*SigmaR_prj-SigmaR_prj*SigmaR_prj/2.0)/exp(logRbar(index));  //--WTS 2026.09.21: index has not been assigned a value here!!
-          if (iproj != nproj) eps1 = Prow_prj*eps1 + sqrt(1.0-square(Prow_prj))*randn(rng);
+          if (iproj != nproj) eps1 = Prow_prj*eps1 + sqrt(1.0-square(Prow_prj))*randn(rng_prj);
           if (nsex==2) fut_recruits(2,iproj) = fut_recruits(1,iproj);
         }
       }
     
       int Nstrategies = prj_Nstrat;
-      if (Do_MSE==YES) Nstrategies = 1;  
+      if (doMSE==YES) Nstrategies = 1;  
       for (int irun=1;irun<=Nstrategies;irun++){
         // Set F
         Fmult = 1.e-10 + Proj_Levels(irun);
@@ -13646,7 +13893,7 @@ FUNCTION calc_sdreport
   //sd_log_recruits = log(recruits);
   
   int Ipnt = NRecPar;
-  if (OutRecruit==YES)
+  if (outRec==YES)
     for (int h=1;h<=nsex;h++)
       for (int y=syr;y<=nyrRetro;y++)
         { ParsOut(Ipnt) = log(recruits(h,y)); Ipnt +=1; }
@@ -13654,19 +13901,19 @@ FUNCTION calc_sdreport
   sd_log_ssb.initialize();
   sd_log_ssb = log(calc_ssb()+0.00001);//--need to add small constant to avoid log(0) when SSB=0
   Ipnt = NSSBPar;
-  if (OutSSB==YES) 
+  if (outSSB==YES) 
     for (int y=syr;y<=nyrRetro;y++)
       { ParsOut(NSSBPar+y-syr) = sd_log_ssb(y); }
   if (verbose>2) cout<<"Finished setting sd_log_ssb"<<endl;
 
   //Added 13 lines by Jie
   sd_last_ssb = spr_depl * Bmsy;
-  if (Outfbar==YES)
+  if (outFbar==YES)
    for ( int y = syr; y <= nyrRetro; y++ )  ParsOut(NfbarPar+y-syr) = mean(F(1,y));
   if (verbose>2) cout<<"Finished setting mean(F(1,y))"<<endl;
 
   // projection outcomes
-  if (OutRefPars==YES)
+  if (outRefPts==YES)
    {
     ParsOut(NRefPars+1) = spr_rbar(1);
     ParsOut(NRefPars+2) = spr_rbar(2);
@@ -13695,7 +13942,7 @@ FUNCTION calc_sdreport
   dyn_Bzero = calc_ssb()(syr,nyrRetro);
   if (verbose>2) cout<<"Finished calculating dyn_Bzero"<<endl;
 
-  if (OutDynB0==YES)
+  if (outDynB0==YES)
    for (int y=syr;y<=nyrRetro;y++)
     ParsOut(NB0Par+y-syr) = log(dyn_Bzero(y)+0.00001); //--wts 20260918: added small constant to avoid log(0)
 
@@ -14215,7 +14462,7 @@ FUNCTION writeJitterResults
   JitFile <<  setw(15) << setprecision(12) << setfixed() << endl;
 
   JitFile << "rseed, objFun, maxGrad, OFL, currMMB, Bmsy, B/Bmsy, likeCatch, likeIndex, likeSizeComps, likeStockRec, likeTagging, LikeGrowth, likeMMOD, penalties, priors" << endl;
-  JitFile << rseed << ", " << objfun << ", " << MaxGrad << ", " << spr_cofl << ", " << Bmsy*spr_depl << ", " << Bmsy << ", " << spr_depl << ", ";
+  JitFile << rseed_jtr << ", " << objfun << ", " << MaxGrad << ", " << spr_cofl << ", " << Bmsy*spr_depl << ", " << Bmsy << ", " << spr_depl << ", ";
   JitFile << sum(elem_prod(nloglike(1),catch_emphasis)) << ", "; //--catch like
   JitFile << sum(elem_prod(nloglike(2),cpue_emphasis)) << ", ";  //--index like
   JitFile << sum(elem_prod(nloglike(3),lf_emphasis)) << ", ";    //--size comps like
@@ -14976,7 +15223,7 @@ FUNCTION CreateOutput
   RepFile1 << endl << "#--------------------------------------------------------------------------------------------" << endl;
   RepFile1 << "Derived_quantities: dataframe"<<endl;
   RepFile1 << "param est se qty_cnt" << endl;
-  if (OutRefPars==YES)
+  if (outRefPts==YES)
    {
     //--need to assign the following if sd_report has not been called
     ParsOut(NRefPars+1) = spr_rbar(1);
@@ -15028,7 +15275,7 @@ FUNCTION CreateOutput
    }
   
   int IpntOut = 0;
-  if (OutRecruit==YES) 
+  if (outRec==YES) 
    {
     for (int h=1;h<=nsex;h++)
      for (int y=syr;y<=nyr;y++)
@@ -15041,7 +15288,7 @@ FUNCTION CreateOutput
      NparEst += IpntOut; 
    }  
   IpntOut = 0;   
-  if (OutSSB==YES) 
+  if (outSSB==YES) 
    {
     for (int y=syr;y<=nyr;y++)
      {
@@ -15053,7 +15300,7 @@ FUNCTION CreateOutput
      NparEst += IpntOut; 
    }  
   IpntOut = 0;   
-  if (Outfbar==YES)
+  if (outFbar==YES)
    {
     for (int y=syr;y<=nyr;y++)
      {
@@ -15065,7 +15312,7 @@ FUNCTION CreateOutput
      NparEst += IpntOut; 
    }  
   IpntOut = 0;   
-  if (OutDynB0==YES)
+  if (outDynB0==YES)
    {
     for (int y=syr;y<=nyr;y++)
      {
@@ -16237,7 +16484,7 @@ FUNCTION CreateOutput
   if (verbose > 3) cout<<"Finished MyOutput"<<endl;
 
   // Projection stuff
-  if ( last_phase() || NfunCall == StopAfterFnCall)
+  if ( last_phase() || NfunCall == maxFnCalls)
    {
     cout<<"last phase"<<endl;
     OutFile1 << endl;
@@ -16256,7 +16503,7 @@ FUNCTION CreateOutput
      OutFile1 << ">EOM<" << endl;
 
     // calculate the reference points
-    if (CalcRefPoints!=0 && nyrRetroNo==0) calc_spr_reference_points2(1);
+    if (calcRefPts!=0 && clv_NumPeels==0) calc_spr_reference_points2(1);
 
     OutFile1 << "#----------------------------" << endl;
     OutFile1 << "#- Reference points and OFL -" << endl;
@@ -16369,7 +16616,7 @@ FUNCTION CreateOutput
   OutFile2 << endl;
 
   if ((verbose>3)&&(NfunCall<2)) cout<<"CreateOutput: almost finished"<<endl;
-  if (!IsJittered) WriteFiles();
+  if (!doJittering) WriteFiles();
   if ((verbose>3)&&(NfunCall<2)) cout<<"CreateOutput: finished"<<endl;
 //--CreateOutput
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -16379,7 +16626,7 @@ FUNCTION CreateOutput
 // Andre done from here
 
 REPORT_SECTION
-  if (!IsJittered) {
+  if (!doJittering) {
     cout<<"Starting REPORT_SECTION"<<endl;
     CreateOutput();
     cout<<"REPORT_SECTION: finished CreateOutput"<<endl;
@@ -16552,25 +16799,26 @@ FUNCTION WriteFiles
   OutInpFile1 << endl << "##  ------------------------------------------------------------------------------------ ##" << endl;
   OutInpFile1 << "##  OTHER  CONTROLS" << endl;
   OutInpFile1 << "##  ------------------------------------------------------------------------------------ ##" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(1)) << " # First year of recruitment estimation" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(2)) << " # Last year of recruitment estimation" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(3)) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(4)) << " # Phase for recruitment estimation" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(5)) << " # Phase for recruitment sex-ratio estimation" << endl;
-  OutInpFile1 << setw(4) << setprecision(2) << setfixed()<< model_controls(6) << " # Initial value for recruitment sex-ratio" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(7)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(8)) << " # ILambda (proportion of mature male biomass for SPR reference points)" << endl;
-  OutInpFile1 << setw(4) << setprecision(2) << setfixed()<< model_controls(9) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(10)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(11)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(12)) << " # Years to compute equilibria" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(13)) << " # Phase for deviation parameters" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(14)) << " # First year of bias-correction" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(15)) << " # First full bias-correction" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(16)) << " # Last full bias-correction" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(17)) << " # Last year of bias-correction" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(18)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
-  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(19)) << " # Set to 1 to copy growth from males to females)" << endl;
+  int itmp = 1;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # First year of recruitment estimation" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Last year of recruitment estimation" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Phase for recruitment estimation" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Phase for recruitment sex-ratio estimation" << endl;
+  OutInpFile1 << setw(4) << setprecision(2) << setfixed()<< model_controls(itmp++) << " # Initial value for recruitment sex-ratio" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Initial conditions (0 = Unfished, 1 = Steady-state fished, 2 = Free parameters, 3 = Free parameters (revised))" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # ILambda (proportion of mature male biomass for SPR reference points)" << endl;
+  OutInpFile1 << setw(4) << setprecision(2) << setfixed()<< model_controls(itmp++) << " # Lambda (proportion of mature male biomass for SPR reference points)" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Stock-Recruit-Relationship (0 = none, 1 = Beverton-Holt)" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Use years specified to computed average sex ratio in the calculation of average recruitment for reference points (0 = off -i.e. Rec based on End year, 1 = on)" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Years to compute equilibria" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Phase for deviation parameters" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # First year of bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # First full bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Last full bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Last year of bias-correction" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # recruitment size distribution option (0: standard way; 1: Tanner crab approach)" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Consider terminal molting (0 = off; 1 = on, post-molt; 2 = on, pre-molt). If on (>0), the calc_stock_recruitment_relationship() isn't called in the procedure" << endl;
+  OutInpFile1 << setw(4) << setfixed()<< int(model_controls(itmp++)) << " # Set to 1 to copy growth from males to females)" << endl;
   OutInpFile1 << endl;
  
   //AEP
@@ -17787,9 +18035,11 @@ GLOBALS_SECTION
   adstring TheHeader;
   adstring mmodLkType; //--likelihood type for MMO data
   
-  // Specify random number generation
-  int rng_rseed = 0; //--default seed value (will be changed to start time); can be set from command line
-  random_number_generator rng(666);
+  // Specify random number generators
+  random_number_generator rng_jtr(4666); //--Jitter RNG
+  random_number_generator rng_prj(4666); //--Projection RNG
+  random_number_generator rng_sim(4666); //--Simulation RNG
+  random_number_generator rng_mse(4666); //--MSE RNG
   
     // Random number generators for MSE
   random_number_generator rng_catch(1666) ;
@@ -17970,7 +18220,7 @@ GLOBALS_SECTION
     if (slx_type_in == SELEX_STACKED_LOGISTIC && ipar == 5) anystring += "Stacked_logistic_par_5";
     return(anystring);
   }
-
+  
 //-------------------------------------------------------------------------------------
 FUNCTION save_params
     adstring fn = "gmacs."+str(current_phase())+"."+str(NfunCall)+".par";
@@ -17993,13 +18243,13 @@ TOP_OF_MAIN_SECTION
 // ===============================================================================================
 
 FINAL_SECTION
-  if (!IsJittered){
+  if (!doJittering){
     cout<<"Starting FINAL_SECTION"<<endl;
     CreateOutput();
     cout<<"Finished CreateOutput"<<endl;
   }
 
-  if ((!Do_MSE)&&(prj_replicates>0)) doProjections_FinalPhase();
+  if (doPrjs && (!doMSE)) doProjections_FinalPhase();
 
   if (ppSLX) {
       //clean up pointer array--probably unnecessary
@@ -18055,7 +18305,7 @@ FINAL_SECTION
 // 2020-01-20; Added declining logistc (NSRKC)
 // 2020-01-20; Added jittering
 // 2020-01-21; Added ppSLX to reduce overhead with Selex class objects
-// 2020-01-22; Added output to terminal when model quits after StopAfterFnCall function calls
+// 2020-01-22; Added output to terminal when model quits after maxFnCalls function calls
 // 2020-01-25; Added a jitter option
 // 2020-01-2x; Added cubic spline selex + retention
 // 2020-01-28; Added SelectivitySpline class to selex.hpp and new file gsm_splines.hpp
@@ -18229,7 +18479,7 @@ FINAL_SECTION
 //                    but only the sex-specific number of columns is kept in the internal arrays.
 // 2025-04-07 ** WTS. Added writeToRepFile1 flag to signal whether or not to write results in CheckBounds to RepFile1 (yes from CreateOutput, no from CreateOutput_OldFormat).
 // 2025-04-15 ** WTS. Added lines to OutInpFile noting where EXTRA PARS would be defined if they were needed (not obvious starting from a ctl file w/out EXTRA PARS).
-// 2025-04-16 ** WTS. Added commandline input option "-StopAfterFnCall xx" to override StopAfterFnCall setting in gmacs.dat file with value of "xx".
+// 2025-04-16 ** WTS. Added commandline input option "-maxFnCalls xx" to override maxFnCalls setting in gmacs.dat file with value of "xx".
 //                    Converted "Double normal" as output label to "Double_normal" to be consistent w/ other output labels and facilitate parsing.
 //                    Added ascending normal selectivity function code to selex.hpp, SELEX_ASCNORM flag (14) to select it, and associated in/out ctl code .
 // 2025-04-17 ** WTS. Incremented version number to 2.20.25. Reformatted some code related to ctl-file q input specification, added survey info to 
@@ -18441,7 +18691,10 @@ FINAL_SECTION
 //                    Also getting exact reproducibility when running MSE for one replicate when running with rng_rseed=666 (same as in AEP's code). 
 //                    IMPORTANT: MP executable must be in same folder as the GMACS executable when model is run.
 //                    Added isWindows() function to check if the operating system is Windows in order to call MP executable correctly.
-//                    
+// 2026-10-05 ** WTS. Revised input file formats somewhat extensively to move model dimensions info to gmacs.dat and M seasonality to ctl file. 
+//                    Added/revised a number of commandline inputs and associated variable names (all "commandline variables" now start with 
+//                    "clv_"). Revised gmacs_in files to reflect changes. Need to revise gmacs_out files accordingly. Need to revise array dimensions 
+//                    to be consistent with retrospective peels, projections, and MSEs.
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
@@ -18449,5 +18702,5 @@ FINAL_SECTION
 // 2 - WTS: 2026-06-08: LOTS of redundant code in projection-related functions (e.g., re-averaging selectivity and retention functions). This redundancy should be 
 //     eliminated (by doing the averaging once or centralizing the process in one function that can be called from 
 //     multiple contexts).
-// 3 - fix jitFlag/isJitter logic.
+// 3 - fix clv_DoJittering/isJitter logic.
 //

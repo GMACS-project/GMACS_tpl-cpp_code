@@ -1,0 +1,95 @@
+---
+title: "GMACS TPL Scope Inventory"
+format:
+  html: default
+  pdf: default
+execute:
+  echo: false
+---
+
+This inventory records the global variables and class members declared in [`gmacsbase.TPL`](gmacsbase.TPL). Names are alphabetized case-insensitively within each declaration type when rendered.
+
+## Scope rules
+
+- `GLOBALS_SECTION` declarations have global scope.
+- `DATA_SECTION` declarations become members of `model_data`.
+- `PARAMETER_SECTION` declarations become members of `model_parameters` (ADMB uses the singular spelling).
+- `INITIALIZATION_SECTION` initializes parameters; its names are not additional variables.
+- `FUNCTION` declarations become methods of `model_parameters`; methods, arguments, and body-local variables are excluded.
+- `!!` lines and `LOCAL_CODE`/`END_CODE` contents are literal C++. Their declarations follow their generated insertion context; constructor/function-body declarations are local, not fields.
+- Variables declared inside `LOCAL_CALCS`, `LOC_CALCS`, functions, loops, and other local blocks are excluded. This file has no `LOCAL_CODE`/`END_CODE` blocks.
+- Macros and function names are excluded.
+
+## Inventory
+
+The source declarations are in [`DATA_SECTION`](gmacsbase.TPL#L104), [`PARAMETER_SECTION`](gmacsbase.TPL#L5262), and [`GLOBALS_SECTION`](gmacsbase.TPL#L17428). The lists below are embedded in this document and do not require a separate inventory file when rendering.
+
+```{r, results='asis'}
+inventory <- list(
+  "Global scope" = list(
+    "adstring" = c("like_names", "prior_names", "anystring", "TheHeader", "mmodLkType"),
+    "adstring_array" = c("parname1", "selname1", "mdevname1", "devnames1", "seldevnames1", "selenvnames1", "fleetname", "sexes", "maturestate", "shellstate", "catchtypes", "unitstypes", "seltypes"),
+    "class gsm::Selex<dvar_vector>**" = c("ppSLX"),
+    "double" = c("elapsed_time"),
+    "int" = c("nyrRetro", "writeToRepFile1", "rng_rseed"),
+    "long" = c("hour", "minute", "second"),
+    "ofstream" = c("OutFile1", "OutFile2", "OutFile3", "OutFile4", "OutFile5", "RepFile1", "ParFile1", "OutInpFile1", "popprog", "mcout", "mcoutSSB", "mcoutREC", "mcoutREF", "mcoutPROJSSB", "mcoutPROJCAT", "mcoutDIAG", "echoinput", "gmacs_files", "gmacs_data", "gmacs_ctl", "gmacs_prj"),
+    "random_number_generator" = c("rng", "rng_catch", "rng_index", "rng_comp"),
+    "time_t" = c("start", "finish")
+  ),
+  "model_data" = list(
+    "3darray" = c("pntr_hmo", "dCatchData", "dCatchData_out", "fhit", "yhit", "cfhit", "cyhit", "d3_SizeComps_in", "d3_obs_size_comps_in", "blocklimits", "Env_specs", "CustomMoltProbabilityMatrix", "CustomMatureProbabilityMatrix", "d3_obs_size_comps", "tailcompind", "l1_vec"),
+    "4darray" = c("mean_wt", "CustomGrowthMatrix"),
+    "adstring_array" = c("strEIs"),
+    "imatrix" = c("uRAI_ids", "EnvYrs", "devpoints", "ThetaPnt", "TtoIG", "iYrsThetaChanges", "Growth_controls", "GrowPnt", "GtoIG", "iYrsIncChanges", "iYrsMoltChanges", "iYrsMatureChanges", "Mbreaks", "slx_bsex_in", "slx_type_in", "slx_include_in", "slx_extra_in", "slx_max_at_1_in", "slx_1_at_size", "slx_nret", "ret_max_in", "slx_type_npar", "nparSs", "SelPnt", "StoIG", "iYrsSelChanges", "qToSurv", "AddcvToSurv", "mapInpToAggSizeComps", "ilike_matrix"),
+    "init_adstring" = c("StockName", "datafile", "controlfile", "projectfile", "weightunit", "numbersunit"),
+    "init_int" = c("maxEstPhs", "maxFnCalls", "usePin", "verbose", "nRetro", "nPrj", "doMSE", "doJittering", "usePinForJittering", "calcRefPts", "outRefPts", "outRec", "outSSB", "outFbar", "outDynB0", "dateof", "syr", "nyr", "nseason", "nfleet", "nsex", "nshell", "nmature", "nclass", "season_recruitment", "season_growth", "season_ssb", "season_N", "m_prop_type", "fmtCDS_in", "doTCSAM02EffExp", "nCatchDF", "fmtRAD", "nSurveys", "fmtZCs_in", "nSizeComps_in", "GrowthObsType", "nGrowthObs", "hasMMOD", "NenvIndics", "eof", "Calc_MSY", "Calc_MEY", "spr_syr", "spr_nyr", "spr_SexR_syr", "spr_SexR_nyr", "spr_aveF_syr", "spr_aveF_nyr", "spr_M_syr", "spr_M_nyr", "spr_Prop_syr", "spr_Prop_nyr", "spr_grow_yr", "spr_sel_syr", "spr_sel_nyr", "OFLTier", "Compute_yield_prj", "pyr", "Project_type", "prj_Nstrat", "prj_bycatch_on", "prj_replicates", "proj_syr", "proj_nyr", "proj_SexR_syr", "proj_SexR_nyr", "proj_aveF_syr", "proj_aveF_nyr", "proj_M_syr", "proj_M_nyr", "proj_Prop_syr", "proj_Prop_nyr", "proj_grow_yr", "proj_sel_syr", "proj_sel_nyr", "Stock_rec_prj", "Age_at_rec_prj", "prj_futRec_syr", "prj_futRec_nyr", "Apply_HCR_prj", "Apply_StateHCR_prj", "NHCRpars", "max_prj", "full_prj_diag", "eof_prj", "nblocks", "n_env_treat", "lw_type", "use_func_mat", "eof_ctl"),
+    "init_ivector" = c("nSizeSex", "season_type", "Ffixed", "nSizeClassRec", "iSizeCompType_in", "bTailCompression_in", "iCompAggregator", "lf_catch_in", "survey_for_q_in"),
+    "init_matrix" = c("m_prop_in", "dGrowthData", "maturity", "legal", "M_controls", "M_pars", "q_controls", "q_pars", "add_cv_controls", "add_cv_pars", "f_controls", "vn_pars", "Penalty_fdevs"),
+    "init_number" = c("sdJitter", "spr_target", "OFLalpha", "OFLbeta", "OFLgamma", "ABCBuffer", "Fixed_prj_Bmsy", "mean_rec_prj", "SigmaR_prj", "Prow_prj", "Initial_eps", "tag_emphasis"),
+    "init_vector" = c("size_breaks", "Proj_Levels", "HCRpars", "model_controls", "bTailCompression_pmin_in", "lf_lambda_in", "lf_emphasis_in", "catch_emphasis", "Penalty_emphasis"),
+    "int" = c("jitflag", "simflag", "rseed", "nyrRetro1", "n_grp", "nlikes", "Nyears", "Nyears2", "Nyears4", "m_dim", "nSurveyRows", "n_rai", "nGrowthObsP", "NGrowthInputs", "MaxGrowTimeLib", "mmodNumZBs", "mmodNumObs", "mmodNumYrs", "NenvData", "Eqn_basis", "nproj", "nprojUse", "Stock_rec_ref", "IsProject", "maxblocks", "max_env_vars", "Num_env_vars", "Env_point", "Env_index", "PPnt", "n_deviations", "n_devvars", "rdv_syr", "rdv_eyr", "Term_molt", "rdv_phz", "bInitializeUnfished", "Refclass", "bSteadyState", "nSRR_flag", "rec_prop_phz", "ntheta", "BRP_rec_sexR", "NyrEquil", "devParPhase", "bias1", "bias2", "bias3", "bias4", "recZ_flag", "IsTyler", "n_Tpar", "ntheta_use", "maxThetaVaries", "nTheta_patterns", "lw_dim", "lw_dim2", "n_Gpar", "PPstoreG", "maxSizeIncVaries", "maxMoltVaries", "maxMatureVaries", "n_Mpar", "MaxMbreaks", "PPstoreM", "Nyears3", "n_Spar", "PPstoreS", "nsel_use", "maxSelVaries", "nsel_patterns", "n_qpar", "n_addcv_par", "nSizeComps", "nMapInpToAggSizeComps", "n_deviations_est", "NVarPar", "NEstPars", "NRefPars", "NRecPar", "NSSBPar", "NfbarPar", "NB0Par", "PhaseGrowthPar", "PhaseSelexPar", "NfunCall", "mxYrsCohortProgression", "nfut_catch_series", "nfut_surveys", "nfut_comps", "eof_mse", "n_dCatchData_Gen", "n_dIndexData_Gen", "n_dCompData_Gen"),
+    "ivector" = c("isex", "ishell", "imature", "nCatchRows", "nFparams", "nYparams", "SurveyType", "nSizeCompRows_in", "nSizeCompCols_in", "iMoltIncSex", "iMoltInitSizeClass", "iMoltEndSizeClass", "iMoltTimeAtLib", "iMoltTrans", "iMoltFleetRecap", "iMoltYearRecap", "iMoltSampSize", "MaxGrowTimeLibSex", "isizeTrans_pass", "blocks", "Env_link_nums", "N_env_par", "nparTs", "Tpar_block", "T_block", "T_block_fn", "T_env_link", "T_env_var", "T_RW", "T_RW_blk", "Theta_patterns", "Theta_patterns2", "nThetaVaries", "T_phz", "prior_Ttype", "T_relative", "bUseCustomGrowthMatrix2", "bUseGrowthIncrementModel2", "bUseCustomMoltProbability2", "bUseCustomMatureProbability2", "nparGs", "G_block", "nSizeIncVaries", "nMoltVaries", "nMatureVaries", "G_phz", "prior_Gtype", "G_relative", "isexM", "imatM", "M_relative", "M_type", "M_extra", "M_size_breakpnts", "M_mirror", "M_block", "M_block_fn", "M_env_link", "M_env_var", "M_RW", "M_RW_blk", "M_mirror_RW", "MToIg", "MType", "MPoint", "M_phz", "prior_Mtype", "sel_patterns", "sel_patterns2", "nSelVaries", "S_phz", "prior_Stype", "S_relative", "q_anal", "q_mirror", "q_block", "q_block_fn", "q_relative", "q_env_var", "q_env_link", "q_RW", "q_RW_blk", "qType", "qPoint", "q_phz", "prior_qtype", "add_cv_mirror", "add_cv_block", "add_cv_block_fn", "add_cv_relative", "add_cv_env_link", "add_cv_env_var", "add_cv_RW", "add_cv_RW_blk", "AddcvType", "prior_add_cv_type", "cv_phz", "f_phz", "foff_phz", "foffdevs_phz", "nSizeCompRows", "nSizeCompCols", "iSizeCompType", "bTailCompression", "log_vn_phz", "deviations_phz", "catch_fleet", "catch_seas", "catch_sex", "catch_type", "catch_unit", "survey_fleet", "survey_freq", "survey_seas", "survey_sex", "survey_mat", "survey_unit", "survey_rai_id", "comp_fleet", "comp_lf_catch", "comp_freq", "comp_seas", "comp_sex", "comp_type", "comp_shell", "comp_mat"),
+    "matrix" = c("m_prop", "mEffAvgYrs", "obs_catch", "obs_effort", "obs_catch_out", "catch_cv", "catch_dm", "catch_mult", "dmr", "fhitfut", "dSurveyData", "size_comp_sample_size_in", "size_comp_year_in", "size_comp_season_in", "mmodObsData", "likeSumSrvMMOs", "zbRemapper", "EnvDataInp", "EnvData", "Env_vars_used", "rdevpoints", "Tpar_control", "lw_alfa", "lw_beta", "mean_wt_in", "Gpar_control", "CustomSelex", "Spar_control", "pen_fstd", "size_comp_sample_size", "size_comp_year", "size_comp_season", "dCatchData_Gen", "dIndexData_Gen", "dCompData_Gen"),
+    "number" = c("mmodLkWgt", "ave_env_scale", "sd_env_scale", "num_env_scale", "spr_lambda", "init_sex_ratio", "pmin", "TotalSize", "TAC_used"),
+    "vector" = c("mid_points", "obs_cpue", "cpue_cv", "cpue_sd", "cpue_cv_add", "cpue_time", "rai_id", "dPreMoltSize", "dMoltInc", "dMoltIncCV", "mle_alpha", "mle_beta", "mmodZCs", "Price", "DaysPerF", "CostPerDay", "Rec_bias", "Tpar_RW_sigma", "T_RW_sigma", "T_ival", "T_lb", "T_ub", "prior_T_p1", "prior_T_p2", "G_RW_sigma", "G_ival", "G_lb", "G_ub", "prior_G_p1", "prior_G_p2", "M_RW_sigma", "M_ival", "M_lb", "M_ub", "prior_M_p1", "prior_M_p2", "S_ival", "S_lb", "S_ub", "prior_S_p1", "prior_S_p2", "cpue_lambda", "cpue_emphasis", "q_RW_sigma", "q_ival", "q_lb", "q_ub", "prior_q_p1", "prior_q_p2", "add_cv_RW_sigma", "add_cv_ival", "add_cv_lb", "add_cv_ub", "prior_add_cv_p1", "prior_add_cv_p2", "log_add_cv_ival", "log_add_cv_lb", "log_add_cv_ub", "init_fbar", "log_init_fbar", "log_init_fbar_foff", "fbar_lb", "fbar_ub", "fdev_lb", "fdev_ub", "foff_lb", "foff_ub", "lf_lambda", "lf_emphasis", "log_vn_ival", "log_vn_lb", "log_vn_ub", "prior_log_vn_type", "prior_log_vn_p1", "prior_log_vn_p2", "TempSize", "cumsum", "deviations_ival", "xg", "wg", "fut_disc_mort", "catch_disc_mort", "catch_CV", "survey_CV", "comp_SS")
+  ),
+  "model_parameters" = list(
+    "3darray" = c("molt_increment", "molt_probability", "molt_probability_in", "mature_probability", "mature_probability_in", "ProbMolt", "log_high_grade", "d3_newShell", "d3_oldShell", "d3_PrdMMOs", "d3_PrdMMOsP", "d3_PrdSrvMMOs", "d3_PrdSrvMMOsP", "d3_pre_size_comps_in", "d3_res_size_comps_in", "d3_obs_size_comps_out", "d3_pre_size_comps_out", "d3_res_size_comps_out", "d3_pre_size_comps", "d3_res_size_comps"),
+    "4darray" = c("pre_capabd", "pre_capbio", "growth_transition", "log_slx_capture", "log_slx_retaind", "log_slx_discard", "M", "ft", "F", "F2", "d4_N", "d4_N_init", "d4_N_coh", "numbers_proj_gytl"),
+    "5darray" = c("Z", "Z2", "SS_pass", "FullY"),
+    "6darray" = c("S"),
+    "init_bounded_dev_vector" = c("logit_rec_prop_est"),
+    "init_bounded_number_vector" = c("T_pars_est", "G_pars_est", "M_pars_est", "S_pars_est", "log_fbar", "log_foff", "log_vn", "survey_q", "log_add_cv", "par_devs"),
+    "init_bounded_vector_vector" = c("log_fdev", "log_fdov"),
+    "matrix" = c("nloglike", "sdnr_MAR_cpue", "sdnr_MAR_lf", "logN0", "alpha", "alpha0", "beta", "beta0", "gscale", "Linf", "Kappa", "SigmaKappa", "SigmaLinf", "rec_sdd", "molt_mu", "molt_cv", "mature_mu", "mature_cv", "T_pars", "rec_pass", "recruits", "pre_catch", "res_catch", "nll_catch", "obs_catch_effort", "art_q_catch", "molt_prob_pass", "mature_prob_pass", "S_pars", "fout", "SurveyQT", "AddVarQT", "d2_nll_size_comps", "d2_nllbase_size_comps", "catch_summary", "histcat", "equilibrium_numbers_F0", "equilibrium_numbers_FM", "equilibrium_biomass_F0", "equilibrium_biomass_FM", "spr_yield", "fut_recruits"),
+    "number" = c("logR0", "logRini", "logSigmaR", "steepness", "rho", "selex_smooth_pen", "TempSS", "grwthPosFun", "ssb_pass", "ofltot_pass", "oflret_pass", "spr_sexr", "ssbF0", "spr_bmsy", "spr_depl", "spr_cofl", "spr_cofl_ret", "spr_fofl", "Bmsy", "Bmey_out", "Fmey_out", "SR_alpha_prj", "SR_beta_prj", "Steepness"),
+    "objective_function_value" = c("objfun"),
+    "sdreport_number" = c("sd_last_ssb"),
+    "sdreport_vector" = c("ParsOut"),
+    "vector" = c("rec_dev", "logit_rec_prop", "priorDensity", "nlogPenalty", "Francis_weights", "logRbar", "ra", "rbeta", "totrecruits", "res_recruit", "xi", "log_q_catch", "Mmult", "finit", "pre_cpue", "res_cpue", "res_cpue_stdzd", "prdPstMltSizes", "nllGrowth", "log_fimpbar", "log_fimpbarOFL", "log_fimpbarPass", "catch_pass", "catch_pass_eqn", "dvar_mid_points", "spr_rbar", "proj_rbar", "OFLoutpass", "gradientOut", "sd_fmsy", "sd_fofl", "sd_log_ssb", "dyn_Bzero")
+  )
+)
+
+for (scope in names(inventory)) {
+  cat("## ", scope, "\n\n", sep = "")
+  source_section <- switch(scope,
+    "Global scope" = "GLOBALS_SECTION",
+    "model_data" = "DATA_SECTION",
+    "model_parameters" = "PARAMETER_SECTION")
+  cat("Declarations in [`", source_section, "`](gmacsbase.TPL#L", switch(scope,
+    "Global scope" = "17428",
+    "model_data" = "104",
+    "model_parameters" = "5262"), ").\n\n", sep = "")
+  for (declaration_type in sort(names(inventory[[scope]]))) {
+    variable_names <- inventory[[scope]][[declaration_type]]
+    variable_names <- variable_names[order(tolower(variable_names), variable_names)]
+    cat("- `", declaration_type, "`: ", paste0("`", variable_names, "`", collapse = ", "), ".\n", sep = "")
+  }
+  cat("\n")
+}
+```
+
+## Exclusions and notes
+
+`FUNCTION` definitions such as `calc_objective_function` and `calc_predicted_catch` are methods, not variables. Literal declarations `MSEfile`, `nyrRetroNo`, `TempW`, and `SDlogD` occur in constructor/calculation code and are local. Other calculation-block locals and function arguments are likewise excluded. The `GLOBALS_SECTION` also defines functions and preprocessor macros, which are not variables.

@@ -43,3 +43,6 @@ gmacsbase.Grant.TPL
 *.docx
 *.xlsx
 
+gmacsbase_scope_inventory.html
+/gmacsbase_scope_inventory_files/
+*.pdf
