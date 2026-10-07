@@ -9589,6 +9589,8 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
                                               const int type, const int unit, const int kk, dvariable effort,
                                               dvariable cobs)
   RETURN_ARRAYS_INCREMENT();
+  int verbose = 0;
+  if (h==0) verbose = 0;
 
   dvar_vector sel(1,nclass);                                         ///> capture selectivity
   dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
@@ -9599,108 +9601,112 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
   obs_catch_effort = 0;
   pre_catch = 0;
   if ( h!=UNDET_SEX ) {// sex specific
+    if (verbose>=3) cout << "Should not have gotten here. sex = " << h << endl;
     sel = log_slx_capture(k,h,i);                                    ///> Capture selectivity
     switch ( type ) {
-    case RETAINED:                                                   ///> retained catch
-      sel = mfexp(sel + log_slx_retaind(k,h,i));
-      break;
-    case DISCARDED:                                                  ///> discarded catch
-      sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
-      break;
-    case TOTALCATCH:                                                 ///> total catch
-      sel = mfexp(sel);
-      break;
-     }
+      case RETAINED:                                                   ///> retained catch
+        sel = mfexp(sel + log_slx_retaind(k,h,i));
+        break;
+      case DISCARDED:                                                  ///> discarded catch
+        sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+        break;
+      case TOTALCATCH:                                                 ///> total catch
+        sel = mfexp(sel);
+        break;
+    }
     // sum of nals
     nal.initialize();                                                ///> Computer numbers
     for ( int m = 1; m <= nmature; m++ ){
-     for ( int o = 1; o <= nshell; o++ ){ 
-      int ig = pntr_hmo(h,m,o); 
-      if (i < nyrRetro+1 || (i==nyrRetro & j==1))
-       {
-        nal = d4_N(ig,i,j);
-        nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
-       }
-      else
-       {
-        nal = numbers_proj_gytl(ig,i-nyrRetro,j);
-        nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,nyrRetro+1)) : nal;
-       }
-      if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);//--consistent
+      for ( int o = 1; o <= nshell; o++ ){ 
+        int ig = pntr_hmo(h,m,o); 
+        if (i < nyrRetro+1 || (i==nyrRetro & j==1)) {
+          nal = d4_N(ig,i,j);
+          nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
+        } else {
+          nal = numbers_proj_gytl(ig,i-nyrRetro,j);
+          nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,nyrRetro+1)) : nal;
+        }
+        if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);//--consistent
               
-      // predict catch
-      tmp_ft = ft(k,h,i,j);                                       /// > Extract F
-      if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F|| season_type(j)==TCSAM02_F) {
-        pre_catch += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-        if (cobs == 0 && effort > 0.0)
-         if (doTCSAM02EffExp)
-          obs_catch_effort += nal * elem_div(elem_prod(art_q_catch(kk,h) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-         else
-          obs_catch_effort += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-      }
-      if (season_type(j)==EXPLOIT_F) {
-        pre_catch += nal * tmp_ft * sel;
-        if (cobs == 0 && effort > 0.0)
-         if (doTCSAM02EffExp)
-          obs_catch_effort += nal * art_q_catch(kk,h) * effort * sel;
-         else
-          obs_catch_effort += nal * mfexp(log_q_catch(kk)) * effort * sel;
-      }
+        // predict catch
+        tmp_ft = ft(k,h,i,j);                                       /// > Extract F
+        if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F|| season_type(j)==TCSAM02_F) {
+          pre_catch += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+          if (cobs == 0 && effort > 0.0)
+          if (doTCSAM02EffExp)
+            obs_catch_effort += nal * elem_div(elem_prod(art_q_catch(kk,h) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+          else
+            obs_catch_effort += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+        }
+        if (season_type(j)==EXPLOIT_F) {
+          pre_catch += nal * tmp_ft * sel;
+          if (cobs == 0 && effort > 0.0)
+          if (doTCSAM02EffExp)
+            obs_catch_effort += nal * art_q_catch(kk,h) * effort * sel;
+          else
+            obs_catch_effort += nal * mfexp(log_q_catch(kk)) * effort * sel;
+        }
       }//--o loop
-     }//--m loop
-    } else {  
-     // sexes combined
-     for ( int h1 = 1; h1 <= nsex; h1++ ){
+    }//--m loop
+  } else {  
+    // sexes combined
+    for ( int h1 = 1; h1 <= nsex; h1++ ){
       sel = log_slx_capture(k)(h1)(i);
+      if (verbose) cout << "got here 1" << endl;
       switch( type ){
        case RETAINED: // retained catch
-         sel = mfexp(sel + log_slx_retaind(k,h,i));
+         sel = mfexp(sel + log_slx_retaind(k,h1,i));
          break;
        case DISCARDED: // discarded catch
-         sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h,i)));
+         sel = elem_prod(mfexp(sel), 1.0 - mfexp(log_slx_retaind(k,h1,i)));
          break;
        case TOTALCATCH: // total catch
          sel = mfexp(sel);
          break;
       }
+      if (verbose>3) cout << "got here 1" << endl;
+      if (verbose>3) cout << "got here 2" << endl;
       // sum of nals
       nal.initialize();
       for ( int m = 1; m <= nmature; m++ ){
-       for ( int o = 1; o <= nshell; o++ ){ 
-        int ig = pntr_hmo(h,m,o);
-        if (i < nyrRetro+1 || (i==nyrRetro & j==1))
-         {
-          nal = d4_N(ig,i,j);
-          nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,i)) : nal;
-         }
-        else
-         {
-          nal = numbers_proj_gytl(ig,i-nyrRetro,j);
-          nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,nyrRetro+1)) : nal;
-         }
-               
-        tmp_ft = ft(k,h,i,j);                                      /// > Extract F
-        if (season_type(j)==INSTANT_F) tempZ1 = Z2(h1,m,i,j); else tempZ1 = Z(h1,m,i,j); //consistent
-        if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F){
-        pre_catch += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-        if (cobs == 0 && effort > 0.0)
-         if (doTCSAM02EffExp)
-          obs_catch_effort +=  nal * elem_div(elem_prod(art_q_catch(kk,h1) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-         else
-          obs_catch_effort +=  nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
-        }
-        if (season_type(j)==EXPLOIT_F) {
-         pre_catch += nal * tmp_ft * sel;
-         if (cobs == 0 && effort > 0.0)
-           if (doTCSAM02EffExp)
-            obs_catch_effort +=  nal * art_q_catch(kk,h1) * effort * sel;
-           else 
-            obs_catch_effort +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
-         }
+        for ( int o = 1; o <= nshell; o++ ){ 
+          int ig = pntr_hmo(h1,m,o);
+          if (verbose>3) cout << "got here 3" << endl;
+          if (i < nyrRetro+1 || (i==nyrRetro & j==1)) {
+            nal = d4_N(ig,i,j);
+            nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,i)) : nal;
+          } else {
+            nal = numbers_proj_gytl(ig,i-nyrRetro,j);
+            nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,nyrRetro+1)) : nal;
+          }
+          if (verbose>3) cout << "got here 4" << endl;
+          tmp_ft = ft(k,h1,i,j);                                      /// > Extract F
+          if (verbose>3) cout << "got here 5" << endl;
+          if (season_type(j)==INSTANT_F) tempZ1 = Z2(h1,m,i,j); else tempZ1 = Z(h1,m,i,j); //consistent
+          if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F){
+            pre_catch += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+            if (cobs == 0 && effort > 0.0){
+              if (doTCSAM02EffExp){
+                obs_catch_effort +=  nal * elem_div(elem_prod(art_q_catch(kk,h1) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+              } else {
+                obs_catch_effort +=  nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+              }
+            }
+          }
+          if (season_type(j)==EXPLOIT_F) {
+            pre_catch += nal * tmp_ft * sel;
+            if (cobs == 0 && effort > 0.0){
+              if (doTCSAM02EffExp)
+                obs_catch_effort +=  nal * art_q_catch(kk,h1) * effort * sel;
+              else 
+                obs_catch_effort +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
+            }
+          }
+          if (verbose>3) cout << "got here 6" << endl;
         }//--o
-       }//--m
-       } //--h1
-      } // sex-specific
+      }//--m
+    } //--h1
+  } // sex-specific
  
   out(1) = pre_catch;
   out(2) = obs_catch_effort;
@@ -9814,14 +9820,19 @@ FUNCTION calc_predicted_catch
       if ( nhit > 0 ) log_q_catch(kk) /= nhit; //--average ln-scale CPUE for dataframe kk
     }//--kk
   }
+  if (verbose>=3)
+    cout << "Finished computing log_q_catch for all catch dataframes." << endl;
    
   // Now make predictions
+  if (verbose>=3) cout << "Computing effort-predicted catch for all catch dataframes." << endl;
   res_catch.initialize();
   pre_catch.initialize();
   obs_catch_effort.initialize();
   for ( int kk = 1; kk <= nCatchDF; kk++ ){
     for ( int jj = 1; jj <= nCatchRows(kk); jj++ ) {
+      if (verbose>=3) cout << "Checking catch data for dataframe " << kk << ", row " << jj << ", year = " << dCatchData(kk,jj,1) << endl;
       if (dCatchData(kk,jj,1) <= nyrRetro && dCatchData(kk,jj,1) >= syr){
+        if (verbose>=3) cout << "Processing catch data for dataframe " << endl;
         int i    =     dCatchData(kk,jj,1);                            ///> year index
         int j    =     dCatchData(kk,jj,2);                            ///> season index
         int k    =     dCatchData(kk,jj,3);                            ///> fleet/gear index
@@ -9845,9 +9856,12 @@ FUNCTION calc_predicted_catch
         } else if (effort > 0.0) {
           res_catch(kk,jj) = log(obs_catch_effort(kk,jj)) - log(pre_catch(kk,jj));
         }
+        if (verbose>=3) cout << "Finished processing catch data for dataframe " << endl;
       } // data year in model time frame
     }//--jj
   } //--kk
+  if (verbose>=3) 
+    cout << "Finished computing effort-predicted catch for all catch dataframes." << endl;
 
    
   // Now make predictions of catch mortality
@@ -9884,6 +9898,8 @@ FUNCTION calc_predicted_catch
       }//--m
     } //--j
   } // -- i
+  if (verbose>=3)
+    cout << "Finished computing predicted catch for all catch dataframes." << endl;
  
 // ----------------------------------------------------------------------------------------------
 
