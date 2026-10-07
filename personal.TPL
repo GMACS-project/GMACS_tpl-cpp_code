@@ -1,3 +1,5 @@
+//--20261006 WTS : changed HCRpars to hcr_pars for compatibility with gmacsbase.TPL
+
 FUNCTION MyOutput
   int nnnn;
  
@@ -85,8 +87,8 @@ FUNCTION dvariable StMatsTAC(const int j, const int iproj,const int YrRefGrow)
   dvariable MeanWStateMature;
   dvariable MeanWStateLegal;
   
-  MeanWStateMature = HCRpars(1);
-  MeanWStateLegal = HCRpars(2);
+  MeanWStateMature = hcr_pars(1);
+  MeanWStateLegal = hcr_pars(2);
 
   // Compute MMA and MMB at the start of the season (needed for the State HCRs)
   MMAState.initialize();   MLAState.initialize();

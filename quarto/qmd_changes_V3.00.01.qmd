@@ -1,0 +1,85 @@
+---
+title: "TPL code changes: v3.00.00 -> 3.00.01"
+format: 
+  html: default
+  pdf: default
+execute:
+  echo: true
+  eval: false
+---
+
+## "init" parameter variables
+
+```{r}
+  init_bounded_number_vector T_pars_est(1,n_Tpar,T_lb,T_ub,T_phz);
+  ##-- growth parameters
+  init_bounded_number_vector G_pars_est(1,n_Gpar,G_lb,G_ub,G_phz);
+  ##-- M parameters 
+  init_bounded_number_vector M_pars_est(1,n_Mpar,M_lb,M_ub,M_phz);
+  ##-- Selectivity parameters
+  init_bounded_number_vector S_pars_est(1,n_Spar,S_lb,S_ub,S_phz);
+
+  ##-- Fishing mortality rate parameters
+  init_bounded_number_vector log_fbar(1,nfleet,fbar_lb,fbar_ub,f_phz);             ##--/> Male mean fishing mortality.
+  init_bounded_vector_vector log_fdev(1,nfleet,1,nFparams,fdev_lb,fdev_ub,f_phz);  ##--/> Male f devs
+  init_bounded_number_vector log_foff(1,nfleet,foff_lb,foff_ub,foff_phz);          ##--/> Female F offset to Male F. 
+  init_bounded_vector_vector log_fdov(1,nfleet,1,nYparams,-10,10,foffdevs_phz);    ##--/> log-scale Female F offset devs to Male F + 
+
+  ##-- Recruitment deviation parameters
+  init_bounded_vector rec_dev_est(rdv_syr,rdv_eyr,-12.0,12.0,rdv_phz);       ##--/> recruitment deviations
+  init_bounded_dev_vector logit_rec_prop_est(rdv_syr,rdv_eyr,-100,100,rec_prop_phz); ##--/> recruitment proportions deviations
+
+  ##-- Effective sample size parameter for multinomial
+  init_bounded_number_vector log_vn(1,nSizeComps,log_vn_lb,log_vn_ub,log_vn_phz);
+
+  ##-- Catchability coefficient (q)
+  init_bounded_number_vector survey_q(1,n_qpar,q_lb,q_ub,q_phz);
+
+  ##-- Addtional CV for surveys/indices
+  init_bounded_number_vector log_add_cv(1,n_addcv_par,log_add_cv_lb,log_add_cv_ub,cv_phz);
+
+  ##-- deviation parameters
+  init_bounded_number_vector par_devs(1,n_deviations_est,-12.0,12.0,deviations_phz);
+
+```
+
+## variable name changes
+```{r}
+Fixed_prj_Bmsy -> prj_Fixed_Bmsy
+full_prj_diag -> prj_full_diag
+max_prj -> prj_max_draws
+proj_syr -> prj_aveR_syr
+proj_nyr -> prj_aveR_nyr
+proj_SexR_syr -> prj_SexR_syr
+proj_SexR_nyr -> prj_SexR_nyr
+proj_aveF_syr -> prj_aveF_syr
+proj_aveF_nyr -> prj_aveF_nyr
+proj_M_syr -> prj_M_syr
+proj_M_nyr -> prj_M_nyr
+proj_Prop_syr -> prj_Prop_syr
+proj_Prop_nyr -> prj_Prop_nyr
+proj_grow_yr -> prj_grow_yr
+proj_sel_syr -> prj_sel_syr
+proj_sel_nyr -> prj_sel_nyr
+Stock_rec_prj -> prj_SRR
+Age_at_rec_prj -> prj_age_at_rec
+mean_rec_prj -> prj_mean_rec
+SigmaR_prj -> prj_SigmaR
+Prow_prj -> prj_AR1_rho
+Initial_eps -> prj_init_eps
+Apply_HCR_prj -> prj_ApplyHCR
+Apply_StateHCR_prj -> prj_ApplyStateHCR
+HCRpars -> hcr_pars
+Price -> mey_prices
+DaysPerF -> mey_DaysPerF
+CostPerDay -> mey_CostPerDay
+Stock_rec_ref -> mey_SRR
+
+nproj -> numPrj
+nprojUse -> numPrjUse
+nprojVec -> numProjVec
+Project_type -> prj_type
+proj_Nstrat -> prj_NumLevels
+proj_Levels -> prj_Levels
+pyr -> removed as essentially redundant to numPrj (pyr was last projection year)
+```
