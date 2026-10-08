@@ -108,7 +108,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
-  !! TheHeader = adstring("## GMACS Version 3.00.01; ** WTS **; Compiled 2026-10-05");
+  !! TheHeader = adstring("## GMACS Version 3.00.01; ** WTS **; Compiled 2026-10-08");
 
  LOCAL_CALCS
   int opt,on;
@@ -9577,6 +9577,16 @@ FUNCTION update_population_numbers_at_length
   /**
    * @brief Calculate predicted catch observations
    * @details The function uses the Baranov catch equation to predict the retained and discarded catch.
+   * @param i Year index 
+   * @param j Season index
+   * @param k Area index
+   * @param h Sex index
+   * @param type Catch type (RETAINED or DISCARDED)
+   * @param unit Unit of measurement
+   * @param kk Additional index (purpose-specific)
+   * @param effort Fishing effort
+   * @param cobs Observed catch
+   * @param purpose Purpose of the calculation (data prediction or generation)
    *
    * Assumptions:
    *  1) retained (landed catch) is assume to be newshell male only. (WTS 2025-06: is this still true??)
@@ -9587,10 +9597,11 @@ FUNCTION update_population_numbers_at_length
 
 FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const int k, const int h, 
                                               const int type, const int unit, const int kk, dvariable effort,
-                                              dvariable cobs)
+                                              dvariable cobs, const int purpose)
   RETURN_ARRAYS_INCREMENT();
-  int verbose = 0;
-  if (h==0) verbose = 0;
+  //int verbose = 0;        //for focused debugging
+  //if (h==0) verbose = 0;
+  if (verbose>2) cout << "Starting calc_predicted_catch_one_year " << i << endl;
 
   dvar_vector sel(1,nclass);                                         ///> capture selectivity
   dvar_vector nal(1,nclass);                                         ///> numbers or biomass at length.
@@ -9601,7 +9612,7 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
   obs_catch_effort = 0;
   pre_catch = 0;
   if ( h!=UNDET_SEX ) {// sex specific
-    if (verbose>=3) cout << "Should not have gotten here. sex = " << h << endl;
+    //if (verbose>=3) cout << "Should not have gotten here. sex = " << h << endl;
     sel = log_slx_capture(k,h,i);                                    ///> Capture selectivity
     switch ( type ) {
       case RETAINED:                                                   ///> retained catch
@@ -9619,7 +9630,8 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
     for ( int m = 1; m <= nmature; m++ ){
       for ( int o = 1; o <= nshell; o++ ){ 
         int ig = pntr_hmo(h,m,o); 
-        if (i < nyrRetro+1 || (i==nyrRetro & j==1)) {
+        //if (i < nyrRetro+1 || (i==nyrRetro & j==1)) {   //--WTS 20261007 TODO: second condition redundant
+        if (i < nyrRetro+1) {   //--WTS 20261008
           nal = d4_N(ig,i,j);
           nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
         } else {
@@ -9652,7 +9664,7 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
     // sexes combined
     for ( int h1 = 1; h1 <= nsex; h1++ ){
       sel = log_slx_capture(k)(h1)(i);
-      if (verbose) cout << "got here 1" << endl;
+      //if (verbose>3) cout << "got here 1" << endl;
       switch( type ){
        case RETAINED: // retained catch
          sel = mfexp(sel + log_slx_retaind(k,h1,i));
@@ -9664,24 +9676,25 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
          sel = mfexp(sel);
          break;
       }
-      if (verbose>3) cout << "got here 1" << endl;
-      if (verbose>3) cout << "got here 2" << endl;
+      //if (verbose>3) cout << "got here 1" << endl;
+      //if (verbose>3) cout << "got here 2" << endl;
       // sum of nals
       nal.initialize();
       for ( int m = 1; m <= nmature; m++ ){
         for ( int o = 1; o <= nshell; o++ ){ 
           int ig = pntr_hmo(h1,m,o);
-          if (verbose>3) cout << "got here 3" << endl;
-          if (i < nyrRetro+1 || (i==nyrRetro & j==1)) {
+          //if (verbose>3) cout << "got here 3" << endl;
+          //if (i < nyrRetro+1 || (i==nyrRetro & j==1)) {   //--WTS 20261007 TODO: second condition redundant
+          if (i < nyrRetro+1) {   //--WTS 20261008
             nal = d4_N(ig,i,j);
             nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,i)) : nal;
           } else {
             nal = numbers_proj_gytl(ig,i-nyrRetro,j);
             nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,nyrRetro+1)) : nal;
           }
-          if (verbose>3) cout << "got here 4" << endl;
+          //if (verbose>3) cout << "got here 4" << endl;
           tmp_ft = ft(k,h1,i,j);                                      /// > Extract F
-          if (verbose>3) cout << "got here 5" << endl;
+          //if (verbose>3) cout << "got here 5" << endl;
           if (season_type(j)==INSTANT_F) tempZ1 = Z2(h1,m,i,j); else tempZ1 = Z(h1,m,i,j); //consistent
           if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F){
             pre_catch += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
@@ -9702,7 +9715,6 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
                 obs_catch_effort +=  nal * mfexp(log_q_catch(kk)) * effort * sel;
             }
           }
-          if (verbose>3) cout << "got here 6" << endl;
         }//--o
       }//--m
     } //--h1
@@ -9710,6 +9722,8 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
  
   out(1) = pre_catch;
   out(2) = obs_catch_effort;
+
+  if (verbose>2) cout << "Finished calc_predicted_catch_one_year" << endl;
  
   RETURN_ARRAYS_DECREMENT();
   return(out);
@@ -9729,6 +9743,7 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
    *  4) discard is the total number of crab caught and discarded.
   **/
 FUNCTION calc_predicted_catch
+  int purpose = PREDICT_DATA;  //distinguishes purpose from that of GenerateData
   int nhit;                                                          ///> number of values for computing q
   double cobs, effort;                                               ///> used when computing q
   dvariable tmp_ft,totalnalobs,totalnalpre;                          ///> temp variables
@@ -9843,7 +9858,7 @@ FUNCTION calc_predicted_catch
         cobs     =        obs_catch(kk,jj);                            ///> catch data
 
         // AEPCALLING HERE  
-        out = predicted_catch_one_year(i, j, k, h,type, unit, kk, effort, cobs);
+        out = predicted_catch_one_year(i, j, k, h,type, unit, kk, effort, cobs, purpose);
         pre_catch(kk,jj) = out(1);
         obs_catch_effort(kk,jj) = out(2);
               
@@ -10334,6 +10349,8 @@ FUNCTION dvar_vector calc_predicted_comp_one(const int i, const int j, const int
   dvar_vector nal2(1,nclass);                                       ///> numbers or biomass at length.
   dvar_vector tempZ1(1,nclass);                                     ///> total mortality
   dvariable tempF;
+
+  //int verbose = 4;
  
   if (verbose>3) {
     cout<<"------Processing size comp for "<< i << " season = "<< j <<" fleet = "<< k;
@@ -10367,7 +10384,7 @@ FUNCTION dvar_vector calc_predicted_comp_one(const int i, const int j, const int
    }//--lf_catch_in(ii)==CATCH_COMP_DOSCL or CATCH_COMP_NOSCL
 
    if (abs(lf_catch_in(ii))==SURVEY_COMP_DOSCL) {
-    //if (verbose>3) cout << "----survey comp" << endl;
+    if (verbose>3) cout << "----survey comp" << endl;
     tempF = 1.0;                                               //--WTS  20260505
     for (int i=1;i<=nclass; i++) tempZ1(i) = 1;
    } else {
@@ -10382,7 +10399,8 @@ FUNCTION dvar_vector calc_predicted_comp_one(const int i, const int j, const int
      for ( int o = 1; o <= nshell; o++ ) {
       int ig = pntr_hmo(h,m,o);
       //if (i < nyrRetro+1 || (i==nyrRetro & j==1)) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j);
-      if (i < nyrRetro+1) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j);
+      //if (i < nyrRetro+1) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j); //WTS 20261008: should be true for i==nyrRetro+1, j==1 also
+      if (i < nyrRetro+1 || (i==nyrRetro+1 & j==1)) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j); //WTS 20261008
       if (std::isnan(value(sum(nal2)))){
        cout << "d4_N(ig,i,j) is NaN for h,m,o,i,j: "<<h<<" "<<m<<" "<<o<<" "<<i<<" "<<j<<endl;
        cout << nal2 <<endl;
@@ -10398,7 +10416,8 @@ FUNCTION dvar_vector calc_predicted_comp_one(const int i, const int j, const int
      for ( int o = 1; o <= nshell; o++ ) {
       int ig = pntr_hmo(h,m,o);
       //if (i < nyrRetro+1 || (i==nyrRetro & j==1)) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j);
-      if (i < nyrRetro+1) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j);
+      //if (i < nyrRetro+1) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j); //WTS 20261008: should be true for i==nyrRetro+1, j==1 also
+      if ((i < nyrRetro+1) || (i==nyrRetro+1 & j==1)) nal2 = d4_N(ig,i,j); else nal2 = numbers_proj_gytl(ig,i-nyrRetro,j); //WTS 20261008
       if (std::isnan(value(sum(nal2)))){
        cout << "d4_N(ig,i,j) is NaN for h,m,o,i,j: "<<h<<" "<<m<<" "<<o<<" "<<i<<" "<<j<<endl;
        cout << nal2 <<endl;
@@ -10469,8 +10488,15 @@ FUNCTION dvar_vector calc_predicted_comp_one(const int i, const int j, const int
      for ( int m = 1; m <= nmature; m++ ){
       for ( int o = 1; o <= nshell; o++ ) {
        int ig = pntr_hmo(h,m,o);
-       if ( shell == 0 ) nal += d4_N(ig,i,j);
-       if ( shell == o ) nal += d4_N(ig,i,j);
+       //if ( shell == 0 ) nal += d4_N(ig,i,j);//WTS 20261008: need to cover projections as well
+       //if ( shell == o ) nal += d4_N(ig,i,j);
+       if ((i < nyrRetro+1) || (i==nyrRetro+1 & j==1)) { //WTS 20261008
+        if ( shell == 0 ) nal += d4_N(ig,i,j);
+        if ( shell == o ) nal += d4_N(ig,i,j);
+       } else {
+         if ( shell == 0 ) nal += numbers_proj_gytl(ig,i-nyrRetro,j);
+         if ( shell == o ) nal += numbers_proj_gytl(ig,i-nyrRetro,j);
+       }
       }//--o loop
      }//--m loop
 
@@ -12410,6 +12436,7 @@ FUNCTION InitializeData
 // Label 802: Generate data for use by the MP
 FUNCTION void GenerateData(const int iproj, const int iyr)
   if (verbose>2) cout << "Starting GenerateData " << iproj << " " << iyr << endl;
+  int purpose = GENERATE_DATA;
 
   int q_id,i,j,k,h,g,h1,m1,type,unit,rai_id, shell,mat;
   int rseed;
@@ -12445,7 +12472,7 @@ FUNCTION void GenerateData(const int iproj, const int iyr)
     dCatchData_Gen(n_dCatchData_Gen,10) = 0;
     dCatchData_Gen(n_dCatchData_Gen,11) = catch_disc_mort(icatch);
 
-    out = predicted_catch_one_year(i,j,k,h,type,unit,1,effort,cobs);
+    out = predicted_catch_one_year(i,j,k,h,type,unit,1,effort,cobs,purpose);
     pred_catch = out(1);
     //cout << "catch " << out << endl;
 
@@ -18249,7 +18276,12 @@ GLOBALS_SECTION
   #define CATCH_COMP_NOSCL -1   //--WTS 20260505
   #undef  SURVEY_COMP_NOSCL     //--WTS 20260505: added
   #define SURVEY_COMP_NOSCL -2  //--WTS 20260505
- 
+
+  #undef PREDICT_DATA
+  #define PREDICT_DATA 0       //--WTS 20261007: flag indicating calculation is to predict size comps
+  #undef GENERATE_DATA
+  #define GENERATE_DATA 1      //--WTS 20261007: flag indicating calculation is to generate size compsa
+  
   adstring_array parname1(1,500);
   adstring_array selname1(1,500);
   adstring_array mdevname1(1,100);

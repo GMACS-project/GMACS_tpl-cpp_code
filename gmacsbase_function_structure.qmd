@@ -1,0 +1,412 @@
+---
+title: "TPL Function Structure: gmacsbase.TPL"
+format:
+  html:
+    toc: true
+  pdf:
+    toc: true
+execute:
+  eval: false
+---
+
+# Source and Method
+
+This report traces the selected workspace source, [gmacsbase.TPL:L1](gmacsbase.TPL#L1), not generated C++ or a runtime log. It indexes all 80 ADMB `FUNCTION` definitions and the literal C++ helper definitions in `DATA_SECTION` and `GLOBALS_SECTION`. The exact full signature (including multiline parameters) is linked at each definition's start; the body boundary is linked separately. `FUNCTION` bodies are treated as class methods emitted by ADMB, not as part of the preceding section.
+
+Section roots are grouped by execution role, not textual order. `DATA_SECTION` and `PARAMETER_SECTION` execute during construction; `PRELIMINARY_CALCS_SECTION` and phase hooks are separate; ADMB may re-enter `PROCEDURE_SECTION` for parameter/phase evaluations; reporting and finalization may invoke output routines again. Branches below are alternatives. Loop bodies are shown once with their bounds. Exact iteration counts and selected branches depend on inputs, flags, optimizer/phase behavior, and execution.
+
+Only calls resolving to definitions in this TPL are expanded. Call-site links and definition links are distinct. Standard/ADMB/library, virtual selectivity-class, macro-expanded, and other-template calls are terminal external calls unless their target is established here. Sibling expression evaluation order is not inferred where C++ does not specify it.
+
+# Execution Roots
+
+## Startup and Construction
+
+- `TOP_OF_MAIN_SECTION` initializes ADMB buffers at [gmacsbase.TPL:L18469](gmacsbase.TPL#L18469). It has no call to a function defined in this TPL.
+- `DATA_SECTION` constructor-local code runs in source order. The input-conversion method calls below are alternatives selected by the input format and rows; each method definition is in the local `Subst` class.
+  - Catch data, new format: `unitsTypeID` [call L923](gmacsbase.TPL#L923) -> [definition L810](gmacsbase.TPL#L810); then `catchTypeID` [call L924](gmacsbase.TPL#L924) -> [definition L798](gmacsbase.TPL#L798); `fleetID` [call L925](gmacsbase.TPL#L925) -> [definition L786](gmacsbase.TPL#L786); `sexID` [call L926](gmacsbase.TPL#L926) -> [definition L830](gmacsbase.TPL#L830); `matID` [call L927](gmacsbase.TPL#L927) -> [definition L843](gmacsbase.TPL#L843); `shellID` [call L928](gmacsbase.TPL#L928) -> [definition L854](gmacsbase.TPL#L854). Each conversion uses external `to_lower` where present; `fleetID` scans fleet names and returns the matching ID.
+  - Relative-abundance data, new format: `unitsTypeID` [L1229](gmacsbase.TPL#L1229), `indexTypeID` [L1230](gmacsbase.TPL#L1230) -> [definition L820](gmacsbase.TPL#L820), `fleetID` [L1231](gmacsbase.TPL#L1231), `sexID` [L1232](gmacsbase.TPL#L1232), `matID` [L1233](gmacsbase.TPL#L1233), `shellID` [L1234](gmacsbase.TPL#L1234), in that order.
+  - Size-composition data, new format: `catchTypeID` [L1398](gmacsbase.TPL#L1398), `fleetID` [L1399](gmacsbase.TPL#L1399), `sexID` [L1400](gmacsbase.TPL#L1400), `matID` [L1401](gmacsbase.TPL#L1401), `shellID` [L1402](gmacsbase.TPL#L1402), in that order.
+  - Three parameter-label call sites invoke `addToAnystring` in input order [L3972](gmacsbase.TPL#L3972), [L4022](gmacsbase.TPL#L4022), [L4041](gmacsbase.TPL#L4041) -> [definition L18422](gmacsbase.TPL#L18422). Its `str` calls are external ADMB utilities.
+- `INITIALIZATION_SECTION` assigns starting values only; it has no selected-TPL function call ([L5360](gmacsbase.TPL#L5360)). `PARAMETER_SECTION`'s function-testing sandbox is guarded by literal `if (0)` and terminates with `exit`; no path from it is statically enabled ([L5390](gmacsbase.TPL#L5390)).
+
+## Preliminary Calculations
+
+Calls execute in listed order when their guards admit them. This section can run before optimizer evaluations.
+
+- If `hasMMOD`, `getRebinMatrix(size_breaks, mmodZCs)` [call L5760](gmacsbase.TPL#L5760) -> [definition L10967](gmacsbase.TPL#L10967). Its loops visit model bins `j=1..nO` and data bins `i=1..nF`; the mutually exclusive overlap tests assign the rebin weights.
+- If `clv_DoSims`, `simulation_model()` [L5792](gmacsbase.TPL#L5792) -> [definition L11755](gmacsbase.TPL#L11755): `initialize_model_parameters` [L11761](gmacsbase.TPL#L11761) -> four `timevarparV2`/`timevarparM` applications described under that definition; `calc_selectivities` [L11764](gmacsbase.TPL#L11764); `calc_fishing_mortality` [L11767](gmacsbase.TPL#L11767); then `calc_growth_increments` [L11775](gmacsbase.TPL#L11775), `calc_molting_probability` [L11776](gmacsbase.TPL#L11776), `calc_mature_probability` [L11777](gmacsbase.TPL#L11777), `calc_growth_transition` [L11778](gmacsbase.TPL#L11778), `calc_natural_mortality` [L11779](gmacsbase.TPL#L11779), `calc_total_mortality` [L11780](gmacsbase.TPL#L11780), `calc_recruitment_size_distribution` [L11781](gmacsbase.TPL#L11781), `calc_initial_numbers_at_length` [L11782](gmacsbase.TPL#L11782), and `update_population_numbers_at_length` [L11783](gmacsbase.TPL#L11783). Then `calc_predicted_catch` [L11786](gmacsbase.TPL#L11786) -> `predicted_catch_one_year` [L9846](gmacsbase.TPL#L9846); `calc_relative_abundance` [L11787](gmacsbase.TPL#L11787) -> `calc_predicted_rel_abund_one` [L10265](gmacsbase.TPL#L10265); `calc_predicted_composition` [L11788](gmacsbase.TPL#L11788) -> `calc_predicted_comp_one` [L10572](gmacsbase.TPL#L10572).
+- If `doJittering`, the loops call `GenJitter` at [L5813](gmacsbase.TPL#L5813), [L5819](gmacsbase.TPL#L5819), [L5825](gmacsbase.TPL#L5825), [L5832](gmacsbase.TPL#L5832), [L5838](gmacsbase.TPL#L5838), [L5845](gmacsbase.TPL#L5845), [L5851](gmacsbase.TPL#L5851), [L5857](gmacsbase.TPL#L5857), [L5863](gmacsbase.TPL#L5863), [L5869](gmacsbase.TPL#L5869), and [L5875](gmacsbase.TPL#L5875) -> [definition L18308](gmacsbase.TPL#L18308). Repeat bounds are respectively `n_Tpar`, `n_Gpar`, `n_Spar`, fleet/F parameter pairs, fleets, fleet/female-F pairs, recruitment years (twice), `nSizeComps`, `n_qpar`, and `n_addcv_par`.
+- The ordinary preliminary path calls `initialize_model_parameters` [L5884](gmacsbase.TPL#L5884), `calc_growth_increments` [L5886](gmacsbase.TPL#L5886), `calc_molting_probability` [L5887](gmacsbase.TPL#L5887), and `calc_mature_probability` [L5888](gmacsbase.TPL#L5888), then checks for negative increments and may `exit(-1)`. It continues with `calc_growth_transition` [L5910](gmacsbase.TPL#L5910), `init_selectivities` [L5911](gmacsbase.TPL#L5911), and `calc_selectivities` [L5912](gmacsbase.TPL#L5912). Selectivity's three `dnorm` calls at [L7304](gmacsbase.TPL#L7304), [L7305](gmacsbase.TPL#L7305), [L7306](gmacsbase.TPL#L7306) resolve to the local one-argument-scale overload [definition L18408](gmacsbase.TPL#L18408); the selectivity class methods themselves are external virtual calls.
+
+## Phase Transition
+
+`BETWEEN_PHASES_SECTION` reports phase values and calls no function defined in this TPL ([L5917](gmacsbase.TPL#L5917)). It is an ADMB hook, not an unconditional one-time step.
+
+## Objective Evaluations
+
+`PROCEDURE_SECTION` is an ADMB evaluation root and may repeat. Its top-level order and phase guards are:
+
+- `initialize_model_parameters` [call L5946](gmacsbase.TPL#L5946) -> [definition L6053](gmacsbase.TPL#L6053).
+  - It constructs the time-varying recruitment parameter with `timevarparV2` [L6151](gmacsbase.TPL#L6756).
+  - It constructs each nonmirrored natural-mortality vector with `timevarparM` [L6585](gmacsbase.TPL#L6850).
+  - It constructs each nonmirrored survey `Q` with `timevarparV2` [L6623](gmacsbase.TPL#L6756), then each nonmirrored additional-variance series with `timevarparV2` [L6648](gmacsbase.TPL#L6756). These loops/guards are in the function body; each callee computes its baseline, optional blocks, environmental link, then optional random walk.
+- If `current_phase() >= PhaseSelexPar`, call `calc_selectivities` [L5950](gmacsbase.TPL#L7146); otherwise that call is skipped.
+- `calc_fishing_mortality` [L5954](gmacsbase.TPL#L7415), then `calc_total_mortality` [L5956](gmacsbase.TPL#L7572). The commented `calc_natural_mortality` line is not a call.
+- If `current_phase() >= PhaseGrowthPar`, call `calc_growth_increments` [L5961](gmacsbase.TPL#L7816), `calc_molting_probability` [L5962](gmacsbase.TPL#L7607), `calc_mature_probability` [L5963](gmacsbase.TPL#L8239), and `calc_growth_transition` [L5964](gmacsbase.TPL#L7881); otherwise skip these four calls.
+- Then `calc_recruitment_size_distribution` [L5969](gmacsbase.TPL#L8286), `calc_initial_numbers_at_length` [L5970](gmacsbase.TPL#L8394), `update_population_numbers_at_length` [L5971](gmacsbase.TPL#L9488), and `calc_stock_recruitment_relationship` at [L5974](gmacsbase.TPL#L5974) if `Term_molt == 0`, or at [L5977](gmacsbase.TPL#L5977) otherwise. Both branches call the function; the else-branch diagnostic is inaccurate.
+  - `calc_initial_numbers_at_length` chooses one `bInitializeUnfished` switch arm. The `UNFISHEDEQN` and `FISHEDEQN` arms call `calc_brute_equilibrium` at [L8446](gmacsbase.TPL#L8446) and [L8452](gmacsbase.TPL#L8452), respectively. That function first calls `calc_ssb` [L11962](gmacsbase.TPL#L11962), then per projected year `i=1..ninit-1` calls exactly one seasonal updater for each `j=1..nseason`: `update_population_numbers_at_length_season` [L12150](gmacsbase.TPL#L12150) if `Term_molt==0`, or `update_population_numbers_at_length_season_new` [L12152](gmacsbase.TPL#L12152) otherwise. Both write through `updateNumbersAtLengthByCase`; the new updater calls `getNumbersAtLengthByCase` for each state/branch [L8649](gmacsbase.TPL#L8649), [L8690](gmacsbase.TPL#L8690), [L8691](gmacsbase.TPL#L8691), [L8771](gmacsbase.TPL#L8771), [L8772](gmacsbase.TPL#L8772), [L8773](gmacsbase.TPL#L8773), [L8774](gmacsbase.TPL#L8774), then `updateNumbersAtLengthByCase` [L8870](gmacsbase.TPL#L8870). The older updater calls `getPopStateString` only on its `verbose>3 && NfunCall<2` diagnostic path [L9313](gmacsbase.TPL#L9313). `calc_brute_equilibrium` finishes with `calc_predicted_project` [L12187](gmacsbase.TPL#L12187). Other initial-condition switch arms do not call it.
+  - `update_population_numbers_at_length` loops years `syr..nyrRetro` and seasons `1..nseason`, calling one of `update_population_numbers_at_length_season` [L9558](gmacsbase.TPL#L9558) when `Term_molt==0`, or `update_population_numbers_at_length_season_new` [L9560](gmacsbase.TPL#L9560) when positive. Each call's state-specific helper expansions are as described above.
+  - `calc_stock_recruitment_relationship` calls `calc_ssb` [L11090](gmacsbase.TPL#L11090). `calc_ssb` is also directly reached from multiple report/reference-point paths below.
+- Observation models then call `calc_predicted_catch` [L5981](gmacsbase.TPL#L9731) -> `predicted_catch_one_year` [L9846](gmacsbase.TPL#L9588); `calc_relative_abundance` [L5982](gmacsbase.TPL#L10250) -> `calc_predicted_rel_abund_one` [L10265](gmacsbase.TPL#L10024); and `calc_predicted_composition` [L5983](gmacsbase.TPL#L10534) -> `calc_predicted_comp_one` [L10572](gmacsbase.TPL#L10328). If `hasMMOD`, `calc_predicted_MMOs_pop` [L5985](gmacsbase.TPL#L10700) and `calc_predicted_MMOs_survey` [L5986](gmacsbase.TPL#L10761) run; these functions have no selected-file callees.
+  - On the exceptional `isnan` path only, `calc_predicted_composition` calls `CreateOutput` [L10580](gmacsbase.TPL#L14518) and then `exit(-1)`. This does not form a recursive cycle.
+- `calc_prior_densities` [L5993](gmacsbase.TPL#L11173) calls `get_prior_pdf` once per active parameter, in parameter-group order: theta [L11196](gmacsbase.TPL#L11196), growth [L11213](gmacsbase.TPL#L11213), natural mortality [L11230](gmacsbase.TPL#L11230), selectivity [L11248](gmacsbase.TPL#L11248), effective sample size [L11274](gmacsbase.TPL#L11274), catchability [L11289](gmacsbase.TPL#L11289), and additional CV [L11311](gmacsbase.TPL#L11311) when that parameter is active. `get_prior_pdf` selects external density functions; the normal-density overload cannot be resolved to this TPL's helpers for its `(dvariable,double,double)` arguments and is recorded as external/overload-uncertain.
+- `calc_objective_function` [L5994](gmacsbase.TPL#L11600) calls, in order: `catch_likelihood` [L11610](gmacsbase.TPL#L11321), `index_likelihood` [L11611](gmacsbase.TPL#L11362), `length_likelihood` [L11612](gmacsbase.TPL#L11396), `recruitment_likelihood` [L11613](gmacsbase.TPL#L11490), `growth_likelihood` [L11614](gmacsbase.TPL#L11514), and `mmos_likelihood_survey` [L11615](gmacsbase.TPL#L10904). `growth_likelihood` conditionally calls `calc_growth_increments_linear` [L11562](gmacsbase.TPL#L7662), `calc_like_gamma_linear_growth` [L11570](gmacsbase.TPL#L7701), `calc_like_gamma_pwrlaw_growth` [L11574](gmacsbase.TPL#L7741), or `calc_like_gamma_pwrlawalt_growth` [L11578](gmacsbase.TPL#L7781) according to `GrowthObsType` and model 1's growth option. These growth helpers call no selected-file function.
+  - The objective's `dnorm` calls occur in source order at [L11645](gmacsbase.TPL#L11645), [L11651](gmacsbase.TPL#L11651), [L11661](gmacsbase.TPL#L11661), [L11680](gmacsbase.TPL#L11680), [L11692](gmacsbase.TPL#L11692), [L11712](gmacsbase.TPL#L11712). They resolve to a local helper only where the argument types match [definition L18394](gmacsbase.TPL#L18394) or [definition L18408](gmacsbase.TPL#L18408); other distribution calls remain external.
+  - If `verbose >= 2 && !doJittering`, `writeRepPar` [L11745](gmacsbase.TPL#L14197) calls local `CheckBounds` at [L14212](gmacsbase.TPL#L14212), [L14224](gmacsbase.TPL#L14224), [L14236](gmacsbase.TPL#L14236), [L14248](gmacsbase.TPL#L14248), [L14261](gmacsbase.TPL#L14261), [L14282](gmacsbase.TPL#L14282), [L14311](gmacsbase.TPL#L14311), [L14335](gmacsbase.TPL#L14335), [L14357](gmacsbase.TPL#L14357), [L14386](gmacsbase.TPL#L14386), [L14418](gmacsbase.TPL#L14418), [L14431](gmacsbase.TPL#L14431), [L14445](gmacsbase.TPL#L14445), [L14458](gmacsbase.TPL#L14458), [L14471](gmacsbase.TPL#L14471), and [L14483](gmacsbase.TPL#L14483). These occur in parameter loops and conditional estimated-phase branches.
+- If `sd_phase() || NfunCall==maxFnCalls`, the procedure optionally calls `calc_spr_reference_points2(1)` [L6025](gmacsbase.TPL#L6025) when `calcRefPts!=0 && clv_NumPeels==0`, then calls `calc_sdreport` [L6027](gmacsbase.TPL#L13920). `calc_sdreport` calls `calc_ssb` at [L13940](gmacsbase.TPL#L11842), [L13980](gmacsbase.TPL#L11842); and calls `calc_total_mortality` [L13973](gmacsbase.TPL#L7572), [L13991](gmacsbase.TPL#L7572), `calc_initial_numbers_at_length` [L13975](gmacsbase.TPL#L8394), [L13993](gmacsbase.TPL#L8394), and `update_population_numbers_at_length` [L13977](gmacsbase.TPL#L9488), [L13995](gmacsbase.TPL#L9488) in the zero-catch then actual-catch passes.
+  - `calc_spr_reference_points2` may repeatedly call `calc_brute_equilibrium` at [L13302](gmacsbase.TPL#L13302), [L13321](gmacsbase.TPL#L13321), [L13328](gmacsbase.TPL#L13328), [L13335](gmacsbase.TPL#L13335), [L13353](gmacsbase.TPL#L13353), [L13469](gmacsbase.TPL#L13469), [L13473](gmacsbase.TPL#L13473), [L13499](gmacsbase.TPL#L13499), [L13504](gmacsbase.TPL#L13504), [L13521](gmacsbase.TPL#L13521), [L13538](gmacsbase.TPL#L13538), [L13546](gmacsbase.TPL#L13546), [L13550](gmacsbase.TPL#L13550), [L13555](gmacsbase.TPL#L13555), [L13563](gmacsbase.TPL#L13563), [L13600](gmacsbase.TPL#L13600), [L13605](gmacsbase.TPL#L13605), [L13610](gmacsbase.TPL#L13610). The calls at L13321-L13335 repeat within the `OFLTier==3` iteration; L13469-L13563 occur only under `Calc_MSY==YES` and the stock-recruitment guard; L13600-L13610 occur under yield-profile guards. Each equilibrium call has the expansion described above. It also calls `calc_ssb` [L13364](gmacsbase.TPL#L13364) and `project_biomass_OFL` at [L13396](gmacsbase.TPL#L13032), [L13405](gmacsbase.TPL#L13032), [L13422](gmacsbase.TPL#L13032). `project_biomass_OFL` calls one seasonal updater for every `i=iyr..iyr+iproj-1`, `j=1..nseason` at [L13168](gmacsbase.TPL#L13168) or [L13170](gmacsbase.TPL#L13170) according to `Term_molt`, then `calc_predicted_project` [L13199](gmacsbase.TPL#L12790).
+- After the sd-report branch, if `mceval_phase()`, call `write_eval` [L6032](gmacsbase.TPL#L13785). If `NfunCall==maxFnCalls`, call `save_params` [L6035](gmacsbase.TPL#L18460), then `CreateOutput` [L6037](gmacsbase.TPL#L14518), then exit.
+
+## Reporting
+
+`REPORT_SECTION` is conditional: when `!doJittering`, it calls `CreateOutput` [L16669](gmacsbase.TPL#L14518); otherwise, only on `last_phase()`, it calls `writeJitterResults` [L16679](gmacsbase.TPL#L14493) -> `calc_spr_reference_points2(1)` [L14498](gmacsbase.TPL#L13247). `CreateOutput` calls `to_str(dvector)` [L14533](gmacsbase.TPL#L14132) -> `strg` [L14138](gmacsbase.TPL#L14121) and [L14139](gmacsbase.TPL#L14121), `get_all_sdnr_MAR` [L14535](gmacsbase.TPL#L14006) -> `calc_sdnr_MAR(dmatrix)` [L14020](gmacsbase.TPL#L14042) -> external `std_dev`/`fabs`/`sort`, then `calc_Francis_weights` [L14023](gmacsbase.TPL#L14073). Later it calls `calc_ssb` [L15388](gmacsbase.TPL#L11842), `calc_ssba` [L15389](gmacsbase.TPL#L11879), `project_cohort_numbers_at_length` at [L15460](gmacsbase.TPL#L9367), [L15474](gmacsbase.TPL#L9367), [L15488](gmacsbase.TPL#L9367), [L15502](gmacsbase.TPL#L9367), `calc_predicted_capture_abdbio` [L16077](gmacsbase.TPL#L9965), `to_str15(dvar_vector)` [L16440](gmacsbase.TPL#L14191) -> `to_str15(dvector)` [L14193](gmacsbase.TPL#L14177) -> `strg15` [L14181](gmacsbase.TPL#L14165) and [L14182](gmacsbase.TPL#L14165), optionally `calc_spr_reference_points2(1)` [L16544](gmacsbase.TPL#L13247) under `last_phase() || NfunCall==maxFnCalls` and `calcRefPts!=0 && clv_NumPeels==0`, then `WriteFiles` [L16657](gmacsbase.TPL#L16687) if `!doJittering`. `WriteFiles` calls no selected-file function; macro calls expand to stream writes.
+
+## Finalization and MSE
+
+- `FINAL_SECTION` calls `CreateOutput` [L18483](gmacsbase.TPL#L14518) if `!doJittering`; then calls `doProjections_FinalPhase` [L18487](gmacsbase.TPL#L13638) only when `doPrjs && !doMSE && !doMCMC`. This can repeat output already produced by `REPORT_SECTION`.
+- `doProjections_FinalPhase` calls `calc_spr_reference_points2(0)` [L13672](gmacsbase.TPL#L13247), `calc_ssb` [L13683](gmacsbase.TPL#L11842), and, per replicate/strategy, `project_biomass` [L13763](gmacsbase.TPL#L12215) -> `calc_ssb` [L12237](gmacsbase.TPL#L11842), `compute_OFL_and_ABC` [L12298](gmacsbase.TPL#L12930), `project_one_year` [L12319](gmacsbase.TPL#L12616), optional `ApplyMP` [L12329](gmacsbase.TPL#L12539) when `doMSE==YES`, optional bisection `project_one_year` [L12341](gmacsbase.TPL#L12616), and optional `GenerateData` [L12364](gmacsbase.TPL#L12413). `compute_OFL_and_ABC` tests biomass states and may call `project_biomass_OFL` at [L12950](gmacsbase.TPL#L13032), [L12958](gmacsbase.TPL#L13032), and inside its `iloop=1..10` branch at [L12971](gmacsbase.TPL#L13032). `project_one_year` calls one seasonal updater per season, selected by `Term_molt`, then `calc_predicted_project` [L12769](gmacsbase.TPL#L12790). `GenerateData` calls `predicted_catch_one_year` [L12450](gmacsbase.TPL#L9588), `calc_predicted_rel_abund_one` [L12486](gmacsbase.TPL#L10024), and `calc_predicted_comp_one` [L12513](gmacsbase.TPL#L10328) under survey/composition frequency guards.
+- `ApplyMP` calls `isWindows` [L12598](gmacsbase.TPL#L18288) to choose the external `system("MP...")` command; the external executable and its output are not traced.
+- MCMC projection path: `write_eval` calls `calc_spr_reference_points2(0)` [L13831](gmacsbase.TPL#L13247), `calc_ssb` [L13834](gmacsbase.TPL#L11842), optionally `InitializeData` [L13857](gmacsbase.TPL#L12380) when `doMSE==YES`, `project_biomass` [L13893](gmacsbase.TPL#L12215), and `calc_ssb` [L13897](gmacsbase.TPL#L11842).
+
+# Direct Call Ledger
+
+Each child is one selected-file call site, in body statement order. The call-site reference includes its source arguments; the definition reference identifies the resolved target. Loop bounds and branch guards are in the execution-root trace above.
+
+- `initialize_model_parameters` [definition L6053](gmacsbase.TPL#L6053)
+  - `timevarparV2` [call L6151](gmacsbase.TPL#L6151) -> [definition L6756](gmacsbase.TPL#L6756)
+  - `timevarparM` [call L6585](gmacsbase.TPL#L6585) -> [definition L6850](gmacsbase.TPL#L6850)
+  - `timevarparV2` [call L6623](gmacsbase.TPL#L6623) -> [definition L6756](gmacsbase.TPL#L6756)
+  - `timevarparV2` [call L6648](gmacsbase.TPL#L6648) -> [definition L6756](gmacsbase.TPL#L6756)
+- `calc_selectivities` [definition L7146](gmacsbase.TPL#L7146)
+  - `dnorm` [call L7304](gmacsbase.TPL#L7304) -> [definition L18408](gmacsbase.TPL#L18408)
+  - `dnorm` [call L7305](gmacsbase.TPL#L7305) -> [definition L18408](gmacsbase.TPL#L18408)
+  - `dnorm` [call L7306](gmacsbase.TPL#L7306) -> [definition L18408](gmacsbase.TPL#L18408)
+- `calc_initial_numbers_at_length` [definition L8394](gmacsbase.TPL#L8394)
+  - `calc_brute_equilibrium` [call L8446](gmacsbase.TPL#L8446) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L8452](gmacsbase.TPL#L8452) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `writeToPopProg` [call L8509](gmacsbase.TPL#L8509) -> [definition L8328](gmacsbase.TPL#L8328)
+- `updateNumbersAtLengthByCase` [definition L8564](gmacsbase.TPL#L8564)
+  - `writeToPopProg` [call L8591](gmacsbase.TPL#L8591) -> [definition L8328](gmacsbase.TPL#L8328)
+  - `writeToPopProg` [call L8593](gmacsbase.TPL#L8593) -> [definition L8328](gmacsbase.TPL#L8328)
+- `update_population_numbers_at_length_season_new` [definition L8636](gmacsbase.TPL#L8636)
+  - `getNumbersAtLengthByCase` [call L8649](gmacsbase.TPL#L8649) -> [definition L8520](gmacsbase.TPL#L8520)
+  - `getNumbersAtLengthByCase` [call L8690](gmacsbase.TPL#L8690) -> [definition L8520](gmacsbase.TPL#L8520)
+  - `getNumbersAtLengthByCase` [call L8691](gmacsbase.TPL#L8691) -> [definition L8520](gmacsbase.TPL#L8520)
+  - `getNumbersAtLengthByCase` [call L8771](gmacsbase.TPL#L8771) -> [definition L8520](gmacsbase.TPL#L8520)
+  - `getNumbersAtLengthByCase` [call L8772](gmacsbase.TPL#L8772) -> [definition L8520](gmacsbase.TPL#L8520)
+  - `getNumbersAtLengthByCase` [call L8773](gmacsbase.TPL#L8773) -> [definition L8520](gmacsbase.TPL#L8520)
+  - `getNumbersAtLengthByCase` [call L8774](gmacsbase.TPL#L8774) -> [definition L8520](gmacsbase.TPL#L8520)
+  - `updateNumbersAtLengthByCase` [call L8870](gmacsbase.TPL#L8870) -> [definition L8564](gmacsbase.TPL#L8564)
+- `update_population_numbers_at_length_season` [definition L8885](gmacsbase.TPL#L8885)
+  - `getPopStateString` [call L9313](gmacsbase.TPL#L9313) -> [definition L9351](gmacsbase.TPL#L9351)
+- `project_cohort_numbers_at_length` [definition L9367](gmacsbase.TPL#L9367)
+  - `update_population_numbers_at_length_season` [call L9467](gmacsbase.TPL#L9467) -> [definition L8885](gmacsbase.TPL#L8885)
+  - `update_population_numbers_at_length_season_new` [call L9469](gmacsbase.TPL#L9469) -> [definition L8636](gmacsbase.TPL#L8636)
+- `update_population_numbers_at_length` [definition L9488](gmacsbase.TPL#L9488)
+  - `update_population_numbers_at_length_season` [call L9558](gmacsbase.TPL#L9558) -> [definition L8885](gmacsbase.TPL#L8885)
+  - `update_population_numbers_at_length_season_new` [call L9560](gmacsbase.TPL#L9560) -> [definition L8636](gmacsbase.TPL#L8636)
+- `calc_predicted_catch` [definition L9731](gmacsbase.TPL#L9731)
+  - `predicted_catch_one_year` [call L9846](gmacsbase.TPL#L9846) -> [definition L9588](gmacsbase.TPL#L9588)
+- `calc_relative_abundance` [definition L10250](gmacsbase.TPL#L10250)
+  - `calc_predicted_rel_abund_one` [call L10265](gmacsbase.TPL#L10265) -> [definition L10024](gmacsbase.TPL#L10024)
+- `calc_predicted_composition` [definition L10534](gmacsbase.TPL#L10534)
+  - `calc_predicted_comp_one` [call L10572](gmacsbase.TPL#L10572) -> [definition L10328](gmacsbase.TPL#L10328)
+  - `CreateOutput` [call L10580](gmacsbase.TPL#L10580) -> [definition L14518](gmacsbase.TPL#L14518); exceptional NaN branch, then `exit(-1)`
+- `calc_stock_recruitment_relationship` [definition L11038](gmacsbase.TPL#L11038)
+  - `calc_ssb` [call L11090](gmacsbase.TPL#L11090) -> [definition L11842](gmacsbase.TPL#L11842)
+- `get_prior_pdf` [definition L11128](gmacsbase.TPL#L11128)
+  - `dnorm` [call L11140](gmacsbase.TPL#L11140); target overload is unresolved between ADMB/external overloads and the local three-argument `dnorm` [definition L18394](gmacsbase.TPL#L18394)
+- `calc_prior_densities` [definition L11173](gmacsbase.TPL#L11173)
+  - `get_prior_pdf` [call L11196](gmacsbase.TPL#L11196) -> [definition L11128](gmacsbase.TPL#L11128)
+  - `get_prior_pdf` [call L11213](gmacsbase.TPL#L11213) -> [definition L11128](gmacsbase.TPL#L11128)
+  - `get_prior_pdf` [call L11230](gmacsbase.TPL#L11230) -> [definition L11128](gmacsbase.TPL#L11128)
+  - `get_prior_pdf` [call L11248](gmacsbase.TPL#L11248) -> [definition L11128](gmacsbase.TPL#L11128)
+  - `get_prior_pdf` [call L11274](gmacsbase.TPL#L11274) -> [definition L11128](gmacsbase.TPL#L11128)
+  - `get_prior_pdf` [call L11289](gmacsbase.TPL#L11289) -> [definition L11128](gmacsbase.TPL#L11128)
+  - `get_prior_pdf` [call L11311](gmacsbase.TPL#L11311) -> [definition L11128](gmacsbase.TPL#L11128)
+- `catch_likelihood` [definition L11321](gmacsbase.TPL#L11321)
+  - `dnorm` [call L11336](gmacsbase.TPL#L11336)
+  - `dnorm` [call L11340](gmacsbase.TPL#L11340)
+  - `dnorm` [call L11342](gmacsbase.TPL#L11342)
+- `recruitment_likelihood` [definition L11490](gmacsbase.TPL#L11490)
+  - `dnorm` [call L11496](gmacsbase.TPL#L11496)
+  - `dnorm` [call L11507](gmacsbase.TPL#L11507)
+- `growth_likelihood` [definition L11514](gmacsbase.TPL#L11514)
+  - `calc_growth_increments_linear` [call L11562](gmacsbase.TPL#L11562) -> [definition L7662](gmacsbase.TPL#L7662)
+  - `dnorm` [call L11564](gmacsbase.TPL#L11564)
+  - `calc_like_gamma_linear_growth` [call L11570](gmacsbase.TPL#L11570) -> [definition L7701](gmacsbase.TPL#L7701)
+  - `calc_like_gamma_pwrlaw_growth` [call L11574](gmacsbase.TPL#L11574) -> [definition L7741](gmacsbase.TPL#L7741)
+  - `calc_like_gamma_pwrlawalt_growth` [call L11578](gmacsbase.TPL#L11578) -> [definition L7781](gmacsbase.TPL#L7781)
+- `calc_objective_function` [definition L11600](gmacsbase.TPL#L11600)
+  - `catch_likelihood` [call L11610](gmacsbase.TPL#L11610) -> [definition L11321](gmacsbase.TPL#L11321)
+  - `index_likelihood` [call L11611](gmacsbase.TPL#L11611) -> [definition L11362](gmacsbase.TPL#L11362)
+  - `length_likelihood` [call L11612](gmacsbase.TPL#L11612) -> [definition L11396](gmacsbase.TPL#L11396)
+  - `recruitment_likelihood` [call L11613](gmacsbase.TPL#L11613) -> [definition L11490](gmacsbase.TPL#L11490)
+  - `growth_likelihood` [call L11614](gmacsbase.TPL#L11614) -> [definition L11514](gmacsbase.TPL#L11514)
+  - `mmos_likelihood_survey` [call L11615](gmacsbase.TPL#L11615) -> [definition L10904](gmacsbase.TPL#L10904)
+  - `dnorm` [call L11645](gmacsbase.TPL#L11645)
+  - `dnorm` [call L11651](gmacsbase.TPL#L11651)
+  - `dnorm` [call L11661](gmacsbase.TPL#L11661)
+  - `dnorm` [call L11680](gmacsbase.TPL#L11680)
+  - `dnorm` [call L11692](gmacsbase.TPL#L11692)
+  - `dnorm` [call L11712](gmacsbase.TPL#L11712)
+  - `writeRepPar` [call L11745](gmacsbase.TPL#L11745) -> [definition L14197](gmacsbase.TPL#L14197)
+- `simulation_model` [definition L11755](gmacsbase.TPL#L11755)
+  - `initialize_model_parameters` [call L11761](gmacsbase.TPL#L11761) -> [definition L6053](gmacsbase.TPL#L6053)
+  - `calc_selectivities` [call L11764](gmacsbase.TPL#L11764) -> [definition L7146](gmacsbase.TPL#L7146)
+  - `calc_fishing_mortality` [call L11767](gmacsbase.TPL#L11767) -> [definition L7415](gmacsbase.TPL#L7415)
+  - `calc_growth_increments` [call L11775](gmacsbase.TPL#L11775) -> [definition L7816](gmacsbase.TPL#L7816)
+  - `calc_molting_probability` [call L11776](gmacsbase.TPL#L11776) -> [definition L7607](gmacsbase.TPL#L7607)
+  - `calc_mature_probability` [call L11777](gmacsbase.TPL#L11777) -> [definition L8239](gmacsbase.TPL#L8239)
+  - `calc_growth_transition` [call L11778](gmacsbase.TPL#L11778) -> [definition L7881](gmacsbase.TPL#L7881)
+  - `calc_natural_mortality` [call L11779](gmacsbase.TPL#L11779) -> [definition L7558](gmacsbase.TPL#L7558)
+  - `calc_total_mortality` [call L11780](gmacsbase.TPL#L11780) -> [definition L7572](gmacsbase.TPL#L7572)
+  - `calc_recruitment_size_distribution` [call L11781](gmacsbase.TPL#L11781) -> [definition L8286](gmacsbase.TPL#L8286)
+  - `calc_initial_numbers_at_length` [call L11782](gmacsbase.TPL#L11782) -> [definition L8394](gmacsbase.TPL#L8394)
+  - `update_population_numbers_at_length` [call L11783](gmacsbase.TPL#L11783) -> [definition L9488](gmacsbase.TPL#L9488)
+  - `calc_predicted_catch` [call L11786](gmacsbase.TPL#L11786) -> [definition L9731](gmacsbase.TPL#L9731)
+  - `calc_relative_abundance` [call L11787](gmacsbase.TPL#L11787) -> [definition L10250](gmacsbase.TPL#L10250)
+  - `calc_predicted_composition` [call L11788](gmacsbase.TPL#L11788) -> [definition L10534](gmacsbase.TPL#L10534)
+- `calc_brute_equilibrium` [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_ssb` [call L11962](gmacsbase.TPL#L11962) -> [definition L11842](gmacsbase.TPL#L11842)
+  - `update_population_numbers_at_length_season` [call L12150](gmacsbase.TPL#L12150) -> [definition L8885](gmacsbase.TPL#L8885)
+  - `update_population_numbers_at_length_season_new` [call L12152](gmacsbase.TPL#L12152) -> [definition L8636](gmacsbase.TPL#L8636)
+  - `calc_predicted_project` [call L12187](gmacsbase.TPL#L12187) -> [definition L12790](gmacsbase.TPL#L12790)
+- `project_biomass` [definition L12215](gmacsbase.TPL#L12215)
+  - `calc_ssb` [call L12237](gmacsbase.TPL#L12237) -> [definition L11842](gmacsbase.TPL#L11842)
+  - `compute_OFL_and_ABC` [call L12298](gmacsbase.TPL#L12298) -> [definition L12930](gmacsbase.TPL#L12930)
+  - `project_one_year` [call L12319](gmacsbase.TPL#L12319) -> [definition L12616](gmacsbase.TPL#L12616)
+  - `ApplyMP` [call L12329](gmacsbase.TPL#L12329) -> [definition L12539](gmacsbase.TPL#L12539)
+  - `project_one_year` [call L12341](gmacsbase.TPL#L12341) -> [definition L12616](gmacsbase.TPL#L12616)
+  - `GenerateData` [call L12364](gmacsbase.TPL#L12364) -> [definition L12413](gmacsbase.TPL#L12413)
+- `GenerateData` [definition L12413](gmacsbase.TPL#L12413)
+  - `predicted_catch_one_year` [call L12450](gmacsbase.TPL#L12450) -> [definition L9588](gmacsbase.TPL#L9588)
+  - `calc_predicted_rel_abund_one` [call L12486](gmacsbase.TPL#L12486) -> [definition L10024](gmacsbase.TPL#L10024)
+  - `calc_predicted_comp_one` [call L12513](gmacsbase.TPL#L12513) -> [definition L10328](gmacsbase.TPL#L10328)
+- `ApplyMP` [definition L12539](gmacsbase.TPL#L12539)
+  - `isWindows` [call L12598](gmacsbase.TPL#L12598) -> [definition L18288](gmacsbase.TPL#L18288)
+- `project_one_year` [definition L12616](gmacsbase.TPL#L12616)
+  - `update_population_numbers_at_length_season` [call L12742](gmacsbase.TPL#L12742) -> [definition L8885](gmacsbase.TPL#L8885)
+  - `update_population_numbers_at_length_season_new` [call L12744](gmacsbase.TPL#L12744) -> [definition L8636](gmacsbase.TPL#L8636)
+  - `calc_predicted_project` [call L12769](gmacsbase.TPL#L12769) -> [definition L12790](gmacsbase.TPL#L12790)
+- `compute_OFL_and_ABC` [definition L12930](gmacsbase.TPL#L12930)
+  - `project_biomass_OFL` [call L12950](gmacsbase.TPL#L12950) -> [definition L13032](gmacsbase.TPL#L13032)
+  - `project_biomass_OFL` [call L12958](gmacsbase.TPL#L12958) -> [definition L13032](gmacsbase.TPL#L13032)
+  - `project_biomass_OFL` [call L12971](gmacsbase.TPL#L12971) -> [definition L13032](gmacsbase.TPL#L13032)
+- `project_biomass_OFL` [definition L13032](gmacsbase.TPL#L13032)
+  - `update_population_numbers_at_length_season` [call L13168](gmacsbase.TPL#L13168) -> [definition L8885](gmacsbase.TPL#L8885)
+  - `update_population_numbers_at_length_season_new` [call L13170](gmacsbase.TPL#L13170) -> [definition L8636](gmacsbase.TPL#L8636)
+  - `calc_predicted_project` [call L13199](gmacsbase.TPL#L13199) -> [definition L12790](gmacsbase.TPL#L12790)
+- `calc_spr_reference_points2` [definition L13247](gmacsbase.TPL#L13247)
+  - `calc_brute_equilibrium` [call L13302](gmacsbase.TPL#L13302) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13321](gmacsbase.TPL#L13321) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13328](gmacsbase.TPL#L13328) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13335](gmacsbase.TPL#L13335) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13353](gmacsbase.TPL#L13353) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_ssb` [call L13364](gmacsbase.TPL#L13364) -> [definition L11842](gmacsbase.TPL#L11842)
+  - `project_biomass_OFL` [call L13396](gmacsbase.TPL#L13396) -> [definition L13032](gmacsbase.TPL#L13032)
+  - `project_biomass_OFL` [call L13405](gmacsbase.TPL#L13405) -> [definition L13032](gmacsbase.TPL#L13032)
+  - `project_biomass_OFL` [call L13422](gmacsbase.TPL#L13422) -> [definition L13032](gmacsbase.TPL#L13032)
+  - `calc_brute_equilibrium` [call L13469](gmacsbase.TPL#L13469) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13473](gmacsbase.TPL#L13473) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13499](gmacsbase.TPL#L13499) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13504](gmacsbase.TPL#L13504) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13521](gmacsbase.TPL#L13521) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13538](gmacsbase.TPL#L13538) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13546](gmacsbase.TPL#L13546) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13550](gmacsbase.TPL#L13550) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13555](gmacsbase.TPL#L13555) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13563](gmacsbase.TPL#L13563) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13600](gmacsbase.TPL#L13600) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13605](gmacsbase.TPL#L13605) -> [definition L11917](gmacsbase.TPL#L11917)
+  - `calc_brute_equilibrium` [call L13610](gmacsbase.TPL#L13610) -> [definition L11917](gmacsbase.TPL#L11917)
+- `doProjections_FinalPhase` [definition L13638](gmacsbase.TPL#L13638)
+  - `calc_spr_reference_points2` [call L13672](gmacsbase.TPL#L13672) -> [definition L13247](gmacsbase.TPL#L13247)
+  - `calc_ssb` [call L13683](gmacsbase.TPL#L13683) -> [definition L11842](gmacsbase.TPL#L11842)
+  - `project_biomass` [call L13763](gmacsbase.TPL#L13763) -> [definition L12215](gmacsbase.TPL#L12215)
+- `write_eval` [definition L13785](gmacsbase.TPL#L13785)
+  - `calc_spr_reference_points2` [call L13831](gmacsbase.TPL#L13831) -> [definition L13247](gmacsbase.TPL#L13247)
+  - `calc_ssb` [call L13834](gmacsbase.TPL#L13834) -> [definition L11842](gmacsbase.TPL#L11842)
+  - `InitializeData` [call L13857](gmacsbase.TPL#L13857) -> [definition L12380](gmacsbase.TPL#L12380)
+  - `project_biomass` [call L13893](gmacsbase.TPL#L13893) -> [definition L12215](gmacsbase.TPL#L12215)
+  - `calc_ssb` [call L13897](gmacsbase.TPL#L13897) -> [definition L11842](gmacsbase.TPL#L11842)
+- `calc_sdreport` [definition L13920](gmacsbase.TPL#L13920)
+  - `calc_ssb` [call L13940](gmacsbase.TPL#L13940) -> [definition L11842](gmacsbase.TPL#L11842)
+  - `calc_total_mortality` [call L13973](gmacsbase.TPL#L13973) -> [definition L7572](gmacsbase.TPL#L7572)
+  - `calc_initial_numbers_at_length` [call L13975](gmacsbase.TPL#L13975) -> [definition L8394](gmacsbase.TPL#L8394)
+  - `update_population_numbers_at_length` [call L13977](gmacsbase.TPL#L13977) -> [definition L9488](gmacsbase.TPL#L9488)
+  - `calc_ssb` [call L13980](gmacsbase.TPL#L13980) -> [definition L11842](gmacsbase.TPL#L11842)
+  - `calc_total_mortality` [call L13991](gmacsbase.TPL#L13991) -> [definition L7572](gmacsbase.TPL#L7572)
+  - `calc_initial_numbers_at_length` [call L13993](gmacsbase.TPL#L13993) -> [definition L8394](gmacsbase.TPL#L8394)
+  - `update_population_numbers_at_length` [call L13995](gmacsbase.TPL#L13995) -> [definition L9488](gmacsbase.TPL#L9488)
+- `get_all_sdnr_MAR` [definition L14006](gmacsbase.TPL#L14006)
+  - `calc_sdnr_MAR(dmatrix)` [call L14020](gmacsbase.TPL#L14020) -> [definition L14042](gmacsbase.TPL#L14042)
+  - `calc_Francis_weights` [call L14023](gmacsbase.TPL#L14023) -> [definition L14073](gmacsbase.TPL#L14073)
+- `to_str(const dvector&)` [definition L14132](gmacsbase.TPL#L14132)
+  - `strg` [call L14138](gmacsbase.TPL#L14138) -> [definition L14121](gmacsbase.TPL#L14121)
+  - `strg` [call L14139](gmacsbase.TPL#L14139) -> [definition L14121](gmacsbase.TPL#L14121)
+- `to_str(const dvar_vector&)` [definition L14152](gmacsbase.TPL#L14152)
+  - `to_str(const dvector&)` [call L14154](gmacsbase.TPL#L14154) -> [definition L14132](gmacsbase.TPL#L14132)
+- `to_str15(const dvector&)` [definition L14177](gmacsbase.TPL#L14177)
+  - `strg15` [call L14181](gmacsbase.TPL#L14181) -> [definition L14165](gmacsbase.TPL#L14165)
+  - `strg15` [call L14182](gmacsbase.TPL#L14182) -> [definition L14165](gmacsbase.TPL#L14165)
+- `to_str15(const dvar_vector&)` [definition L14191](gmacsbase.TPL#L14191)
+  - `to_str15(const dvector&)` [call L14193](gmacsbase.TPL#L14193) -> [definition L14177](gmacsbase.TPL#L14177)
+- `writeRepPar` [definition L14197](gmacsbase.TPL#L14197)
+  - `CheckBounds` call sites [L14212](gmacsbase.TPL#L14212), [L14224](gmacsbase.TPL#L14224), [L14236](gmacsbase.TPL#L14236), [L14248](gmacsbase.TPL#L14248), [L14261](gmacsbase.TPL#L14261), [L14282](gmacsbase.TPL#L14282), [L14311](gmacsbase.TPL#L14311), [L14335](gmacsbase.TPL#L14335), [L14357](gmacsbase.TPL#L14357), [L14386](gmacsbase.TPL#L14386), [L14418](gmacsbase.TPL#L14418), [L14431](gmacsbase.TPL#L14431), [L14445](gmacsbase.TPL#L14445), [L14458](gmacsbase.TPL#L14458), [L14471](gmacsbase.TPL#L14471), [L14483](gmacsbase.TPL#L14483) -> [definition L18369](gmacsbase.TPL#L18369)
+- `writeJitterResults` [definition L14493](gmacsbase.TPL#L14493)
+  - `calc_spr_reference_points2` [call L14498](gmacsbase.TPL#L14498) -> [definition L13247](gmacsbase.TPL#L13247)
+- `CreateOutput` [definition L14518](gmacsbase.TPL#L14518)
+  - `to_str(const dvector&)` [call L14533](gmacsbase.TPL#L14533) -> [definition L14132](gmacsbase.TPL#L14132)
+  - `get_all_sdnr_MAR` [call L14535](gmacsbase.TPL#L14535) -> [definition L14006](gmacsbase.TPL#L14006)
+  - `CheckBounds` call sites [L14834](gmacsbase.TPL#L14834), [L14855](gmacsbase.TPL#L14855), [L14876](gmacsbase.TPL#L14876), [L14897](gmacsbase.TPL#L14897), [L14919](gmacsbase.TPL#L14919), [L14949](gmacsbase.TPL#L14949), [L14988](gmacsbase.TPL#L14988), [L15022](gmacsbase.TPL#L15022), [L15052](gmacsbase.TPL#L15052), [L15091](gmacsbase.TPL#L15091), [L15133](gmacsbase.TPL#L15133), [L15154](gmacsbase.TPL#L15154), [L15176](gmacsbase.TPL#L15176), [L15198](gmacsbase.TPL#L15198), [L15220](gmacsbase.TPL#L15220), [L15241](gmacsbase.TPL#L15241) -> [definition L18369](gmacsbase.TPL#L18369)
+  - `calc_ssb` [call L15388](gmacsbase.TPL#L15388) -> [definition L11842](gmacsbase.TPL#L11842)
+  - `calc_ssba` [call L15389](gmacsbase.TPL#L15389) -> [definition L11879](gmacsbase.TPL#L11879)
+  - `project_cohort_numbers_at_length` [call L15460](gmacsbase.TPL#L15460) -> [definition L9367](gmacsbase.TPL#L9367)
+  - `project_cohort_numbers_at_length` [call L15474](gmacsbase.TPL#L15474) -> [definition L9367](gmacsbase.TPL#L9367)
+  - `project_cohort_numbers_at_length` [call L15488](gmacsbase.TPL#L15488) -> [definition L9367](gmacsbase.TPL#L9367)
+  - `project_cohort_numbers_at_length` [call L15502](gmacsbase.TPL#L15502) -> [definition L9367](gmacsbase.TPL#L9367)
+  - `calc_predicted_capture_abdbio` [call L16077](gmacsbase.TPL#L16077) -> [definition L9965](gmacsbase.TPL#L9965)
+  - `to_str15(const dvar_vector&)` [call L16440](gmacsbase.TPL#L16440) -> [definition L14191](gmacsbase.TPL#L14191)
+  - `calc_spr_reference_points2` [call L16544](gmacsbase.TPL#L16544) -> [definition L13247](gmacsbase.TPL#L13247)
+  - `WriteFiles` [call L16657](gmacsbase.TPL#L16657) -> [definition L16687](gmacsbase.TPL#L16687)
+
+# Other Defined Functions
+
+These definitions have no static path from the entry roots above. The first four have no selected-file callees; external/library calls are omitted. `to_str(const dvar_vector&)` has the nested call shown below. `calc_natural_mortality` is different: it is reached only on the `simulation_model` path. `calc_predicted_catch_det`, `mmos_likelihood_pop`, `calc_sdnr_MAR(dvector)`, `to_str(const dvar_vector&)`, and `timevarparV` are not statically reached.
+
+- `timevarparV(...)`: [definition L6667](gmacsbase.TPL#L6667), body ends [L6755](gmacsbase.TPL#L6755).
+- `calc_predicted_catch_det(...)`: [definition L9912](gmacsbase.TPL#L9912), body ends [L9964](gmacsbase.TPL#L9964).
+- `mmos_likelihood_pop()`: [definition L10846](gmacsbase.TPL#L10846), body ends [L10903](gmacsbase.TPL#L10903).
+- `calc_sdnr_MAR(dvector tmpVec)`: [definition L14031](gmacsbase.TPL#L14031), body ends [L14041](gmacsbase.TPL#L14041).
+- `to_str(const dvar_vector&)`: [definition L14152](gmacsbase.TPL#L14152), body ends [L14164](gmacsbase.TPL#L14164).
+  - `to_str(const dvector&)` [call L14154](gmacsbase.TPL#L14154) -> [definition L14132](gmacsbase.TPL#L14132)
+    - `strg` [call L14138](gmacsbase.TPL#L14138) -> [definition L14121](gmacsbase.TPL#L14121)
+    - `strg` [call L14139](gmacsbase.TPL#L14139) -> [definition L14121](gmacsbase.TPL#L14121)
+
+# Definition Index
+
+The function name is the index key; each definition link opens its complete source signature. `Body start` is the `FUNCTION` line and `Body end` is the final body line immediately before the next definition or section. Literal C++ helper definitions are indexed separately above and below.
+
+| Function | Body start | Body end |
+|---|---:|---:|
+| [initialize_model_parameters](gmacsbase.TPL#L6053) | [6053](gmacsbase.TPL#L6053) | [6666](gmacsbase.TPL#L6666) |
+| [timevarparV](gmacsbase.TPL#L6667) | [6667](gmacsbase.TPL#L6667) | [6755](gmacsbase.TPL#L6755) |
+| [timevarparV2](gmacsbase.TPL#L6756) | [6756](gmacsbase.TPL#L6756) | [6849](gmacsbase.TPL#L6849) |
+| [timevarparM](gmacsbase.TPL#L6850) | [6850](gmacsbase.TPL#L6850) | [6989](gmacsbase.TPL#L6989) |
+| [init_selectivities](gmacsbase.TPL#L6990) | [6990](gmacsbase.TPL#L6990) | [7145](gmacsbase.TPL#L7145) |
+| [calc_selectivities](gmacsbase.TPL#L7146) | [7146](gmacsbase.TPL#L7146) | [7414](gmacsbase.TPL#L7414) |
+| [calc_fishing_mortality](gmacsbase.TPL#L7415) | [7415](gmacsbase.TPL#L7415) | [7557](gmacsbase.TPL#L7557) |
+| [calc_natural_mortality](gmacsbase.TPL#L7558) | [7558](gmacsbase.TPL#L7558) | [7571](gmacsbase.TPL#L7571) |
+| [calc_total_mortality](gmacsbase.TPL#L7572) | [7572](gmacsbase.TPL#L7572) | [7606](gmacsbase.TPL#L7606) |
+| [calc_molting_probability](gmacsbase.TPL#L7607) | [7607](gmacsbase.TPL#L7607) | [7661](gmacsbase.TPL#L7661) |
+| [calc_growth_increments_linear](gmacsbase.TPL#L7662) | [7662](gmacsbase.TPL#L7662) | [7700](gmacsbase.TPL#L7700) |
+| [calc_like_gamma_linear_growth](gmacsbase.TPL#L7701) | [7701](gmacsbase.TPL#L7701) | [7740](gmacsbase.TPL#L7740) |
+| [calc_like_gamma_pwrlaw_growth](gmacsbase.TPL#L7741) | [7741](gmacsbase.TPL#L7741) | [7780](gmacsbase.TPL#L7780) |
+| [calc_like_gamma_pwrlawalt_growth](gmacsbase.TPL#L7781) | [7781](gmacsbase.TPL#L7781) | [7815](gmacsbase.TPL#L7815) |
+| [calc_growth_increments](gmacsbase.TPL#L7816) | [7816](gmacsbase.TPL#L7816) | [7880](gmacsbase.TPL#L7880) |
+| [calc_growth_transition](gmacsbase.TPL#L7881) | [7881](gmacsbase.TPL#L7881) | [8238](gmacsbase.TPL#L8238) |
+| [calc_mature_probability](gmacsbase.TPL#L8239) | [8239](gmacsbase.TPL#L8239) | [8285](gmacsbase.TPL#L8285) |
+| [calc_recruitment_size_distribution](gmacsbase.TPL#L8286) | [8286](gmacsbase.TPL#L8286) | [8327](gmacsbase.TPL#L8327) |
+| [writeToPopProg](gmacsbase.TPL#L8328) | [8328](gmacsbase.TPL#L8328) | [8393](gmacsbase.TPL#L8393) |
+| [calc_initial_numbers_at_length](gmacsbase.TPL#L8394) | [8394](gmacsbase.TPL#L8394) | [8519](gmacsbase.TPL#L8519) |
+| [getNumbersAtLengthByCase](gmacsbase.TPL#L8520) | [8520](gmacsbase.TPL#L8520) | [8563](gmacsbase.TPL#L8563) |
+| [updateNumbersAtLengthByCase](gmacsbase.TPL#L8564) | [8564](gmacsbase.TPL#L8564) | [8635](gmacsbase.TPL#L8635) |
+| [update_population_numbers_at_length_season_new](gmacsbase.TPL#L8636) | [8636](gmacsbase.TPL#L8636) | [8884](gmacsbase.TPL#L8884) |
+| [update_population_numbers_at_length_season](gmacsbase.TPL#L8885) | [8885](gmacsbase.TPL#L8885) | [9350](gmacsbase.TPL#L9350) |
+| [getPopStateString](gmacsbase.TPL#L9351) | [9351](gmacsbase.TPL#L9351) | [9366](gmacsbase.TPL#L9366) |
+| [project_cohort_numbers_at_length](gmacsbase.TPL#L9367) | [9367](gmacsbase.TPL#L9367) | [9487](gmacsbase.TPL#L9487) |
+| [update_population_numbers_at_length](gmacsbase.TPL#L9488) | [9488](gmacsbase.TPL#L9488) | [9587](gmacsbase.TPL#L9587) |
+| [predicted_catch_one_year](gmacsbase.TPL#L9588) | [9588](gmacsbase.TPL#L9588) | [9730](gmacsbase.TPL#L9730) |
+| [calc_predicted_catch](gmacsbase.TPL#L9731) | [9731](gmacsbase.TPL#L9731) | [9911](gmacsbase.TPL#L9911) |
+| [calc_predicted_catch_det](gmacsbase.TPL#L9912) | [9912](gmacsbase.TPL#L9912) | [9964](gmacsbase.TPL#L9964) |
+| [calc_predicted_capture_abdbio](gmacsbase.TPL#L9965) | [9965](gmacsbase.TPL#L9965) | [10023](gmacsbase.TPL#L10023) |
+| [calc_predicted_rel_abund_one](gmacsbase.TPL#L10024) | [10024](gmacsbase.TPL#L10024) | [10249](gmacsbase.TPL#L10249) |
+| [calc_relative_abundance](gmacsbase.TPL#L10250) | [10250](gmacsbase.TPL#L10250) | [10327](gmacsbase.TPL#L10327) |
+| [calc_predicted_comp_one](gmacsbase.TPL#L10328) | [10328](gmacsbase.TPL#L10328) | [10533](gmacsbase.TPL#L10533) |
+| [calc_predicted_composition](gmacsbase.TPL#L10534) | [10534](gmacsbase.TPL#L10534) | [10699](gmacsbase.TPL#L10699) |
+| [calc_predicted_MMOs_pop](gmacsbase.TPL#L10700) | [10700](gmacsbase.TPL#L10700) | [10760](gmacsbase.TPL#L10760) |
+| [calc_predicted_MMOs_survey](gmacsbase.TPL#L10761) | [10761](gmacsbase.TPL#L10761) | [10845](gmacsbase.TPL#L10845) |
+| [mmos_likelihood_pop](gmacsbase.TPL#L10846) | [10846](gmacsbase.TPL#L10846) | [10903](gmacsbase.TPL#L10903) |
+| [mmos_likelihood_survey](gmacsbase.TPL#L10904) | [10904](gmacsbase.TPL#L10904) | [10966](gmacsbase.TPL#L10966) |
+| [getRebinMatrix](gmacsbase.TPL#L10967) | [10967](gmacsbase.TPL#L10967) | [11037](gmacsbase.TPL#L11037) |
+| [calc_stock_recruitment_relationship](gmacsbase.TPL#L11038) | [11038](gmacsbase.TPL#L11038) | [11127](gmacsbase.TPL#L11127) |
+| [get_prior_pdf](gmacsbase.TPL#L11128) | [11128](gmacsbase.TPL#L11128) | [11172](gmacsbase.TPL#L11172) |
+| [calc_prior_densities](gmacsbase.TPL#L11173) | [11173](gmacsbase.TPL#L11173) | [11320](gmacsbase.TPL#L11320) |
+| [catch_likelihood](gmacsbase.TPL#L11321) | [11321](gmacsbase.TPL#L11321) | [11361](gmacsbase.TPL#L11361) |
+| [index_likelihood](gmacsbase.TPL#L11362) | [11362](gmacsbase.TPL#L11362) | [11395](gmacsbase.TPL#L11395) |
+| [length_likelihood](gmacsbase.TPL#L11396) | [11396](gmacsbase.TPL#L11396) | [11489](gmacsbase.TPL#L11489) |
+| [recruitment_likelihood](gmacsbase.TPL#L11490) | [11490](gmacsbase.TPL#L11490) | [11513](gmacsbase.TPL#L11513) |
+| [growth_likelihood](gmacsbase.TPL#L11514) | [11514](gmacsbase.TPL#L11514) | [11599](gmacsbase.TPL#L11599) |
+| [calc_objective_function](gmacsbase.TPL#L11600) | [11600](gmacsbase.TPL#L11600) | [11754](gmacsbase.TPL#L11754) |
+| [simulation_model](gmacsbase.TPL#L11755) | [11755](gmacsbase.TPL#L11755) | [11841](gmacsbase.TPL#L11841) |
+| [calc_ssb](gmacsbase.TPL#L11842) | [11842](gmacsbase.TPL#L11842) | [11878](gmacsbase.TPL#L11878) |
+| [calc_ssba](gmacsbase.TPL#L11879) | [11879](gmacsbase.TPL#L11879) | [11916](gmacsbase.TPL#L11916) |
+| [calc_brute_equilibrium](gmacsbase.TPL#L11917) | [11917](gmacsbase.TPL#L11917) | [12214](gmacsbase.TPL#L12214) |
+| [project_biomass](gmacsbase.TPL#L12215) | [12215](gmacsbase.TPL#L12215) | [12379](gmacsbase.TPL#L12379) |
+| [InitializeData](gmacsbase.TPL#L12380) | [12380](gmacsbase.TPL#L12380) | [12412](gmacsbase.TPL#L12412) |
+| [GenerateData](gmacsbase.TPL#L12413) | [12413](gmacsbase.TPL#L12413) | [12538](gmacsbase.TPL#L12538) |
+| [ApplyMP](gmacsbase.TPL#L12539) | [12539](gmacsbase.TPL#L12539) | [12615](gmacsbase.TPL#L12615) |
+| [project_one_year](gmacsbase.TPL#L12616) | [12616](gmacsbase.TPL#L12616) | [12789](gmacsbase.TPL#L12789) |
+| [calc_predicted_project](gmacsbase.TPL#L12790) | [12790](gmacsbase.TPL#L12790) | [12929](gmacsbase.TPL#L12929) |
+| [compute_OFL_and_ABC](gmacsbase.TPL#L12930) | [12930](gmacsbase.TPL#L12930) | [13031](gmacsbase.TPL#L13031) |
+| [project_biomass_OFL](gmacsbase.TPL#L13032) | [13032](gmacsbase.TPL#L13032) | [13246](gmacsbase.TPL#L13246) |
+| [calc_spr_reference_points2](gmacsbase.TPL#L13247) | [13247](gmacsbase.TPL#L13247) | [13637](gmacsbase.TPL#L13637) |
+| [doProjections_FinalPhase](gmacsbase.TPL#L13638) | [13638](gmacsbase.TPL#L13638) | [13784](gmacsbase.TPL#L13784) |
+| [write_eval](gmacsbase.TPL#L13785) | [13785](gmacsbase.TPL#L13785) | [13919](gmacsbase.TPL#L13919) |
+| [calc_sdreport](gmacsbase.TPL#L13920) | [13920](gmacsbase.TPL#L13920) | [14005](gmacsbase.TPL#L14005) |
+| [get_all_sdnr_MAR](gmacsbase.TPL#L14006) | [14006](gmacsbase.TPL#L14006) | [14030](gmacsbase.TPL#L14030) |
+| [`calc_sdnr_MAR(dvector)`](gmacsbase.TPL#L14031) | [14031](gmacsbase.TPL#L14031) | [14041](gmacsbase.TPL#L14041) |
+| [`calc_sdnr_MAR(dmatrix)`](gmacsbase.TPL#L14042) | [14042](gmacsbase.TPL#L14042) | [14072](gmacsbase.TPL#L14072) |
+| [calc_Francis_weights](gmacsbase.TPL#L14073) | [14073](gmacsbase.TPL#L14073) | [14120](gmacsbase.TPL#L14120) |
+| [strg](gmacsbase.TPL#L14121) | [14121](gmacsbase.TPL#L14121) | [14131](gmacsbase.TPL#L14131) |
+| [`to_str(const dvector&)`](gmacsbase.TPL#L14132) | [14132](gmacsbase.TPL#L14132) | [14151](gmacsbase.TPL#L14151) |
+| [`to_str(const dvar_vector&)`](gmacsbase.TPL#L14152) | [14152](gmacsbase.TPL#L14152) | [14164](gmacsbase.TPL#L14164) |
+| [strg15](gmacsbase.TPL#L14165) | [14165](gmacsbase.TPL#L14165) | [14176](gmacsbase.TPL#L14176) |
+| [`to_str15(const dvector&)`](gmacsbase.TPL#L14177) | [14177](gmacsbase.TPL#L14177) | [14190](gmacsbase.TPL#L14190) |
+| [`to_str15(const dvar_vector&)`](gmacsbase.TPL#L14191) | [14191](gmacsbase.TPL#L14191) | [14196](gmacsbase.TPL#L14196) |
+| [writeRepPar](gmacsbase.TPL#L14197) | [14197](gmacsbase.TPL#L14197) | [14492](gmacsbase.TPL#L14492) |
+| [writeJitterResults](gmacsbase.TPL#L14493) | [14493](gmacsbase.TPL#L14493) | [14517](gmacsbase.TPL#L14517) |
+| [CreateOutput](gmacsbase.TPL#L14518) | [14518](gmacsbase.TPL#L14518) | [16665](gmacsbase.TPL#L16665) |
+| [WriteFiles](gmacsbase.TPL#L16687) | [16687](gmacsbase.TPL#L16687) | [17810](gmacsbase.TPL#L17810) |
+| [save_params](gmacsbase.TPL#L18460) | [18460](gmacsbase.TPL#L18460) | [18468](gmacsbase.TPL#L18468) |
+
+## Literal C++ Definitions
+
+These inline C++ definitions are separate from ADMB `FUNCTION` methods. Signatures are linked at their declaration/definition line; body boundaries were counted from C++ braces.
+
+| Function signature | Body start | Body end |
+|---|---:|---:|
+| `Subst::fleetID(adstring&, adstring_array&)` [L786](gmacsbase.TPL#L786) | [786](gmacsbase.TPL#L786) | [797](gmacsbase.TPL#L797) |
+| `Subst::catchTypeID(adstring&)` [L798](gmacsbase.TPL#L798) | [798](gmacsbase.TPL#L798) | [809](gmacsbase.TPL#L809) |
+| `Subst::unitsTypeID(adstring&)` [L810](gmacsbase.TPL#L810) | [810](gmacsbase.TPL#L810) | [819](gmacsbase.TPL#L819) |
+| `Subst::indexTypeID(adstring&)` [L820](gmacsbase.TPL#L820) | [820](gmacsbase.TPL#L820) | [829](gmacsbase.TPL#L829) |
+| `Subst::sexID(adstring&)` [L830](gmacsbase.TPL#L830) | [830](gmacsbase.TPL#L830) | [842](gmacsbase.TPL#L842) |
+| `Subst::matID(adstring&)` [L843](gmacsbase.TPL#L843) | [843](gmacsbase.TPL#L843) | [853](gmacsbase.TPL#L853) |
+| `Subst::shellID(adstring&)` [L854](gmacsbase.TPL#L854) | [854](gmacsbase.TPL#L854) | [866](gmacsbase.TPL#L866) |
+| `isWindows()` [L18288](gmacsbase.TPL#L18288) | [18288](gmacsbase.TPL#L18288) | [18304](gmacsbase.TPL#L18304) |
+| `GenJitter(int, int, double, double, double, int, double, dvector&, dvector&, dvariable)` [L18308](gmacsbase.TPL#L18308) | [18308](gmacsbase.TPL#L18308) | [18365](gmacsbase.TPL#L18365) |
+| `CheckBounds(const prevariable&, double, double)` [L18369](gmacsbase.TPL#L18369) | [18369](gmacsbase.TPL#L18369) | [18390](gmacsbase.TPL#L18390) |
+| `dnorm(const prevariable&, const prevariable&, const prevariable&)` [L18394](gmacsbase.TPL#L18394) | [18394](gmacsbase.TPL#L18394) | [18405](gmacsbase.TPL#L18405) |
+| `dnorm(const prevariable&, const double&)` [L18408](gmacsbase.TPL#L18408) | [18408](gmacsbase.TPL#L18408) | [18419](gmacsbase.TPL#L18419) |
+| `addToAnystring(adstring&, int, int, int, int)` [L18422](gmacsbase.TPL#L18422) | [18422](gmacsbase.TPL#L18422) | [18457](gmacsbase.TPL#L18457) |
+
+# Recursion Summary
+
+No direct or indirect recursive call cycle was identified among selected-file function definitions. The `CreateOutput` call from `calc_predicted_composition` is reached only from its exceptional NaN branch and is followed by `exit(-1)`; `CreateOutput` does not call back into `calc_predicted_composition`. Repeated procedure/phase evaluations and the bounded equilibrium/projection loops are repetition, not recursion.
+
+# Coverage and Uncertainty
+
+All 80 indexed ADMB definitions are accounted for in the execution trees or `Other Defined Functions`; function overloads are distinguished above, and repeated call sites remain separate. The seven `Subst` methods and six literal global C++ helper functions are also indexed at their definition links. There are no TPL conditional-compilation directives affecting these bodies; the global includes and `isWindows` implementation have OS-specific guards.
+
+Unresolved/nonexpanded targets include ADMB and standard-library calls, selectivity-class virtual methods, `calc_equilibrium`, `CalcStateTAC`, `MyOutput`, and the external management executable. `calc_equilibrium`, `CalcStateTAC`, and `MyOutput` are not defined in the selected TPL; they may be supplied by included or companion templates, but generated-code correspondence was not used to attribute them. The local `dnorm` overloads are expanded only where argument types identify them; the three-argument call in `get_prior_pdf` remains an external overload-resolution uncertainty. Macro calls such as `ECHO`, `REPVEC`, and `REPMAT` are treated as output insertions, not hidden selected-file functions. No model inputs or execution were used, so branches, phase counts, and loop iteration totals are not measured.
