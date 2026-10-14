@@ -45,4 +45,6 @@ gmacsbase.Grant.TPL
 
 gmacsbase_scope_inventory.html
 /gmacsbase_scope_inventory_files/
+gmacsbase_function_structure.html
+/gmacsbase_function_structure_files/
 *.pdf

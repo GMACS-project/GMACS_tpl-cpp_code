@@ -108,7 +108,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
-  !! TheHeader = adstring("## GMACS Version 3.00.01; ** WTS **; Compiled 2026-10-08");
+  !! TheHeader = adstring("## GMACS Version 3.00.01; ** WTS **; Compiled 2026-10-14");
 
  LOCAL_CALCS
   int opt,on;
@@ -288,8 +288,7 @@ DATA_SECTION
   int clv_DoJittering;//--commandline flag to do parameter jittering (-doJtrs)
   int clv_DoPrjs;     //--commandline flag to do projections (-doPrjs)
   int clv_NumPrj;     //--commandline input for -doPrjs, the number of projections
-  int clv_DoRetro;    //--commandline flag to do retrospective analysis (-doRetro)
-  int clv_NumPeels;    //--commandline value for -doRetro, the number of retrospective peels from commandline (overrides value from gmacs.dat file)
+  int clv_NumPeels;   //--commandline value for -doRetro, the number of retrospective peels from commandline (overrides value from gmacs.dat file)
   int clv_DoSims;     //--commandline flag to do simulations (-doSims)
   int clv_NumSims;    //--commandline value for -doSims, the number of simulations
   int clv_DoMSE;      //--commandline flag to do management strategy evaluation (-doMSE)
@@ -305,7 +304,6 @@ DATA_SECTION
   clv_MaxFnCalls = -1;     //--default: no max
   clv_Verbose = -1;        //--default: minimum verbosity
   clv_DoJittering = FALSE; //--default: do not jitter parameters
-  clv_DoRetro = FALSE;     //--default: do not perform retrospective analysis
   clv_DoPrjs  = FALSE;     //--default: do not perform projections
   clv_DoSims  = FALSE;     //--default: do not perform simulations
   clv_NumPeels = -1;       //--dummy value at this point
@@ -394,7 +392,6 @@ DATA_SECTION
 
   /**
   * @brief Command line option to do retrospective analysis.
-  * @param clv_DoRetro Flag indicating whether to perform retrospective analysis.
   * @param clv_NumPeels Number of recent years to remove for the retrospective analysis.
   **/
   if ( (on=option_match(ad_comm::argc,ad_comm::argv, "-doRetro", opt))>-1 )
@@ -403,7 +400,6 @@ DATA_SECTION
     cout << "  +----------------------------------------------------------+\n";
     cout << "  | Running retrospective model with " << ad_comm::argv[on+1] << " recent yrs removed |\n";
     cout << "  +----------------------------------------------------------+\n";
-    clv_DoRetro = TRUE;
     clv_NumPeels = atoi(ad_comm::argv[on+1]);
   }
 
@@ -2267,7 +2263,7 @@ DATA_SECTION
       exit(1);
     }
     echoinput << "End recruitment year (before retro adjustment): " << model_controls(itmp) << "  itmp: " << itmp << endl;
-    model_controls(itmp++) -= numPeels; // (nyr-nyrRetro); //--just subtracting clv_NumPeels, the actual number of retrospective peels
+    model_controls(itmp++) -= numPeels; // (nyr-nyrRetro); //--just subtracting numPeels, the actual number of retrospective peels
     echoinput << "End recruitment year (after retro adjustment): " << model_controls(itmp-1) << "  numPeels: " << numPeels << endl;
     rdv_eyr                 = int(model_controls(itmp-1)); 
     if ( rdv_eyr < rdv_syr ){
@@ -6022,7 +6018,7 @@ PROCEDURE_SECTION
     for (ii=1;ii<=n_deviations_est; ii++) if (deviations_phz(ii) > 0) {Ipnt +=1; ParsOut(Ipnt) = par_devs(ii); }
 
     // AEP need to look at this
-    if (calcRefPts!=0 && clv_NumPeels==0) calc_spr_reference_points2(1);
+    if (calcRefPts!=0 && !doRetro) calc_spr_reference_points2(1);
     if ( verbose >= 3 ) cout << "Ok after calc_spr_reference_points ..." << endl;
     calc_sdreport();
     if ( verbose >= 3 ) cout << "Ok after calc_sdreport ..." << endl;
@@ -9631,7 +9627,8 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
       for ( int o = 1; o <= nshell; o++ ){ 
         int ig = pntr_hmo(h,m,o); 
         //if (i < nyrRetro+1 || (i==nyrRetro & j==1)) {   //--WTS 20261007 TODO: second condition redundant
-        if (i < nyrRetro+1) {   //--WTS 20261008
+        //if (i < nyrRetro+1) {   //--WTS 20261008
+        if (i < nyrRetro+1 || (i==(nyrRetro+1) && j==1)) {   //--WTS 20261014
           nal = d4_N(ig,i,j);
           nal = (unit == 1) ? elem_prod(nal, mean_wt(h,m,i)) : nal;
         } else {
@@ -9685,7 +9682,8 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
           int ig = pntr_hmo(h1,m,o);
           //if (verbose>3) cout << "got here 3" << endl;
           //if (i < nyrRetro+1 || (i==nyrRetro & j==1)) {   //--WTS 20261007 TODO: second condition redundant
-          if (i < nyrRetro+1) {   //--WTS 20261008
+          //if (i < nyrRetro+1) {   //--WTS 20261008
+          if (i < nyrRetro+1 || (i==(nyrRetro+1) && j==1)) {   //--WTS 20261014
             nal = d4_N(ig,i,j);
             nal = (unit == 1) ? elem_prod(nal, mean_wt(h1,m,i)) : nal;
           } else {
@@ -10003,8 +10001,8 @@ FUNCTION calc_predicted_capture_abdbio
               int ig = pntr_hmo(h,m,o); 
               nal    = d4_N(ig,i,j);                  //--numbers at size
               bal    = elem_prod(nal, mean_wt(h,m,i));//--convert to biomass
+              if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10; //--consistent with other uses (WTS 20261014)
               if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F){
-                tempZ1 = Z(h,m,i,j)+1.0e-10; //Z(1,nsex,1,nmature,syr,nyrRetro,1,nseason,1,nclass);
                 if (debug) cout << m << " " << o << " " << "tempZ1    = " << tempZ1 << endl;
                 if (debug) cout << m << " " << o << " " << "nal       = " << nal << endl;
                 tempVec = elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
@@ -10372,8 +10370,7 @@ FUNCTION dvar_vector calc_predicted_comp_one(const int i, const int j, const int
     //if (verbose>3) cout <<"----catch comp: sex-specific"<< endl;
     // if (season_type(j) == INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
     // tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
-    if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10;
-
+    if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10; //--consistent with other uses
     if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F) {
       tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
     }
@@ -12019,10 +12016,10 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // Vulnerability
             _xi += xi1;
           }
-          sel /= float(YrRefSel2-YrRefSel1+1);
-          ret /= float(YrRefSel2-YrRefSel1+1);
-          vul /= float(YrRefSel2-YrRefSel1+1);
-          _xi /= float(YrRefSel2-YrRefSel1+1);
+          sel /= float(YrRefSel2-YrRefSel1+1);  //--average selectivity
+          ret /= float(YrRefSel2-YrRefSel1+1);  //--average retention
+          vul /= float(YrRefSel2-YrRefSel1+1);  //--average vulnerability
+          _xi /= float(YrRefSel2-YrRefSel1+1);  //--average discard mortality rate
           FF1(h,j) += _ft(k,h,j) * vul;
           FF2(h,j) += _ft(k,h,j) * sel;
           FF3(h,j) += _ft(k,h,j) * elem_prod(sel, ret + (1.0 - ret) * _xi);
@@ -12713,10 +12710,10 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // will be averaged vulnerability
             _xi += xi1;                                                             // will be averaged discard mortality rate
           }
-          sel /= float(YrRefSel2Use-YrRefSel1Use+1);
-          ret /= float(YrRefSel2Use-YrRefSel1Use+1);
-          vul /= float(YrRefSel2Use-YrRefSel1Use+1);
-          _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
+          sel /= float(YrRefSel2Use-YrRefSel1Use+1); //--average selectivity
+          ret /= float(YrRefSel2Use-YrRefSel1Use+1); //--average retention
+          vul /= float(YrRefSel2Use-YrRefSel1Use+1); //--average vulnerability
+          _xi /= float(YrRefSel2Use-YrRefSel1Use+1); //--average discard mortality rate
           _F1(h,j) += _ft(k,h,j) * vul;
           _F2(h,j) += _ft(k,h,j) * sel;
           _F3(h,j) += _ft(k,h,j) * elem_prod(sel, ret + (1.0 - ret) * _xi);
@@ -12868,11 +12865,11 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);                      // Vulnerability
             _xi += xi1;                                                             // discard mortality
           }
-          sel /= float(YrRefSel2Use-YrRefSel1Use+1);
-          ret /= float(YrRefSel2Use-YrRefSel1Use+1);
-          vul /= float(YrRefSel2Use-YrRefSel1Use+1);
-          _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
-          selret = elem_prod(sel,ret);
+          sel /= float(YrRefSel2Use-YrRefSel1Use+1); //--average selectivity
+          ret /= float(YrRefSel2Use-YrRefSel1Use+1); //--average retention
+          vul /= float(YrRefSel2Use-YrRefSel1Use+1); //--average vulnerability
+          _xi /= float(YrRefSel2Use-YrRefSel1Use+1); //--average discard mortality rate
+          selret = elem_prod(sel,ret);               //--average selectivity * average retention
 
           if (season_type(j)==INSTANT_F)    tempZ1 = _Z2(h,m,j); 
           if (season_type(j)==CONTINUOUS_F) tempZ1 = _Z1(h,m,j);// consistent with previous??
@@ -12972,7 +12969,8 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
 
   // Set F to Fmsy (by fleet)
   log_fimpbarOFL = log(sd_fmsy);
-  Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2, Rbar, 1,d4_Npass);
+  Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, 
+                              YrRefSel1, YrRefSel2, Rbar, 1,d4_Npass);
   
   if (ssb_pass > Bmsy){
     FF = 1.0;  //--WTS CODING: why bother seting this--it's never used
@@ -12980,7 +12978,8 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
     // It is not above Bmsy so check if F=0 leads to a stock above Beta*Bmsy
     FF = 1.0e-10;
     for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
-    Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2,spr_rbar,1,d4_Npass);
+    Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, 
+                                YrRefSel1, YrRefSel2,spr_rbar,1,d4_Npass);
     if ( ssb_pass <= OFLbeta * Bmsy){
       FF = 1.0e-10;  //--WTS CODING: why bother seting this--it's never used
     } else {
@@ -12993,7 +12992,8 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
           FF = Fmult2;
         if (FF < 0.00001) FF = 0.00001;
         for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
-        Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, YrRefSel1, YrRefSel2,spr_rbar,1, d4_Npass);
+        Bproj = project_biomass_OFL(iyr-nyrRetro, YrRefGrow, YrRefM1, YrRefM2, YrRefSea1, YrRefSea2, 
+                                    YrRefSel1, YrRefSel2,spr_rbar,1, d4_Npass);
       } //--iloop
     } //--ssb_pass > OFLbeta * Bmsy
   } //--ssb_pass <= Bmsy
@@ -13140,10 +13140,10 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
             vul += elem_prod(sel1, ret1 + (1.0 - ret1) * xi1);            // will be average vulnerability
             _xi += xi1;                                                   // will be average discard mortality
           }
-          sel /= float(YrRefSel2Use-YrRefSel1Use+1);
-          ret /= float(YrRefSel2Use-YrRefSel1Use+1);
-          vul /= float(YrRefSel2Use-YrRefSel1Use+1);
-          _xi /= float(YrRefSel2Use-YrRefSel1Use+1);
+          sel /= float(YrRefSel2Use-YrRefSel1Use+1); //--average selectivity
+          ret /= float(YrRefSel2Use-YrRefSel1Use+1); //--average retention
+          vul /= float(YrRefSel2Use-YrRefSel1Use+1); //--average vulnerability
+          _xi /= float(YrRefSel2Use-YrRefSel1Use+1); //--average discard mortality rate
           _F1(h,j) += _ft(k,h,j) * vul;
           _F2(h,j) += _ft(k,h,j) * sel;
           _F3(h,j) += _ft(k,h,j) * elem_prod(sel, ret + (1.0 - ret) * _xi); //like TCSAM02 
@@ -13271,7 +13271,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
   **/
 FUNCTION void calc_spr_reference_points2(const int DoProfile)
   int verbose1;
-  verbose1 = 1;  //--WTS CODING: Added initialization for verbose1 to control debug output. Set to verbose after testing.
+  verbose1 = (verbose>3);  //--WTS CODING: Added initialization for verbose1 to control debug output. Set to verbose after testing.
   int iproj;
   dvar_matrix equilibrium_numbers(1,n_grp,1,nclass);
   dvariable FF;
@@ -13309,9 +13309,9 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   // Find the average F by fleet over the last spr_aveF_nyr-spr_aveF_syr+1 years
   for (int k = 1; k <= nfleet; k++){
     MeanF = 0; NF = 0;
-    cout << "Calculating mean F for fleet " << k << " from year " << spr_aveF_syr << " to " << spr_aveF_nyr << endl;
+    if (verbose1) cout << "Calculating mean F for fleet " << k << " from year " << spr_aveF_syr << " to " << spr_aveF_nyr << endl;
     for (int i = spr_aveF_syr; i <= spr_aveF_nyr; i++) { 
-      cout << "k=" << k << " i=" << i << " fout=" << fout(k,i) << endl;
+      if (verbose1) cout << "k=" << k << " i=" << i << " fout=" << fout(k,i) << endl;
       MeanF += fout(k,i); 
       NF += 1; 
     }
@@ -13435,7 +13435,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       spr_fofl = FF/Fmsy;
       spr_depl = ssb_pass / Bmsy;
     } else {
-      // Adjust F if below target. Since it's a function biomass, it needs to be interated
+      // Adjust F if below target. Since it's a function biomass, it needs to be iterated
       for( int iloop = 1; iloop <= 10; iloop++) {
         Fmult2 = Fmsy * (ssb_pass / Bmsy - OFLalpha) / (1 - OFLalpha);
         if (Fmult2 < 0.1*FF)
@@ -13470,9 +13470,9 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
  
   // Continue only calc_MSY is YES
   if (Calc_MSY == YES && (mey_SRR==RICKER || mey_SRR==BEVHOLT)){
-
+    if (verbose1) cout << "Calculating MSY reference points" << endl;
     // Find Steepness and R0
-    cout << "Computing steepness" << endl;
+    if (verbose1) cout << "Computing steepness" << endl;
     Eqn_basis = STOCKRECREC;
     log_fimpbar = log(sd_fmsy);
 
@@ -13578,7 +13578,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 
     log_fimpbar = log(sd_fmsy);
     equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
-    cout << "Final Yield" << ssb_pass/ssbF0 << " " << ssb_pass/spr_bmsy << " " << exp(log_fimpbar) << " " << oflret_pass << " " << Steepness << " " << Deriv << " " << ssbF0 << " " << spr_bmsy << endl;
+    if (verbose1) cout << "Final Yield" << ssb_pass/ssbF0 << " " << ssb_pass/spr_bmsy << " " << exp(log_fimpbar) << " " << oflret_pass << " " << Steepness << " " << Deriv << " " << ssbF0 << " " << spr_bmsy << endl;
 
     if (Compute_yield_prj==YES && DoProfile==YES){
       if (verbose>2) cout << "Starting yield projection calculations" << endl;
@@ -13593,16 +13593,16 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
         cout << ii << " " << spr_yield(ii) << endl;
       } //--ii
     }
-    if (verbose>2) cout << "Finished yield projection calculations" << endl;
+    if (verbose1) cout << "Finished MSY calculations" << endl;
     cout << "Exiting after MSY calculations" << endl;
     echoinput << "Exiting after MSY calculations" << endl;
     exit(1);  //--WTS: why exit here?!!
   }  //--(Calc_MSY == YES && (mey_SRR==RICKER || mey_SRR==BEVHOLT))
-  cout<<"got here 18"<<endl;
+  if (verbose1) cout<<"got here 18"<<endl;
     
   // Solve for FMEY and hence the Fmey proxy
   if (Calc_MEY==1){
-    if (verbose>2) cout << "Starting MEY calculations" << endl;
+    if (verbose1) cout << "Starting MEY calculations" << endl;
     // Find Fmey when adjusting the Fs for some fleets
     Eqn_basis = STOCKRECREC;
     for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log(Fave(k));
@@ -13650,7 +13650,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
    
     Bmey_out = ssb_pass;
     Fmey_out = Fmult;
-    if (verbose>2) cout << "Finished MEY calculations" << endl;
+    if (verbose1) cout << "Finished MEY calculations" << endl;
   } // Calculate FMEY
 //--calc_spr_reference_points2
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -16566,7 +16566,7 @@ FUNCTION CreateOutput
      OutFile1 << ">EOM<" << endl;
 
     // calculate the reference points
-    if (calcRefPts!=0 && clv_NumPeels==0) calc_spr_reference_points2(1);
+    if (calcRefPts!=0 && !doRetro) calc_spr_reference_points2(1); //--TODO: why not do this during retrospectives as well?
 
     OutFile1 << "#----------------------------" << endl;
     OutFile1 << "#- Reference points and OFL -" << endl;
@@ -17842,7 +17842,7 @@ RUNTIME_SECTION
 GLOBALS_SECTION
   /**
    * @file gmacs.cpp
-   * @authors Steve Martell, Jim Ianelli, D'Arcy Webber, William Stockhausen
+   * @authors Steve Martell, Jim Ianelli, D'Arcy Webber, William Stockhausen, Andre Punt
   **/
   #include <admodel.h>
   #include <time.h>
@@ -18961,8 +18961,12 @@ FINAL_SECTION
 //                    "clv_"). Revised gmacs_in files to reflect changes. Need to revise gmacs_out files accordingly. Need to revise array dimensions 
 //                    to be consistent with retrospective peels, projections, and MSEs.
 // 2026-10-05 ** WTS. Added output to gmacs_out.prj file. Renamed some spr-related, projection-related, mey-related, and OFL-related variables
-//                    for clarity: nproj->numPrj, ?? 
+//                    for clarity: nproj->numPrj, most spr-related variables start with spr_, most proj-related variables start with prj_, 
+//                    most mey-related variables start with mey_.
 //                    MODIFIED personal.TPL to reflect these changes (only HCRpars to hcr_pars was necessary for the version I have).
+// 2026-10-13 ** WTS. Updated compile date to 2026-10-13. Mainly minor comments and formatting adjustments.
+// 2026-10-14 ** WTS. Updated compile date to 2026-10-14. Revised (two places) where numbers-at-length in predicted_catch_one_year are pulled from 
+//                    (d4_N or numbers_proj_gytl) based on year and season to allow numbers to be pulled from d4_N when iy==nyrRetro+1 and season==1.
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 
