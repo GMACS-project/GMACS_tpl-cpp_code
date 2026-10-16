@@ -1,0 +1,271 @@
+---
+title: "Code notes"
+format:
+  html: 
+    theme: cosmo
+    toc: true
+    html-math-method: mathjax
+    code-block-bg: "#86CDFE"
+---
+
+## "Global" arrays
+
+"Global" arrays are defined in either the DATA_SECTION or the PARAMETER_SECTION as "normal" TPL definitions (i.e., outside LOCAL_CALCS or !! blocks). Technically, they are member variables of the `model_data` and `model_parameters` C++ classes the templated code is converted to in the `tpl2cpp` step in creating an executable model.
+
+### Numbers-at-length "global" arrays
+
+  * `d4_N`
+  * `numbers_proj_gytl`
+    - in `project_biomass`
+      - initialized: numbers_proj_gytl.initialize();
+      - year 1, season 1 set: numbers_proj_gytl(ig)(1)(1) = d4_N(ig)(nyrRetro+1)(1);
+    - in `project_one_year`
+      - updated through 
+        - if (Term_molt==0) for (int j = 1; j <= nseason; j++) `update_population_numbers_at_length_season`(i,j,Case=3)
+        - or  (Term_molt>0) for (int j = 1; j <= nseason; j++) `update_population_numbers_at_length_season_new`(i,j,Case=3);
+      - numbers_proj_gytl(ig,i,season_ssb) used to set `ssb_pass`
+      - numbers_proj_gytl(ig,i,j) used to set `d4_Npass(ig,j)`, then compute `catch_pass` = calc_predicted_project(...,d4_Npass,...)
+    - in `project_biomass_OFL`
+      - initialized: numbers_proj_gytl.initialize();
+      - year 1, season 1 set: for ( int ig = 1; ig <= n_grp; ig++ ) numbers_proj_gytl(ig)(iyr)(1) = d4_Npass(ig);
+      - Updated setting Case=3 and using
+        - if (Term_molt==0) for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season(i,j,Case)
+        - or (Term_molt>0)  for (int j = 1; j <= nseason; j++) update_population_numbers_at_length_season_new(i,j,Case);
+
+### Mortality-related "global" arrays
+
+## Orders of calculations
+
+This section provides a simplified guide to the order of calculations within various functions in the code.
+
+### Within a season [#sec-update_population_numbers_at_length_season]
+  * `update_population_numbers_at_length_season(_new)`
+     - 0th: start with nal(i,j), where i = year, j = season
+     - 1st: mortality is applied
+     - 2nd: if (season==season_growth) 
+       - 1st: molting and growth are applied
+       - 2nd: maturity is determined for crab that grew
+    - 3rd: if (season==season_rec), add in recruitment
+    - 4th: update numbers at start of "next" timestep
+      - nal(i,j+1) if j $\ne$ numSeasons
+      - nal(i+1,1) if j = numSeasons
+
+## Calculating SPR reference points {#sec-calc_spr_reference_points2}
+  * `calc_spr_reference_points2`
+    - Tier 3 calculations to determine $F_{MSY} = F_{35\%}$ and $B_{MSY} = B_{35\%}$
+      - calculate mean recruitment
+      - calculate average $F$'s by fleet
+      - calculate equilibrium numbers under $F$=0 (`equilibrium_numbers_F0` = `calc_brute_equilibrium`(`season_ssb`,...))
+      - calculate equilibrium biomass under $F$=0 ($B_0$ = `equilibrium_biomass_F0`(ig))
+      - solve for $F_{35\%}$; i.e., the $F$ that yields $B = 0.35 \cdot B_0$
+        - calling `equilibrium_numbers` = `calc_brute_equilibrium`(**1**,...) multiple times in 10 loops to iterate convergence
+      - calculate equilibrium numbers and biomass under $F_{35\%}$ using 
+        - `equilibrium_numbers_FM` = `calc_brute_equilibrium`(`season_ssb`,...)  
+        - NOTE: not consistent with $F_{35\%}$ calculation ***uness*** `season_ssb` = 1
+    - Tier 4 calculations to determine $B_{MSY} = average(B)$
+      - `Bmsy` = mean(`calc_ssb`()(spr_syr,spr_nyr))
+      - `Fmsy` = `OFLgamma` * `M_pars_est`(1)
+    - determine the OFL
+      - store $F_{MSY}$ (k = 1:nfleets)
+        - `sd_fmsy`(k) = mfexp(log_fimpbar(k));
+        - `ParsOut`(NRefPars+6+k) = sd_fmsy(k);
+      - store the N from the last year
+        - `d4_Npass`(ig) = `d4_N`(ig)(nyrRetro+1)(1); <-number-at-length at start of season 1, "last" model year + 1
+      - check if $B \ge B_{MSY}$
+        - `Bproj` = `project_biomass_OFL`(**1**,...,`iproj`=1,`d4_Npass`)
+        - if $\frac{Bproj}{B_{MSY}} \ge 1$ then $F_{OFL} = F_{MSY}$
+          - set:
+            - `spr_fofl` = 1.0;                  multiplier on $F_{MSY}$
+            - `spr_depl` = s`sb_pass` / `Bmsy`;  depletion
+        - else
+          - check if biomass projected under directed F ~ 0.
+            - `FF` = 1.0e-10; for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) `log_fimpbarOFL`(k) = log(`sd_fmsy`(k)*`FF`);
+            - `Bproj` = `project_biomass_OFL`(**1**,...`iproj`=1,`d4_Npass`) calculates `ssb_pass` (projected MMB under `FF`)
+            - if (`ssb_pass` < `OFLbeta` * `Bmsy`), then store 
+              - `spr_fofl` = `FF`/`Fmsy`;          multiplier on $F_{MSY}$ for $F_OFL$
+              - `spr_depl` = `ssb_pass` / `Bmsy`;  depletion
+            - otherwise iterate over F multipliers (FF's)'s to find F that yields consistent B using 
+              - `Bproj` = `project_biomass_OFL`(**1**,...,`iproj`=1,`d4_Npass`) and save the final values
+              - `spr_fofl` = `FF`/`Fmsy`;          multiplier on $F_{MSY}$ for $F_OFL$
+              - `spr_depl` = `ssb_pass` / `Bmsy`;  depletion
+        - save OFL-associated values
+          - `sd_fofl`(k) = mfexp(`log_fimpbarOFL`(k));  non-directed F's
+          - `spr_cofl` = `ofltot_pass`;                 total catch OFL
+          - `spr_cofl_ret` = `oflret_pass`;             retained catch OFL
+          - if (outRefPts==YES) for (int k=1;k<=nfleet;k++) `ParsOut`(NRefPars+6+k+2*nfleet) = `OFLoutpass`(k+2);
+    - skipping MSY and MEY sections
+
+## Projecting biomass to calculate the OFL {#sec-project_biomass_OFL}
+
+  * `project_biomass_OFL`(int `iyr`,...,int `iproj`, dvar_matrix `d4_Npass`)
+     -  copy N from the end of the assessment into the first projection year
+       - `numbers_proj_gytl`.initialize();
+       - for (int ig = 1; ig <= n_grp; ig++) `numbers_proj_gyt`l(ig)(iyr)(1) = `d4_Npass`(ig);
+    - set `Case` to 3 to use `numbers_proj_gytl` for numbers-at-length in `update_population_numbers_at_length_season(_new)`
+      - if (Term_molt==0) for (int j = 1; j <= nseason; j++) `update_population_numbers_at_length_season`(i,j,Case);
+      - if (Term_molt==1) for (int j = 1; j <= nseason; j++) `update_population_numbers_at_length_season_new`(i,j,Case);
+      - updates `numbers_proj_gytl`(i,j+1) if j < nseason or `numbers_proj_gytl`(i+1,1) otherwise
+      - `ssb_pass` = `ssb`(iyr+iproj-1);
+      - calculate predicted catch at $F = F_{OFL}$
+        - loop j over nseasons, loop ig over groups to set numbers-at-length `d4_Npass_2`
+          - `d4_Npass_2`(ig,j) = `numbers_proj_gytl`(ig)(iyr+iproj-1)(j);
+        - `out` = `calc_predicted_project`(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
+        - `oflret_pass` = `out`(1); retained catch at $F_{OFL}$
+        - `ofltot_pass` = `out`(2); total catch at $F_{OFL}$
+
+## Predicted catch mortality
+
+  * `calc_projected_catch_one_year`(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3); (was `calc_predicted_project` prior to 3.00.01)
+    - calculates average selectivity, retention, vulnerability, and discard mortaility rates over `YrRefSel1Use` to `YrRefSel2Use`
+    - for OFL calculation (called by `project_biomass_OFL` [@sec-project_biomass_OFL])
+      - `d4_Npass_2`(ig,j) = `numbers_proj_gytl`(ig)(iyr+iproj-1)(j);
+      - _ft(k,h,j) = mfexp(log_fimpbarOFL(k) + (h==2)*log_foff(k));
+        - log_fimpbarOFL = log(sd_fmsy);
+        - log_fimpbarOFL(k') = log(sd_fmsy(k')*FF);
+          
+      - _Z1(h,m,j) = Mprop * Mbar + _F1(h,j);
+      - _Z2(h,m,j) = Mprop * Mbar + _F2(h,j);
+      - _Z3(h,m,j) = Mprop * Mbar + _F3(h,j);
+      - where 
+        - _F1(h,j) += _ft(k,h,j) * vul;
+        - _F2(h,j) += _ft(k,h,j) * sel;
+        - _F3(h,j) += _ft(k,h,j) * elem_prod(sel, ret + (1.0 - ret) * _xi);
+    - sets total **removal** (fishery catch + natural mortality) rates by fishing mortality type
+      - if (season_type(j)==INSTANT_F)    tempZ1 = `_Z2`(h,m,j); // 3.00.01: now consistent with other uses (prior to 3.00.01 was tempZ1 = `_Z1`)
+      - if (season_type(j)==CONTINUOUS_F) tempZ1 = `_Z1`(h,m,j); // 3.00.01: now consistent with other uses (prior to 3.00.01 was tempZ1 = `_Z2`)
+      - if (season_type(j)==TCSAM02_F)    tempZ1 = `_Z3`(h,m,j); // TCSAM02-like
+    - and calculates 
+    - returns vector of catch mortality `out` (looping over k,h,j)
+      - out(1) is retained catch mortality
+        - out(1) += sum(elem_prod(nal1, elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1)));
+      - out(2) is total catch mortality
+        - out(2) += sum(nal1 * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);)
+      - out(2+0*nfleet+k) is fleet-specific total catch mortality in biomass units
+        - out(2+0*nfleet+k) += sum(nal1 * elem_div(elem_prod(_ft(k,h,j) * vul, 1.0 - mfexp(-tempZ1)), tempZ1);)
+      - out(4+1*nfleet+k) is fleet-specific retained mortality in biomass units
+        - out(4+1*nfleet+k) += sum(elem_prod(nal1, elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1)));
+      - out(4+2*nfleet+k) is fleet-specific total fishery mortality as numbers (using nal2 instead of nal1)
+      - out(4+3*nfleet+k) is fleet-specific retained fishery mortality as numbers (using nal2 instead of nal1)
+
+## predicted_catch_one_year
+
+  * dvar_vector `predicted_catch_one_year`(const int i, const int j, const int k, const int h, const int type, const int unit, const int kk, dvariable effort, dvariable cobs, const int purpose)
+
+```{r, eval=FALSE}
+        if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);#--consistent with other sections
+              
+        // predict catch
+        tmp_ft = ft(k,h,i,j);                                       /// > Extract F
+        if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F|| season_type(j)==TCSAM02_F) {
+          pre_catch += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+          if (cobs == 0 && effort > 0.0)
+          if (doTCSAM02EffExp)
+            obs_catch_effort += nal * elem_div(elem_prod(art_q_catch(kk,h) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+          else
+            obs_catch_effort += nal * elem_div(elem_prod(mfexp(log_q_catch(kk)) * effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+        }
+```
+
+## calc_predicted_catch
+
+  * relating catch to effort
+```{r, eval=FALSE}
+  if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);  #--consistent with other sections
+  if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F|| season_type(j)==TCSAM02_F){
+    totalnalobs += nal * elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+    totalnalpre += nal * elem_div(elem_prod(effort * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+  }
+```
+
+  * predictions for catch mortality
+```{r, eval=FALSE}
+    tmp_ft = ft(k,h,i,j);
+    if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j);#--now consistent w/ previous usage (WTS 2025-06-10)
+    if (tmp_ft > 0){
+      // Retained catch mortality
+      histcat(1,i) += nal * elem_div(elem_prod(tmp_ft * selret, 1.0 - mfexp(-tempZ1)), tempZ1);
+      // Total dead (retained + discard catch mortality)
+      histcat(2,i) += nal * elem_div(elem_prod(tmp_ft * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
+      // fleet-specific dead crab
+      histcat(2+k,i) += nal * elem_div(elem_prod(tmp_ft * vul, 1.0 - mfexp(-tempZ1)), tempZ1);
+    } // -- tmp_ft
+```
+
+## calc_predicted_capture_abdbio
+
+```{r, eval=FALSE}
+  if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,m,i,j); else tempZ1 = Z(h,m,i,j)+1.0e-10; #--consistent with other uses (WTS 20261014)
+  if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F){
+    if (debug) cout << m << " " << o << " " << "tempZ1    = " << tempZ1 << endl;
+    if (debug) cout << m << " " << o << " " << "nal       = " << nal << endl;
+    tempVec = elem_div(elem_prod(tmp_ft * sel, 1.0 - mfexp(-tempZ1)), tempZ1);
+    if (debug) cout << m << " " << o << " " << "tmpVec = " << tempVec << endl;
+    pre_capabd(i,k,h) += elem_prod(nal,tempVec);#--size-specific vector 
+    pre_capbio(i,k,h) += elem_prod(bal,tempVec);#--size-specific vector 
+    if (debug) cout << m << " " << o << " " << "pre_capabd = " << pre_capabd(i,k,h) << endl;
+  }
+```
+
+## calc_predicted_rel_abund_one
+
+  * dvariable `calc_predicted_rel_abund_one`(const int i, const int q_id, const int j, const int g, const int h1,const int m1, const int unit, const int rai_id, const int jj)
+
+```{r, eval=FALSE}
+  if (cpue_time(jj) > 0){
+    if (season_type(j)==INSTANT_F) 
+      tempZ1 = Z2(h,1,i,j)*cpue_time(jj); #--consistent with other sections
+    else 
+      tempZ1 = Z(h,1,i,j)*cpue_time(jj)+1.0e-10;
+  }
+  if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F) {
+    if (SurveyType(rai_id)==1) V = sum(elem_prod(elem_prod(nal,sel),mfexp(-tempZ1)));
+    if (SurveyType(rai_id)==2) V = sum(elem_prod(elem_prod(elem_prod(nal,sel), ret),mfexp(-tempZ1)));
+  }
+```
+
+## calc_predicted_comp_one
+
+  * dvar_vector `calc_predicted_comp_one`(const int i, const int j, const int k,  const int h, const int type, const int shell, const int bmature, const int ii)
+
+```{r,eval=FALSE}
+    if (season_type(j)==INSTANT_F) tempZ1 = Z2(h,1,i,j); else tempZ1 = Z(h,1,i,j)+1.0e-10; #--consistent with other sections
+    if (season_type(j)==INSTANT_F || season_type(j)==CONTINUOUS_F || season_type(j)==TCSAM02_F) {
+      tempZ1 = elem_div(1.0 - mfexp(-tempZ1), tempZ1);
+    }
+```
+
+## calc_projected_catch_one_year (was calc_predicted_project prior to 3.00.01)
+
+  * dvar_vector `calc_projected_catch_one_year`(const int i, const int YrRefGrow, const int YrRefSel1, const int YrRefSel2,dvar3_array d4_Npass, dvar3_array _ft, dvar4_array _Z1, dvar4_array _Z2, dvar4_array _Z3)
+
+```{r,eval=FALSE}
+  if (season_type(j)==INSTANT_F)    tempZ1 = _Z2(h,m,j); #--3.00.01: consistent with other uses (2.20.45b and earlier were tempZ1 = _Z1)
+  if (season_type(j)==CONTINUOUS_F) tempZ1 = _Z1(h,m,j); #--3.00.01: consistent with other uses (2.20.45b and earlier were tempZ1 = _Z2)
+  if (season_type(j)==TCSAM02_F)    tempZ1 = _Z3(h,m,j); #--consistent with other uses
+```
+
+```{r,eval=FALSE}
+  if (_ft(k,h,j) > 0){
+    ret_catch_at_length = elem_prod(nal1, elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1));// Total retained catch biomass
+    out(1)        += sum(ret_catch_at_length);
+    out(3+nfleet) += sum(elem_prod(ret_catch_at_length, mey_prices));
+    if (season_type(j)!=TCSAM02_F){
+      out(2)            += nal1 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
+      out(2+k)          += nal1 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as biomass
+      out(4+1*nfleet+k) += nal1 * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as biomass
+      out(4+2*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as numbers
+      out(4+3*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained fishery mortality as numbers
+    } else {
+      // TCSAM02-like
+      dvar_vector new_vul = elem_prod(sel, ret + _xi * (1-ret));
+      out(2)            += nal1 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
+      out(2+k)          += nal1 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as biomass
+      out(4+1*nfleet+k) += nal1 * elem_div(elem_prod(_ft(k,h,j) * selret,  1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as biomass WTS 20261014: corrected from nal2 to nal1
+      out(4+2*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as numbers
+      out(4+3*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * selret,  1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as numbers
+    }
+  }
+```
+
+
+

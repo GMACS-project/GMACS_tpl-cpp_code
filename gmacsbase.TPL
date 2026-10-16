@@ -78,7 +78,7 @@
 // Label 500: calc_spr_reference_points2
 // Label 501: calc_brute_equilibrium
 // Label 502: project_biomass_OFL
-// Label 503: calc_predicted_project
+// Label 503: calc_projected_catch_one_year
 // Label 504: project_biomass
 // Label 505: compute_OFL_and_ABC
 // Label 506: project_one_year
@@ -108,7 +108,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
-  !! TheHeader = adstring("## GMACS Version 3.00.01; ** WTS **; Compiled 2026-10-14");
+  !! TheHeader = adstring("## GMACS Version 3.00.01; ** WTS **; Compiled 2026-10-15");
 
  LOCAL_CALCS
   int opt,on;
@@ -8547,7 +8547,7 @@ FUNCTION dvar_vector getNumbersAtLengthByCase(const int ig, const int i, const i
   if (verbose>4) cout<<"#--Finished getNumbersAtLengthByCase(ig,i,j,Case)"<<endl;
   RETURN_ARRAYS_DECREMENT();
   return n_out;
-
+  //--getNumbersAtLengthByCase
 
 // --------------------------------------------------------------------------------------------------------------------------------------
   /**
@@ -9622,7 +9622,7 @@ FUNCTION dvar_vector predicted_catch_one_year(const int i, const int j, const in
         break;
     }
     // sum of nals
-    nal.initialize();                                                ///> Computer numbers
+    nal.initialize();                                                ///> Compute numbers-at-length
     for ( int m = 1; m <= nmature; m++ ){
       for ( int o = 1; o <= nshell; o++ ){ 
         int ig = pntr_hmo(h,m,o); 
@@ -9917,7 +9917,7 @@ FUNCTION calc_predicted_catch
 // ----------------------------------------------------------------------------------------------
 
   /**
-   * @brief Calculate predicted catch for a combination of years
+   * @brief Calculate predicted catch for a combination of years (NEVER CALLED)
    * @author Andre Punt
    * @details The function uses the Baranov catch equation to predict the retained, discarded, or total catch
    * year i; season j; sex h; gear k; type (1=retained;2=discards;3=total); unit (1=mass;2=numbers)
@@ -9964,6 +9964,7 @@ FUNCTION dvariable calc_predicted_catch_det(const int i, const int j, const int 
   }
   RETURN_ARRAYS_DECREMENT();
   return(out);
+  //--calc_predicted_catch_det
 
 // ----------------------------------------------------------------------------------------------
 
@@ -12205,7 +12206,7 @@ FUNCTION dvar_matrix calc_brute_equilibrium(const int ssn, const int YrRefSexR1,
   for ( int j = 1; j <= nseason; j++ )
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass(ig,j) = d4_N_init(ig)(ninit-1)(j);
-  out = calc_predicted_project(nyrRetro, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass, _ft, ZZ1, ZZ2, ZZ3);
+  out = calc_projected_catch_one_year(nyrRetro, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass, _ft, ZZ1, ZZ2, ZZ3);
   catch_pass_eqn = out;
   oflret_pass = out(1); ofltot_pass = out(2);
   //cout << oflret_pass << endl;
@@ -12742,7 +12743,7 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
         _Z1(h,m,j) = Mprop * Mbar + _F1(h,j);
         _Z2(h,m,j) = Mprop * Mbar + _F2(h,j);
         _Z3(h,m,j) = Mprop * Mbar + _F3(h,j);
-        Z(h,m,nyrRetro+i,j) = _Z1(h,m,j);
+        Z(h,m,nyrRetro+i,j)  = _Z1(h,m,j);
         Z2(h,m,nyrRetro+i,j) = _Z2(h,m,j);
         if (season_type(j) == INSTANT_F)    for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = 1.0-_Z1(h,m,j,l)/_Z2(h,m,j,l)*(1.0-mfexp(-_Z2(h,m,j,l)));
         if (season_type(j) == CONTINUOUS_F) for ( int l = 1; l <= nclass; l++ ) SS_pass(h,m,j)(l,l) = mfexp(-_Z1(h,m,j,l));
@@ -12788,13 +12789,13 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
   for ( int j = 1; j <= nseason; j++ )
     for ( int ig = 1; ig <= n_grp; ig++ )
       d4_Npass(ig,j) = numbers_proj_gytl(ig,i,j);
-  catch_pass = calc_predicted_project(i, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass, _ft, _Z1, _Z2, _Z3);
+  catch_pass = calc_projected_catch_one_year(i, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass, _ft, _Z1, _Z2, _Z3);
 //--project_one_year
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------------------------------------------------------------
 
-// Label 503: calc_predicted_project
+// Label 503: calc_projected_catch_one_year
   /**
   * @brief Calculates predicted values of fishery catch mortality as biomass for the projection. 
   * 
@@ -12809,7 +12810,7 @@ FUNCTION void project_one_year(const int i, const int iproj, const int YrRefGrow
   * @param _Z3 4D array of total mortality for TCSAM02-like fisheries.
   * @return dvar_vector A vector of projected fishery mortality as biomass for the projection.
   **/
-FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, const int YrRefSel1, const int YrRefSel2,
+FUNCTION dvar_vector calc_projected_catch_one_year(const int i, const int YrRefGrow, const int YrRefSel1, const int YrRefSel2,
                                             dvar3_array d4_Npass, dvar3_array _ft, dvar4_array _Z1, dvar4_array _Z2, dvar4_array _Z3)
   RETURN_ARRAYS_INCREMENT();
   
@@ -12853,6 +12854,8 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
         for ( int o = 1; o <= nshell; o++ ){ int ig = pntr_hmo(h,m,o); nal += d4_Npass(ig)(j); }
         nal1 = elem_prod(nal, mean_wt(h,m)(abs(YrRefGrow))); //--biomass!!
         nal2 = nal;
+        if (verbose>=5) cout << "nal = "<<nal2 << endl;
+        if (verbose>=5) cout << "nab = "<<nal1 << endl;
         for ( int k = 1; k <= nfleet; k++ ){
           sel.initialize(); ret.initialize(); vul.initialize(); _xi=0;
           for (int iy=YrRefSel1Use; iy<=YrRefSel2Use;iy++){
@@ -12871,17 +12874,36 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
           _xi /= float(YrRefSel2Use-YrRefSel1Use+1); //--average discard mortality rate
           selret = elem_prod(sel,ret);               //--average selectivity * average retention
 
-          if (season_type(j)==INSTANT_F)    tempZ1 = _Z2(h,m,j); 
-          if (season_type(j)==CONTINUOUS_F) tempZ1 = _Z1(h,m,j);// consistent with previous??
-          if (season_type(j)==TCSAM02_F)    tempZ1 = _Z3(h,m,j);// TCSAM02-like
+          if (season_type(j)==INSTANT_F)    tempZ1 = _Z2(h,m,j); // consistent with other uses (2.20.45b and earlier were tempZ1 = _Z1)
+          if (season_type(j)==CONTINUOUS_F) tempZ1 = _Z1(h,m,j); // consistent with other uses (2.20.45b and earlier were tempZ1 = _Z2)
+          if (season_type(j)==TCSAM02_F)    tempZ1 = _Z3(h,m,j); // TCSAM02-like
+          if (verbose>=10){
+            cout << " m = "<< m << " h = "<< h << " j = "<< j << " k = "<< k << endl;
+            cout << "_ft(k,h,j) = "<<_ft(k,h,j) << endl;
+            cout << "sel = "<<sel << endl;
+            cout << "ret = "<<ret << endl;
+            cout << "vul = "<<vul << endl;
+            cout << "_xi = "<<_xi << endl;
+            cout << "_Z2(h,m,j) = "<<_Z2(h,m,j) << endl;
+            cout << "_Z1(h,m,j) = "<<_Z1(h,m,j) << endl;
+            cout << "_Z3(h,m,j) = "<<_Z3(h,m,j) << endl;
+          }
           if (_ft(k,h,j) > 0){
             ret_catch_at_length = elem_prod(nal1, elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1));// Total retained catch biomass
+            if (verbose>=5) {
+              cout << "k = "<< k << " h = "<< h << " j = "<< j << endl;
+              cout << "nal = "<<nal << endl;
+              cout << "selret = "<<selret << endl;
+              cout << "tempZ1 = "<<tempZ1 << endl;
+              cout << "_ft(k,h,j) = "<<_ft(k,h,j) << endl;
+              cout << "ret_catch_at_length = "<<ret_catch_at_length << endl;
+            }
             out(1)        += sum(ret_catch_at_length);
             out(3+nfleet) += sum(elem_prod(ret_catch_at_length, mey_prices));
             if (season_type(j)!=TCSAM02_F){
               out(2)            += nal1 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
               out(2+k)          += nal1 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as biomass
-              out(4+nfleet+k)   += nal1 * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as biomass
+              out(4+1*nfleet+k) += nal1 * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as biomass
               out(4+2*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * vul,    1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as numbers
               out(4+3*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * selret, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained fishery mortality as numbers
             } else {
@@ -12889,7 +12911,7 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
               dvar_vector new_vul = elem_prod(sel, ret + _xi * (1-ret));
               out(2)            += nal1 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // total fishery mortality as biomass
               out(2+k)          += nal1 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as biomass
-              out(4+nfleet+k)   += nal2 * elem_div(elem_prod(_ft(k,h,j) * selret,  1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as biomass
+              out(4+1*nfleet+k) += nal1 * elem_div(elem_prod(_ft(k,h,j) * selret,  1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as biomass WTS 20261014: corrected from nal2 to nal1
               out(4+2*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * new_vul, 1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific total fishery mortality as numbers
               out(4+3*nfleet+k) += nal2 * elem_div(elem_prod(_ft(k,h,j) * selret,  1.0 - mfexp(-tempZ1)), tempZ1);   // fleet-specific retained mortality as numbers
             }
@@ -12908,7 +12930,7 @@ FUNCTION dvar_vector calc_predicted_project(const int i, const int YrRefGrow, co
    
   RETURN_ARRAYS_DECREMENT();
   return(out);
-//--calc_predicted_project
+//--calc_projected_catch_one_year
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -13039,7 +13061,7 @@ FUNCTION dvar_vector compute_OFL_and_ABC(const int iyr, const int YrRefGrow,
   *          v(4) = retained catch portion of OFL
   *   Functions called:
   *      update_population_numbers_at_length_season or update_population_numbers_at_length_season_new
-  *      calc_predicted_project
+  *      calc_projected_catch_one_year
   * 
   * @param iyr The current year for projection.
   * @param YrRefGrow Reference year for growth.
@@ -13102,7 +13124,12 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
  
   // Copy N from the end of the assessment into the first projection year
   numbers_proj_gytl.initialize();
-  for ( int ig = 1; ig <= n_grp; ig++ ) numbers_proj_gytl(ig)(iyr)(1) = d4_Npass(ig);
+  if (iyr==1){
+    for ( int ig = 1; ig <= n_grp; ig++ ) numbers_proj_gytl(ig)(iyr)(1) = d4_N(ig)(nyrRetro+1)(1); //--WTS added this 20261014
+  } else {
+    for ( int ig = 1; ig <= n_grp; ig++ ) numbers_proj_gytl(ig)(iyr)(1) = d4_Npass(ig);
+  }
+  
   
   // recruitment distribution
   if (nsex>1){
@@ -13131,9 +13158,9 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
           _ft(k,h,j) = mfexp(log_ftmp);
           sel.initialize(); ret.initialize(); vul.initialize(); _xi = 0;
           for (int iy=YrRefSel1Use; iy<=YrRefSel2Use;iy++){
-            sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                // selectivity
-            ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);   // retention
-            if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k);
+            sel1 = mfexp(log_slx_capture(k,h,iy))+1.0e-10;                     // selectivity
+            ret1 = mfexp(log_slx_retaind(k,h,iy)) * slx_nret(nsex+h,k);        // retention
+            if (iy <= nyrRetro) xi1  = dmr(iy,k); else xi1  = dmr(nyrRetro,k); // handling mortality
             if (doMSE==YES & iyr > nyrRetro) xi1  = fut_disc_mort(k);
             sel += sel1;                                                  // will be average selectivity
             ret += ret1;                                                  // will be average retention
@@ -13217,12 +13244,15 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
   // return material
   ssb_pass = ssb(iyr+iproj-1);
   for ( int j = 1; j <= nseason; j++ )
-    for ( int ig = 1; ig <= n_grp; ig++ )
+    for ( int ig = 1; ig <= n_grp; ig++ ){
       d4_Npass_2(ig,j) = numbers_proj_gytl(ig)(iyr+iproj-1)(j);
+      if (verbose>3) cout << "d4_Npass_2(" << ig << "," << j << ") = " << d4_Npass_2(ig,j) << endl;
+    }
   // calculate 
-  if (verbose>2) cout << endl << "starting calc_predicted_project " << endl;
-  out = calc_predicted_project(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
-  if (verbose>2) cout << endl << "finished calc_predicted_project " << endl;
+  if (verbose>2) cout << endl << "starting calc_projected_catch_one_year " << endl;
+  out = calc_projected_catch_one_year(iyr, YrRefGrow, YrRefSel1, YrRefSel2, d4_Npass_2, _ft, _Z1, _Z2, _Z3);
+  if (verbose>3) cout << "out = " << out << endl;
+  if (verbose>2) cout << endl << "finished calc_projected_catch_one_year " << endl;
   oflret_pass = out(1); ofltot_pass = out(2);
   OFLoutpass = out;
 
@@ -13271,7 +13301,7 @@ FUNCTION dvariable project_biomass_OFL(const int iyr, const int YrRefGrow,
   **/
 FUNCTION void calc_spr_reference_points2(const int DoProfile)
   int verbose1;
-  verbose1 = (verbose>3);  //--WTS CODING: Added initialization for verbose1 to control debug output. Set to verbose after testing.
+  verbose1 = (verbose>5);  //--WTS CODING: Added initialization for verbose1 to control debug output. Set to verbose after testing.
   int iproj;
   dvar_matrix equilibrium_numbers(1,n_grp,1,nclass);
   dvariable FF;
@@ -13304,7 +13334,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   // Find mean recruitment for projections
   if (nsex==1)  proj_rbar(1) = mean(recruits(1)(prj_aveR_syr,prj_aveR_nyr));
   if (nsex==2) {proj_rbar(1) = mean(recruits(1)(prj_aveR_syr,prj_aveR_nyr)); proj_rbar(2) = mean(recruits(2)(prj_aveR_syr,prj_aveR_nyr));}
-  if (verbose1) cout<<"got here 1"<<endl;
   
   // Find the average F by fleet over the last spr_aveF_nyr-spr_aveF_syr+1 years
   for (int k = 1; k <= nfleet; k++){
@@ -13317,7 +13346,6 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     }
     Fave(k) = (MeanF+1.0e-10)/NF;
   }
-  if (verbose1) cout<<"got here 2"<<endl;
 
   // Find SSB for F=0 for all fleets
   for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
@@ -13330,11 +13358,12 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
   if (verbose1) cout << "calc_spr_reference_points2: eq_B_0 = " << equilibrium_biomass_F0 << endl;
   ssbF0 = ssb_pass;
   if (verbose1) cout << "ssbF0 = " << ssbF0 << endl;
-  if (verbose1) cout<<"got here 3"<<endl;
 
   // Solve for F35% and hence the Fmsy proxy (Tier 3 analysis)
   if (OFLTier==3){
     // Find Fmsy (=F35%) when adjusting the Fs for some fleets
+    if (verbose1) cout << "calc_spr_reference_points2: starting Fmsy calculation" << endl;
+    if (verbose1) cout << "spr_target = " << spr_target << " ssbF0 = " << ssbF0 << endl;
     for (int k=1;k<=nfleet;k++) log_fimpbar(k) = log(Fave(k));
     Fmult = 1.0;
     for (int i=1;i<=10;i++){
@@ -13342,24 +13371,20 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);
       // AEP:AEP Why 1 and not season_ssb
-      if (verbose1) cout<<"got here 4"<<endl;
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
-      if (verbose1) cout<<"got here 5"<<endl;
+      if (verbose1) cout << "iteration " << i << " " << "Fave*Fmult = " << mfexp(log_fimpbar) << endl;
+      if (verbose1) cout << "    ssb_pass = " << ssb_pass << " ratio = " << ssb_pass/ssbF0 << endl;;
       SSBV0 = ssb_pass/ssbF0-spr_target;
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult+0.001));
-      if (verbose1) cout<<"got here 6"<<endl;
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
-      if (verbose1) cout<<"got here 7"<<endl;
       SSBV1a = ssb_pass/ssbF0-spr_target;
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult-0.001));
-      if (verbose1) cout<<"got here 8"<<endl;
       equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       SSBV1b = ssb_pass/ssbF0-spr_target;
-      if (verbose1) cout<<"got here 9"<<endl;
 
       Deriv = (SSBV1a-SSBV1b)/0.002;
       Fmult2 = Fmult - SSBV0/Deriv;
@@ -13369,19 +13394,18 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       } else {
         Fmult = Fmult2;
       }
+      if (verbose1) cout<<"   SSBV0 = "<<SSBV0<<" Deriv = "<<Deriv<<endl;
     } //--i loop (10 iterations): calculates Fmult: F35% = Fave(k)*Fmult when done
-    if (verbose1) cout<<"got here 10"<<endl;
   	 
     //--F35% = Fave(k)*Fmult for
     for (int k=1;k<=nfleet;k++)
       if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);  //--WTS: think this is wrong if Ffixed(k) != 1 for more than 1 fleet 
+    if (verbose1) cout << "Fmsy = " << mfexp(log_fimpbar) << endl;
     equilibrium_numbers_FM = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
-    if (verbose>5) cout << "eq_N_FM = " << equilibrium_numbers_FM << endl;
     for (int ig=1;ig<=n_grp;ig++) equilibrium_biomass_FM(ig) = elem_prod(mean_wt(isex(ig),imature(ig),spr_grow_yr),equilibrium_numbers_FM(ig));
-    if (verbose>5) cout << "eq_B_FM = " << equilibrium_biomass_FM<< endl;
     Bmsy = ssb_pass;
+    if (verbose1) cout << "Bmsy = " << Bmsy << "final target ratio = " << Bmsy/ssbF0 << endl;
   } //--Tier 3 control rule
-  if (verbose1) cout<<"got here 11"<<endl;
   
   // Tier 4 control rule
   if (OFLTier==4){
@@ -13398,14 +13422,12 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     for (int k=1;k<=nfleet;k++)
       if (Ffixed(k) != 1) log_fimpbar(k) = log(Fmsy*Fave(k)/TotalF);
   } //--Tier 4 control rule
-  if (verbose1) cout<<"got here 12"<<endl;
 
   // Save FMSY
   for (int k=1;k<=nfleet;k++) sd_fmsy(k) = mfexp(log_fimpbar(k)); //Fmsy = sd_fmsy(k) where Ffixed(k) != 1
   if (outRefPts==YES)
     for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+k) = sd_fmsy(k);
-  if (verbose >=3) cout << sd_fmsy << endl;
-  if (verbose1) cout<<"got here 13"<<endl;
+  if (verbose1) cout << "Fmsy = " << sd_fmsy << endl;
 
   // Store reference points
   Fmsy = 1;
@@ -13413,13 +13435,14 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 
   // Store the N from the last year
   for ( int ig = 1; ig <= n_grp; ig++ ) d4_Npass(ig) = d4_N(ig)(nyrRetro+1)(1);
-  if (verbose >=3) cout << d4_Npass << endl;
-  if (verbose1) cout<<"got here 14"<<endl;
+  if (verbose1) cout << "d4_Npass = " << endl << d4_Npass << endl;
   
   // Check if above Bmsy when F=FOFL 
   log_fimpbarOFL = log(sd_fmsy);
+  if (verbose1) cout << "Starting OFL calculation " << endl;
   Bproj = project_biomass_OFL(1,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr, spr_rbar, iproj, d4_Npass);
-  if (verbose>=3) cout << Bproj << endl;
+  if (verbose1) cout << "  Fmsy = " << mfexp(log_fimpbarOFL) << endl;
+  if (verbose1) cout << "     0. ssb_pass(Fmsy) = " << ssb_pass << " ratio = " << ssb_pass/Bmsy << endl;
   if (ssb_pass > Bmsy){
     spr_fofl = 1.0;
     spr_depl = ssb_pass / Bmsy;
@@ -13428,14 +13451,14 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     FF = 1.0e-10;
     for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
     Bproj = project_biomass_OFL(1,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar,iproj,d4_Npass);
-    if (verbose>=3) cout << Bproj << endl;
    
     // Even under zero F the OFL is non-zero 
     if (ssb_pass < OFLbeta * Bmsy){
       spr_fofl = FF/Fmsy;
       spr_depl = ssb_pass / Bmsy;
     } else {
-      // Adjust F if below target. Since it's a function biomass, it needs to be iterated
+      // Adjust F if below target. Since it's a function of biomass, it needs to be iterated
+      if (verbose1) cout << "find F that yields ssb_pass s.t. ssb_pass/Bmsy is on the HCR " << endl;
       for( int iloop = 1; iloop <= 10; iloop++) {
         Fmult2 = Fmsy * (ssb_pass / Bmsy - OFLalpha) / (1 - OFLalpha);
         if (Fmult2 < 0.1*FF)
@@ -13444,29 +13467,33 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
         FF = Fmult2;
         if (FF < 0.00001) FF = 0.00001;
         for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbarOFL(k) = log(sd_fmsy(k)*FF);
+        if ((iloop==10) && verbose1) verbose=5;
         Bproj = project_biomass_OFL(1,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,spr_rbar, iproj,d4_Npass);
-      }
+        if (verbose1) cout << "     " << iloop << ". FF = " << FF << " ssb_pass(FF*Fmsy) = " << ssb_pass << " B ratio = " << ssb_pass/Bmsy << " HCR F(at B ratio) = " << (ssb_pass/Bmsy - OFLalpha) / (1 - OFLalpha) << endl;
+        if (verbose1) cout << "     ofltot_pass = " << ofltot_pass << " oflret_pass = " << oflret_pass << endl;
+        if ((iloop==10) && verbose1) verbose=0;
+      } //--i loop iterating over FF's
+      if (verbose1) cout << "Final check on F_OFL. FF = " << FF << " HCR F(at B ratio) = " << (ssb_pass/Bmsy - OFLalpha) / (1 - OFLalpha) << " B ratio = " << ssb_pass/Bmsy << " ssb(F_OFL) = " << ssb_pass << endl;
       spr_fofl = FF/Fmsy;
       spr_depl = ssb_pass / Bmsy;
     }
   } //--ssb_pass <= Bmsy
-  if (verbose1) cout<<"got here 15"<<endl;  
+  if (verbose1) cout << "  spr_fofl = " << spr_fofl << " F_OFL = " << mfexp(log_fimpbarOFL) << " spr_depl = " << spr_depl << endl;
+  if (verbose1) cout << "  ofltot_pass = " << ofltot_pass << " oflret_pass = " << oflret_pass << endl;
 
   // save fofl
   for (int k=1;k<=nfleet;k++) sd_fofl(k) = mfexp(log_fimpbarOFL(k));
   if (outRefPts==YES)
     for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+nfleet+k) = sd_fofl(k);
-  if (verbose >=3) cout << sd_fofl << endl;
-  if (verbose1) cout<<"got here 16"<<endl;
+  if (verbose1) cout << "Fofl = " << sd_fofl << endl;
 
   // save the OFL
   spr_cofl = ofltot_pass;
   spr_cofl_ret = oflret_pass;
   if (outRefPts==YES)
     for (int k=1;k<=nfleet;k++) ParsOut(NRefPars+6+k+2*nfleet) = OFLoutpass(k+2);
-  if (verbose >=3) cout << NRefPars+6+2*nfleet << endl;
-  if (verbose >=3) cout << OFLoutpass << endl;
-  if (verbose1) cout<<"got here 17"<<endl;
+  if (verbose>=3) cout << "NRefPars+6+2*nfleet = " << NRefPars+6+2*nfleet << endl;
+  if (verbose>=3) cout << "OFLoutpass = " << OFLoutpass << endl;
  
   // Continue only calc_MSY is YES
   if (Calc_MSY == YES && (mey_SRR==RICKER || mey_SRR==BEVHOLT)){
@@ -13598,7 +13625,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     echoinput << "Exiting after MSY calculations" << endl;
     exit(1);  //--WTS: why exit here?!!
   }  //--(Calc_MSY == YES && (mey_SRR==RICKER || mey_SRR==BEVHOLT))
-  if (verbose1) cout<<"got here 18"<<endl;
+  if (verbose1) cout<<"after Calc_MSY"<<endl;
     
   // Solve for FMEY and hence the Fmey proxy
   if (Calc_MEY==1){
@@ -13652,7 +13679,9 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     Fmey_out = Fmult;
     if (verbose1) cout << "Finished MEY calculations" << endl;
   } // Calculate FMEY
-//--calc_spr_reference_points2
+  if (verbose1) cout<<"finished calc_spr_reference_points2"<<endl;
+
+//--
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 // =======================================================================================================================================
@@ -18967,6 +18996,10 @@ FINAL_SECTION
 // 2026-10-13 ** WTS. Updated compile date to 2026-10-13. Mainly minor comments and formatting adjustments.
 // 2026-10-14 ** WTS. Updated compile date to 2026-10-14. Revised (two places) where numbers-at-length in predicted_catch_one_year are pulled from 
 //                    (d4_N or numbers_proj_gytl) based on year and season to allow numbers to be pulled from d4_N when iy==nyrRetro+1 and season==1.
+// 2026-10-15 ** WTS. Updated compile date to 2026-10-15. Resolved issue with BBRKC OFL being different between 2.20.45b and 3.00.01. This was related 
+//                    to a reversed assignment of Z1 and Z2 in calc_predicted_project under season_type==INSTANT_F or CONTINUOUS_F from what is consistent with 
+//                    the remaining code. Renamed calc_predicted_project to calc_projected_catch_one_year to better reflect its purpose.
+
 
 // To-do list
 // 1 - revise size of log_vn vector (estimated multinomial sample sizes). currently it's = max(iCompAggregator), but it possibly makes more sense 

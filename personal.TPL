@@ -1,4 +1,4 @@
-//--20261006 WTS : changed HCRpars to hcr_pars for compatibility with gmacsbase.TPL
+//--20261006 WTS : changed HCRpars to hcr_pars for compatibility with gmacsbase.TPL v3.00.01 2026-10-15.
 
 FUNCTION MyOutput
   int nnnn;
