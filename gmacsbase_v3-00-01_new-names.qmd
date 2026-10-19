@@ -1,0 +1,73 @@
+---
+title: "Renamed TPL variables and functions: gmacsbase.TPL from v2.20.46 to v3.00.01"
+format:
+  html:
+    toc: true
+  pdf:
+    toc: false
+execute:
+  eval: false
+---
+
+# Comparison
+
+Compared `gmacsbase.TPL` from `devel_202610-3-00-01` (new, commit `26ad83eba24b937053941d9932bca4ea29f1c3dc`) with `devel_202610-46` (old, commit `5ce534f6d37a47e3b8d3f02a2b821e6768413c50`). The new branch is checked out in this workspace, so its line references link to the local source. Old-branch line references are recorded as `devel_202610-46:gmacsbase.TPL:L...`; that revision is not checked out as a workspace file.
+
+The table includes identifier pairs whose declaration context and use indicate the same role. Run-control entries include several converged names: in the old version `StopAfterFnCall` and `usepinfile` cover both input values and command-line overrides that had separate names in the new revision. MSE-specific additions/removals and functions with no one-to-one counterpart are not reported as renames.
+
+| new | old |
+|---|---|
+| [`numPrj`](gmacsbase.TPL#L686) (L686) | `nproj` (devel_202610-46:gmacsbase.TPL:L1698) |
+| [`numPrjUse`](gmacsbase.TPL#L734) (L734) | `nprojUse` (devel_202610-46:gmacsbase.TPL:L1699) |
+| [`numPrjVec`](gmacsbase.TPL#L735) (L735) | `nprojVec` (devel_202610-46:gmacsbase.TPL:L1705) |
+| [`prj_NumLevels`](gmacsbase.TPL#L1893) (L1893) | `prj_Nstrat` (devel_202610-46:gmacsbase.TPL:L1709) |
+| [`prj_type`](gmacsbase.TPL#L1891) (L1891) | `Project_type` (devel_202610-46:gmacsbase.TPL:L1707) |
+| [`prj_Levels`](gmacsbase.TPL#L1895) (L1895) | `Proj_Levels` (devel_202610-46:gmacsbase.TPL:L1711) |
+| [`prj_Fixed_Bmsy`](gmacsbase.TPL#L1902) (L1902) | `Fixed_prj_Bmsy` (devel_202610-46:gmacsbase.TPL:L1718) |
+| [`prj_SexR_syr`](gmacsbase.TPL#L1916) (L1916) | `proj_SexR_syr` (devel_202610-46:gmacsbase.TPL:L1732) |
+| [`prj_SexR_nyr`](gmacsbase.TPL#L1917) (L1917) | `proj_SexR_nyr` (devel_202610-46:gmacsbase.TPL:L1736) |
+| [`prj_aveF_syr`](gmacsbase.TPL#L1928) (L1928) | `proj_aveF_syr` (devel_202610-46:gmacsbase.TPL:L1744) |
+| [`prj_aveF_nyr`](gmacsbase.TPL#L1929) (L1929) | `proj_aveF_nyr` (devel_202610-46:gmacsbase.TPL:L1748) |
+| [`prj_M_syr`](gmacsbase.TPL#L1940) (L1940) | `proj_M_syr` (devel_202610-46:gmacsbase.TPL:L1756) |
+| [`prj_M_nyr`](gmacsbase.TPL#L1941) (L1941) | `proj_M_nyr` (devel_202610-46:gmacsbase.TPL:L1760) |
+| [`prj_Prop_syr`](gmacsbase.TPL#L1952) (L1952) | `proj_Prop_syr` (devel_202610-46:gmacsbase.TPL:L1768) |
+| [`prj_Prop_nyr`](gmacsbase.TPL#L1953) (L1953) | `proj_Prop_nyr` (devel_202610-46:gmacsbase.TPL:L1772) |
+| [`prj_grow_yr`](gmacsbase.TPL#L1964) (L1964) | `proj_grow_yr` (devel_202610-46:gmacsbase.TPL:L1780) |
+| [`prj_sel_syr`](gmacsbase.TPL#L1971) (L1971) | `proj_sel_syr` (devel_202610-46:gmacsbase.TPL:L1787) |
+| [`prj_sel_nyr`](gmacsbase.TPL#L1972) (L1972) | `proj_sel_nyr` (devel_202610-46:gmacsbase.TPL:L1791) |
+| [`prj_SRR`](gmacsbase.TPL#L1983) (L1983) | `Stock_rec_prj` (devel_202610-46:gmacsbase.TPL:L1799) |
+| [`prj_age_at_rec`](gmacsbase.TPL#L1990) (L1990) | `Age_at_rec_prj` (devel_202610-46:gmacsbase.TPL:L1806) |
+| [`prj_mean_rec`](gmacsbase.TPL#L2000) (L2000) | `mean_rec_prj` (devel_202610-46:gmacsbase.TPL:L1816) |
+| [`prj_SigmaR`](gmacsbase.TPL#L2002) (L2002) | `SigmaR_prj` (devel_202610-46:gmacsbase.TPL:L1818) |
+| [`prj_AR1_rho`](gmacsbase.TPL#L2004) (L2004) | `Prow_prj` (devel_202610-46:gmacsbase.TPL:L1820) |
+| [`prj_init_eps`](gmacsbase.TPL#L2006) (L2006) | `Initial_eps` (devel_202610-46:gmacsbase.TPL:L1822) |
+| [`prj_ApplyHCR`](gmacsbase.TPL#L2009) (L2009) | `Apply_HCR_prj` (devel_202610-46:gmacsbase.TPL:L1825) |
+| [`prj_ApplyStateHCR`](gmacsbase.TPL#L2012) (L2012) | `Apply_StateHCR_prj` (devel_202610-46:gmacsbase.TPL:L1828) |
+| [`prj_max_draws`](gmacsbase.TPL#L2064) (L2064) | `max_prj` (devel_202610-46:gmacsbase.TPL:L1880) |
+| [`prj_full_diag`](gmacsbase.TPL#L2067) (L2067) | `full_prj_diag` (devel_202610-46:gmacsbase.TPL:L1883) |
+| [`mey_prices`](gmacsbase.TPL#L2019) (L2019) | `Price` (devel_202610-46:gmacsbase.TPL:L1835) |
+| [`mey_DaysPerF`](gmacsbase.TPL#L2030) (L2030) | `DaysPerF` (devel_202610-46:gmacsbase.TPL:L1846) |
+| [`mey_CostPerDay`](gmacsbase.TPL#L2040) (L2040) | `CostPerDay` (devel_202610-46:gmacsbase.TPL:L1856) |
+| [`mey_SRR`](gmacsbase.TPL#L2051) (L2051) | `Stock_rec_ref` (devel_202610-46:gmacsbase.TPL:L1867) |
+| [`hcr_pars`](gmacsbase.TPL#L2016) (L2016) | `HCRpars` (devel_202610-46:gmacsbase.TPL:L1832) |
+| [`calcRefPts`](gmacsbase.TPL#L711) (L711) | `CalcRefPoints` (devel_202610-46:gmacsbase.TPL:L364) |
+| [`outRefPts`](gmacsbase.TPL#L713) (L713) | `OutRefPars` (devel_202610-46:gmacsbase.TPL:L346) |
+| [`outRec`](gmacsbase.TPL#L715) (L715) | `OutRecruit` (devel_202610-46:gmacsbase.TPL:L348) |
+| [`outSSB`](gmacsbase.TPL#L717) (L717) | `OutSSB` (devel_202610-46:gmacsbase.TPL:L350) |
+| [`outFbar`](gmacsbase.TPL#L719) (L719) | `Outfbar` (devel_202610-46:gmacsbase.TPL:L352) |
+| [`outDynB0`](gmacsbase.TPL#L721) (L721) | `OutDynB0` (devel_202610-46:gmacsbase.TPL:L354) |
+| [`dateof`](gmacsbase.TPL#L724) (L724) | `dataeof` (devel_202610-46:gmacsbase.TPL:L431) |
+| [`doJittering`](gmacsbase.TPL#L701) (L701) | `IsJittered` (devel_202610-46:gmacsbase.TPL:L338) |
+| [`usePinForJittering`](gmacsbase.TPL#L703) (L703) | `IsPin` (devel_202610-46:gmacsbase.TPL:L339) |
+| [`maxEstPhs`](gmacsbase.TPL#L650) (L650) | `TurnOffPhase` (devel_202610-46:gmacsbase.TPL:L362) |
+| [`maxFnCalls`](gmacsbase.TPL#L653) (L653) | `StopAfterFnCall` (devel_202610-46:gmacsbase.TPL:L363) |
+| [`usePin`](gmacsbase.TPL#L659) (L659) | `usepinfile` (devel_202610-46:gmacsbase.TPL:L365) |
+| [`clv_DoJittering`](gmacsbase.TPL#L288) (L288) | `jitflag` (devel_202610-46:gmacsbase.TPL:L202) |
+| [`clv_DoSims`](gmacsbase.TPL#L292) (L292) | `simflag` (devel_202610-46:gmacsbase.TPL:L203) |
+| [`clv_MaxFnCalls`](gmacsbase.TPL#L286) (L286) | `StopAfterFnCall` (devel_202610-46:gmacsbase.TPL:L363) |
+| [`clv_UsePin`](gmacsbase.TPL#L300) (L300) | `usepinfile` (devel_202610-46:gmacsbase.TPL:L365) |
+| [`calc_projected_catch_one_year`](gmacsbase.TPL#L12813) (L12813) | `calc_predicted_project` (devel_202610-46:gmacsbase.TPL:L12040) |
+
+# Notes
+
+The new branch includes MSE/data-generation functions (`InitializeData`, `GenerateData`, `ApplyMP`) and helper routines such as `predicted_catch_one_year` and `calc_predicted_comp_one` that are absent in branch 46. Conversely, `calc_relative_abundance` exists in both; branch 46's absence of the new per-row `calc_predicted_rel_abund_one` is a structural refactor, not counted as a one-to-one rename.
