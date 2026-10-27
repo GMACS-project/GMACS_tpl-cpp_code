@@ -108,7 +108,7 @@
 // ************************************************************************************ //
 DATA_SECTION
 
-  !! TheHeader = adstring("## GMACS Version 3.00.01; ** WTS **; Compiled 2026-10-15");
+  !! TheHeader = adstring("## GMACS Version 3.00.02; ** AEP **; Compiled 2026-10-27");
 
  LOCAL_CALCS
   int opt,on;
@@ -13371,19 +13371,19 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);
       // AEP:AEP Why 1 and not season_ssb
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       if (verbose1) cout << "iteration " << i << " " << "Fave*Fmult = " << mfexp(log_fimpbar) << endl;
       if (verbose1) cout << "    ssb_pass = " << ssb_pass << " ratio = " << ssb_pass/ssbF0 << endl;;
       SSBV0 = ssb_pass/ssbF0-spr_target;
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult+0.001));
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       SSBV1a = ssb_pass/ssbF0-spr_target;
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult-0.001));
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       SSBV1b = ssb_pass/ssbF0-spr_target;
 
       Deriv = (SSBV1a-SSBV1b)/0.002;
@@ -13518,11 +13518,11 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
 
       for (int k=1;k<=nfleet;k++)
        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       SSBV1a = oflret_pass;
       for (int k=1;k<=nfleet;k++)
        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*0.999);
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       SSBV1b = oflret_pass;
       Deriv = (SSBV1a-SSBV1b)/0.002;
       //cout << "Solve2 " << ii << " " << Steepness << " " << Deriv << endl;
@@ -13548,12 +13548,12 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
       if (verbose>2) cout << "Calculating equilibrium with slightly increased F values" << endl;
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       SSBV1a = oflret_pass;
       for (int k=1;k<=nfleet;k++)
        if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*0.999);
       if (verbose>2) cout << "Calculating equilibrium with slightly decreased F values" << endl;
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       SSBV1b = oflret_pass;
       Deriv = (SSBV1a-SSBV1b)/0.002;
       //cout << "Solve " << ii << " " << SteepMin << " " << SteepMax << " " << Deriv << endl;
@@ -13570,7 +13570,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     }
     log_fimpbar = log(sd_fmsy);
     if (verbose>2) cout << "Calculating equilibrium with current F values" << endl;
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+    equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
     if (verbose>2) cout << "Finished calculating equilibrium with current F values" << endl;
 
     Adjust = spr_bmsy/ssb_pass;
@@ -13587,7 +13587,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     if (verbose>2) cout << "Starting to find SSB for F=0 for all fleets" << endl;
     for (int k=1;k<=nfleet;k++) log_fimpbar(k) = -100;
     //--might want to use season_ssb instead of 1 in next
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+    equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
     ssbF0 = ssb_pass;
     if (verbose>2) cout << "Finished finding SSB for F=0 for all fleets" << endl;
 
@@ -13595,16 +13595,16 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
     log_fimpbar = log(sd_fmsy);
     for (int k=1;k<=nfleet;k++)
      if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*1.001);
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+    equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
     SSBV1a = oflret_pass;
     for (int k=1;k<=nfleet;k++)
      if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*0.999);
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+    equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
     SSBV1b = oflret_pass;
     Deriv = (SSBV1a-SSBV1b)/0.002;
 
     log_fimpbar = log(sd_fmsy);
-    equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+    equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
     if (verbose1) cout << "Final Yield" << ssb_pass/ssbF0 << " " << ssb_pass/spr_bmsy << " " << exp(log_fimpbar) << " " << oflret_pass << " " << Steepness << " " << Deriv << " " << ssbF0 << " " << spr_bmsy << endl;
 
     if (Compute_yield_prj==YES && DoProfile==YES){
@@ -13612,7 +13612,7 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       for (int ii=0;ii<=100;ii++){
         if (ii==0) FF = 1.0e-10; else FF = float(ii)/20;
         for (int k=1;k<=nfleet;k++) if (Ffixed(k) != 1) log_fimpbar(k) = log(sd_fmsy(k)*FF);
-        equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+        equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
         spr_yield(ii,1) = ssb_pass/ssbF0;
         spr_yield(ii,2) = ssb_pass/spr_bmsy;
         spr_yield(ii,3) = exp(log_fimpbar(1));
@@ -13649,17 +13649,17 @@ FUNCTION void calc_spr_reference_points2(const int DoProfile)
       // Set F
        for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*Fmult);
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       Profit0 =catch_pass_eqn(3+nfleet) - catch_pass_eqn(4+nfleet);
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult+0.001));
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       Profit1a =catch_pass_eqn(3+nfleet) - catch_pass_eqn(4+nfleet); 
 
       for (int k=1;k<=nfleet;k++)
         if (Ffixed(k) != 1) log_fimpbar(k) = log(Fave(k)*(Fmult-0.001));
-      equilibrium_numbers = calc_brute_equilibrium(1,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
+      equilibrium_numbers = calc_brute_equilibrium(season_ssb,spr_SexR_syr,spr_SexR_nyr,spr_grow_yr,spr_grow_yr,spr_M_syr,spr_M_nyr,spr_Prop_syr,spr_Prop_nyr,spr_sel_syr,spr_sel_nyr,NyrEquil,mey_SRR);
       Profit1b =catch_pass_eqn(3+nfleet) - catch_pass_eqn(4+nfleet); 
 
       Deriv = (Profit1a-Profit1b)/0.002;
@@ -18999,6 +18999,11 @@ FINAL_SECTION
 // 2026-10-15 ** WTS. Updated compile date to 2026-10-15. Resolved issue with BBRKC OFL being different between 2.20.45b and 3.00.01. This was related 
 //                    to a reversed assignment of Z1 and Z2 in calc_predicted_project under season_type==INSTANT_F or CONTINUOUS_F from what is consistent with 
 //                    the remaining code. Renamed calc_predicted_project to calc_projected_catch_one_year to better reflect its purpose.
+//                    Replaced ssn=1 with ssn=season_ssb in calls to calc_brute_equilibrium in calc_spr_refernce2 when calculating equilibrium_number_F0 and 
+//                    equilibrium_number_FM.                  
+// 2026-10-27 ** AEP. Replaced ssn=1 with ssn=season_ssb in remaining calls to calc_brute_equilibrium in calc_spr_reference2; does not affect calculations 
+//                    because returned vector equilibrium numbers is not used (function is called for side effect on ssb_pass).
+// 2026-10-27 ** WTS. Merged AEP changes into above into TPL, updated version to 3.00.02 and date to 2026-10-27. Added comments.
 
 
 // To-do list
